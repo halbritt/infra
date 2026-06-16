@@ -1,0 +1,62 @@
+===== connections vs max =====
+ max_connections | total_backends | active | idle | idle_in_txn | client_backends 
+-----------------+----------------+--------+------+-------------+-----------------
+             100 |             24 |      2 |   17 |           0 |              19
+(1 row)
+
+===== connections by database/user =====
+                   datname                   |   usename    | count 
+---------------------------------------------+--------------+-------
+ engram                                      | halbritt     |     8
+ striatum_daemon                             | striatumd_rw |     7
+ postgres                                    | halbritt     |     2
+ striatum_pgtest_1781629727695588842_2699033 | halbritt     |     2
+(4 rows)
+
+===== longest-running / idle-in-txn (top 10) =====
+   pid   |                   datname                   |   usename    | state  | state_age_s | xact_age_s 
+---------+---------------------------------------------+--------------+--------+-------------+------------
+ 2742842 | striatum_pgtest_1781629727695588842_2699033 | halbritt     | active |           1 |          1
+ 2742839 | postgres                                    | halbritt     | idle   |           3 |           
+ 2742841 | striatum_pgtest_1781629727695588842_2699033 | halbritt     | idle   |           1 |           
+    5657 | engram                                      | halbritt     | idle   |      135507 |           
+    6577 | engram                                      | halbritt     | idle   |      135417 |           
+    7443 | engram                                      | halbritt     | idle   |      135375 |           
+    8354 | engram                                      | halbritt     | idle   |      135295 |           
+  409695 | engram                                      | halbritt     | idle   |       96876 |           
+ 2655268 | striatum_daemon                             | striatumd_rw | idle   |           4 |           
+ 2655299 | striatum_daemon                             | striatumd_rw | idle   |          49 |           
+(10 rows)
+
+===== cache hit ratio + temp files + deadlocks per DB (instance-level; no pgss) =====
+                   datname                   | cache_hit_pct | xact_commit | xact_rollback | temp_files | temp_bytes | deadlocks | conflicts 
+---------------------------------------------+---------------+-------------+---------------+------------+------------+-----------+-----------
+ striatum_daemon                             |         97.09 |     1746409 |        110195 |          0 | 0 bytes    |        50 |         0
+ hippo                                       |        100.00 |      530631 |            64 |          6 | 1845 MB    |         0 |         0
+ postgres                                    |         99.99 |       52826 |          3037 |          0 | 0 bytes    |         0 |         0
+ engram_test                                 |         99.97 |       39042 |             4 |          0 | 0 bytes    |         0 |         0
+ engram                                      |         99.90 |       11422 |             6 |          0 | 0 bytes    |         0 |         0
+ template1                                   |         99.91 |        4237 |             0 |          0 | 0 bytes    |         0 |         0
+ striatum_pgtest_1781629727695588842_2699033 |         99.99 |          92 |             0 |          0 | 0 bytes    |         0 |         0
+(7 rows)
+
+===== checkpoints (pg_stat_bgwriter, PG16) =====
+ checkpoints_timed | checkpoints_req | ckpt_write_s | ckpt_sync_s | buffers_checkpoint | buffers_clean | maxwritten_clean | buffers_backend | buffers_alloc |          stats_reset          
+-------------------+-----------------+--------------+-------------+--------------------+---------------+------------------+-----------------+---------------+-------------------------------
+               390 |            3381 |        37173 |        1113 |            4703389 |             0 |                0 |         4069389 |       5588536 | 2026-06-15 03:01:02.479761+00
+(1 row)
+
+===== database sizes =====
+                   datname                   |  size   
+---------------------------------------------+---------
+ striatum_daemon                             | 34 GB
+ hippo                                       | 2980 MB
+ engram                                      | 941 MB
+ engram_test                                 | 92 MB
+ engram_test_worker_e                        | 32 MB
+ engram_test_worker_e2e_runner_2             | 27 MB
+ striatum_pgtest_1781629727695588842_2699033 | 9999 kB
+ ob1                                         | 7625 kB
+ postgres                                    | 7615 kB
+(9 rows)
+

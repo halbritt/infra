@@ -1,0 +1,30 @@
+# Reliability frontier + autovacuum — 2026-06-16 (read-only)
+# POSTGRES_TUNING.md Preflight step 5; captured as halbritt (non-superuser).
+
+## Standalone-primary confirmation
+in_recovery=false
+replication_slots=0
+wal_senders=0
+
+## Archiver (no failing archive_command)
+archived_count|failed_count|last_failed_wal|last_failed_time|stats_reset
+0|0|||2026-06-15 03:01:02.479761+00
+(1 row)
+archive_mode=off
+
+## Wraparound watch (max relfrozenxid age per active DB vs freeze_max_age=200M)
+postgres max_relfrozenxid_age=27926231
+striatum_daemon max_relfrozenxid_age=27926231
+hippo max_relfrozenxid_age=27926231
+engram max_relfrozenxid_age=27926231
+
+## Checkpoints (pg_stat_bgwriter) — WAL-triggered dominance
+checkpoints_timed|checkpoints_req|ckpt_write_s|ckpt_sync_s|buffers_checkpoint|buffers_clean|maxwritten_clean|buffers_backend|buffers_alloc|stats_reset
+390|3402|37174|1113|4705240|0|0|4085062|5613326|2026-06-15 03:01:02.479761+00
+(1 row)
+
+## Connections (24 total / 19 client of max 100; 5 long-idle engram backends)
+state|count
+idle|17
+active|2
+(2 rows)

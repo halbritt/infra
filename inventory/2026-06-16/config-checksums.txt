@@ -1,0 +1,9 @@
+# config-file checksums captured 2026-06-16 (sha256)
+# cluster 16/main, system_identifier 7628053153555146077
+a2a91ad2e795daf8a6f12841772fb2d0e7f885138d669395d843011cabce35fe  /etc/postgresql/16/main/postgresql.conf
+# postgresql.auto.conf (in data dir, root-read):
+0874e665ecf5c0a6135a73158ea1b71a959dafb809574810da5c9cc28c0c63ed  /var/lib/postgresql/16/main/postgresql.auto.conf
+# conf.d/ drop-ins:
+(conf.d empty)
+# pg_hba.conf present (NOT tuned, NOT committed):
+96dcb60f20aa06d1ebeb786cbb95f1bebedbb49bd4d3a4a92c0126cfb2ae4541  /etc/postgresql/16/main/pg_hba.conf
