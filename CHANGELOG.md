@@ -45,9 +45,20 @@ the evidence behind each entry, and `git log` for granular history.
   `pg_qualstats` 2.1, `pg_stat_kcache` 2.2.3 (libs on disk). Enable by adding both to
   `shared_preload_libraries` at the next restart window, then `CREATE EXTENSION` each.
 - Revert for all of the above: `ALTER SYSTEM RESET <param>` + reload (default prior).
-- **Deferred (not easy / needs infra):** backups — pgBackRest/WAL-G → Garage. Requires
-  reconfiguring Garage onto the 10 TB spinning disk (`/dev/sda`); then replicate Garage
-  off-site. `archive_mode` still `off` — no PITR yet. Planned, not done.
+### Backups / PITR (pgBackRest → ZFS; see `backups.md`)
+- Decided **against** routing backups through Garage — Garage has no storage classes /
+  tiering (verified v2.3.0: multi-`data_dir` is capacity-weighted only, no hot/cold,
+  no S3 storage-class placement), so an S3 indirection adds nothing for backups.
+- Set up **pgBackRest 2.50 → `/nvr/pg-backups`** (ZFS dataset on the `nvr` pool;
+  `recordsize=1M`, `compression=off`, postgres-owned). Stanza `proximal` **created**;
+  `archive_command` **staged** (reload-applied, inert until `archive_mode=on`).
+  Discovered `/dev/sda` is a live ZFS pool `nvr` (already holds `nvr/engram-backups`) —
+  **not** wiped; added a dataset instead.
+- ⏳ **PENDING one restart** to flip `archive_mode=on` (postmaster-context) — **bundled
+  with** the pending `pg_qualstats`/`pg_stat_kcache` `shared_preload_libraries` change
+  so it's a single restart. Then `stanza check` + first full backup. Runbook in
+  `backups.md`. Encryption not yet enabled (recommended before off-site replication).
+- Off-site replication (operator): `zfs send` the `nvr` pool to a remote site.
 
 ### Provenance / repo
 - First read-only Preflight inventory captured (`CLAUDE_OPUS_4_8`, role `halbritt`,

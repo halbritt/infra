@@ -28,6 +28,11 @@ ALTER SYSTEM SET auto_explain.log_analyze = off;           -- off: log_analyze i
 ALTER SYSTEM SET auto_explain.log_nested_statements = on;  -- see plans inside SD functions
 ALTER SYSTEM SET log_lock_waits = on;                      -- diagnose striatum lock contention
 ALTER SYSTEM SET log_temp_files = 0;                       -- catch work_mem spills (feeds re-eval)
+
+-- Backups / PITR (pgBackRest -> nvr/pg-backups). See backups.md.
+ALTER SYSTEM SET archive_command = 'pgbackrest --stanza=proximal archive-push %p';  -- applied (reload)
+-- PENDING (next restart, bundled with the shared_preload_libraries change above):
+--   ALTER SYSTEM SET archive_mode = on;
 ```
 
 ## Frozen — never weakened without a recorded waiver
