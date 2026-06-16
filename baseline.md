@@ -7,10 +7,17 @@ Default-valued GUCs are not listed.
 First captured by the read-only inventory run on **2026-06-16**
 (`CLAUDE_OPUS_4_8`, role `halbritt`). Evidence:
 `inventory/2026-06-16/` (`pg_settings.tsv`, `non-default-settings.txt`).
-All values currently originate from the hand-edited
-`/etc/postgresql/16/main/postgresql.conf`; `postgresql.auto.conf` is empty
-(no `ALTER SYSTEM` overrides applied). Rationales below are **inventory-derived
-observations**, not yet validated by a tuning report — the first run is plan-only.
+The pre-session values below originate from the hand-edited
+`/etc/postgresql/16/main/postgresql.conf`; their rationales are **inventory-derived
+observations**. Changes applied this session via `ALTER SYSTEM`
+(`postgresql.auto.conf`) are tracked in **Applied changes** below.
+
+## Applied changes (this session — 2026-06-16)
+
+| parameter | value | change | status | evidence / revert |
+|---|---|---|---|---|
+| `max_wal_size` | **16 GB** (was 1 GB) | P1, reload-class, `ALTER SYSTEM` + `pg_reload_conf()` @ 18:43 UTC | **APPLIED — canary pending** (perf win unverified) | `reports/canary-P1-max_wal_size-2026-06-16.md`; revert `reports/rollback-P1-max_wal_size-2026-06-16.sql` |
+| `shared_preload_libraries` | **`pg_stat_statements`** (was empty) | R1, restart-class, `ALTER SYSTEM` + restart @ 19:14 UTC | **APPLIED — verified loaded** (view queryable; defaults `max=5000`, `track=top`) | revert: `ALTER SYSTEM RESET shared_preload_libraries` + restart |
 
 ## Deliberate performance / WAL tuning (diverges from PostgreSQL stock defaults)
 
@@ -27,7 +34,7 @@ observations**, not yet validated by a tuning report — the first run is plan-o
 | parameter | value | note |
 |---|---|---|
 | `max_connections` | 100 | stock default; `postmaster` context. Peak usage observed: 19/100 client backends. |
-| `max_wal_size` | 1 GB | stock default — but checkpoints are ~90% WAL-triggered (`checkpoints_req 3402` vs `checkpoints_timed 390`), a candidate bottleneck. |
+| `max_wal_size` | ~~1 GB~~ → 16 GB | was stock default; **changed this session** (see Applied changes) to address ~90% WAL-triggered checkpoints. |
 | `min_wal_size` | 80 MB | stock default. |
 
 ## Debian/Ubuntu packaging defaults (not deliberate tuning)
