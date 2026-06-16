@@ -31,6 +31,24 @@ the evidence behind each entry, and `git log` for granular history.
   `reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_PLAN_CLAUDE_OPUS_4_8_2026-06-16.md`,
   `reports/canary-P1-max_wal_size-2026-06-16.md`.
 
+### Diagnostic tooling (ancillary; reload-class, no restart)
+- **`auto_explain` enabled** via `session_preload_libraries` (built-in contrib, no
+  install): logs plans for statements > 500 ms (`log_analyze=off` to avoid per-stmt
+  overhead; `log_nested_statements=on`). New connections pick it up.
+- **Diagnosis logging on:** `log_lock_waits=on` (striatum lock contention),
+  `log_temp_files=0` (catch `work_mem` spills — feeds the deferred work_mem re-eval).
+  `log_checkpoints` was already on.
+- **Extensions created** (no preload needed): `hypopg` 1.4 (hypothetical-index testing
+  for the deferred index/planner work) + `pgstattuple` in `postgres`/`striatum_daemon`/
+  `hippo`/`engram`; `pg_buffercache` in `postgres`.
+- **Installed, pending next restart** (need `shared_preload_libraries`):
+  `pg_qualstats` 2.1, `pg_stat_kcache` 2.2.3 (libs on disk). Enable by adding both to
+  `shared_preload_libraries` at the next restart window, then `CREATE EXTENSION` each.
+- Revert for all of the above: `ALTER SYSTEM RESET <param>` + reload (default prior).
+- **Deferred (not easy / needs infra):** backups — pgBackRest/WAL-G → Garage. Requires
+  reconfiguring Garage onto the 10 TB spinning disk (`/dev/sda`); then replicate Garage
+  off-site. `archive_mode` still `off` — no PITR yet. Planned, not done.
+
 ### Provenance / repo
 - First read-only Preflight inventory captured (`CLAUDE_OPUS_4_8`, role `halbritt`,
   non-superuser, peer auth): `inventory/2026-06-16/` — full `pg_settings` dump (343 rows,

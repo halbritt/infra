@@ -17,7 +17,17 @@ ALTER SYSTEM SET max_wal_size = '16GB';
 -- R1: enable query-level signal (pg_stat_statements). Restart-class.
 -- VERIFIED 2026-06-16: view queryable post-restart. Revert: RESET + restart.
 -- reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_PLAN_CLAUDE_OPUS_4_8_2026-06-16.md
+-- PENDING (next restart): add pg_qualstats + pg_stat_kcache (pkgs installed, libs on disk):
+--   ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements,pg_qualstats,pg_stat_kcache';
 ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
+
+-- Observability / diagnosis (2026-06-16, reload-class, applied; revert = RESET each):
+ALTER SYSTEM SET session_preload_libraries = 'auto_explain';
+ALTER SYSTEM SET auto_explain.log_min_duration = '500ms';  -- plans for slow stmts only
+ALTER SYSTEM SET auto_explain.log_analyze = off;           -- off: log_analyze instruments every stmt
+ALTER SYSTEM SET auto_explain.log_nested_statements = on;  -- see plans inside SD functions
+ALTER SYSTEM SET log_lock_waits = on;                      -- diagnose striatum lock contention
+ALTER SYSTEM SET log_temp_files = 0;                       -- catch work_mem spills (feeds re-eval)
 ```
 
 ## Frozen — never weakened without a recorded waiver
