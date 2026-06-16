@@ -16,7 +16,7 @@ observations**. Changes applied this session via `ALTER SYSTEM`
 
 | parameter | value | change | status | evidence / revert |
 |---|---|---|---|---|
-| `max_wal_size` | **16 GB** (was 1 GB) | P1, reload-class, `ALTER SYSTEM` + `pg_reload_conf()` @ 18:43 UTC | **APPLIED — canary pending** (perf win unverified) | `reports/canary-P1-max_wal_size-2026-06-16.md`; revert `reports/rollback-P1-max_wal_size-2026-06-16.sql` |
+| `max_wal_size` | **16 GB** (was 1 GB) | P1, reload-class, `ALTER SYSTEM` + `pg_reload_conf()` @ 18:43 UTC | **APPLIED — VERIFIED** (loaded canary: 0 req / 6 timed checkpoints; was 89.7% WAL-triggered) | `reports/canary-P1-max_wal_size-2026-06-16.md`; revert `reports/rollback-P1-max_wal_size-2026-06-16.sql` |
 | `shared_preload_libraries` | **`pg_stat_statements`** (was empty) | R1, restart-class, `ALTER SYSTEM` + restart @ 19:14 UTC | **APPLIED — verified loaded** (view queryable; defaults `max=5000`, `track=top`) | revert: `ALTER SYSTEM RESET shared_preload_libraries` + restart |
 
 ## Deliberate performance / WAL tuning (diverges from PostgreSQL stock defaults)

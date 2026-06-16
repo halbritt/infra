@@ -4,11 +4,20 @@ The canonical GUC set `proximal:5432` should run, as `ALTER SYSTEM` statements.
 The live config converges to this; drift from it is a finding. Every line carries
 a rationale and points at the report that justified it.
 
-> Empty until the first reviewed change lands. Do not add a line here without a
-> verification record under `reports/` and a matching pre-written revert.
+Verified changes land here once a `reports/` record confirms them and a revert
+exists. Live config should converge to this set.
 
 ```sql
--- ALTER SYSTEM SET <param> = '<value>';  -- rationale; reports/<file>
+-- P1: ~90% WAL-triggered checkpoints (req 3445 vs timed 393) -> time-driven.
+-- VERIFIED 2026-06-16: loaded-window canary = 0 requested / 6 timed checkpoints,
+-- 70 MB WAL/window << 16 GB. reports/canary-P1-max_wal_size-2026-06-16.md
+-- Revert: reports/rollback-P1-max_wal_size-2026-06-16.sql
+ALTER SYSTEM SET max_wal_size = '16GB';
+
+-- R1: enable query-level signal (pg_stat_statements). Restart-class.
+-- VERIFIED 2026-06-16: view queryable post-restart. Revert: RESET + restart.
+-- reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_PLAN_CLAUDE_OPUS_4_8_2026-06-16.md
+ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
 ```
 
 ## Frozen — never weakened without a recorded waiver

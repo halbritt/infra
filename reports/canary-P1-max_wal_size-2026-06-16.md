@@ -39,10 +39,29 @@ Counters are monotonic and dominated by 37 h of pre-change history, so measure t
   higher than estimated; re-measure a busy-window WAL rate and re-size, or run the
   revert bundle and log to `known-bad.md`.
 
-## Status: PENDING representative window
-At reload the instance was being quiesced (≈10–11 client backends, striatum daemon
-partly torn down — note the unrelated pre-existing `daemon authority secret missing`
-app errors). A meaningful checkpoint-ratio delta needs the normal write workload to
-resume and run for a representative period (hours, ideally spanning a peak). Until
-then the change is **applied but unverified**; `baseline.md` / `desired.md` are NOT
-updated yet, and the revert bundle remains staged.
+## Status: VERIFIED — confirmed 2026-06-16
+
+Workload resumed (un-quiesced ~19:5x). Two independent observations of the
+requested-checkpoint collapse:
+
+1. **Interim (77 min since reload, mostly quiet):** `checkpoints_timed +29`,
+   `checkpoints_req +1` — vs ~115 requested expected at the pre-P1 rate.
+2. **Loaded window (~30 min, anchor `lsn B2/4EB61378`):** **6 timed, 0 requested
+   checkpoints → 0% WAL-triggered** (baseline 89.7%); **70 MB** WAL generated over
+   the window — ≪ 16 GB.
+
+**Arithmetic backs it:** even the historical burst rate (~25 MB/s) generates only
+~7.5 GB per 300 s `checkpoint_timeout`, under the 16 GB ceiling — so checkpoints are
+now timeout-paced, not WAL-paced, across the observed load envelope.
+**RTO note:** because checkpoints are time-driven, crash-recovery WAL is bounded by
+one `checkpoint_timeout` interval (tens of MB), so the larger ceiling does not extend
+recovery in practice — the flagged RTO risk is not realized.
+
+Caveat: the canary window (70 MB / 30 min) was lighter than the historical peak; the
+verdict rests on both runs **and** the headroom arithmetic above, not a reproduced
+peak-burst window.
+
+**Verdict: keep.** Promoted to `baseline.md` (verified) and `desired.md`; revert
+bundle retained. `bgwriter buffers_clean` still 0 but `buffers_backend` growth is now
+low-pressure — see plan (bgwriter deferred; P2 `wal_compression` no longer needed,
+WAL volume is trivial).

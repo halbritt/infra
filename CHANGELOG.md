@@ -21,9 +21,13 @@ the evidence behind each entry, and `git log` for granular history.
 - **`max_wal_size` 1 GB → 16 GB** (P1). Staged via `ALTER SYSTEM`, made live with
   `pg_reload_conf()` at **18:43:20 UTC** (reload-class, no restart, no dropped
   connections). Addresses ~90% WAL-triggered checkpoints (`checkpoints_req 3445` vs
-  `timed 393`). **Status: APPLIED, canary pending** — checkpoint-ratio delta needs a
-  representative write window. Revert: `reports/rollback-P1-max_wal_size-2026-06-16.sql`
-  (drift-guarded). Plan/canary:
+  `timed 393`). **Status: APPLIED, VERIFIED** — loaded-window canary (2026-06-16):
+  6 timed / 0 requested checkpoints, 70 MB WAL ≪ 16 GB; was 89.7% WAL-triggered.
+  Promoted to `baseline.md` + `desired.md`. **P2 (`wal_compression`) closed — not
+  needed** (WAL volume trivial; P1 resolved the bottleneck). bgwriter deferred (low
+  pressure once checkpoints are time-driven). Revert:
+  `reports/rollback-P1-max_wal_size-2026-06-16.sql` (drift-guarded, retained).
+  Plan/canary:
   `reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_PLAN_CLAUDE_OPUS_4_8_2026-06-16.md`,
   `reports/canary-P1-max_wal_size-2026-06-16.md`.
 
