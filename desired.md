@@ -14,12 +14,12 @@ exists. Live config should converge to this set.
 -- Revert: reports/rollback-P1-max_wal_size-2026-06-16.sql
 ALTER SYSTEM SET max_wal_size = '16GB';
 
--- R1: enable query-level signal (pg_stat_statements). Restart-class.
--- VERIFIED 2026-06-16: view queryable post-restart. Revert: RESET + restart.
--- reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_PLAN_CLAUDE_OPUS_4_8_2026-06-16.md
--- PENDING (next restart): add pg_qualstats + pg_stat_kcache (pkgs installed, libs on disk):
---   ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements,pg_qualstats,pg_stat_kcache';
-ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
+-- Query-level signal: pg_stat_statements (R1) + pg_qualstats + pg_stat_kcache.
+-- Restart-class. APPLIED 2026-06-16 (all three loaded; extensions created).
+-- ⚠️ DO NOT set this multi-value via `ALTER SYSTEM SET = 'a,b,c'` — it double-quotes
+--    the comma-string as ONE element and the server won't boot (see known-bad.md).
+--    It currently lives in postgresql.auto.conf as the plain comma form below.
+shared_preload_libraries = 'pg_stat_statements,pg_qualstats,pg_stat_kcache'
 
 -- Observability / diagnosis (2026-06-16, reload-class, applied; revert = RESET each):
 ALTER SYSTEM SET session_preload_libraries = 'auto_explain';
@@ -31,8 +31,7 @@ ALTER SYSTEM SET log_temp_files = 0;                       -- catch work_mem spi
 
 -- Backups / PITR (pgBackRest -> nvr/pg-backups). See backups.md.
 ALTER SYSTEM SET archive_command = 'pgbackrest --stanza=proximal archive-push %p';  -- applied (reload)
--- PENDING (next restart, bundled with the shared_preload_libraries change above):
---   ALTER SYSTEM SET archive_mode = on;
+ALTER SYSTEM SET archive_mode = on;  -- APPLIED 2026-06-16 (restart); PITR live, check passed
 ```
 
 ## Frozen — never weakened without a recorded waiver

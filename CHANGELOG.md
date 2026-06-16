@@ -41,9 +41,10 @@ the evidence behind each entry, and `git log` for granular history.
 - **Extensions created** (no preload needed): `hypopg` 1.4 (hypothetical-index testing
   for the deferred index/planner work) + `pgstattuple` in `postgres`/`striatum_daemon`/
   `hippo`/`engram`; `pg_buffercache` in `postgres`.
-- **Installed, pending next restart** (need `shared_preload_libraries`):
-  `pg_qualstats` 2.1, `pg_stat_kcache` 2.2.3 (libs on disk). Enable by adding both to
-  `shared_preload_libraries` at the next restart window, then `CREATE EXTENSION` each.
+- **`pg_qualstats` 2.1 + `pg_stat_kcache` 2.2.3 — ENABLED** (2026-06-16): added to
+  `shared_preload_libraries` (via the bundled restart) and `CREATE EXTENSION`'d in
+  postgres + template1. Views live; query-level predicate stats + real OS CPU/I-O
+  attribution now available on top of `pg_stat_statements`.
 - Revert for all of the above: `ALTER SYSTEM RESET <param>` + reload (default prior).
 ### Backups / PITR (pgBackRest → ZFS; see `backups.md`)
 - Decided **against** routing backups through Garage — Garage has no storage classes /
@@ -54,10 +55,18 @@ the evidence behind each entry, and `git log` for granular history.
   `archive_command` **staged** (reload-applied, inert until `archive_mode=on`).
   Discovered `/dev/sda` is a live ZFS pool `nvr` (already holds `nvr/engram-backups`) —
   **not** wiped; added a dataset instead.
-- ⏳ **PENDING one restart** to flip `archive_mode=on` (postmaster-context) — **bundled
-  with** the pending `pg_qualstats`/`pg_stat_kcache` `shared_preload_libraries` change
-  so it's a single restart. Then `stanza check` + first full backup. Runbook in
-  `backups.md`. Encryption not yet enabled (recommended before off-site replication).
+- ✅ **Bundled restart done (22:08 UTC):** `archive_mode=on` + `shared_preload_libraries
+  = pg_stat_statements,pg_qualstats,pg_stat_kcache`. `pgbackrest check` passed (WAL
+  pushed to repo) → **PITR live**. `pg_qualstats`/`pg_stat_kcache` extensions created
+  (postgres + template1). **First full backup done** (`20260616-220907F`, ~3 min):
+  37.9 GB database → **3.6 GB** repo (zstd ~10.5×), stanza status `ok`, retention
+  applied. Encryption not yet enabled (recommended before off-site replication).
+- ⚠️ **Incident during the restart** (~1–2 min downtime, no corruption — clean
+  shutdown): `ALTER SYSTEM SET shared_preload_libraries='a,b,c'` mangled the comma-list
+  into one double-quoted element → `FATAL: could not access file "…"`, server wouldn't
+  boot. Recovered by hand-fixing `postgresql.auto.conf` to the plain comma form +
+  restart. Logged in `known-bad.md` (don't set multi-value `GUC_LIST_QUOTE` params via
+  `ALTER SYSTEM`).
 - Off-site replication (operator): `zfs send` the `nvr` pool to a remote site.
 
 ### Provenance / repo

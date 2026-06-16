@@ -24,11 +24,15 @@ PostgreSQL 16/main ──pgBackRest──▶ /nvr/pg-backups  (ZFS dataset on po
 
 ## Status (2026-06-16)
 
-- ✅ Dataset, pgBackRest 2.50 installed, config written, **stanza created** (repo
-  initialized on `/nvr/pg-backups`), `archive_command` **staged** (reload-applied).
-- ⏳ **PENDING one restart** — `archive_mode` (off→on) is postmaster-context. Bundled
-  with the pending `pg_qualstats`/`pg_stat_kcache` `shared_preload_libraries` change so
-  it's a single restart. No backup exists yet (`info` → "no valid backups").
+- ✅ Dataset, pgBackRest 2.50 installed, config written, **stanza created**.
+- ✅ **PITR live (2026-06-16 22:08 UTC):** `archive_mode=on` (bundled restart with the
+  `pg_qualstats`/`pg_stat_kcache` `shared_preload_libraries` change), `pgbackrest check`
+  passed (WAL archived to repo); **first full backup done** (`20260616-220907F`):
+  37.9 GB DB → 3.6 GB repo (zstd ~10.5×), status `ok`. WAL now streams to
+  `/nvr/pg-backups/archive/` on every segment switch.
+- ⚠️ The bundled restart hit an `ALTER SYSTEM` list-quoting bug (~1–2 min downtime);
+  see `known-bad.md`. Recovered by hand-fixing `postgresql.auto.conf`.
+- ⏭️ Still to do: enable a recurring schedule (below); add encryption before off-site.
 
 ## Activation runbook (next restart window — bundles all pending restart-class changes)
 
