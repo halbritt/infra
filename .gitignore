@@ -1,0 +1,13 @@
+# Values, never credentials — keep all secret-bearing material out of this repo.
+.pgpass
+*.pgpass
+pg_hba.conf
+.env
+*.env
+.envrc
+*.dsn
+*secret*
+*credential*
+id_rsa*
+*.pem
+*.key
