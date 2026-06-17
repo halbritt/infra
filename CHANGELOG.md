@@ -35,7 +35,8 @@ pgtest-harness cruft** — worth flagging to the app team:
 - **App-side follow-ups (halbritt/striatum):** the `repo_event_chain_heads` grant to the
   SD-function owner should be explicit in the schema (don't rely on PG16 inherited membership);
   the pgtest harness must drop its per-run roles + ephemeral DBs (37k roles is a real upgrade/
-  catalog hazard). Optional: `REINDEX` the two HNSW indexes for pgvector 0.8.
+  catalog hazard). pgvector HNSW indexes **reindexed for 0.8** (engram 44 MB/4.1 s, hippo
+  350 MB/11.9 s, `REINDEX … CONCURRENTLY`, 0 invalid left).
 - Evidence: full as-run timeline + commands in `reports/PG17_UPGRADE_ASRUN_2026-06-17.md`;
   plan + lessons in `reports/PG17_UPGRADE_PLAN_2026-06-17.md`.
 

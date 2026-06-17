@@ -87,6 +87,8 @@ was parked.) Drop 16/main only once 17 is trusted (`pg_dropcluster 16 main` / th
   SD-function owner) — don't rely on PG16 inherited membership; it breaks on major upgrade.
 - **pgtest harness must clean up** its per-run roles and ephemeral databases. 37k roles is a
   real catalog/upgrade hazard (and was the entire first-attempt downtime).
-- Optional DB polish: `REINDEX` the two pgvector HNSW indexes (engram 44 MB, hippo 350 MB) for
-  0.8; `ALTER DATABASE`-level `transaction_timeout` could later be scoped per-role if 120 s is
-  ever too tight for a legitimate long job.
+- ✅ **Done 2026-06-17 22:1x:** `REINDEX INDEX CONCURRENTLY` the two pgvector HNSW indexes for
+  0.8 (engram 44 MB / 4.1 s, hippo 350 MB / 11.9 s, `maintenance_work_mem=2GB`); 0 invalid
+  indexes left.
+- `ALTER DATABASE`-level `transaction_timeout` could later be scoped per-role if 120 s is ever
+  too tight for a legitimate long job.
