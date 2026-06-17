@@ -2,10 +2,29 @@
 
 Notable changes to the **proximal** PostgreSQL cluster's configuration and to this
 provenance repo. Newest first. Config changes record the live cluster (`proximal:5432`,
-`system_identifier 7628053153555146077`, PG 16.14); see `reports/` and `inventory/` for
-the evidence behind each entry, and `git log` for granular history.
+`system_identifier 7652478211804703267`, PG 17.10 — was `7628053153555146077`/16.14 before
+the 2026-06-16/17 pg_upgrade); see `reports/` and `inventory/` for the evidence behind each
+entry, and `git log` for granular history.
 
 ## 2026-06-17
+
+### Verified the 7 mined best-practice recommendations (read-only) — no change applied
+Worked the candidate list from `SUPABASE_PG_BEST_PRACTICES_MINED_2026-06-17.md`,
+`SELECT`/`EXPLAIN` only. Record: `reports/RECS_VERIFICATION_2026-06-17.md`. Outcomes:
+- **#5 timeouts — PASS:** `lock_timeout=3s`, `idle_in_transaction_session_timeout=15s`,
+  `transaction_timeout=120s` (PG17, survived), `statement_timeout=600s` all DB-scoped on
+  `striatum_daemon`. No re-assert needed.
+- **#6 HNSW reindex — DONE** (commit `c0269b7`): both HNSW indexes present on pgvector 0.8.2.
+- **#2 work_mem — FALSIFIED:** 0 temp spills, peak concurrency far below ceiling → non-lever
+  (re-confirms `desired.md`). **#3 unindexed-FK premise — FALSIFIED (dormant):** 41 truly-
+  uncovered FKs (the skill's `indkey[0]` query over-reports at 62; corrected with
+  `string_to_array`), all `NO ACTION` with **0 parent deletes** → no active cost; raise
+  upstream before retention/GC ships. Annotated the bug in the mined report.
+- **#1 baseline — partial:** hot path sub-ms/100%-cached OLTP confirmed; full query-id
+  capture blocked until a `pg_monitor` read-only role exists. **#4 partitioning** confirmed
+  as a future upstream lead; **#7** is app-side.
+- Refreshed `connection.md` + this preamble for the post-upgrade reality (PG17.10, new sysid,
+  current DB list).
 
 ### MAJOR UPGRADE EXECUTED: PostgreSQL 16.14 → 17.10 (+ pgvector 0.8.2)
 Live cluster upgraded via `pg_upgradecluster -m upgrade 16 main` (copy mode). **16/main is

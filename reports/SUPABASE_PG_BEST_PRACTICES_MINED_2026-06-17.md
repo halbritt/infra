@@ -116,6 +116,12 @@ needs the instrument's falsify-before-apply treatment:
 3. **FK-index audit** (`schema-foreign-key-indexes`): run the skill's
    `pg_constraint`/`pg_index` gap query against `striatum_daemon` to confirm no
    unindexed FK is doing seq scans on cascades — corroborates/extends DF-2.
+   **⚠️ VERIFIED 2026-06-17 — see `RECS_VERIFICATION_2026-06-17.md`:** the skill's
+   `indkey[0]`-only query *over-reports* (flags 62; the 0-based `::smallint[]` "fix"
+   is worse at 90). Corrected `string_to_array(indkey::text,' ')` left-prefix test =
+   **41** truly-uncovered, only ~5 material. **All are `NO ACTION` (not CASCADE) and
+   parents see 0 deletes / no key-updates → dormant, no active cost.** Raise upstream
+   before any retention/GC ships; do not treat as a live fire.
 4. **`statement_timeout` discipline** (`lock-short-transactions`): the daemon's
    600 s baseline + 60 s per-session is lax vs the skill's 30 s example; the real
    fix is app-side txn scoping (#198/#355), but a tighter writer-path
