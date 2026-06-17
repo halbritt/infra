@@ -26,14 +26,16 @@ and `token_dashboard` (~8–10 MB each), `ob1`, `engram_test` + `engram_test_wor
 
 | role | use | notes |
 |---|---|---|
-| `halbritt` | inventory + admin | non-superuser; `createrole`+`createdb`; **peer auth** on the socket (no password). Used for this read-only run. Lacks `pg_read_all_settings` (cannot read `data_directory`/`sourcefile`) and is not a superuser. |
+| `halbritt` | inventory + admin | non-superuser; `createrole`+`createdb`; **peer auth** on the socket (no password). Used for inventory/read-only runs. **Now inherits `pg_monitor`** (via `proximal_monitor`, 2026-06-17) → reads full `pg_stat_*`, `pg_read_all_settings`, `pg_read_all_stats`. Still not a superuser (apply phase needs `postgres`). |
+| `proximal_monitor` | read-only observability | `NOLOGIN` capability role, member of `pg_monitor`; granted into `halbritt`. No password. Created 2026-06-17 so inventory runs read full stats/settings without superuser. Revert: `REVOKE proximal_monitor FROM halbritt; DROP ROLE proximal_monitor;`. |
 | `striatumd_rw` | striatum daemon app role | read/write against `striatum_daemon` (7 active backends observed). |
+| `postgres` | superuser | OS-account peer auth: `sudo -u postgres psql`. The apply-phase / DDL role. |
 
 For the inventory/evidence-gate phase, `halbritt` over the local socket is the
-least-privileged path that can read `pg_settings`/`pg_stat_*`. A dedicated read-only
-monitoring role (member of `pg_read_all_settings`, `pg_read_all_stats`,
-`pg_monitor`) would let a future run read `data_directory`, `sourcefile`, and full
-`pg_stat_*` without superuser — worth creating before the next run, but out of scope
-for this read-only session. The apply phase needs a role that can run
+least-privileged path that can read `pg_settings`/`pg_stat_*`. The dedicated read-only
+monitoring role `proximal_monitor` (member of `pg_monitor`) **was created 2026-06-17**
+and granted into `halbritt`, so inventory runs now read `data_directory`, `sourcefile`,
+and full `pg_stat_*` (incl. other roles' query text in `pg_stat_statements`) without
+superuser. The apply phase needs a role that can run
 `ALTER SYSTEM` + `pg_reload_conf()` (i.e. superuser or `pg_signal_backend` +
 `ALTER SYSTEM` privilege); `halbritt` is **not** that role today.

@@ -15,7 +15,7 @@ real structural gaps (#3/#4) are dormant today and are striatumd-owned schema �
 
 | # | recommendation | verdict | one-line result |
 |---|---|---|---|
-| 1 | first pg_stat_statements baseline | **CAPTURED (partial)** | hot path is sub-ms / 100%-cached OLTP; daemon query text masked (no `pg_monitor`) |
+| 1 | first pg_stat_statements baseline | **COMPLETE** | created `proximal_monitor` role → de-masked the daemon hot path (heartbeats + `append_event_row`) |
 | 2 | re-measure work_mem headroom | **FALSIFIED → no change** | 0 temp spills, peak concurrency far below ceiling |
 | 3 | unindexed-FK audit | **FALSIFIED (dormant) + query bug** | 41 truly-uncovered (not 62/90); all NO ACTION, **0 parent deletes** → no active cost |
 | 4 | partitioning candidates | **CONFIRMED as future lead** | events 13.8M/18GB, audit_log 17.1M/8.6GB; append-only; upstream |
@@ -25,20 +25,34 @@ real structural gaps (#3/#4) are dormant today and are striatumd-owned schema �
 
 ---
 
-## #1 — pg_stat_statements baseline — CAPTURED (partial)
+## #1 — pg_stat_statements baseline — COMPLETE
 
 `pg_stat_statements` 1.11 is live in `striatum_daemon` (also 1.10 in `postgres`).
 `stats_reset = 2026-06-17 21:23:52 UTC`; **4,915** distinct statements, **686,402** calls.
-Top statements by total time are ~1 ms mean, **100% `shared_blks_hit`**, 100k+ calls each —
-a call-volume-dominated OLTP firehose, identical in shape to the
-`PROXIMAL_16_MAIN_..._REPORT` workload characterization. The rare slow statements (6.4 s ×5,
-11.9 s ×1) are low-call one-offs (housekeeping / ad-hoc), not hot-path.
 
-⚠️ **Limitation:** `halbritt` is not in `pg_monitor`/`pg_read_all_stats`, so the daemon's
-(`striatumd_rw`) `queryid` and `query` text are masked — the high-call rows show stats but
-no identity. A full #1 baseline needs a read-only monitoring role (already recommended in
-`connection.md`). The existing tuning report captured the identified hot path on
-2026-06-17 from a privileged angle; this pass corroborates the *shape*, not new query IDs.
+**Resolved the masking limitation:** created `proximal_monitor` (`NOLOGIN`, member of
+`pg_monitor`) and granted it into `halbritt`, so the daemon's (`striatumd_rw`) query text is
+now visible without superuser. Created via `sudo -u postgres`; recorded in `connection.md`.
+De-masked top of the hot path (by total time):
+
+| query | calls | mean ms | total ms |
+|---|---|---|---|
+| `UPDATE process_supervisor_pointers SET updated_at …` | 517,450 | 1.31 | 678,025 |
+| `SELECT ps.supervisor_id, ps.run_id, … (supervisor read)` | 520,395 | 1.10 | 571,747 |
+| `SELECT striatumd.append_event_row(…)` | 518,177 | 0.95 | 493,790 |
+| `UPDATE process_supervisors SET heartbeat_at …` | 517,456 | 0.63 | 325,827 |
+| `UPDATE daemon_supervisors SET heartbeat_at …` | 517,448 | 0.59 | 307,294 |
+| `SELECT pg_advisory_xact_lock(hashtext($1))` | 720 | 17.49 | 12,596 |
+
+A call-volume-dominated OLTP firehose: supervisor heartbeats (pointers + supervisors +
+daemon_supervisors ≈ 1.5M calls/window) and `append_event_row`, all sub-2 ms / ~100% cached —
+identical in shape to the `PROXIMAL_16_MAIN_..._REPORT` characterization. The
+`pg_advisory_xact_lock` calls (17 ms mean) are the slowest in the hot set — the per-repo
+chain serialization points (intentional; see the mined report's lock-skip-locked note).
+**Observation:** `process_supervisor_pointers` is the #1 total-time consumer (517k churned
+`updated_at` UPDATEs) and is bloated (252 MB / 1,451 live rows) — the `fillfactor=80` +
+aggressive-autovacuum tuning in `desired.md` (applied 2026-06-17) targets exactly this; worth
+a follow-up check that autovacuum is keeping pace.
 **Reset:** not performed — `pg_stat_statements_reset()` discards the accumulated window the
 2026-06-17 tuning analysis relied on. Reset is an explicit operator choice, not done here.
 
@@ -142,5 +156,6 @@ Nothing to apply to `postgresql.conf`/`desired.md` from this pass. #5 passes, #6
 #2 and #3 are falsified as non-levers for the current workload, and #3's audit query should
 be corrected wherever it's reused (it over-reports by ~50%). The two genuine structural
 shapes (uncovered FKs + partitioning) are dormant, striatumd-owned, and belong upstream —
-ideally landed before retention/GC introduces parent-row deletes. Also surfaced: a
-read-only monitoring role (`pg_monitor`) is the prerequisite for a *complete* #1 baseline.
+ideally landed before retention/GC introduces parent-row deletes. The one cluster change made
+this session was additive and read-only by nature: the `proximal_monitor` role (so #1 could
+be completed without superuser); recorded in `connection.md`.

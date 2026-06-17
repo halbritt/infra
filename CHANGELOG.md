@@ -20,11 +20,15 @@ Worked the candidate list from `SUPABASE_PG_BEST_PRACTICES_MINED_2026-06-17.md`,
   uncovered FKs (the skill's `indkey[0]` query over-reports at 62; corrected with
   `string_to_array`), all `NO ACTION` with **0 parent deletes** → no active cost; raise
   upstream before retention/GC ships. Annotated the bug in the mined report.
-- **#1 baseline — partial:** hot path sub-ms/100%-cached OLTP confirmed; full query-id
-  capture blocked until a `pg_monitor` read-only role exists. **#4 partitioning** confirmed
-  as a future upstream lead; **#7** is app-side.
+- **#1 baseline — COMPLETE:** created role **`proximal_monitor`** (`NOLOGIN`, member of
+  `pg_monitor`, granted into `halbritt`) so inventory runs read full stats without superuser;
+  de-masked the daemon hot path — supervisor heartbeats (`process_supervisor_pointers`/
+  `process_supervisors`/`daemon_supervisors` UPDATEs, ~1.5M calls/window) + `append_event_row`,
+  all sub-2 ms / 100% cached. **#4 partitioning** confirmed as a future upstream lead;
+  **#7** is app-side.
 - Refreshed `connection.md` + this preamble for the post-upgrade reality (PG17.10, new sysid,
-  current DB list).
+  current DB list, new `proximal_monitor`/`postgres` rows). Set AGENTS.md convention to
+  **commit and push often**.
 
 ### MAJOR UPGRADE EXECUTED: PostgreSQL 16.14 → 17.10 (+ pgvector 0.8.2)
 Live cluster upgraded via `pg_upgradecluster -m upgrade 16 main` (copy mode). **16/main is

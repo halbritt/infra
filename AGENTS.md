@@ -53,4 +53,6 @@ primary, `wal_level`) and **reliability blockers outrank performance wins**.
 - One repo per host, named `<system>-pg` (this one is `proximal-pg`). If a host
   ever runs more than one cluster, nest the per-instance files under
   `instances/<port-or-name>/`.
-- Commit after every change. This repo's value is its history.
+- **Commit and push often.** This repo's value is its history — commit after every
+  change and push to `origin` so the rest of the fleet sees it. Never end a turn with
+  a dirty tree or unpushed commits.
