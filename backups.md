@@ -10,17 +10,47 @@ existing `nvr/engram-backups` pattern; the pool is then replicated off-site.
 PostgreSQL 16/main ──pgBackRest──▶ /nvr/pg-backups  (ZFS dataset on pool `nvr`)
    archive_command: pgbackrest --stanza=proximal archive-push %p   (WAL stream → PITR)
                                           │
-                                          └── off-site: zfs send nvr/* ▶ remote  (operator)
+   /nvr/engram-backups ──┐                │
+                         └──restic (encrypted)──▶ gs://proximal-backups  (GCS Nearline, off-site)
 ```
 
 - **Repo:** `/nvr/pg-backups` — ZFS dataset, `recordsize=1M`, `atime=off`,
   `compression=off` (pgBackRest compresses with zstd). Owned `postgres:postgres 0750`.
 - **Stanza:** `proximal` → `pg1-path=/var/lib/postgresql/16/main`, socket auth as `postgres`.
 - **Config:** `/etc/pgbackrest/pgbackrest.conf` (retention: 2 full / 6 diff; `compress-type=zst`).
-- **Encryption:** **none** (matches `nvr/engram-backups`). For the off-site copy, add
-  either ZFS-native encryption on the dataset (raw `zfs send` stays encrypted) or
-  pgBackRest `repo-cipher-type=aes-256-cbc` + `repo-cipher-pass`. Recommended before
-  replicating off-site; not yet enabled.
+- **Encryption:** local on-disk repo on `nvr` is **unencrypted** (matches
+  `nvr/engram-backups`). The **off-site** copy IS encrypted — restic encrypts
+  client-side before upload. Local at-rest encryption (ZFS-native dataset) remains
+  optional if the physical box matters.
+
+## Off-site (restic → GCS Nearline)
+
+restic backs up the local backup repos to Google Cloud Storage, encrypted client-side.
+
+- **Repo:** `gs:proximal-backups:/` → bucket `gs://proximal-backups`, **Nearline**,
+  us-west1, project `heath-stuff`. (Nearline over Coldline: at this volume the storage
+  saving is pennies and Coldline's 90-day min-duration penalises restic's prune churn;
+  Nearline's 30-day min fits better.)
+- **Backs up:** `/nvr/pg-backups` + `/nvr/engram-backups`.
+- **Auth:** service account `restic-proximal@heath-stuff` (Storage Object Admin scoped
+  to this bucket only). Key + repo password + env are **root-only on the box, NOT in
+  git**: `/etc/restic/gcs-sa.json`, `/etc/restic/password`, `/etc/restic/proximal.env`.
+- **Schedule:** `restic-backup.timer` daily 02:30 (`backup` + `forget` keep 7d/4w/6m);
+  `restic-prune.timer` monthly (`prune` + `check`).
+- **First snapshot:** `e74b5e2a` (2026-06-17), 6229 files, **5.83 GiB stored**.
+
+> ⚠️ **Disaster recovery needs the restic password.** It lives at `/etc/restic/password`
+> AND must be saved off-box (password manager). If the box is gone, you need the password
+> + GCS access to read the bucket — losing the password makes the off-site repo
+> unrecoverable.
+
+### restic restore quick-reference
+```bash
+set -a; source /etc/restic/proximal.env          # as root
+restic snapshots                                  # list
+restic restore latest --target /var/tmp/restore --include /nvr/pg-backups
+# then point pgBackRest at the restored repo, or pgbackrest restore for PITR.
+```
 
 ## Status (2026-06-16)
 
@@ -32,7 +62,11 @@ PostgreSQL 16/main ──pgBackRest──▶ /nvr/pg-backups  (ZFS dataset on po
   `/nvr/pg-backups/archive/` on every segment switch.
 - ⚠️ The bundled restart hit an `ALTER SYSTEM` list-quoting bug (~1–2 min downtime);
   see `known-bad.md`. Recovered by hand-fixing `postgresql.auto.conf`.
-- ⏭️ Still to do: enable a recurring schedule (below); add encryption before off-site.
+- ✅ **Off-site live (2026-06-17):** restic → GCS Nearline (encrypted), daily timer
+  (see Off-site section). First snapshot `e74b5e2a`, 5.83 GiB.
+- ⏭️ Still to do: a **recurring pgBackRest schedule** (daily diff / weekly full) so new
+  backups actually get produced locally — restic only ships whatever is in
+  `/nvr/pg-backups`. Optional: local at-rest encryption.
 
 ## Activation runbook (next restart window — bundles all pending restart-class changes)
 

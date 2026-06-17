@@ -67,7 +67,17 @@ the evidence behind each entry, and `git log` for granular history.
   boot. Recovered by hand-fixing `postgresql.auto.conf` to the plain comma form +
   restart. Logged in `known-bad.md` (don't set multi-value `GUC_LIST_QUOTE` params via
   `ALTER SYSTEM`).
-- Off-site replication (operator): `zfs send` the `nvr` pool to a remote site.
+- **Off-site (2026-06-17): restic → GCS Nearline.** restic 0.16.4 backs up
+  `/nvr/pg-backups` + `/nvr/engram-backups` to `gs://proximal-backups` (Nearline,
+  us-west1, project `heath-stuff`), **encrypted client-side**. SA `restic-proximal`
+  (Storage Object Admin scoped to the bucket); creds + repo password root-only at
+  `/etc/restic/` (NOT in git). Timers: daily backup (`forget` 7d/4w/6m) + monthly
+  `prune`+`check`. First snapshot `e74b5e2a`: 5.83 GiB. Chose Nearline over Coldline —
+  storage saving is pennies at this volume and Coldline's 90-day min penalises restic's
+  prune churn (Nearline = 30-day). restic encryption also covers the earlier
+  "encrypt before off-site" gap. See `backups.md`.
+- ⏭️ Still open: a recurring **pgBackRest** schedule (so fresh backups are produced
+  locally for restic to ship); `zfs send` remains an alternative off-site path.
 
 ### Provenance / repo
 - First read-only Preflight inventory captured (`CLAUDE_OPUS_4_8`, role `halbritt`,
