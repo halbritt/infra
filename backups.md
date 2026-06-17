@@ -64,9 +64,11 @@ restic restore latest --target /var/tmp/restore --include /nvr/pg-backups
   see `known-bad.md`. Recovered by hand-fixing `postgresql.auto.conf`.
 - ✅ **Off-site live (2026-06-17):** restic → GCS Nearline (encrypted), daily timer
   (see Off-site section). First snapshot `e74b5e2a`, 5.83 GiB.
-- ⏭️ Still to do: a **recurring pgBackRest schedule** (daily diff / weekly full) so new
-  backups actually get produced locally — restic only ships whatever is in
-  `/nvr/pg-backups`. Optional: local at-rest encryption.
+- ✅ **pgBackRest schedule live (2026-06-17):** daily diff (01:30) + weekly full
+  (Sun 01:00) systemd timers. Validated via the unit — diff `…_20260617-004654D`
+  (13 GB changed → 1.2 GB) ran as `postgres`, exit 0. Loop closed: pgBackRest produces
+  restore points → restic ships them off-site daily.
+- ⏭️ Optional only: local at-rest encryption of `/nvr` (off-site is already encrypted).
 
 ## Activation runbook (next restart window — bundles all pending restart-class changes)
 
@@ -92,10 +94,20 @@ sudo -u postgres pgbackrest --stanza=proximal info     # confirm backup present
 Stanza is pre-created, so once `archive_mode=on` the `archive_command` succeeds
 immediately — no WAL pile-up window.
 
-## Recurring schedule (wire after the first successful backup)
+## Recurring schedule (live)
 
-Suggested (systemd timers or cron, run as `postgres`): weekly `--type=full`, daily
-`--type=diff`. Retention (2 full / 6 diff) prunes automatically. `nvr` has ~9 TB free.
+systemd timers (run `pgbackrest` as `postgres`); ordered so backups precede the restic
+off-site ship:
+
+| timer | when | action |
+|---|---|---|
+| `pgbackrest-diff.timer` | daily 01:30 | `pgbackrest --type=diff backup` |
+| `pgbackrest-full.timer` | weekly Sun 01:00 | `pgbackrest --type=full backup` |
+| `restic-backup.timer` | daily 02:49 | restic ship `/nvr/pg-backups`+`/nvr/engram-backups` → GCS |
+| `restic-prune.timer` | monthly | restic `prune` + `check` |
+
+Retention auto-expires per `pgbackrest.conf` (2 full / 6 diff). `nvr` has ~9 TB free.
+Units: `/etc/systemd/system/{pgbackrest-full,pgbackrest-diff,restic-backup,restic-prune}.{service,timer}`.
 
 ## Restore quick-reference
 

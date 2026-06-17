@@ -76,8 +76,12 @@ the evidence behind each entry, and `git log` for granular history.
   storage saving is pennies at this volume and Coldline's 90-day min penalises restic's
   prune churn (Nearline = 30-day). restic encryption also covers the earlier
   "encrypt before off-site" gap. See `backups.md`.
-- ⏭️ Still open: a recurring **pgBackRest** schedule (so fresh backups are produced
-  locally for restic to ship); `zfs send` remains an alternative off-site path.
+- **pgBackRest schedule live (2026-06-17):** systemd timers — `pgbackrest-diff.timer`
+  daily 01:30 + `pgbackrest-full.timer` weekly Sun 01:00 (run as `postgres`), ordered
+  before the 02:49 restic ship. Validated through the unit (diff
+  `…_20260617-004654D`, 13 GB→1.2 GB, exit 0). **Backup chain now closed and
+  self-sustaining:** PG → pgBackRest (full/diff + continuous WAL/PITR) → restic
+  (encrypted, daily) → GCS Nearline. `zfs send` remains an alternative off-site path.
 
 ### Provenance / repo
 - First read-only Preflight inventory captured (`CLAUDE_OPUS_4_8`, role `halbritt`,
