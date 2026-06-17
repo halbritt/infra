@@ -24,3 +24,23 @@ here for provenance; the fix lives in another repo.
 
 Evidence: `workload-signal.txt` (deadlocks/rollbacks), `reliability-and-autovacuum.txt`,
 and the PG server log on proximal (`/var/log/postgresql/`).
+
+## DF-2 — `striatum_daemon`: missing indexes (CPU burned on seq scans of cached tables)
+
+- **Surface:** application schema (index DDL) — **not** a server-config issue. Found
+  2026-06-17 via `pg_stat_statements`/`pg_qualstats`/`pg_stat_kcache`. Full analysis:
+  `reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_REPORT_CLAUDE_OPUS_4_8_2026-06-17.md`.
+- **What:** the busiest DB is CPU-bound on cached data (737 s CPU vs 132 physical-read
+  blocks). The #1 query by total time (1,190 s) **seq-scans all 1.01M `events` rows
+  every call**; a `(actor_session_id, run_id, event_type)` index drops the planner cost
+  from ~1,218,979 to **8.08** (hypopg-proven, ~150,000×). `audit_log` has no index on
+  `ts` → `max(ts)` is a 791k-block full scan.
+- **Recommended indexes** (advisor + analysis, to apply in `striatum_daemon`):
+  `events (actor_session_id, run_id, event_type)` ⟵ biggest win; `audit_log (ts)`;
+  `client_capabilities (client_id)`/`(repository_id)`/`(capability)`;
+  `leases (resource_id)`; `process_supervisors (session_id)`;
+  `job_recovery_state (repository_id, job_id)`/`(run_id)`.
+- **Why it matters here:** no GUC change moves this — the three `cannot-measure` knobs
+  (`work_mem`/`random_page_cost`/`effective_io_concurrency`) all measured out as
+  non-levers for an all-cached OLTP workload. The indexes are the win. Hand off to
+  `halbritt/striatum` (managed by its owner-bundle migrations, like the auth schema).

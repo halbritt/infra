@@ -5,6 +5,23 @@ provenance repo. Newest first. Config changes record the live cluster (`proximal
 `system_identifier 7628053153555146077`, PG 16.14); see `reports/` and `inventory/` for
 the evidence behind each entry, and `git log` for granular history.
 
+## 2026-06-17
+
+### Query-level analysis (no config change)
+- Used the now-collecting `pg_stat_statements`/`pg_qualstats`/`pg_stat_kcache` to lift the
+  three `cannot-measure → refuse` knobs from the 2026-06-16 plan. All three measured out
+  as **non-levers** → **no GUC change**: workload is CPU-bound on fully-cached data
+  (737 s CPU vs 132 physical-read blocks on `striatum_daemon`), **0 `work_mem` spills**,
+  and `random_page_cost` is EXPLAIN-proven a no-op (identical plans at 1.1 vs 4).
+- **Real bottleneck = missing indexes** (handed off, not config): the #1 query (1,190 s
+  total) seq-scans all 1.01M `events` rows every call; a hypopg `(actor_session_id,
+  run_id, event_type)` index drops planner cost ~1,218,979 → 8.08. Plus `audit_log (ts)`
+  and the advisor's set. Recorded as DF-2 (`inventory/2026-06-16/deferred-findings.md`)
+  and `reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_REPORT_CLAUDE_OPUS_4_8_2026-06-17.md`;
+  belongs in `halbritt/striatum`. `desired.md` notes the knobs as evaluated/left-default.
+- Backups: restic `/home/halbritt` initial upload running (excl. `.cache`/`models`/
+  `node_modules`, ~138 G); off-site repo confirmed.
+
 ## 2026-06-16
 
 ### Config (live cluster)
