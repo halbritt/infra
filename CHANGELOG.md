@@ -25,8 +25,9 @@ the evidence behind each entry, and `git log` for granular history.
   analyze params on `events`/`audit_log`; one-time `ANALYZE` (both had **zero** planner
   stats — `events` is 13.6 M rows / `audit_log` 17 M, not the stale 1.0 M estimate).
   Installed `pgrowlocks`. Effective on the daemon's next connections (needs daemon restart).
-- **Pending operator action:** restart `striatumd` (no system unit; PID-launched under the
-  user session) to drop the runaway txns + reconnect under the new timeouts, then
+- **Pending operator action:** `systemctl --user restart striatumd.service` (it's a *user*
+  unit, `KillMode=process` → does not kill in-flight supervised runs) to drop the runaway
+  txns + reconnect under the new timeouts, then
   `reports/reclaim-bloat-striatumd-2026-06-17.sql` (`VACUUM FULL`, daemon down, ~11 GB back).
 - **Handed to halbritt/striatum (app, #198/#355):** transaction scope — stop wrapping the
   whole multi-run reconcile sweep + heartbeat `append_event_row` calls in one long

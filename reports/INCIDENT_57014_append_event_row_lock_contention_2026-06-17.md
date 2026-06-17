@@ -111,12 +111,17 @@ Plus a one-time `ANALYZE` of `events`, `audit_log`, and the three supervisor tab
 
 ### Pending — needs daemon recycle + a short maintenance window (operator action)
 
-1. **Restart the `striatumd` daemon** (PID 82183, `/home/halbritt/.local/bin/striatumd`,
-   socket `/run/user/1000/striatum/daemon-go.sock` — there is **no system systemd unit**).
-   This (a) aborts the two runaway transactions → releases the chain-head row locks and
-   unpins xmin, and (b) reconnects the pool under the new `lock_timeout` /
+1. **Restart the daemon: `systemctl --user restart striatumd.service`** (it is a *user*
+   systemd unit — `~/.config/systemd/user/striatumd.service`, not a system unit). This
+   (a) aborts the two runaway transactions → releases the chain-head row locks and unpins
+   xmin, and (b) reconnects the pool under the new `lock_timeout` /
    `idle_in_transaction_session_timeout`. Role-scoped settings do **not** apply to the
-   already-open pooled connections.
+   already-open pooled connections. **Safe for in-flight runs:** the unit sets
+   `KillMode=process` (RFC 0103 W3 / #141), so a restart signals only the daemon — the
+   supervised lane helpers, tmux sessions, and agent lanes keep running and the agent loop
+   re-dials the recreated socket. The daemon's startup credential rotation of `striatumd_rw`
+   only changes the password; the `ALTER ROLE … SET` settings (in `pg_db_role_setting`)
+   survive it.
 2. **Reclaim bloat** while the daemon is down (xmin unpinned, no contention) —
    `reports/reclaim-bloat-striatumd-2026-06-17.sql`. `VACUUM FULL` on the four hot tables
    (`repo_event_chain_heads` as `postgres`); expected to return ~11 GB and apply the new
