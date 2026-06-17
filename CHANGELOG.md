@@ -16,19 +16,24 @@ the evidence behind each entry, and `git log` for granular history.
   rows locked `Update` by the two runaway `striatumd_rw` txns. Row-lock contention, **not**
   disk/index/pooling. Same long txns pin xmin → autovacuum can't reclaim → 267 MB / 6.4 GB /
   2.4 GB / 2.2 GB bloat (50–99 % dead) on the hot churned tables.
-- **Applied (online, role/table-scoped, non-disruptive):**
-  `ALTER ROLE striatumd_rw SET lock_timeout='3s'` (blocked appends fail fast as 55P03 +
-  retry instead of 60 s 57014 — ⚠️ app must treat 55P03 as retryable) and
+- **Applied (config + vacuum, non-disruptive):**
+  `ALTER DATABASE striatum_daemon SET lock_timeout='3s'` (blocked appends fail fast as
+  55P03 + retry instead of 60 s 57014 — ⚠️ app must treat 55P03 as retryable) and
   `idle_in_transaction_session_timeout='15s'` (bounds idle stalls, unpins xmin; partial —
-  the reconcile txns are mostly *active*, and PG 16 has no `transaction_timeout`).
+  reconcile txns are mostly *active*, and PG 16 has no `transaction_timeout`). **DB level,
+  not role level:** the daemon's L0 credential bootstrap re-asserts `striatumd_rw`'s role
+  GUCs on startup and wiped the role-level form; DB-level verified to survive a restart.
   Aggressive autovacuum + `fillfactor` storage params on the 4 hot tables; insert-vacuum +
   analyze params on `events`/`audit_log`; one-time `ANALYZE` (both had **zero** planner
   stats — `events` is 13.6 M rows / `audit_log` 17 M, not the stale 1.0 M estimate).
-  Installed `pgrowlocks`. Effective on the daemon's next connections (needs daemon restart).
-- **Pending operator action:** `systemctl --user restart striatumd.service` (it's a *user*
-  unit, `KillMode=process` → does not kill in-flight supervised runs) to drop the runaway
-  txns + reconnect under the new timeouts, then
-  `reports/reclaim-bloat-striatumd-2026-06-17.sql` (`VACUUM FULL`, daemon down, ~11 GB back).
+  Installed `pgrowlocks`.
+- **Executed restart + reclaim (operator-authorized, ~17:34 UTC):** `systemctl --user
+  stop/start striatumd.service` (*user* unit, `KillMode=process` → kept the 474 supervised
+  lanes alive) dropped both runaway txns; `VACUUM FULL` returned **~11.3 GB** (pointers
+  6364 MB→2432 kB, daemon_supervisors 2445 MB→1400 kB, process_supervisors 2227 MB→1400 kB,
+  chain_heads 267 MB→32 kB). After: oldest writer xact **0 s** (was 59 min), 0 chain-head
+  locks, 0 blocked appends, daemon committing per cycle. Operator to drive `prepare` under
+  load for the final append-latency confirmation.
 - **Handed to halbritt/striatum (app, #198/#355):** transaction scope — stop wrapping the
   whole multi-run reconcile sweep + heartbeat `append_event_row` calls in one long
   transaction; commit per unit; keep heartbeat appends out of the reconcile txn.

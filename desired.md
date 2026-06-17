@@ -34,19 +34,22 @@ ALTER SYSTEM SET archive_command = 'pgbackrest --stanza=proximal archive-push %p
 ALTER SYSTEM SET archive_mode = on;  -- APPLIED 2026-06-16 (restart); PITR live, check passed
 ```
 
-## Role- and table-scoped settings (not `ALTER SYSTEM`) — applied 2026-06-17
+## Database- and table-scoped settings (not `ALTER SYSTEM`) — applied 2026-06-17
 
-Targeted at the single-writer daemon and the hot `striatumd` tables to contain the
-`append_event_row` 57014 lock-contention incident (see
-`reports/INCIDENT_57014_append_event_row_lock_contention_2026-06-17.md`). Role-scoped
-settings take effect on the daemon's next connections (post-restart).
+Targeted at the `striatum_daemon` DB and its hot tables to contain the `append_event_row`
+57014 lock-contention incident (see
+`reports/INCIDENT_57014_append_event_row_lock_contention_2026-06-17.md`). Take effect on the
+daemon's next connections (post-restart).
 
 ```sql
--- Writer role: fail blocked appends fast (55P03, retryable) instead of burning the 60 s
--- statement_timeout (57014); bound transactions left idle so they can't hold the per-repo
+-- Fail blocked appends fast (55P03, retryable) instead of burning the 60 s statement_timeout
+-- (57014); bound transactions left idle so they can't hold the per-repo
 -- repo_event_chain_heads FOR UPDATE lock / pin xmin for minutes.
-ALTER ROLE striatumd_rw SET lock_timeout = '3s';
-ALTER ROLE striatumd_rw SET idle_in_transaction_session_timeout = '15s';
+-- DB level, NOT role level: the daemon's L0 bootstrap re-asserts striatumd_rw's role GUCs on
+-- startup (resets to statement_timeout=600s) and wipes ALTER ROLE settings; ALTER DATABASE
+-- survives it (verified across a restart).
+ALTER DATABASE striatum_daemon SET lock_timeout = '3s';
+ALTER DATABASE striatum_daemon SET idle_in_transaction_session_timeout = '15s';
 -- (statement_timeout=600s on role+db is pre-existing; the daemon sets 60 s per session.)
 
 -- Hot churned tables: vacuum on small absolute dead counts, full speed, HOT headroom.
@@ -59,9 +62,9 @@ ALTER TABLE striatumd.events    SET (autovacuum_vacuum_insert_scale_factor=0.05,
 ALTER TABLE striatumd.audit_log SET (autovacuum_vacuum_insert_scale_factor=0.05, autovacuum_vacuum_insert_threshold=10000, autovacuum_analyze_scale_factor=0.02, autovacuum_analyze_threshold=5000);
 ```
 
-Revert: `ALTER ROLE striatumd_rw RESET lock_timeout, RESET idle_in_transaction_session_timeout;`
-and `ALTER TABLE … RESET (…)` per table. Durable root-cause fix is app-side
-(striatum#198/#355) + a PG 17 upgrade for `transaction_timeout`.
+Revert: `ALTER DATABASE striatum_daemon RESET lock_timeout; ALTER DATABASE striatum_daemon
+RESET idle_in_transaction_session_timeout;` and `ALTER TABLE … RESET (…)` per table. Durable
+root-cause fix is app-side (striatum#198/#355) + a PG 17 upgrade for `transaction_timeout`.
 
 ## Evaluated and deliberately left at default (2026-06-17)
 

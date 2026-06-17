@@ -73,12 +73,20 @@ lock longer. `events` (13.6 M rows, 17 GB) and `audit_log` (17 M rows, 8.6 GB) h
 
 ### Applied 2026-06-17 (online, non-disruptive — no daemon impact)
 
-Role-scoped on the writer (takes effect on the daemon's **next** connections):
+Timeouts on the writer path (takes effect on the daemon's **next** connections):
 
 ```sql
-ALTER ROLE striatumd_rw SET lock_timeout = '3s';                       -- fail fast, retry
-ALTER ROLE striatumd_rw SET idle_in_transaction_session_timeout = '15s'; -- bound idle stalls
+ALTER DATABASE striatum_daemon SET lock_timeout = '3s';                       -- fail fast, retry
+ALTER DATABASE striatum_daemon SET idle_in_transaction_session_timeout = '15s'; -- bound idle stalls
 ```
+
+⚠️ **Applied at DATABASE level, not role level.** First tried `ALTER ROLE striatumd_rw
+SET …`; the daemon's startup **L0 credential bootstrap re-asserts `striatumd_rw`'s role
+GUCs** (resets them to its baseline `statement_timeout=600s`), which **wiped the role-level
+timeouts on the next restart.** Database-level settings are not touched by the role
+bootstrap and were **verified to survive a restart**. (Trade-off: DB-level also applies to
+the owner/`halbritt` sessions on this DB — acceptable; neither holds long lock waits or
+idle transactions.)
 
 - `lock_timeout=3s` — a blocked append now aborts in ~3 s with **55P03**
   (`lock_not_available`) and the daemon's bounded retry kicks in, instead of burning the
@@ -109,34 +117,41 @@ ALTER TABLE striatumd.audit_log SET (autovacuum_vacuum_insert_scale_factor=0.05,
 Plus a one-time `ANALYZE` of `events`, `audit_log`, and the three supervisor tables
 (they had no stats). Installed `pgrowlocks` (diagnostic).
 
-### Pending — needs daemon recycle + a short maintenance window (operator action)
+### Executed 2026-06-17 ~17:34 UTC (operator-authorized)
 
-1. **Restart the daemon: `systemctl --user restart striatumd.service`** (it is a *user*
-   systemd unit — `~/.config/systemd/user/striatumd.service`, not a system unit). This
-   (a) aborts the two runaway transactions → releases the chain-head row locks and unpins
-   xmin, and (b) reconnects the pool under the new `lock_timeout` /
-   `idle_in_transaction_session_timeout`. Role-scoped settings do **not** apply to the
-   already-open pooled connections. **Safe for in-flight runs:** the unit sets
-   `KillMode=process` (RFC 0103 W3 / #141), so a restart signals only the daemon — the
-   supervised lane helpers, tmux sessions, and agent lanes keep running and the agent loop
-   re-dials the recreated socket. The daemon's startup credential rotation of `striatumd_rw`
-   only changes the password; the `ALTER ROLE … SET` settings (in `pg_db_role_setting`)
-   survive it.
-2. **Reclaim bloat** while the daemon is down (xmin unpinned, no contention) —
-   `reports/reclaim-bloat-striatumd-2026-06-17.sql`. `VACUUM FULL` on the four hot tables
-   (`repo_event_chain_heads` as `postgres`); expected to return ~11 GB and apply the new
-   `fillfactor`. `events`/`audit_log` are legitimately large append-only tables — **not**
-   VACUUM FULL candidates; aggressive insert-autovacuum maintains their VM/stats. No
-   `pg_repack` available, so this needs the brief down-window (~2–3 min total).
-3. **Verify (after):** under 15+ supervised runs, confirm `prepare` appends complete
-   « 60 s and no 59-min transactions reappear:
-   ```sql
-   -- no long-lived writer transactions:
-   SELECT pid, now()-xact_start AS xact_age, state FROM pg_stat_activity
-    WHERE usename='striatumd_rw' AND xact_start < now()-interval '30s';
-   -- chain heads not locked for long / appends flowing:
-   SELECT * FROM pgrowlocks('striatumd.repo_event_chain_heads');
-   ```
+Stopped the daemon (`systemctl --user stop striatumd.service` — `KillMode=process`, so the
+474 attached supervised lanes/tmux sessions kept running), which dropped both runaway
+transactions → released the chain-head locks → unpinned xmin (verified: 0 `striatumd_rw`
+connections, 0 open txns). Then `VACUUM FULL (… ANALYZE)` the four bloated tables and
+restarted the daemon.
+
+**Bloat reclaimed (~11.3 GB) in ~12 s, daemon-down:**
+
+| table | before | after | reclaimed |
+|---|---|---|---|
+| `process_supervisor_pointers` | 6364 MB | 2432 kB | −6.36 GB |
+| `daemon_supervisors` | 2445 MB | 1400 kB | −2.44 GB |
+| `process_supervisors` | 2227 MB | 1400 kB | −2.23 GB |
+| `repo_event_chain_heads` | 267 MB | 32 kB | −267 MB |
+
+(The "before" dead-tuple count had ballooned to ~226 k/table once the runaway snapshots
+released — direct measure of how much the long txns were holding un-reclaimable.)
+
+**After state (daemon back up, healthy):** 3 fresh pooled connections, all plain `idle`
+(committed — `commit` seen, **not** idle-in-transaction); **oldest writer xact = 0 s** (was
+59 min); **0** chain-head rows locked (`pgrowlocks`); **0** blocked appends. The tmux
+liveness storm still fires (unchanged app behavior) but is **no longer wrapped in a
+lock-holding long transaction** — the daemon commits per cycle. Likely helped further by
+the reclaim: reconcile statements now hit 2.4 MB tables instead of 6.3 GB, so the sweep
+commits fast. Settings verified to **survive the restart/bootstrap** (DB-level).
+
+**Remaining (operator):** resume the workflow (`doctor` → `prepare` → `start` → drive) to
+confirm an `append_event_row` completes « 60 s under 15+ concurrent runs. Watch:
+```sql
+SELECT pid, now()-xact_start AS xact_age, state FROM pg_stat_activity
+ WHERE usename='striatumd_rw' AND xact_start < now()-interval '30s';   -- expect: no rows
+SELECT * FROM pgrowlocks('striatumd.repo_event_chain_heads');         -- expect: brief/none
+```
 
 ## MUST be fixed in striatumd application code (handled separately — #198 / #355)
 
@@ -152,3 +167,8 @@ and pinning xmin throughout. Required app fixes:
   heartbeats in their own short transactions so they don't hold the chain-head lock.
 - Durable server-side backstop available only after a **PG 17 upgrade**: `transaction_timeout`
   (caps total transaction duration regardless of activity). Not available on 16.14.
+- **L0 bootstrap clobbers role GUCs:** the daemon re-asserts `striatumd_rw`'s role config
+  on every startup (only `statement_timeout=600s`), wiping any operator `ALTER ROLE … SET`.
+  The timeouts therefore live at DB level. If striatum wants to own them, add
+  `lock_timeout` + `idle_in_transaction_session_timeout` to that bootstrap baseline so the
+  app's intent is explicit and not silently reset.
