@@ -35,6 +35,23 @@ lanes survived throughout (`KillMode=process`). Two failures + recovery, both ca
   catalog hazard). Optional: `REINDEX` the two HNSW indexes for pgvector 0.8.
 - Evidence: `reports/PG17_UPGRADE_PLAN_2026-06-17.md`.
 
+### Vendored Supabase Postgres best-practices skill + mined insights (docs only)
+- Added `skills/supabase-postgres-best-practices/` — vendored (pinned commit
+  `1356046`, 2026-06-05, MIT) from `supabase/agent-skills`: 28 vendor-neutral
+  Postgres rule files across 8 categories, a reference library for the tuning
+  instrument and the fleet. Authoring scaffolds dropped; provenance + refresh
+  steps in `skills/README.md`. The companion `supabase` (cloud-platform) skill
+  was deliberately **not** vendored.
+- `reports/SUPABASE_PG_BEST_PRACTICES_MINED_2026-06-17.md` — proximal-specific
+  application: the rules independently validate the `INCIDENT_57014` remediation
+  (short txns / idle timeout / per-table autovacuum) and baseline's
+  `work_mem × max_connections` warning; flags that `conn-pooling` and
+  `lock-skip-locked` do **not** fit this workload; mines the generic-Postgres
+  security facts (notably `SECURITY DEFINER` runs as owner — exactly what broke
+  `append_event_row` during this day's PG17 upgrade) from the un-vendored skill.
+  Updated post-upgrade for PG 17.10 / live `transaction_timeout=120s`. No live
+  cluster changes.
+
 ### pgBackRest 2.50 → 2.58.0 (upgrade prerequisite #2; done ahead of the window)
 - Upgraded the pgBackRest binary only (PGDG; 22 held packages untouched). 2.58 is
   PG 17-capable (support landed in 2.53) and backward-compatible with PG 16, so it was done

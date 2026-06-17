@@ -1,7 +1,9 @@
 # Mined insights — Supabase Postgres best-practices, applied to proximal
 
 - **Date:** 2026-06-17
-- **Cluster:** `proximal:5432`, PG 16.14, cluster `16/main`
+- **Cluster:** `proximal:5432`, **PG 17.10**, cluster `17/main` (upgraded from
+  16.14 / `16/main` earlier the same day; 16/main preserved on 5433 as rollback —
+  see the CHANGELOG and `reports/PG17_UPGRADE_PLAN_2026-06-17.md`)
 - **Source skill:** `skills/supabase-postgres-best-practices/` (vendored from
   `supabase/agent-skills` @ `1356046`, 2026-06-05, MIT). 28 rule files across 8
   categories. See `skills/README.md` for provenance.
@@ -27,7 +29,7 @@ exact remediation the incident arrived at empirically.
 | skill rule | what it says | incident reality | verdict |
 |---|---|---|---|
 | `lock-short-transactions` | keep txns short; do external/slow work **outside** the txn; set `statement_timeout` | reconcile sweep wraps hundreds of UPDATEs + tmux subprocess probes + heartbeat appends in **one txn open 24–59 min**, holding the per-repo `repo_event_chain_heads` `FOR UPDATE` lock | **root cause = this exact anti-pattern.** The required app fix (#198/#355) — scope txns per reconcile unit, commit promptly, never append inside the long txn — *is* this rule. |
-| `conn-idle-timeout` | set `idle_in_transaction_session_timeout` (rule suggests 30 s) | applied `=15s` at **DB** level 2026-06-17 | **applied, but rule is necessary-not-sufficient here.** The reconcile txn is *actively busy* (statements back-to-back), not idle — so the idle timeout is only a safety net. PG 16 has no `transaction_timeout` (PG 17+); that gap is tracked in the upgrade plan. |
+| `conn-idle-timeout` | set `idle_in_transaction_session_timeout` (rule suggests 30 s) | applied `=15s` at **DB** level 2026-06-17 | **applied, but rule is necessary-not-sufficient here.** The reconcile txn is *actively busy* (statements back-to-back), not idle — so the idle timeout only catches stalls. The complete server-side cap is `transaction_timeout`, which the incident said needed PG 17 — **now live: the same-day upgrade to 17.10 landed and fire-tested `transaction_timeout=120s`**, the durable #198/#355 backstop PG 16 lacked. The skill predates this knob (its examples stop at idle/statement timeouts). |
 | `monitor-vacuum-analyze` | tune per-table autovacuum on high-churn tables; `scale_factor` 5 % / analyze 2 % | applied `autovacuum_vacuum_scale_factor=0.05`, `autovacuum_analyze_scale_factor=0.02` on the churned tables; one-time ANALYZE of `events`/`audit_log` (had **zero** stats) | **applied — matches the skill's recommended thresholds exactly.** The xmin-pin → can't-reclaim → GB bloat chain is the skill's "stale stats / no autovacuum" warning at scale. |
 
 ### Where a `lock-` rule does *not* transfer cleanly
@@ -65,10 +67,18 @@ The broad `supabase` skill was **not** vendored (Supabase-cloud platform stuff).
 But it carries a few facts that are pure Postgres and one that is directly
 relevant to striatumd's `SECURITY DEFINER` function:
 
-- **`SECURITY DEFINER` functions run with the creator's privileges and bypass
-  RLS.** `striatumd.append_event_row` **is** `SECURITY DEFINER` (per the
-  incident). That's an intentional privilege-elevation; the security note is that
-  any logic relying on RLS is bypassed inside it, and —
+- **`SECURITY DEFINER` functions run with the *owner's* privileges, not the
+  caller's.** `striatumd.append_event_row` **is** `SECURITY DEFINER` (owner
+  `halbritt`). **This bit during the same-day PG17 upgrade:** appends broke with
+  `permission denied for repo_event_chain_heads` because the function's owner lost
+  the *inherited* `arw` it had via membership in `striatumd_rw` (PG 16 per-grant
+  `INHERIT` semantics didn't carry to 17) — fixed with a **direct**
+  `GRANT … TO halbritt`. That is exactly the skill's point made concrete: an SD
+  function's effective rights are the *owner's explicit* grants. The upgrade's own
+  follow-up — "make the grant to the SD-function owner explicit, don't rely on
+  inherited membership" — restates the skill's least-privilege/explicit-grant
+  guidance. The function also bypasses RLS (moot here — no RLS on this cluster),
+  and —
 - **A `SECURITY DEFINER` function in a schema where `EXECUTE` is granted to
   `PUBLIC` is callable by every role by default.** Worth a one-line audit:
   confirm `append_event_row`'s `EXECUTE` grant is scoped to `striatumd_rw`, not
@@ -109,7 +119,10 @@ needs the instrument's falsify-before-apply treatment:
 4. **`statement_timeout` discipline** (`lock-short-transactions`): the daemon's
    600 s baseline + 60 s per-session is lax vs the skill's 30 s example; the real
    fix is app-side txn scoping (#198/#355), but a tighter writer-path
-   `statement_timeout` is worth modelling once the app commits per cycle.
+   `statement_timeout` is worth modelling once the app commits per cycle. **Note:**
+   the PG17 upgrade now also enforces `transaction_timeout=120s` server-side — a
+   hard cap on *total* transaction duration the skill doesn't mention (PG 17+ only)
+   and the strongest backstop against a repeat of `INCIDENT_57014`.
 
 ---
 
