@@ -9,9 +9,12 @@ the evidence behind each entry, and `git log` for granular history.
 
 ### MAJOR UPGRADE EXECUTED: PostgreSQL 16.14 → 17.10 (+ pgvector 0.8.2)
 Live cluster upgraded via `pg_upgradecluster -m upgrade 16 main` (copy mode). **16/main is
-preserved** (down on 5433) as the rollback. Net DB downtime ~3 min of actual work; the run's
-lanes survived throughout (`KillMode=process`). Two failures + recovery, both caused by
-**striatum pgtest-harness cruft** — worth flagging to the app team:
+preserved** (down on 5433) as the rollback. **Downtime, honestly:** the failed first attempt
+held striatumd down **~71 min** (almost entirely the 37,675-role globals crawl); the
+successful retry was **~3 min** daemon-down + **~7 min degraded** (appends failing until the
+grant fix). The supervised lanes survived throughout (`KillMode=process`) and the run paused at
+`needs_branch_confirmation` — not lost. Two failures + recovery, both caused by **striatum
+pgtest-harness cruft** — worth flagging to the app team:
 - **Attempt 1 failed twice over:** the globals restore crawled for ~1 h on **~37,675
   abandoned `*_pgtest_*` / `boot2_*` roles**, then pg_upgrade aborted on a **broken transient
   test DB** (OID 127575054, missing `pg_largeobject` file). Auto-rolled-back cleanly (16
@@ -33,7 +36,8 @@ lanes survived throughout (`KillMode=process`). Two failures + recovery, both ca
   SD-function owner should be explicit in the schema (don't rely on PG16 inherited membership);
   the pgtest harness must drop its per-run roles + ephemeral DBs (37k roles is a real upgrade/
   catalog hazard). Optional: `REINDEX` the two HNSW indexes for pgvector 0.8.
-- Evidence: `reports/PG17_UPGRADE_PLAN_2026-06-17.md`.
+- Evidence: full as-run timeline + commands in `reports/PG17_UPGRADE_ASRUN_2026-06-17.md`;
+  plan + lessons in `reports/PG17_UPGRADE_PLAN_2026-06-17.md`.
 
 ### Vendored Supabase Postgres best-practices skill + mined insights (docs only)
 - Added `skills/supabase-postgres-best-practices/` — vendored (pinned commit
