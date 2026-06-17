@@ -7,6 +7,15 @@ the evidence behind each entry, and `git log` for granular history.
 
 ## 2026-06-17
 
+### pgBackRest 2.50 → 2.58.0 (upgrade prerequisite #2; done ahead of the window)
+- Upgraded the pgBackRest binary only (PGDG; 22 held packages untouched). 2.58 is
+  PG 17-capable (support landed in 2.53) and backward-compatible with PG 16, so it was done
+  now to de-risk the upgrade window. Validated live: stanza `proximal` `status: ok`,
+  existing backups intact, and `pgbackrest --stanza=proximal check` forced WAL segment
+  `…B800000098` which archived successfully (120 ms) with the new binary. Re-pinned via
+  `apt-mark hold`. Remaining pgBackRest work for the window is just the post-upgrade
+  `stanza-upgrade`. See `reports/PG17_UPGRADE_PLAN_2026-06-17.md`.
+
 ### PGDG apt repo wired up (upgrade prerequisite #1; no packages installed)
 - Added `apt.postgresql.org` (`noble-pgdg main`) — key `/usr/share/keyrings/postgresql.gpg`,
   source `/etc/apt/sources.list.d/pgdg.list`. `apt update` clean. Makes available (installed

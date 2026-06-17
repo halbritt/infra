@@ -26,7 +26,7 @@
 | Replication | **no slots, no standbys** → single-node, simple upgrade |
 | `shared_preload_libraries` | `pg_stat_statements,pg_qualstats,pg_stat_kcache` |
 | WAL / archiving | `wal_level=replica`, `archive_mode=on`, pgBackRest `archive-push` |
-| Backups | pgBackRest **2.50**, stanza `proximal` (status ok), full 20260616 (3.6 GB repo) + diffs; restic → GCS Nearline off-site |
+| Backups | pgBackRest **2.58** (upgraded 2026-06-17 from 2.50), stanza `proximal` (status ok), full 20260616 (3.6 GB repo) + diffs; restic → GCS Nearline off-site |
 | Upgrade tooling | `/usr/bin/pg_upgradecluster` (Debian wrapper) + `/usr/lib/postgresql/16/bin/pg_upgrade` present |
 
 ### Extensions in use (carry-forward matrix)
@@ -52,10 +52,12 @@
    (`postgresql postgresql-16 postgresql-client-16 postgresql-common postgresql-client-common
    libpq5 pgbackrest postgresql-16-{pgvector,pg-qualstats,pg-stat-kcache,hypopg}`).
    **`apt-mark unhold` these at the start of the upgrade window.**
-2. **pgBackRest 2.50 does not support PG 17** (landed in **2.53**); **2.58.0 now available**
-   from PGDG (currently held). Upgrade it as part of the window *before* the new cluster
-   archives WAL, or archiving/`stanza-upgrade` will fail. (It is backward-compatible with
-   PG 16, so it *may* optionally be unheld+upgraded ahead of time to de-risk the window.)
+2. ✅ **DONE 2026-06-17 — pgBackRest upgraded 2.50 → 2.58.0** (PG 17-capable; landed in
+   2.53). Done ahead of the window since 2.58 is backward-compatible with PG 16. Validated
+   live: stanza `proximal` `status: ok`, existing backups intact, and `pgbackrest check`
+   forced a WAL switch that archived successfully with the new binary. Re-pinned via
+   `apt-mark hold pgbackrest`. **No pgBackRest action remains for the upgrade window** —
+   only the post-upgrade `stanza-upgrade` (Phase 3) to register the new PG 17 cluster.
 
 ## Recommended method
 
@@ -85,7 +87,7 @@
 
 ### Phase 1 — Add PGDG repo + install PG17 stack (no downtime; new cluster auto-created on a temp port)
 - [ ] Add PGDG: `sudo install -d /usr/share/postgresql-common/pgdg && sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc` and add `deb https://apt.postgresql.org/pub/repos/apt noble-pgdg main` → `apt update`.
-- [ ] Upgrade pgBackRest to latest (≥2.53): `apt install pgbackrest`.
+- [x] ✅ pgBackRest already at **2.58.0** (upgraded + validated 2026-06-17, prereq #2) — no action here.
 - [ ] Install PG17 + **all** matching extensions (parity is required for `pg_upgrade --check`):
       `apt install postgresql-17 postgresql-17-pgvector postgresql-17-pg-qualstats postgresql-17-pg-stat-kcache postgresql-17-hypopg`
       (`postgresql-17` pulls contrib for pg_stat_statements/pgcrypto/pgrowlocks/pgstattuple).
@@ -131,8 +133,9 @@
   by PGDG versions; usually clean, but verify no held/broken packages after `apt update`.
   Decide whether to also move the *running* 16 packages to PGDG (recommended for consistency)
   or leave 16 on Ubuntu until decommissioned.
-- **pgBackRest 2.50 → latest** is mandatory and changes the binary under a working PITR
-  setup — take the Phase-0 backup *before* touching pgBackRest, and re-verify `info` after.
+- ~~**pgBackRest 2.50 → latest** is mandatory and changes the binary under a working PITR
+  setup~~ — **done 2026-06-17**: upgraded to 2.58.0 and re-verified (`info` ok + live
+  `check` archived a forced WAL segment). No longer a window risk.
 - **pgvector 0.6 → 0.8** is a two-major jump; HNSW on-disk format has been stable, but the
   REINDEX step removes all doubt. Confirm engram/hippo apps tolerate a brief index rebuild
   (use `CONCURRENTLY`).
