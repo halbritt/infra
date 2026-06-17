@@ -29,6 +29,11 @@ Worked the candidate list from `SUPABASE_PG_BEST_PRACTICES_MINED_2026-06-17.md`,
 - Refreshed `connection.md` + this preamble for the post-upgrade reality (PG17.10, new sysid,
   current DB list, new `proximal_monitor`/`postgres` rows). Set AGENTS.md convention to
   **commit and push often**.
+- **Reset `pg_stat_statements`** at operator request (via `sudo -u postgres`) — fresh baseline
+  window from **2026-06-17 23:51:42 UTC** (pre-reset peak ~4,875 stmts / 4.19M calls).
+- **Filed the two upstream schema leads** in `halbritt/striatum`: **#386** (unindexed FKs on
+  `events`/`audit_log` — latent seq-scan cliff before retention; distinct from closed #330) and
+  **#387** (range-partition both tables by `created_at`), cross-linked as companions.
 
 ### MAJOR UPGRADE EXECUTED: PostgreSQL 16.14 → 17.10 (+ pgvector 0.8.2)
 Live cluster upgraded via `pg_upgradecluster -m upgrade 16 main` (copy mode). **16/main is

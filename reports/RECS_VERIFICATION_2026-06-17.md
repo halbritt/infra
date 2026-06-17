@@ -17,8 +17,8 @@ real structural gaps (#3/#4) are dormant today and are striatumd-owned schema �
 |---|---|---|---|
 | 1 | first pg_stat_statements baseline | **COMPLETE** | created `proximal_monitor` role → de-masked the daemon hot path (heartbeats + `append_event_row`) |
 | 2 | re-measure work_mem headroom | **FALSIFIED → no change** | 0 temp spills, peak concurrency far below ceiling |
-| 3 | unindexed-FK audit | **FALSIFIED (dormant) + query bug** | 41 truly-uncovered (not 62/90); all NO ACTION, **0 parent deletes** → no active cost |
-| 4 | partitioning candidates | **CONFIRMED as future lead** | events 13.8M/18GB, audit_log 17.1M/8.6GB; append-only; upstream |
+| 3 | unindexed-FK audit | **FALSIFIED (dormant) + query bug** | 41 truly-uncovered (not 62/90); all NO ACTION, **0 parent deletes** → no active cost. Filed `striatum#386` |
+| 4 | partitioning candidates | **CONFIRMED as future lead** | events 13.8M/18GB, audit_log 17.1M/8.6GB; append-only. Filed `striatum#387` |
 | 5 | timeout backstops at DB scope | **PASS** | all four present & DB-scoped on `striatum_daemon` |
 | 6 | REINDEX HNSW indexes | **DONE** (commit `c0269b7`) | both HNSW indexes present on pgvector 0.8.2 |
 | 7 | append_event_row owner grant | n/a here | app-side (`halbritt/striatum`); not a DB-config item |
@@ -53,8 +53,10 @@ chain serialization points (intentional; see the mined report's lock-skip-locked
 `updated_at` UPDATEs) and is bloated (252 MB / 1,451 live rows) — the `fillfactor=80` +
 aggressive-autovacuum tuning in `desired.md` (applied 2026-06-17) targets exactly this; worth
 a follow-up check that autovacuum is keeping pace.
-**Reset:** not performed — `pg_stat_statements_reset()` discards the accumulated window the
-2026-06-17 tuning analysis relied on. Reset is an explicit operator choice, not done here.
+**Reset:** performed at operator request — `pg_stat_statements_reset()` (via `sudo -u
+postgres`; `pg_monitor` alone does not grant reset) at **2026-06-17 23:51:42 UTC**. A fresh
+baseline window now accumulates from there; the pre-reset window peaked at ~4,875 statements /
+4.19M calls.
 
 ## #2 — work_mem headroom — FALSIFIED → no change
 
@@ -111,7 +113,8 @@ scans ~700k events/parent-delete — *then* the indexes matter.
 land **before** any parent-deletion/retention job ships — but do not treat as a present
 performance issue, and do not create indexes here (striatumd-owned schema). Note
 `events(actor_session_id,…)` overlaps the #1 index already handed off in the 2026-06-17
-tuning report — same column, two motivations (read path + FK enforcement).
+tuning report — same column, two motivations (read path + FK enforcement). **Filed
+2026-06-17 as `striatum#386`** (companion to `#387`); #330 is closed (read-path index only).
 
 ## #4 — partitioning candidates — CONFIRMED as a future lead (upstream)
 
@@ -120,7 +123,8 @@ heap). Both append-only (0 deletes), insert-driven autovacuum already tuned in `
 Below the ~100M-row rule of thumb today. Range-by-`created_at` partitioning would make
 retention purges instant **and** sidestep the #3 FK-delete cliff entirely (drop a partition
 instead of `DELETE`-ing rows that trigger child seq scans). Schema is striatumd-owned →
-flag upstream; do not `ALTER` here.
+flag upstream; do not `ALTER` here. **Filed 2026-06-17 as `striatum#387`** (companion to
+`#386`).
 
 ## #5 — timeout backstops at DB scope — PASS
 
