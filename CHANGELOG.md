@@ -7,6 +7,32 @@ the evidence behind each entry, and `git log` for granular history.
 
 ## 2026-06-17
 
+### Incident: `append_event_row` 60 s timeouts / SQLSTATE 57014 (striatum#198 regress, #355)
+- **Root cause (proven):** `striatum run prepare` appends time out at the 60 s
+  `statement_timeout` because `append_event_row` opens with `SELECT … FROM
+  repo_event_chain_heads … FOR UPDATE` (one row per repo, tamper-evident hash chain), and
+  the **supervisor-reconcile path holds that row lock inside a single transaction left open
+  for tens of minutes** (observed 59 min & 24 min). `pgrowlocks` proved the two chain-head
+  rows locked `Update` by the two runaway `striatumd_rw` txns. Row-lock contention, **not**
+  disk/index/pooling. Same long txns pin xmin → autovacuum can't reclaim → 267 MB / 6.4 GB /
+  2.4 GB / 2.2 GB bloat (50–99 % dead) on the hot churned tables.
+- **Applied (online, role/table-scoped, non-disruptive):**
+  `ALTER ROLE striatumd_rw SET lock_timeout='3s'` (blocked appends fail fast as 55P03 +
+  retry instead of 60 s 57014 — ⚠️ app must treat 55P03 as retryable) and
+  `idle_in_transaction_session_timeout='15s'` (bounds idle stalls, unpins xmin; partial —
+  the reconcile txns are mostly *active*, and PG 16 has no `transaction_timeout`).
+  Aggressive autovacuum + `fillfactor` storage params on the 4 hot tables; insert-vacuum +
+  analyze params on `events`/`audit_log`; one-time `ANALYZE` (both had **zero** planner
+  stats — `events` is 13.6 M rows / `audit_log` 17 M, not the stale 1.0 M estimate).
+  Installed `pgrowlocks`. Effective on the daemon's next connections (needs daemon restart).
+- **Pending operator action:** restart `striatumd` (no system unit; PID-launched under the
+  user session) to drop the runaway txns + reconnect under the new timeouts, then
+  `reports/reclaim-bloat-striatumd-2026-06-17.sql` (`VACUUM FULL`, daemon down, ~11 GB back).
+- **Handed to halbritt/striatum (app, #198/#355):** transaction scope — stop wrapping the
+  whole multi-run reconcile sweep + heartbeat `append_event_row` calls in one long
+  transaction; commit per unit; keep heartbeat appends out of the reconcile txn.
+- Evidence: `reports/INCIDENT_57014_append_event_row_lock_contention_2026-06-17.md`.
+
 ### Query-level analysis (no config change)
 - Used the now-collecting `pg_stat_statements`/`pg_qualstats`/`pg_stat_kcache` to lift the
   three `cannot-measure → refuse` knobs from the 2026-06-16 plan. All three measured out
