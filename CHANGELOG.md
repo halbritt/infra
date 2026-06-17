@@ -7,6 +7,18 @@ the evidence behind each entry, and `git log` for granular history.
 
 ## 2026-06-17
 
+### PGDG apt repo wired up (upgrade prerequisite #1; no packages installed)
+- Added `apt.postgresql.org` (`noble-pgdg main`) — key `/usr/share/keyrings/postgresql.gpg`,
+  source `/etc/apt/sources.list.d/pgdg.list`. `apt update` clean. Makes available (installed
+  nothing): `postgresql-17` 17.10, `postgresql-17-pgvector` 0.8.2, `pgbackrest` 2.58.0,
+  `postgresql-17-pg-qualstats`/`-pg-stat-kcache`/`-hypopg`. Running PG 16.14 / pgBackRest
+  2.50 / pgvector 0.6 untouched.
+- **Protective `apt-mark hold`** on the running PG16 stack (`postgresql postgresql-16
+  postgresql-client-16 postgresql-common postgresql-client-common libpq5 pgbackrest
+  postgresql-16-{pgvector,pg-qualstats,pg-stat-kcache,hypopg}`) — enabling PGDG otherwise lets
+  a blanket `apt upgrade` swap the live pgvector `.so` and pull PG 18. `apt-mark unhold` at the
+  start of the planned upgrade window. See `reports/PG17_UPGRADE_PLAN_2026-06-17.md`.
+
 ### Incident: `append_event_row` 60 s timeouts / SQLSTATE 57014 (striatum#198 regress, #355)
 - **Root cause (proven):** `striatum run prepare` appends time out at the 60 s
   `statement_timeout` because `append_event_row` opens with `SELECT … FROM

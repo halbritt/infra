@@ -42,13 +42,20 @@
 
 ### Two blocking prerequisites discovered
 
-1. **No PGDG apt repo is configured**, and **`postgresql-17` is not in Ubuntu 24.04 apt**
-   (24.04 ships PG 16 as default). The PGDG repo (`apt.postgresql.org`) is **required** to
-   obtain PG 17 *and* all matching `postgresql-17-*` extension packages (incl. pgvector
-   0.8.x, pg_qualstats, pg_stat_kcache). This is a repo migration, not just an install.
-2. **pgBackRest 2.50 does not support PG 17** (PG 17 support landed in **2.53**). pgBackRest
-   **must be upgraded to ≥ 2.53** (PGDG ships latest) *before* the new cluster archives WAL,
-   or archiving/`stanza-upgrade` will fail. Treat as part of the upgrade, not an afterthought.
+1. ✅ **DONE 2026-06-17 — PGDG apt repo wired up.** Key `/usr/share/keyrings/postgresql.gpg`,
+   source `/etc/apt/sources.list.d/pgdg.list` (`noble-pgdg main`), `apt update` clean.
+   Now available (nothing installed): `postgresql-17` **17.10**, `postgresql-17-pgvector`
+   **0.8.2**, `postgresql-17-pg-qualstats` 2.1.3, `postgresql-17-pg-stat-kcache` 2.3.1,
+   `postgresql-17-hypopg` 1.4.2, `pgbackrest` **2.58.0**. ⚠️ Enabling PGDG armed an
+   `apt upgrade` foot-gun (would pull PGDG `postgresql-16-pgvector 0.6→0.8` over the *live*
+   cluster + try to bring PG 18); mitigated by `apt-mark hold` on the running PG16 stack
+   (`postgresql postgresql-16 postgresql-client-16 postgresql-common postgresql-client-common
+   libpq5 pgbackrest postgresql-16-{pgvector,pg-qualstats,pg-stat-kcache,hypopg}`).
+   **`apt-mark unhold` these at the start of the upgrade window.**
+2. **pgBackRest 2.50 does not support PG 17** (landed in **2.53**); **2.58.0 now available**
+   from PGDG (currently held). Upgrade it as part of the window *before* the new cluster
+   archives WAL, or archiving/`stanza-upgrade` will fail. (It is backward-compatible with
+   PG 16, so it *may* optionally be unheld+upgraded ahead of time to de-risk the window.)
 
 ## Recommended method
 
