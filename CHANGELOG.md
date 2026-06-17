@@ -7,6 +7,34 @@ the evidence behind each entry, and `git log` for granular history.
 
 ## 2026-06-17
 
+### MAJOR UPGRADE EXECUTED: PostgreSQL 16.14 → 17.10 (+ pgvector 0.8.2)
+Live cluster upgraded via `pg_upgradecluster -m upgrade 16 main` (copy mode). **16/main is
+preserved** (down on 5433) as the rollback. Net DB downtime ~3 min of actual work; the run's
+lanes survived throughout (`KillMode=process`). Two failures + recovery, both caused by
+**striatum pgtest-harness cruft** — worth flagging to the app team:
+- **Attempt 1 failed twice over:** the globals restore crawled for ~1 h on **~37,675
+  abandoned `*_pgtest_*` / `boot2_*` roles**, then pg_upgrade aborted on a **broken transient
+  test DB** (OID 127575054, missing `pg_largeobject` file). Auto-rolled-back cleanly (16
+  restarted, new cluster removed) — no data touched.
+- **Cleanup (online, no downtime):** dropped all 37,675 junk roles in 63 s (0 dependencies);
+  verified all 9 DBs file-consistent; 0 transient pgtest DBs remained.
+- **Attempt 2: clean success in 52 s** (globals instant with 25 roles, 31 GB copy fast).
+- **Post-upgrade fixes:** (1) pgBackRest config still hardcoded `pg1-path=…/16/main` → updated
+  to `…/17/main`, then `stanza-upgrade` + `check` (archives to `17-2/` now). (2) **Event
+  appends broke with `permission denied for repo_event_chain_heads`**: the SECURITY DEFINER
+  `append_event_row` (owner halbritt) lost its *inherited* `arw` (halbritt is a member of
+  `striatumd_rw`) because PG16 per-grant `INHERIT` semantics didn't carry — fixed with a direct
+  `GRANT SELECT,INSERT,UPDATE … TO halbritt` + a daemon restart to refresh cached plans.
+- **Verified:** PG 17.10 on 5432; `pg_hba` `striatum-lane` reject rules intact; DB-scoped
+  `lock_timeout/idle` carried; **`transaction_timeout=120s` landed + fire-tested** (the durable
+  #198/#355 backstop PG16 lacked); `shared_preload_libraries` loaded; stats present; pgvector
+  0.8.2 + contrib extensions updated; daemon appending cleanly. Stack `apt-mark hold`-pinned.
+- **App-side follow-ups (halbritt/striatum):** the `repo_event_chain_heads` grant to the
+  SD-function owner should be explicit in the schema (don't rely on PG16 inherited membership);
+  the pgtest harness must drop its per-run roles + ephemeral DBs (37k roles is a real upgrade/
+  catalog hazard). Optional: `REINDEX` the two HNSW indexes for pgvector 0.8.
+- Evidence: `reports/PG17_UPGRADE_PLAN_2026-06-17.md`.
+
 ### pgBackRest 2.50 → 2.58.0 (upgrade prerequisite #2; done ahead of the window)
 - Upgraded the pgBackRest binary only (PGDG; 22 held packages untouched). 2.58 is
   PG 17-capable (support landed in 2.53) and backward-compatible with PG 16, so it was done

@@ -13,7 +13,19 @@
   cannot bound an *actively-busy* runaway txn; `transaction_timeout` can). Landing PG 17
   closes that gap from the server side.
 
-> **Status: PLAN ONLY.** Nothing here has been executed. No services touched.
+> **Status: ✅ EXECUTED 2026-06-17 ~21:24 UTC — now on PG 17.10.** See the CHANGELOG entry
+> "MAJOR UPGRADE EXECUTED" for the as-run account. Two unforeseen blockers (both striatum
+> pgtest cruft) and two post-upgrade fixes vs this plan:
+> 1. **~37,675 abandoned pgtest roles** made the globals restore crawl ~1 h; a **broken
+>    transient test DB** then aborted the copy. Fix: drop the junk roles (online, 63 s) +
+>    verify DB file-consistency, then retry (clean, 52 s). **Add a pre-flight step: drop
+>    leftover `*_pgtest_*`/`boot2_*` roles and ephemeral test DBs before any pg_upgrade.**
+> 2. **pgBackRest `pg1-path` was hardcoded to `…/16/main`** — must be repointed to `…/17/main`
+>    before `stanza-upgrade` (Phase 3).
+> 3. **SECURITY DEFINER append broke** (`permission denied for repo_event_chain_heads`): the
+>    function owner (halbritt) lost its *inherited* grant (member of `striatumd_rw`) because
+>    PG16 per-grant `INHERIT` didn't carry. Fix: explicit `GRANT … TO halbritt` + daemon
+>    restart. **Belongs in the striatum schema as an explicit grant.**
 
 ## Current-state inventory (measured 2026-06-17)
 

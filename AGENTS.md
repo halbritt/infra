@@ -36,6 +36,10 @@ primary, `wal_level`) and **reliability blockers outrank performance wins**.
 - `reports/` — dated `POSTGRES_TUNING` reports, one per run.
 - `connection.md` — how to reach the instance: host, port, database, role names.
   **No passwords.**
+- `skills/` — vendored, version-pinned reference skills (Postgres best-practices
+  library) for the instrument and the fleet to read. Reference material, not
+  desired-state; see `skills/README.md`. The proximal-specific application of
+  these rules is the mined-insights report under `reports/`.
 
 ## Conventions
 
