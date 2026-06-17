@@ -28,7 +28,8 @@ and the PG server log on proximal (`/var/log/postgresql/`).
 ## DF-2 — `striatum_daemon`: missing indexes (CPU burned on seq scans of cached tables)
 
 - **Surface:** application schema (index DDL) — **not** a server-config issue. Found
-  2026-06-17 via `pg_stat_statements`/`pg_qualstats`/`pg_stat_kcache`. Full analysis:
+  2026-06-17 via `pg_stat_statements`/`pg_qualstats`/`pg_stat_kcache`. **Filed:**
+  [`halbritt/striatum#330`](https://github.com/halbritt/striatum/issues/330). Full analysis:
   `reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_REPORT_CLAUDE_OPUS_4_8_2026-06-17.md`.
 - **What:** the busiest DB is CPU-bound on cached data (737 s CPU vs 132 physical-read
   blocks). The #1 query by total time (1,190 s) **seq-scans all 1.01M `events` rows
