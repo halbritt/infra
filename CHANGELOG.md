@@ -20,6 +20,18 @@ on its hottest tables). Record: `reports/REPACK_supervisor_tables_2026-06-18.md`
   throughput alive. One-time cleanup (bloat recurs slowly under heartbeat churn) — re-run
   periodically or reduce write amplification app-side; `desired.md` autovacuum tuning stands.
 
+### Automated the recurring reclaim — `pg-repack-bloated` systemd timer (monthly, off-peak)
+Since the bloat regrows, added a fail-safe systemd timer rather than leaving it manual.
+Canonical artifacts in `maintenance/` (`pg-repack-bloated.{sh,service,timer}` + README);
+installed to `/usr/local/bin` + `/etc/systemd/system`, runs as `postgres`. **Why systemd, not
+`/schedule`:** the cloud-agent scheduler can't reach proximal's loopback PG or `sudo`; local DB
+maintenance must run on the box. Behaviour: monthly (1st @ 13:00 UTC ≈ 06:00 PDT, the verified
+quiet window, `Persistent=true`); repacks a listed table only if it exceeds **16 MB** (healthy
+~2 MB); `pg_repack --no-kill-backend` so it **skips + retries next month** rather than ever
+disrupting the daemon. Validated: dry run no-op'd cleanly (4 tables ≤16 MB); next run
+2026-07-01. Operate: `journalctl -u pg-repack-bloated.service`; run now with
+`sudo systemctl start pg-repack-bloated.service`.
+
 ## 2026-06-17
 
 ### Verified the 7 mined best-practice recommendations (read-only) — no change applied

@@ -1,0 +1,14 @@
+[Unit]
+Description=Monthly off-peak pg_repack bloat reclaim for striatum_daemon
+Documentation=https://github.com/halbritt/proximal-pg
+
+[Timer]
+# 1st of each month at 13:00 UTC (~06:00 PDT) — the low-activity window verified
+# during the 2026-06-18 manual run. Persistent=true runs it after any missed slot
+# (host was off); a small jitter avoids a thundering herd with other timers.
+OnCalendar=*-*-01 13:00:00 UTC
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

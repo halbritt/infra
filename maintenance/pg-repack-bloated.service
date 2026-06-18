@@ -1,0 +1,13 @@
+[Unit]
+Description=Reclaim bloat on striatum_daemon heartbeat/chain tables (online pg_repack)
+Documentation=https://github.com/halbritt/proximal-pg
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=postgres
+ExecStart=/usr/local/bin/pg-repack-bloated.sh
+# Be a polite background citizen on the shared box.
+Nice=10
+IOSchedulingClass=idle
