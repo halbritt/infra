@@ -1,0 +1,32 @@
+# proximal observability — Prometheus scrape config.
+# Listen address is set via ARGS in /etc/default/prometheus (tailnet 100.85.100.81:9091;
+# default :9090 is taken by cockpit.socket). All targets bind the tailnet IP.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: proximal
+
+# No Alertmanager installed on this box yet.
+alerting:
+  alertmanagers: []
+
+rule_files: []
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['100.85.100.81:9091']
+
+  - job_name: postgresql
+    static_configs:
+      - targets: ['100.85.100.81:9187']
+        labels:
+          instance: proximal
+          cluster: '17/main'
+
+  - job_name: node
+    static_configs:
+      - targets: ['100.85.100.81:9100']
+        labels:
+          instance: proximal

@@ -1,0 +1,6 @@
+# TEMPLATE for /etc/default/prometheus-postgres-exporter (0600 root) — secret REDACTED.
+# Generate the password and create the role per role.sql, then substitute <SCRAM_PASSWORD>.
+# The real file on the box holds the password and is NEVER committed.
+DATA_SOURCE_NAME='postgresql://postgres_exporter:<SCRAM_PASSWORD>@127.0.0.1:5432/striatum_daemon?sslmode=disable'
+
+ARGS="--web.listen-address=100.85.100.81:9187 --extend.query-path=/etc/prometheus-postgres-exporter/queries.yaml --no-collector.stat_bgwriter --collector.long_running_transactions --collector.stat_activity_autovacuum --collector.process_idle --collector.statio_user_indexes --collector.database_wraparound"

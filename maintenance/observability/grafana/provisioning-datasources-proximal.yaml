@@ -1,0 +1,11 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus-proximal
+    type: prometheus
+    access: proxy
+    url: http://100.85.100.81:9091
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+      httpMethod: POST

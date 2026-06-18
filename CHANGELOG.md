@@ -8,6 +8,32 @@ entry, and `git log` for granular history.
 
 ## 2026-06-18
 
+### Observability stack stood up — Prometheus + Grafana + postgres_exporter
+From-scratch monitoring for the cluster (none existed before). Canonical config in
+`maintenance/observability/` (README + role SQL + units/drop-ins/provisioning/dashboard);
+installed on the box under systemd, all `enable`d. **Exposure: whole stack on the tailnet IP**
+`100.85.100.81` (per operator choice) — bound to that specific IP, not `0.0.0.0`, since there's
+no host firewall, so it stays off LAN. Ports dodge collisions: exporter **9187**, node_exporter
+**9100** (pulled in as a dep; rebound off `*`), Prometheus **9091** (9090 = `cockpit.socket`),
+Grafana **3003** (3000/3001/3002 taken by open-webui + token-dashboard).
+- **Exporter role** `postgres_exporter` (LOGIN, inherits `proximal_monitor`→`pg_monitor`, no
+  write/DDL), scram over `127.0.0.1`, connects `striatum_daemon`. Secret only in
+  `/etc/default/prometheus-postgres-exporter` (0600 root) — **never in git** (`role.sql` +
+  redacted `.template` document it without the password). `connection.md` updated.
+- **PG17 fixes:** postgres_exporter 0.15.0 ships two collectors broken on PG17 — `stat_bgwriter`
+  (checkpoint cols moved to `pg_stat_checkpointer`) and `stat_statements` (`blk_read_time` split
+  in pg_stat_statements 1.11). Disabled both, replaced with PG17-correct custom queries in
+  `queries.yaml`; all 12 remaining built-in collectors report `success 1`.
+- **Domain metrics** (the live concerns from this session): `pg_supervisor_tables_*` size/dead
+  tuples (the `striatum#421` / `pg-repack-bloated.timer` bloat watch), `pg_checkpointer_*`
+  (forced checkpoints ~0 validates `max_wal_size=16GB`), deadlocks/long-running-txns, cache hit,
+  XID wraparound age (~1.4%), top-25 `pg_stat_statements`. Custom Grafana dashboard
+  `pg-proximal-health.json` (folder "proximal") renders all of it live; a community dashboard
+  (9628) was intentionally skipped (pre-PG17 metric names). **Grafana admin password changed**
+  from default (generated, stored only in `/etc/grafana/admin.env` 0600 root).
+- Verified end-to-end: `pg_up 1` → 3 Prometheus targets `up` → Grafana datasource healthy +
+  dashboard returns live PG data via `/api/ds/query`.
+
 ### Off-peak `pg_repack` of bloated heartbeat/chain tables — ~454 MB reclaimed
 Acted on the bloat observation from `RECS_VERIFICATION_2026-06-17.md` (#1). Installed
 `postgresql-17-repack` (PGDG, `pg_repack` 1.5.3) + `CREATE EXTENSION pg_repack` in

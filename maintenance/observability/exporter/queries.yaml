@@ -1,0 +1,91 @@
+# Custom postgres_exporter queries for proximal — domain metrics + PG17 fixes.
+# Loaded via ARGS --extend.query-path. Runs against the primary connection (striatum_daemon).
+# NOTE: postgres_exporter 0.15.0 has two built-in collectors broken on PG17, disabled in ARGS
+# and replaced here: stat_bgwriter (checkpoint cols moved to pg_stat_checkpointer) and
+# stat_statements (blk_read_time split in pg_stat_statements 1.11).
+
+# --- Supervisor-table bloat watch (striatum#421 + pg-repack-bloated.timer) -------------------
+# Regrows 2.5 MB -> ~150 MB in ~90 min under load; graphing validates the monthly repack and
+# catches a runaway. 0 rows in DBs lacking these tables -> safe, no errors.
+pg_supervisor_tables:
+  query: |
+    SELECT
+      c.relname                     AS table_name,
+      pg_total_relation_size(c.oid) AS total_bytes,
+      pg_table_size(c.oid)          AS heap_bytes,
+      pg_indexes_size(c.oid)        AS index_bytes,
+      COALESCE(s.n_dead_tup, 0)     AS dead_tuples,
+      COALESCE(s.n_live_tup, 0)     AS live_tuples
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    LEFT JOIN pg_stat_user_tables s ON s.relid = c.oid
+    WHERE c.relname IN ('process_supervisor_pointers','process_supervisors','daemon_supervisors')
+      AND n.nspname NOT IN ('pg_catalog','information_schema')
+  master: true
+  metrics:
+    - table_name: {usage: "LABEL", description: "Supervisor table name"}
+    - total_bytes: {usage: "GAUGE", description: "Total relation size (heap+indexes+toast) in bytes"}
+    - heap_bytes:  {usage: "GAUGE", description: "Heap+toast size in bytes"}
+    - index_bytes: {usage: "GAUGE", description: "Indexes size in bytes"}
+    - dead_tuples: {usage: "GAUGE", description: "Estimated dead tuples (bloat indicator)"}
+    - live_tuples: {usage: "GAUGE", description: "Estimated live tuples"}
+
+# --- Checkpointer (PG17 pg_stat_checkpointer) — replaces broken stat_bgwriter ---------------
+# num_requested should stay ~0; a climbing rate means WAL pressure forcing checkpoints
+# (validates max_wal_size=16GB).
+pg_checkpointer:
+  query: |
+    SELECT num_timed, num_requested, write_time, sync_time, buffers_written
+    FROM pg_stat_checkpointer
+  master: true
+  metrics:
+    - num_timed:       {usage: "COUNTER", description: "Scheduled (timed) checkpoints"}
+    - num_requested:   {usage: "COUNTER", description: "Requested/forced checkpoints — should stay ~0"}
+    - write_time:      {usage: "COUNTER", description: "ms spent writing checkpoint buffers"}
+    - sync_time:       {usage: "COUNTER", description: "ms spent syncing checkpoint files"}
+    - buffers_written: {usage: "COUNTER", description: "Buffers written during checkpoints"}
+
+# --- Bgwriter (PG17 pg_stat_bgwriter, surviving columns) -------------------------------------
+pg_bgwriter:
+  query: |
+    SELECT buffers_clean, maxwritten_clean, buffers_alloc
+    FROM pg_stat_bgwriter
+  master: true
+  metrics:
+    - buffers_clean:    {usage: "COUNTER", description: "Buffers written by bgwriter"}
+    - maxwritten_clean: {usage: "COUNTER", description: "Times bgwriter stopped at maxwritten"}
+    - buffers_alloc:    {usage: "COUNTER", description: "Buffers allocated"}
+
+# --- Top statements (pg_stat_statements 1.11) — replaces broken stat_statements collector ----
+# Bounded to top 25 by total exec time to keep cardinality sane.
+pg_stat_statements_top:
+  query: |
+    SELECT
+      d.datname AS datname,
+      r.rolname AS usename,
+      s.queryid::text AS queryid,
+      left(regexp_replace(s.query, '\s+', ' ', 'g'), 120) AS short_query,
+      s.calls           AS calls,
+      s.total_exec_time AS total_exec_time_ms,
+      s.mean_exec_time  AS mean_exec_time_ms,
+      s.rows            AS rows,
+      s.shared_blks_hit  AS shared_blks_hit,
+      s.shared_blks_read AS shared_blks_read
+    FROM pg_stat_statements s
+    JOIN pg_database d ON d.oid = s.dbid
+    JOIN pg_roles    r ON r.oid = s.userid
+    WHERE s.calls > 0
+    ORDER BY s.total_exec_time DESC
+    LIMIT 25
+  master: true
+  metrics:
+    - datname:            {usage: "LABEL", description: "Database"}
+    - usename:            {usage: "LABEL", description: "Role"}
+    - queryid:            {usage: "LABEL", description: "Normalized query id"}
+    - short_query:        {usage: "LABEL", description: "First 120 chars of normalized query"}
+    - calls:              {usage: "COUNTER", description: "Number of executions"}
+    - total_exec_time_ms: {usage: "COUNTER", description: "Total execution time (ms)"}
+    - mean_exec_time_ms:  {usage: "GAUGE",   description: "Mean execution time (ms)"}
+    - rows:               {usage: "COUNTER", description: "Rows retrieved/affected"}
+    - shared_blks_hit:    {usage: "COUNTER", description: "Shared buffer hits"}
+    - shared_blks_read:   {usage: "COUNTER", description: "Shared blocks read from disk"}

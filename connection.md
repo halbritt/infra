@@ -28,6 +28,7 @@ and `token_dashboard` (~8–10 MB each), `ob1`, `engram_test` + `engram_test_wor
 |---|---|---|
 | `halbritt` | inventory + admin | non-superuser; `createrole`+`createdb`; **peer auth** on the socket (no password). Used for inventory/read-only runs. **Now inherits `pg_monitor`** (via `proximal_monitor`, 2026-06-17) → reads full `pg_stat_*`, `pg_read_all_settings`, `pg_read_all_stats`. Still not a superuser (apply phase needs `postgres`). |
 | `proximal_monitor` | read-only observability | `NOLOGIN` capability role, member of `pg_monitor`; granted into `halbritt`. No password. Created 2026-06-17 so inventory runs read full stats/settings without superuser. Revert: `REVOKE proximal_monitor FROM halbritt; DROP ROLE proximal_monitor;`. |
+| `postgres_exporter` | metrics exporter | **LOGIN** role for the Prometheus `postgres_exporter` (created 2026-06-18). Inherits `proximal_monitor` → `pg_monitor` (read-only, no DDL/write). scram password; connects TCP `127.0.0.1:5432` → `striatum_daemon`. Secret lives only in `/etc/default/prometheus-postgres-exporter` (0600 root) — **not in this repo**; role SQL in `maintenance/observability/role.sql`. Revert: `DROP ROLE postgres_exporter;`. |
 | `striatumd_rw` | striatum daemon app role | read/write against `striatum_daemon` (7 active backends observed). |
 | `postgres` | superuser | OS-account peer auth: `sudo -u postgres psql`. The apply-phase / DDL role. |
 
