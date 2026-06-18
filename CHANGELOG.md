@@ -8,6 +8,16 @@ entry, and `git log` for granular history.
 
 ## 2026-06-18
 
+### Added the "Node Exporter Full" host dashboard (Grafana 1860)
+node_exporter was already installed (a `prometheus` dependency), rebound to the tailnet IP, and
+scraped by Prometheus (`node` job, target `up`) as part of the initial buildout — verified 12 CPU
+threads / 125.7 GiB RAM / ~1 TB free on `/`. The missing piece was a host view beyond the 3-panel
+row on the PG dashboard, so vendored Grafana ID **1860** (`fetch_node_dashboard.py` downloads it,
+rewrites every datasource ref to `prometheus-proximal`, strips `__inputs`), provisioned into the
+"proximal" folder. Panel queries verified live (CPU/RAM/rootfs/load/net) against
+`job="node",instance="proximal"`. node_exporter community dashboard is safe to import (stable
+metric names), unlike the PG-side 9628.
+
 ### Observability stack stood up — Prometheus + Grafana + postgres_exporter
 From-scratch monitoring for the cluster (none existed before). Canonical config in
 `maintenance/observability/` (README + role SQL + units/drop-ins/provisioning/dashboard);

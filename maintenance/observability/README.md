@@ -99,11 +99,19 @@ not seconds; ÷2^31 ≈ 1.4% baseline), `statio_user_indexes`, `process_idle`.
 `max_connections`, cache-hit ratio, transactions/deadlocks/temp per db, checkpoints (forced vs
 timed), bgwriter buffers, supervisor table size + dead tuples, XID wraparound %, top-15
 statements by mean time, and a host row (CPU/mem/disk from node_exporter). Regenerate with
-`python3 dashboards/build_dashboard.py > dashboards/pg-proximal-health.json`.
+`python3 dashboards/build_dashboard.py > dashboards/pg-proximal-health.json`. It's set as the
+Grafana **home** dashboard (org pref `homeDashboardUID` + `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH`).
 
-> A community dashboard (e.g. Grafana ID 9628) was intentionally **not** imported: those target
-> pre-PG17 / older-exporter metric names and would render half-broken here. The custom dashboard
-> uses only metrics verified present against this exporter+PG17.
+**Host dashboard** — `node-exporter-full-proximal.json`: the canonical "Node Exporter Full"
+(Grafana ID **1860**), fetched + pinned to our datasource (uid `prometheus-proximal`) and dropped
+into the same "proximal" folder. Re-fetch/refresh with `python3 dashboards/fetch_node_dashboard.py`
+(downloads 1860, rewrites every datasource ref to ours, strips `__inputs`). Unlike the Postgres
+case, importing a community dashboard here is fine — node_exporter metric names are stable across
+versions, and its panel queries verified live against our `job="node",instance="proximal"` series.
+
+> The Postgres-side community dashboard (Grafana ID 9628) was intentionally **not** imported:
+> those target pre-PG17 / older-exporter metric names and would render half-broken here. The
+> custom `pg-proximal-health` dashboard uses only metrics verified present against this exporter+PG17.
 
 ## Secrets (never in git)
 
