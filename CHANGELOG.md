@@ -42,8 +42,10 @@ autovacuum failure (`n_dead_tup`→0) — it's heap extension from high-rate upd
 non-HOT (`state` column indexed → defeats HOT on `process_supervisor_pointers`). Impact is
 **low**: plateaus ~150–255 MB, dead≈0, fully cached. Monthly off-peak repack stays the right
 cadence (resets the plateau in a quiet window without lock pressure during bursts). Root cause
-is app-side (heartbeat write-amplification / `state` churn). Otherwise cluster is green:
-99.9 % cache hit, nothing blocked, XID wraparound 1.4 %, durability + timeouts intact.
+is app-side — **filed as `striatum#421`** (supervisor reconcile-loop write amplification:
+~8.1M heartbeat writes/window + HOT-defeating `state` churn on `process_supervisor_pointers`).
+Otherwise cluster is green: 99.9 % cache hit, nothing blocked, XID wraparound 1.4 %, durability
++ timeouts intact.
 
 ## 2026-06-17
 

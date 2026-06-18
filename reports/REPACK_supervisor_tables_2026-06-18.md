@@ -66,6 +66,7 @@ Impact is **low**: bounded plateau (~150–255 MB), `n_dead_tup`≈0, fully cach
 off-peak `pg_repack` is the right cadence**: it resets the plateau during a verified-quiet
 window without adding ACCESS EXCLUSIVE lock pressure during bursts. Aggressive daily repacking
 *during* active load would fight the daemon on its hottest tables for little gain. The true
-root-cause fix is app-side (`halbritt/striatum`): cut heartbeat write-amplification / avoid
-churning the indexed `state` column. `desired.md` autovacuum tuning stays — it correctly bounds
-*dead tuples*, just not physical file size.
+root-cause fix is app-side, **filed as `striatum#421`**: cut the reconcile-loop write
+amplification (~8.1M heartbeat writes/window) / avoid churning the indexed `state` column.
+`desired.md` autovacuum tuning stays — it correctly bounds *dead tuples*, just not physical
+file size.
