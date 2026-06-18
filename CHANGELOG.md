@@ -6,6 +6,20 @@ provenance repo. Newest first. Config changes record the live cluster (`proximal
 the 2026-06-16/17 pg_upgrade); see `reports/` and `inventory/` for the evidence behind each
 entry, and `git log` for granular history.
 
+## 2026-06-18
+
+### Off-peak `pg_repack` of bloated heartbeat/chain tables — ~454 MB reclaimed
+Acted on the bloat observation from `RECS_VERIFICATION_2026-06-17.md` (#1). Installed
+`postgresql-17-repack` (PGDG, `pg_repack` 1.5.3) + `CREATE EXTENSION pg_repack` in
+`striatum_daemon`, then online-repacked four tables during a verified low-activity window
+(~13:22 UTC), run as `postgres` with `--no-kill-backend` (never risk killing daemon backends
+on its hottest tables). Record: `reports/REPACK_supervisor_tables_2026-06-18.md`.
+- `process_supervisor_pointers` 255 MB → **2.5 MB**; `daemon_supervisors` 93 → **1.46 MB**;
+  `process_supervisors` 87 → **1.46 MB**; `repo_event_chain_heads` 24 MB → **32 KB**.
+- Verified healthy: 10/10 indexes valid+ready, no orphan repack triggers, write path intact,
+  throughput alive. One-time cleanup (bloat recurs slowly under heartbeat churn) — re-run
+  periodically or reduce write amplification app-side; `desired.md` autovacuum tuning stands.
+
 ## 2026-06-17
 
 ### Verified the 7 mined best-practice recommendations (read-only) — no change applied
