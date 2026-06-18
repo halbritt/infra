@@ -43,12 +43,29 @@ space. All four `pg_repack` runs exited 0 with no killed backends and no errors 
 - Cluster throughput alive (~9/s), backends idle/ClientRead (not lock-blocked), appends/
   heartbeats resume with daemon activity.
 
-## Forward note
+## Forward note — regrowth re-measured under load (2026-06-18, CORRECTS the above)
 
-This is **one-time cleanup, not a fix** — the bloat recurs slowly because the heartbeat
-`UPDATE` churn (`updated_at`, `heartbeat_at`) outpaces in-page HOT reuse on these tiny tables
-(unique indexes on the churned tables defeat some HOT updates). Options as it regrows:
-re-run `pg_repack` periodically (cheap, online), or reduce write amplification app-side
-(`halbritt/striatum`) — e.g. coalesce heartbeats / avoid updating indexed columns. No GUC
-change; `desired.md` autovacuum tuning stays (it correctly bounds *dead tuples*, just not
-physical size). Not urgent — pre-repack size was flat day-over-day, not growing fast.
+The "recurs slowly / flat day-over-day" read in the first draft was a sampling artifact —
+both checks landed in quiet windows. Re-measured during a real workload burst (~510 stmts/s,
+~35× the morning lull), `process_supervisor_pointers` regrew **2.5 MB → 149 MB in ~90 min**,
+then plateaus (~150–255 MB). It does **not** run away.
+
+Mechanism (diagnosed, not assumed):
+- **Not** xmin-horizon pinning — the long (~106 s) daemon transactions are READ COMMITTED, so
+  their snapshot advances (`age(backend_xmin)=7`).
+- **Not** autovacuum failure — `n_dead_tup` returns to **0** (100+ autovac runs); dead tuples
+  are reclaimed.
+- **It is** plain heap extension: at burst rates the heartbeat `UPDATE`s outrun VACUUM's
+  tail-truncation, and 8–20 % are non-HOT (`n_tup_newpage_upd`). Worst on
+  `process_supervisor_pointers`: **80 % HOT / 20 % new-page**, because its `state` column is
+  indexed (partial-unique on `state`, plus `idx_..._run` includes `state`), so any `state`
+  change defeats HOT. `fillfactor=80` is correctly applied.
+
+Impact is **low**: bounded plateau (~150–255 MB), `n_dead_tup`≈0, fully cached (<1 % of the
+32 GB `shared_buffers`), index-accessed — not a stability/durability risk. So the **monthly
+off-peak `pg_repack` is the right cadence**: it resets the plateau during a verified-quiet
+window without adding ACCESS EXCLUSIVE lock pressure during bursts. Aggressive daily repacking
+*during* active load would fight the daemon on its hottest tables for little gain. The true
+root-cause fix is app-side (`halbritt/striatum`): cut heartbeat write-amplification / avoid
+churning the indexed `state` column. `desired.md` autovacuum tuning stays — it correctly bounds
+*dead tuples*, just not physical file size.

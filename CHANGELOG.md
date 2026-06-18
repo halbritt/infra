@@ -32,6 +32,19 @@ disrupting the daemon. Validated: dry run no-op'd cleanly (4 tables ≤16 MB); n
 2026-07-01. Operate: `journalctl -u pg-repack-bloated.service`; run now with
 `sudo systemctl start pg-repack-bloated.service`.
 
+### Correction: bloat regrowth re-measured under load (health-check finding)
+A "how's my database" checkup during a workload burst (~510 stmts/s, ~35× the morning lull)
+showed `process_supervisor_pointers` had already regrown **2.5 MB → 149 MB in ~90 min** —
+the earlier "recurs slowly / flat day-over-day" note was a quiet-window sampling artifact.
+Diagnosed (see corrected forward-note in `reports/REPACK_supervisor_tables_2026-06-18.md`):
+**not** xmin pinning (long daemon txns are READ COMMITTED, `age(backend_xmin)=7`) and **not**
+autovacuum failure (`n_dead_tup`→0) — it's heap extension from high-rate updates, 8–20 %
+non-HOT (`state` column indexed → defeats HOT on `process_supervisor_pointers`). Impact is
+**low**: plateaus ~150–255 MB, dead≈0, fully cached. Monthly off-peak repack stays the right
+cadence (resets the plateau in a quiet window without lock pressure during bursts). Root cause
+is app-side (heartbeat write-amplification / `state` churn). Otherwise cluster is green:
+99.9 % cache hit, nothing blocked, XID wraparound 1.4 %, durability + timeouts intact.
+
 ## 2026-06-17
 
 ### Verified the 7 mined best-practice recommendations (read-only) — no change applied
