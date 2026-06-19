@@ -1,6 +1,6 @@
 [Unit]
 Description=Monthly off-peak pg_repack bloat reclaim for striatum_daemon
-Documentation=https://github.com/halbritt/proximal-pg
+Documentation=https://github.com/halbritt/proximal
 
 [Timer]
 # 1st of each month at 13:00 UTC (~06:00 PDT) — the low-activity window verified

@@ -6,6 +6,19 @@ provenance repo. Newest first. Config changes record the live cluster (`proximal
 the 2026-06-16/17 pg_upgrade); see `reports/` and `inventory/` for the evidence behind each
 entry, and `git log` for granular history.
 
+## 2026-06-19
+
+### Repo reorganized: `proximal-pg` → `proximal` (one system, one repo)
+The repo is now the per-host provenance for the **whole** `proximal` system, not just
+Postgres. All PostgreSQL state moved into a `postgres/` subsystem directory (this file
+included), and the observability stack was promoted from `maintenance/observability/` to a
+top-level [`observability/`](../observability/) sibling (it monitors the whole host, not just
+PG). New top-level `README.md` + `AGENTS.md` describe the one-directory-per-subsystem model;
+future siblings (`llama/`, `ollama/`, `garage/`, `whisper/`) land as their config is captured.
+GitHub repo renamed `halbritt/proximal-pg` → `halbritt/proximal` (old name redirects). All moves
+via `git mv` (history preserved). The instrument prompt `~/git/prompts/POSTGRES_TUNING.md` now
+points its durable-artifact convention at `<system>/postgres`.
+
 ## 2026-06-18
 
 ### Added the "Node Exporter Full" host dashboard (Grafana 1860)

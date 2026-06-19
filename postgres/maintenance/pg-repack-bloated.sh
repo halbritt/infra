@@ -4,7 +4,7 @@
 # SKIPS (and retries next run) rather than ever disrupting the daemon on its
 # hottest tables. Idempotent: a table is repacked only if it exceeds THRESHOLD_MB.
 #
-# Canonical copy: proximal-pg/maintenance/. Installed at /usr/local/bin/.
+# Canonical copy: proximal/postgres/maintenance/. Installed at /usr/local/bin/.
 # Runs as the postgres superuser (peer auth on the local socket) via a systemd
 # timer (pg-repack-bloated.timer). Rationale + first run:
 # reports/REPACK_supervisor_tables_2026-06-18.md.

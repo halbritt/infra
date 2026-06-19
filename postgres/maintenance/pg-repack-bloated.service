@@ -1,6 +1,6 @@
 [Unit]
 Description=Reclaim bloat on striatum_daemon heartbeat/chain tables (online pg_repack)
-Documentation=https://github.com/halbritt/proximal-pg
+Documentation=https://github.com/halbritt/proximal
 After=postgresql.service
 Wants=postgresql.service
 

@@ -1,5 +1,11 @@
 # Handoff — stand up Prometheus + Grafana + postgres_exporter on `proximal`
 
+> **STATUS: COMPLETED (2026-06-18).** This stack is built, running under systemd, and committed.
+> Historical record of the original task — see [`README.md`](README.md) for current state.
+> Paths below predate the repo reorg: this repo is now `proximal` (origin
+> `github.com/halbritt/proximal`) and these files live in `observability/`, not
+> `maintenance/observability/`.
+
 **One task:** build a from-scratch observability stack on host **proximal** to monitor the
 local **PostgreSQL 17.10** cluster. Nothing else — the DB-tuning/repack/issue-filing work from
 this session is already done, committed, and pushed (see "Already done" below); do not redo it.

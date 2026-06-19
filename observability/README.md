@@ -1,6 +1,8 @@
-# maintenance/observability/ — Prometheus + Grafana + postgres_exporter
+# proximal/observability — Prometheus + Grafana + exporters
 
-From-scratch monitoring for the proximal PostgreSQL 17.10 cluster, stood up 2026-06-18.
+System-wide monitoring for host **proximal**: a `node_exporter` (whole-host metrics) and a
+`postgres_exporter` (PostgreSQL 17.10 cluster) feeding Prometheus → Grafana. The observability
+subsystem of the [`proximal`](../README.md) whole-system repo, stood up 2026-06-18.
 This dir holds the **canonical** copies; the box runs installed copies at the paths below.
 Edit here, then re-install. **No secrets are committed** (see "Secrets" at the bottom).
 
