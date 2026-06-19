@@ -1,0 +1,149 @@
+[Unit]
+Description=Striatum local workflow daemon (Go)
+Documentation=https://github.com/halbritt/striatum
+Documentation=file:/home/halbritt/git/proximal/striatum/README.md
+# Needs the network up (tailnet web UI) and Postgres reachable: the daemon opens
+# both a password DSN over loopback TCP (127.0.0.1:5432, from daemon.toml) and an
+# owner PEER connection over the local socket (/var/run/postgresql) as `halbritt`.
+# Neither is a hard Requires=: striatumd validates its config and auto-restarts on
+# a transient DB outage, so ordering-after is enough.
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# --- Identity -------------------------------------------------------------
+# Runs as the human owner, NOT root. This is load-bearing, not cosmetic:
+#   * the owner PEER DSN below authenticates to Postgres as `halbritt` over the
+#     unix socket (peer auth) — a different UID cannot open it;
+#   * lanes are launched with `sudo -n -u striatum-lane`, permitted only by
+#     /etc/sudoers.d/striatum-lane (`halbritt ALL=(striatum-lane) NOPASSWD: ALL`);
+#   * the daemon reads ~/.config/striatum/{daemon.toml,blob.env} and drives the
+#     checkout at ~/git/striatum, all owned by halbritt.
+# Matches the box convention (llama-27b, whisper-stt, praxis-stt-shim are all
+# system units with User=halbritt).
+User=halbritt
+Group=halbritt
+WorkingDirectory=/home/halbritt
+# System units get no XDG_RUNTIME_DIR and (for %h) historically resolve to /root,
+# so set HOME explicitly: striatumd resolves daemon.toml, blob.env and the Claude
+# config via os.UserHomeDir() == $HOME.
+Environment=HOME=/home/halbritt
+
+# --- Runtime dir & socket -------------------------------------------------
+# RuntimeDirectory replaces the user unit's ExecStartPre mkdir/chmod: systemd
+# creates /run/striatum (0700, halbritt:halbritt) on start. Preserve=yes keeps it
+# across daemon restarts so the instance-id / client-token / mcp-http-endpoint /
+# web-ui.sock survive a restart (matching the old /run/user/1000/striatum
+# behaviour); it is removed only on an explicit stop/disable.
+RuntimeDirectory=striatum
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+# Lane-access ACL constraint (the reason the RPC socket is nested one level deep).
+# Supervised lanes run as the striatum-lane OS user and must reach the RPC socket.
+# striatumd grants that by setfacl'ing a traverse ACL (u:striatum-lane:--x) on BOTH
+# the socket's directory AND that directory's PARENT, then rw- on the socket file
+# (go/cmd/striatumd/socket_acl.go::daemonSocketACLTargets). A non-root daemon can
+# only setfacl paths it owns. If the socket sat directly at /run/striatum/daemon-go.sock
+# its parent-of-dir would be /run (root-owned) and the grant dies with
+# "grant daemon socket ACL u:striatum-lane:--x on /run: exit status 1". So the RPC
+# socket lives in /run/striatum/rpc/ — its dir (/run/striatum/rpc) and that dir's
+# parent (/run/striatum) are BOTH halbritt-owned, so both traverse-ACLs apply and
+# /run is never touched. ExecStartPre creates the rpc subdir as the daemon user
+# (ExecStartPre runs under User= too); /run/striatum is made by RuntimeDirectory.
+# The dir must be 0700 (or 0710): striatumd refuses a socket dir more open than
+# that ("daemon socket directory … mode 0755; want 0700 or 0710") before it lays
+# down the lane ACL mask, and the default umask would otherwise make it 0755. The
+# chmod is separate from mkdir so the mode is corrected even when the dir already
+# exists (RuntimeDirectoryPreserve=yes keeps it across restarts).
+ExecStartPre=/usr/bin/mkdir -p /run/striatum/rpc
+ExecStartPre=/usr/bin/chmod 0700 /run/striatum/rpc
+# Pin EVERY runtime path under /run/striatum. STRIATUM_DAEMON_RUNTIME_DIR is the
+# single source of truth admin.RuntimeDir() honours first (else it would fall back
+# to $XDG_RUNTIME_DIR/striatum, which a system unit does not have, then to ~/.cache);
+# it anchors the mcp-http-endpoint discovery file and web-ui.sock (these stay in
+# /run/striatum — only the lane-facing RPC socket needs the rpc/ nesting above).
+# STRIATUM_DAEMON_SOCKET pins the RPC socket for the daemon and is what CLI clients
+# read first (see /etc/profile.d/striatum.sh for the shell side).
+Environment=STRIATUM_DAEMON_RUNTIME_DIR=/run/striatum
+Environment=STRIATUM_DAEMON_SOCKET=/run/striatum/rpc/daemon-go.sock
+ExecStart=/home/halbritt/.local/bin/striatumd -socket /run/striatum/rpc/daemon-go.sock
+
+# --- PATH (RFC: path.conf) ------------------------------------------------
+# striatumd shells out to `git`, `claude`, `tmux`, `sudo`; a system unit starts
+# with a minimal PATH, so put ~/.local/bin (striatum, helpers) and the npm-global
+# bin (claude) ahead of the system dirs.
+Environment=PATH=/home/halbritt/.local/bin:/home/halbritt/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+
+# --- Auto-spawn scheduler (RFC 0122, striatum#212) ------------------------
+# Resident scheduler loop that spawns a run's lanes from its captured run-owner
+# spawn-authorization grant with NO operator RPC after run.start. Inert unless a
+# workflow opted a lane into supervision.auto_spawn AND run.start captured a
+# grant. Disable = comment this out + daemon-reload + restart.
+Environment=STRIATUM_AUTO_SPAWN_SCHEDULER=1
+
+# --- Lane sandbox (RFC 0096 V2 / RFC 0110 L2, striatum#87) ----------------
+# Supervised lanes run as the dedicated, PG-less, login-less `striatum-lane`
+# system user. Host posture (already installed): the striatum-lane account (no PG
+# role), a pg_hba.conf reject for it over the local socket + loopback TCP, and
+# passwordless sudo halbritt->striatum-lane (/etc/sudoers.d/striatum-lane). With
+# these set the daemon launches lanes via `sudo -n -u striatum-lane -- env -i …`
+# and doctor reports lane_pg_isolated=true. See striatum docs/how-to/lane-sandbox.md.
+Environment=STRIATUM_LANE_OS_USER=striatum-lane
+# Secure-profile gate: doctor treats lane PG reachability as BLOCKING, not an
+# advisory warning. Fails closed if the lane user is missing or equals the daemon
+# user. The host posture above satisfies it.
+Environment=STRIATUM_SECURITY_PG_SOCKET_HARDENED=1
+
+# --- Owner DSN + append-only write boundary (RFC 0110, striatum) ----------
+# Owner PEER DSN for the L0 credential bootstrap: rotates striatumd_rw and
+# registers the per-instance authority secret over the owner connection. Peer
+# auth as halbritt over the postgres socket — requires User=halbritt above.
+Environment=STRIATUM_OWNER_DB_URL=postgres://halbritt@/striatum_daemon?host=/var/run/postgresql
+# Forward-only audit cutover: durable audit rows go through the owner-owned
+# SECURITY DEFINER append_audit_row (hash_format_version=3). Rollback = v2 +
+# re-grant INSERT on audit_log to striatumd_rw + restart.
+Environment=STRIATUM_AUDIT_HASH_FORMAT=v3
+# Sole-durable-write-path posture: ALL append-only writes (audit_log + artifacts
+# + events) route through owner-owned SECURITY DEFINER append functions, so the
+# doctor pg_write_boundary=full claim holds. Rollback to P1 = set this to
+# audit_artifacts + re-GRANT INSERT ON striatumd.events TO striatumd_rw + restart.
+Environment=STRIATUM_PG_WRITE_BOUNDARY=full
+
+# --- Tailnet read-only web UI (RFC 0085, web-repo.conf) -------------------
+# Serves a read-only tailnet-identity UI on /run/striatum/web-ui.sock (0600),
+# fronted by `tailscale serve` at https://proximal.tail0ecc2e.ts.net:9443.
+# NOTE: after the socket move, `tailscale serve` must point at the new path —
+# see README.md "Cutover".
+Environment=STRIATUM_DAEMON_WEB_REPOSITORY_ID=repo_a89ecd1664764f039a127c62ab7da3f3
+Environment=STRIATUM_DAEMON_WEB_TAILSCALE=1
+Environment=STRIATUM_DAEMON_WEB_TAILSCALE_USERS=halbritt@gmail.com
+Environment=STRIATUM_DAEMON_WEB_TAILSCALE_HOST=proximal.tail0ecc2e.ts.net
+
+# --- Secrets (blob storage) ----------------------------------------------
+# Garage S3 keys for blob storage. Secret-bearing, so it stays a root-readable
+# on-box file (0600, halbritt) and is NEVER copied into this repo.
+EnvironmentFile=/home/halbritt/.config/striatum/blob.env
+
+# --- Restart policy -------------------------------------------------------
+Restart=on-failure
+RestartSec=2
+# A malformed config is deterministic — restarting cannot fix it and would turn a
+# typo into a tight crash loop. striatumd validates config before any side effect
+# and exits 78 (BSD EX_CONFIG) on a config error; this keeps that exit parked in
+# `failed` (with the exact error in `systemctl status`) instead of looping.
+# Validate before a restart with `striatumd -check-config`. Transient failures
+# keep their non-78 exit and still auto-restart.
+RestartPreventExitStatus=78
+# RFC 0103 W3 (striatum#141): a daemon restart must not orphan supervised lane
+# helpers. KillMode=process signals ONLY the main daemon process, so a restart
+# (or on-failure auto-restart) leaves the Setsid-detached supervisor helpers,
+# their tmux sessions and agent lanes running: the helper bridges over files
+# (event log + packet FIFO), and the agent-loop receiver re-dials the recreated
+# socket on its next poll, so delivery resumes with no rebind. A hard cgroup kill
+# (systemctl kill / OOM) that still takes a helper is recovered by `supervise
+# rebridge`.
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
