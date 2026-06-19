@@ -30,3 +30,10 @@ scrape_configs:
       - targets: ['100.85.100.81:9100']
         labels:
           instance: proximal
+
+  - job_name: gpu
+    static_configs:
+      - targets: ['100.85.100.81:9835']
+        labels:
+          instance: proximal
+          gpu: 'rtx-3090'

@@ -1,0 +1,17 @@
+# Canonical copy of the installed unit at /etc/systemd/system/ollama.service
+# (stock upstream Ollama unit). Tuning lives in the drop-in override.conf — edit that,
+# not this file. Re-install: sudo cp ollama.service /etc/systemd/system/ && sudo systemctl daemon-reload
+[Unit]
+Description=Ollama Service
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/ollama serve
+User=ollama
+Group=ollama
+Restart=always
+RestartSec=3
+Environment="PATH=/home/halbritt/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+
+[Install]
+WantedBy=default.target

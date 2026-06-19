@@ -19,11 +19,12 @@ Each top-level directory is one subsystem, self-contained with its own `README.m
 | dir | subsystem | what it tracks |
 |---|---|---|
 | [`postgres/`](postgres/) | PostgreSQL 17 (`:5432`) | GUC baseline/desired/known-bad, inventory snapshots, tuning reports, pg-repack maintenance, vendored best-practices skill |
-| [`observability/`](observability/) | Prometheus + Grafana + exporters | node_exporter (host) + postgres_exporter → Prometheus → Grafana dashboards; all systemd, tailnet-bound |
+| [`observability/`](observability/) | Prometheus + Grafana + exporters | node_exporter (host) + postgres_exporter (PG) + nvidia_gpu_exporter (RTX 3090) → Prometheus → Grafana dashboards; all systemd, tailnet-bound |
+| [`ollama/`](ollama/) | Ollama inference (`:11434`) | systemd unit + tuning drop-in, model inventory; secondary to the llama.cpp server (`:8081`) |
 
 Planned siblings as they get captured: `llama/` (the `llama-27b.service` LLM server),
-`ollama/`, `garage/` (S3), `whisper/` (STT). Add a directory when a subsystem's config
-is worth versioning; don't pre-create empty ones.
+`garage/` (S3), `whisper/` (STT). Add a directory when a subsystem's config is worth
+versioning; don't pre-create empty ones.
 
 ## The one rule
 
