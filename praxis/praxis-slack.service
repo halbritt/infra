@@ -1,0 +1,28 @@
+[Unit]
+Description=Praxis Slack Socket Mode listener (RFC 0020)
+Documentation=file:///home/halbritt/git/praxis/docs/design/0020-slack-connector.md
+
+# Local-first systemd *user* unit, installed at
+# ~/.config/systemd/user/praxis-slack.service. Sibling of praxisd: this process
+# is the inbound *transport* (an outbound WebSocket to Slack — no public ingress),
+# capturing into the same `inbox` dock that praxisd drains. Run exactly one
+# instance; Slack load-balances events across connections, so a second listener
+# would split the stream.
+
+[Service]
+# Plain loop (no sd_notify), unlike praxisd. The handler is fail-closed: with no
+# Slack credentials it exits 78 and Restart=on-failure backs off rather than spins.
+Type=simple
+WorkingDirectory=/home/halbritt/git/praxis
+Environment=PYTHONPATH=/home/halbritt/git/praxis/src
+# Peer-auth socket DSN: captures land in the same Postgres `inbox` as praxisd.
+Environment=PRAXIS_DB_DSN=postgresql://halbritt@/praxis?host=/var/run/postgresql
+# Slack secrets (PRAXIS_SLACK_APP_TOKEN / _BOT_TOKEN / _BOT_USER / _CHANNEL).
+# Leading '-' => missing file is not fatal (the handler then exits 78, no egress).
+EnvironmentFile=-/home/halbritt/.config/praxis/praxisd.env
+ExecStart=/usr/bin/python3 -m praxis.slack_socket
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

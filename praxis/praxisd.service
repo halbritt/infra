@@ -1,0 +1,31 @@
+[Unit]
+Description=Praxis Executive Function Daemon
+Documentation=file:///home/halbritt/git/praxis/docs/design/0017-safe-boot-delatent.md
+
+# A local-first systemd *user* unit (like striatumd), installed at
+# ~/.config/systemd/user/praxisd.service. Postgres is a system service, so
+# ordering against it is not expressible from the user manager; the daemon's
+# fail-closed boot + Restart=always cover a not-yet-ready database.
+
+[Service]
+Type=notify
+NotifyAccess=main
+WatchdogSec=30
+# Run from the checkout via the module entry point. The host's python3 already
+# carries the deps (psycopg3); PEP 668 blocks a plain `pip --user` install of the
+# `praxisd` script, and the box IS the deployment. A packaged install would set
+# ExecStart=%h/.local/bin/praxisd instead.
+WorkingDirectory=/home/halbritt/git/praxis
+Environment=PYTHONPATH=/home/halbritt/git/praxis/src
+ExecStart=/usr/bin/python3 -m praxis
+Restart=always
+RestartSec=5
+# Peer-auth socket DSN: no password, authenticated by the unit's OS user.
+Environment=PRAXIS_DB_DSN=postgresql://halbritt@/praxis?host=/var/run/postgresql
+Environment=PRAXIS_TICK_SECONDS=5
+# Flight recorder under the user state dir (~/.local/state/praxis), created by systemd.
+StateDirectory=praxis
+Environment=PRAXIS_BOOT_LOG_PATH=%S/praxis/boot.jsonl
+
+[Install]
+WantedBy=default.target

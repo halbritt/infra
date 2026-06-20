@@ -5,6 +5,26 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-06-20
+
+### Captured the `praxis/` subsystem
+New top-level subsystem for **Praxis** (the local-first executive-function daemon at
+`~/git/praxis`). Captures the host integration — two systemd **user** units and the
+secret handling — not the codebase.
+- **Units:** `praxisd.service` (the daemon; Type=notify, 30s watchdog, `Restart=always`,
+  peer-auth `praxis` DB) and the new `praxis-slack.service` (Type=simple Socket Mode
+  listener — an outbound WebSocket to Slack, *no public ingress*; `Restart=on-failure`
+  because a missing token is a deliberate fail-closed exit 78). Both `enabled`, lingering.
+- **Connector went live:** RFC 0020 two-way Slack dialog, verified end-to-end on the box
+  — inbound @mention → `inbox` dock → `praxisd` drain → capture (`actor=[]`,
+  `locality=cloud`, **0 attestations** → stays behind the said/inferred wall, I1/I3) →
+  egress-gated (I4) ack posted back to `#praxis-chat`. Slack app `praxis` (`U0BC0EN59DF`),
+  team `gearheads`.
+- **Secrets:** by name only. Values live in `~/.config/praxis/praxisd.env` (`0600`,
+  user-owned, outside git), loaded via `EnvironmentFile=-`. Load-bearing cred is the
+  `xapp-` app-level token (`connections:write` + Socket Mode toggled on). The Postgres
+  DSN is peer-auth (no password) → config, not credential.
+
 ## 2026-06-19
 
 ### Added NVIDIA GPU exporter to the observability stack
