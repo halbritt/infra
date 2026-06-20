@@ -84,8 +84,11 @@ socket dir be mode `0700`/`0710`, hence the `chmod` in `ExecStartPre`.) Validate
 
 **Fixed upstream** in `e9d01815` (striatum#495): `daemonSocketACLGrantTargets` now
 skips the traverse-ACL on any ancestor already world-traversable, so `/run` is
-left alone. Once the daemon binary is rebuilt to ≥ `e9d01815` and restarted, the
-`rpc/` nesting is no longer needed — see [Deferred](#deferred-redeploy-to-drop-the-rpc-workaround).
+left alone. **Deployed 2026-06-20** — the live daemon runs `e9d01815`. The `rpc/`
+nesting is no longer load-bearing (the fixed daemon would also accept the
+un-nested `/run/striatum/daemon-go.sock`), but it is kept in place because it
+works identically on the fixed binary and removing it costs another restart — see
+[Deploy](#deploy-2026-06-20).
 
 ### How clients find the daemon
 
@@ -99,41 +102,60 @@ Supervised lanes are unaffected: the daemon injects an explicit
 `STRIATUM_DAEMON_SOCKET` + `STRIATUM_MCP_URL` into each lane's wiped (`env -i`)
 environment.
 
-### Operator note: don't trust `striatum daemon status` here
+### Operator note: `striatum daemon status` (fixed in the deployed binary)
 
-`striatum daemon status` is built for the **user**-unit install: it hardcodes the
-unit path to `~/.config/systemd/user/striatumd.service` and expects the socket at
-`RuntimeDir/daemon-go.sock` (no `rpc/`). Against the system unit it therefore
-misreports — `unit … (installed=false, … active=inactive)` and `socket … (present=false)`
-— **even when the daemon is healthy** (note it still prints `doctor: ok` on the
-same call). Use `systemctl status striatumd` for unit state and `striatum doctor`
-for health.
+`striatum daemon status` used to be built for the **user**-unit install — it
+hardcoded the unit path to `~/.config/systemd/user/striatumd.service` and the
+socket to `RuntimeDir/daemon-go.sock` (no `rpc/`), so against the system unit it
+falsely reported `unit … (installed=false, active=inactive)` / `socket …
+(present=false)` even while healthy.
 
-**Fixed upstream** in `e9d01815` (striatum#496): `inspectDaemonUnit` is now
-scope-aware (checks user *and* system scope, prefers the active one) and the
-socket field honours `STRIATUM_DAEMON_SOCKET`. The misreport persists only because
-the *installed* CLI predates the fix; a CLI built from `≥ e9d01815` correctly
-reports `unit … (scope=system, installed=true, … active=active)` and `socket …
-(present=true)` (verified). Resolves on the next CLI rebuild.
+**Fixed upstream** in `e9d01815` (striatum#496) and **deployed 2026-06-20**:
+`inspectDaemonUnit` is now scope-aware and the socket field honours
+`STRIATUM_DAEMON_SOCKET`. The live CLI now reads correctly:
 
-### Deferred: redeploy to drop the `rpc/` workaround
+```
+  unit:    /etc/systemd/system/striatumd.service (scope=system, installed=true, enabled=enabled, active=active)
+  socket:  /run/striatum/rpc/daemon-go.sock (present=true)
+  doctor:  ok
+```
 
-The live `striatumd`/`striatum` binaries (`~/.local/bin`, built 2026-06-19 23:17)
-predate `e9d01815`, so they still need the `rpc/` nesting and still misreport
-`daemon status`. Deploying is a **daemon restart**, which disrupts an in-flight
-committee — so it is deferred until the box is idle. When idle:
+### Deploy (2026-06-20)
 
-1. `cd ~/git/striatum && git pull` (ensure HEAD ≥ `e9d01815`) and `make install`
-   (rebuilds `~/.local/bin/{striatumd,striatum}`).
-2. Optionally simplify the unit: drop the two `rpc/` `ExecStartPre` lines and move
-   the socket back to `/run/striatum/daemon-go.sock` (update `STRIATUM_DAEMON_SOCKET`
-   + the `-socket` flag here and in `profile.d-striatum.sh` + the warmtier drop-in).
-   The fixed daemon skips the `/run` ACL, so the un-nested socket works.
-3. `sudo systemctl restart striatumd` and re-verify (`striatum daemon status` should
-   now read clean; `sudo -u striatum-lane` can still `connect()` the socket).
+The `e9d01815` binaries (#495/#496 fix) are installed at `~/.local/bin` and the
+daemon was restarted onto them. Verified: `daemon status` reads clean (above),
+`doctor ok`, lanes spawn, `sudo -u striatum-lane` can `connect()` the socket.
 
-Leaving the `rpc/` nesting in place is harmless — it works on both the old and new
-binary — so this simplification is optional cleanup, not a required fix.
+**Watch out — the migration trap (striatum#503).** `e9d01815` sits at PG
+**migration 40**, deliberately. `origin/main` HEAD (`bff9e682`) is at migration
+42, and migration **0041** (`event_chain_segments`) adds an inbound FK to the
+**owner-held** `repositories` table — which `striatumd_rw` lacks `REFERENCES` on,
+so a daemon that auto-applies it (`-migrate` defaults true) **crash-loops** with
+`permission denied for table repositories (SQLSTATE 42501)`. A first deploy of
+`bff9e682` hit exactly this and was rolled back; `e9d01815` (migration 40) is the
+pinned-safe build. **Do not `git pull && make install` past migration 40 until
+striatum#503 is fixed** — it will take the daemon down. The previous binaries are
+backed up at `~/.local/bin/.striatum-prev-2026-06-20/` (rollback: `install` them
+back + `sudo systemctl restart striatumd`).
+
+**⚠️ Active conflict (2026-06-20): a committee self-installs migration-42 binaries.**
+Within ~80s of this deploy, an rfc-0137 committee build/verify step ran
+`make install` from a migration-42 checkout (`a88c9dd8`), overwrote
+`~/.local/bin/striatumd`, and the daemon crash-looped (35 restarts) on the #503
+trap until re-pinned to `e9d01815`. As long as a committee that self-installs the
+daemon is running, `~/.local/bin/striatumd` can be clobbered back to a
+crash-looping migration-42 build at any time. Until #503 is resolved, the daemon
+binary is **not stably pinned** here — this needs either (a) striatum#503 fixed in
+code (drop the 0041 owner-FK) so migration-42 builds run, (b) migrations 0041/0042
+applied as the **owner** to advance the DB to 42 (then both builds run), or (c)
+the committee's self-install pointed at a protected daemon path. Decision pending.
+
+The `rpc/` socket nesting is **kept** (it works identically on the fixed binary).
+Un-nesting back to `/run/striatum/daemon-go.sock` is now possible (the fixed
+daemon skips the `/run` ACL) but is optional cleanup that costs another restart —
+not done. If ever wanted: drop the two `rpc/` `ExecStartPre` lines + the `rpc/`
+from `STRIATUM_DAEMON_SOCKET`/`-socket` here, in `profile.d-striatum.sh`, and the
+warmtier drop-in, then restart.
 
 ## Cutover (what was done, in order)
 
