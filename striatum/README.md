@@ -122,11 +122,16 @@ falsely reported `unit … (installed=false, active=inactive)` / `socket …
 
 ### Deploy (2026-06-20) — final state
 
-The daemon and CLI run **`01fea155`** (origin/main: the #495/#496 fix +
-RFC 0136/0141 code) at **PG migration 42**, aligned with the DB (also at 42).
-Verified: `daemon status` reads clean (above), `doctor ok`, lanes spawn,
-`sudo -u striatum-lane` can `connect()` the socket. Backup of the pre-migration
-binaries: `~/.local/bin/.striatum-prev-2026-06-20/`.
+This deploy installed **`01fea155`** (origin/main: the #495/#496 fix +
+RFC 0136/0141 code). The exact daemon binary now **drifts** — the rfc-0137
+committee's `make install` step swaps `~/.local/bin/striatumd` to whatever commit
+it just built (e.g. it was already swapped to `202c1cc5`). That's fine and needs
+no intervention: every `main`-descended build carries the #495/#496 fix, and with
+the **DB at PG migration 42** any build (migration 40 or 42) starts cleanly — so
+the deployed *state* (fix live, no crash-loop) holds regardless of the exact
+commit. Verified after a committee swap: `daemon status` reads clean (above),
+`doctor ok`, lanes spawn, `sudo -u striatum-lane` can `connect()` the socket.
+Backup of the pre-migration binaries: `~/.local/bin/.striatum-prev-2026-06-20/`.
 
 It took three tries — the story is worth keeping because it's a two-role-split
 deployment hazard:
