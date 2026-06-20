@@ -55,18 +55,38 @@ The Postgres DSN in the units is peer-auth (`postgresql://halbritt@/praxis?host=
 
 ## Live Slack app (account-level fact, not a secret)
 
-App `praxis` (`U0BC0EN59DF`) in Slack workspace/team **`gearheads`**, channel
-`#praxis-chat`. Current scopes reliably receive events via **@mention or DM**; plain
-channel messages additionally need `channels:history` + the `message.channels` bot event.
+App `praxis` (`U0BC0EN59DF`, app id `A0BBS89SPGB`) in Slack workspace/team
+**`gearheads`** (`TG10DUY2V`). The default channel `#praxis-chat` (`C0BBH54SVST`) is a
+**private** channel — so the load-bearing message scope is `groups:*`, not `channels:*`
+(a public-channel assumption cost two reinstalls; check `is_private` before scoping).
+
+- **Bot scopes** (granted, via `auth.test` `x-oauth-scopes`): `chat:write`, `im:write`,
+  `app_mentions:read`, `im:history`, `channels:history`, `groups:history`. Socket Mode is
+  enabled and uses the `xapp-` app token's `connections:write`.
+- **Subscribed bot events:** `app_mention`, `message.im`, `message.channels` (public),
+  `message.groups` (private — the one that delivers plain `#praxis-chat` messages).
+- Capture paths verified live 2026-06-20: **@mention** (`app_mention`), **DM**
+  (`message.im`), and **plain private-channel message** (`message.groups`).
+
+**Editing the app config** (scopes/events) is done via the **App Manifest API** with a
+**configuration token** (`xoxe.xoxp-…`, minted by the owner at api.slack.com/apps → "Your
+App Configuration Tokens", ~12h TTL — the bot/app tokens are `not_allowed_token_type`
+here): `apps.manifest.export` → edit `oauth_config.scopes.bot` /
+`settings.event_subscriptions.bot_events` → `apps.manifest.update`. Any **scope** change
+returns `permissions_updated: true` and needs a one-click **Reinstall** (OAuth re-consent);
+**event** changes apply live to the running Socket Mode connection (no restart). Bot tokens
+do **not** rotate on reinstall (the same `xoxb-` gains the new scope).
 
 ## The wall (why this is safe to expose to a cloud channel)
 
 Slack is a public/cloud channel, so by Praxis invariant **an inbound Slack message is
 only ever a *capture* (untrusted ingest), never an attestation** — it cannot cross the
 said/inferred wall (I1) and cannot trigger an action (I3). Outbound is always
-egress-gated (I4, `verify_no_egress_leak`, fail-closed). Verified live 2026-06-20:
-inbound @mention → `inbox` row → `praxisd` drain → capture with `actor=[]`,
-`locality=cloud`, **0 attestation_events** → egress-gated ack returned to Slack.
+egress-gated (I4, `verify_no_egress_leak`, fail-closed). "Public/cloud" here means trust,
+not Slack channel visibility — a *private* Slack channel is still an untrusted cloud
+surface and gets the same treatment. Verified live 2026-06-20: inbound message (@mention
+*and* plain private-channel message) → `inbox` row → `praxisd` drain → capture with
+`actor=[]`, `locality=cloud`, **0 attestation_events** → egress-gated ack returned to Slack.
 
 ## Operate
 

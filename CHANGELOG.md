@@ -16,10 +16,14 @@ secret handling — not the codebase.
   listener — an outbound WebSocket to Slack, *no public ingress*; `Restart=on-failure`
   because a missing token is a deliberate fail-closed exit 78). Both `enabled`, lingering.
 - **Connector went live:** RFC 0020 two-way Slack dialog, verified end-to-end on the box
-  — inbound @mention → `inbox` dock → `praxisd` drain → capture (`actor=[]`,
-  `locality=cloud`, **0 attestations** → stays behind the said/inferred wall, I1/I3) →
-  egress-gated (I4) ack posted back to `#praxis-chat`. Slack app `praxis` (`U0BC0EN59DF`),
-  team `gearheads`.
+  — inbound (@mention, DM, **and plain private-channel message**) → `inbox` dock →
+  `praxisd` drain → capture (`actor=[]`, `locality=cloud`, **0 attestations** → stays
+  behind the said/inferred wall, I1/I3) → egress-gated (I4) ack posted back to
+  `#praxis-chat`. Slack app `praxis` (`U0BC0EN59DF`, `A0BBS89SPGB`), team `gearheads`.
+- **Slack scopes (via App Manifest API + config token):** added `channels:history` /
+  `message.channels` then `groups:history` / `message.groups` — `#praxis-chat` is a
+  *private* channel, so `groups:*` is the load-bearing pair (cost two reinstalls; a scope
+  change forces an OAuth re-consent, event changes apply live). See `praxis/README.md`.
 - **Secrets:** by name only. Values live in `~/.config/praxis/praxisd.env` (`0600`,
   user-owned, outside git), loaded via `EnvironmentFile=-`. Load-bearing cred is the
   `xapp-` app-level token (`connections:write` + Socket Mode toggled on). The Postgres
