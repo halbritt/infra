@@ -136,15 +136,35 @@ running with `striatumd -describe`; do not trust this commit hash to be current.
 What holds regardless of the drift:
 - **#495/#496 fix is present** in the live binary — `202c1cc5` descends from
   `e9d01815` (verify any live sha with `git merge-base --is-ancestor e9d01815 <sha>`).
-- **#503 crash-loop is resolved at the DB level, not the binary level.** The live
-  `202c1cc5` does **not** contain the #503 source fix (it predates `01fea155`/#507)
-  and only knows migrations through 40 — yet it runs clean, because the **DB is
-  already at migration 42**, so its `-migrate` step finds nothing to apply and
-  never touches the broken `0041`. Any build (pre- or post-#507, migration 40 or
-  42) starts cleanly for the same reason.
+- **#503 crash-loop is resolved at the DB level (migration 42) — but the on-disk
+  binary must itself support schema ≥ 42 to boot.** striatumd enforces a hard
+  version ceiling at startup (`go/pkg/db/migrations.go`: it errors when the live DB
+  schema exceeds the binary's `LatestDaemonDBVersion`), *independent* of whether
+  `-migrate` finds work. `202c1cc5` has `LatestDaemonDBVersion = 40`, so against the
+  migration-42 DB it never reaches `-migrate` — it dies at the ceiling with `daemon
+  PostgreSQL schema version 42 is newer than supported 40`. A drifted-back build
+  therefore only *looks* healthy while a 42-capable process from before the clobber
+  is still resident; the next restart bricks it. (So the earlier "any migration-40
+  build starts cleanly" was wrong — it described the running process, not a restart.)
+  The **#495/#496 fix is still present** regardless (`202c1cc5` ⊇ `e9d01815`).
 
-Verified after a committee swap: `daemon status` reads clean (above), `doctor ok`,
-lanes spawn, `sudo -u striatum-lane` can `connect()` the socket. Backup of the
+**Empirically confirmed 2026-06-20** while wiring the RFC 0137 exporter: pinning the
+MCP port (above) needed a `striatumd` restart, which re-exec'd the 16:15 on-disk
+binary (`202c1cc5`, ceiling 40) and crash-looped on that exact error — taking
+`/metrics` down. **Recovery:** rebuild from a clean worktree off `origin/main` (it
+tracks `LatestDaemonDBVersion = 42` via #507) and install *only* the daemon binary:
+```bash
+git worktree add --detach /tmp/wt origin/main && make -C /tmp/wt/go build
+cp /tmp/wt/go/bin/striatumd ~/.local/bin/
+sudo systemctl reset-failed striatumd && sudo systemctl restart striatumd
+git -C /tmp/wt worktree remove /tmp/wt
+```
+Do **NOT** `make install` (it runs the forbidden `striatum daemon install`, #509).
+The live-binary invariant: its `LatestDaemonDBVersion` must be ≥ the live DB schema.
+
+Earlier the swap *looked* clean — `daemon status` reads ok (above), `doctor ok`,
+lanes spawn, `sudo -u striatum-lane` can `connect()` the socket — but that was the
+resident 42-capable process, not the drifted on-disk binary. Backup of the
 pre-migration binaries: `~/.local/bin/.striatum-prev-2026-06-20/`.
 
 It took three tries — the story is worth keeping because it's a two-role-split

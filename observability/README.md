@@ -1,11 +1,14 @@
 # proximal/observability — Prometheus + Grafana + exporters
 
 System-wide monitoring for host **proximal**: a `node_exporter` (whole-host metrics), a
-`postgres_exporter` (PostgreSQL 17.10 cluster), and an `nvidia_gpu_exporter` (RTX 3090) feeding
+`postgres_exporter` (PostgreSQL 17.10 cluster), an `nvidia_gpu_exporter` (RTX 3090), and the
+`striatumd` RFC 0137 exporter (the local workflow daemon's lifecycle/liveness internals) feeding
 Prometheus → Grafana. The observability subsystem of the [`proximal`](../README.md) whole-system
 repo, stood up 2026-06-18 (GPU exporter added 2026-06-19). A second GPU target — the **peecee**
 Windows 11 workstation (RTX 3090 Ti, the same `nvidia_gpu_exporter` as a WinSW service over the
 tailnet) — was added 2026-06-20; see [`nvidia-gpu-exporter-peecee/`](nvidia-gpu-exporter-peecee/).
+The **striatumd** exporter was wired in 2026-06-20 (scrape job + committed rules + dashboard);
+see ["striatumd exporter (RFC 0137)"](#striatumd-exporter-rfc-0137) below.
 This dir holds the **canonical** copies; the box runs installed copies at the paths below.
 Edit here, then re-install. **No secrets are committed** (see "Secrets" at the bottom).
 
@@ -31,6 +34,12 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 | nvidia_gpu_exporter (peecee) | `nvidia_gpu_exporter` (WinSW, on **peecee**) | `100.113.63.58:9835` | RTX 3090 Ti; Windows host, scraped over tailnet |
 | Prometheus          | `prometheus`                    | `100.85.100.81:9091`  | 9090 = `cockpit.socket` |
 | Grafana             | `grafana-server`                | `100.85.100.81:3003`  | 3000/3001/3002 taken (open-webui, token-dashboard) |
+| striatumd exporter  | `striatumd` (RFC 0137 `/metrics`) | **`127.0.0.1:9464`** | loopback-only + tokenless (RFC 0137 §4); 9464 = prometheus-community default, free here |
+
+> The striatumd exporter is the one **loopback-bound** target: `/metrics` is multiplexed onto the
+> daemon's MCP/HTTP listener, which is loopback + tokenless by RFC 0137 §4. Prometheus runs on this
+> host, so it scrapes `127.0.0.1:9464` directly. Do **not** rebind it to the tailnet — front it with
+> `tailscale serve` + a scoped bearer if remote scrape is ever needed (mirrors the RFC 0085 web-ui).
 
 The five **proximal** units are `systemctl enable`d. Each has a `*.service.d/` drop-in that orders
 it `After=tailscaled.service` + `network-online.target` and sets `Restart=on-failure` /
@@ -53,6 +62,8 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 | `prometheus/prometheus.yml` | `/etc/prometheus/prometheus.yml` |
 | `prometheus/prometheus.default` | `/etc/default/prometheus` |
 | `prometheus/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus.service.d/` |
+| `prometheus/rules/striatum-recording.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
+| `prometheus/rules/striatum-alerting.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
 | `grafana/grafana-server.env.overrides` | appended to `/etc/default/grafana-server` |
 | `grafana/10-proximal.conf` | `/etc/systemd/system/grafana-server.service.d/` |
 | `grafana/provisioning-datasources-proximal.yaml` | `/etc/grafana/provisioning/datasources/proximal.yaml` |
@@ -60,7 +71,12 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 | `grafana/dashboards/pg-proximal-health.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/node-exporter-full-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/nvidia-gpu-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
+| `grafana/dashboards/striatum-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `role.sql` | run once via `sudo -u postgres psql` |
+
+The port-pin that makes `striatumd` scrapeable lives in the **striatum** subsystem, not here:
+`Environment=STRIATUM_DAEMON_MCP_HTTP_ADDR=127.0.0.1:9464` in
+[`../striatum/striatumd.service`](../striatum/striatumd.service).
 
 ## Install from scratch (the order 2026-06-18 used)
 
@@ -97,7 +113,9 @@ curl -s http://100.85.100.81:9187/metrics | grep '^pg_up'                     # 
 curl -s http://100.85.100.81:9187/metrics | grep '^pg_scrape_collector_success' # all 1
 curl -s http://100.85.100.81:9835/metrics | grep '^nvidia_smi_gpu_info'        # RTX 3090 line, value 1
 curl -s http://100.113.63.58:9835/metrics | grep '^nvidia_smi_gpu_info'        # peecee RTX 3090 Ti, value 1
-curl -s http://100.85.100.81:9091/api/v1/targets | jq '.data.activeTargets[].health' # all "up" (gpu×2/node/postgresql/prometheus)
+curl -s http://127.0.0.1:9464/metrics | grep -c '^# HELP striatum_'            # 15 striatumd families
+curl -s http://100.85.100.81:9091/api/v1/targets | jq '.data.activeTargets[].health' # all "up" (gpu×2/node/postgresql/prometheus/striatumd)
+curl -s http://100.85.100.81:9091/api/v1/rules | jq '[.data.groups[].rules[]|select(.health!="ok")]|length' # 0 rule errors
 curl -s http://100.85.100.81:3003/api/health                                  # database ok
 ```
 
@@ -145,6 +163,71 @@ exact `nvidia_smi_*` metric names this exporter emits (23 panels: utilization, V
 fan, clocks/throttle reasons). On the 3090, expect VRAM pinned ~23 GiB by the local LLM server.
 The exporter logs a few `level=ERROR … unexpected characters` lines for exotic `nvidia-smi` fields
 (`power_smoothing.*`) — best-effort parse warnings, harmless; metrics still serve.
+
+## striatumd exporter (RFC 0137)
+
+The `striatumd` workflow daemon exports its lifecycle/liveness internals as 15 Prometheus
+families (RFC 0137, implemented D247). Wired into this stack 2026-06-20. Unlike the other
+exporters this one is **loopback-only**: `/metrics` is multiplexed onto the daemon's MCP/HTTP
+listener (loopback + tokenless by RFC 0137 §4), so Prometheus — running on this same host —
+scrapes `127.0.0.1:9464` directly with no TLS/bearer.
+
+**The scrape target had to be pinned.** The MCP/HTTP listener binds a **random port per boot**
+(published to `/run/striatum/mcp-http-endpoint`), giving Prometheus no stable target. Fixed by
+setting `Environment=STRIATUM_DAEMON_MCP_HTTP_ADDR=127.0.0.1:9464` in the striatum subsystem's
+unit ([`../striatum/striatumd.service`](../striatum/striatumd.service)) — that env var is the
+default for the daemon's `-mcp-http-addr` flag, so it pins the addr without touching `ExecStart`.
+The daemon still writes the dynamic endpoint file; scraping ignores it and uses the pinned addr.
+
+**Scrape job** — `striatumd` → `127.0.0.1:9464` (in `prometheus/prometheus.yml`). Verify it is
+`up` at `100.85.100.81:9091/targets`.
+
+**Rules** — `prometheus/rules/striatum-{recording,alerting}.rules.yml`, **vendored verbatim** from
+the striatum repo (`go/pkg/metrics/rules/{recording,alerting}_rules.yml`) with only a provenance
+header prepended; install to `/etc/prometheus/rules/` and reference them from `rule_files:`. They
+pre-aggregate the counters/histograms (5 recording rules) and map each striatumd failure class to a
+signal (9 alerts: `NecrosisRate`, `DoctorRed`, `WedgeAgeTail`, `LivenessMarginCollapse`,
+`SupervisorOriginFlood`, plus the staleness/tick/conservation/cardinality closers). A guardrail
+test in the striatum repo (`TestPrometheusRulesReferenceRegisteredMetrics`) asserts every series
+they reference is one the exporter actually emits, so keep the bodies byte-identical to the source.
+**Refresh** when the striatum copies change:
+```bash
+SRC=~/git/striatum/go/pkg/metrics/rules; DST=~/git/proximal/observability/prometheus/rules
+# (re-run the header+cat from the repo, then) sudo cp $DST/*.rules.yml /etc/prometheus/rules/
+promtool check rules /etc/prometheus/rules/striatum-*.rules.yml && sudo systemctl reload prometheus
+```
+The alerts **evaluate** but are **not routed** — there is no Alertmanager on this box yet
+(`alerting.alertmanagers: []`). Firing alerts are visible at `:9091/alerts`. (`LivenessMarginCollapse`
+may sit `pending`/`firing` whenever lanes carry elapsed liveness deadlines — a real signal, not a
+wiring fault.)
+
+**Dashboard** — `grafana/dashboards/striatum-proximal.json` (uid `striatum-proximal`, folder
+"proximal"), generated by `build_striatum_dashboard.py`. Panels map 1:1 to the RFC 0137 §3 taxonomy:
+the necrosis/apoptosis lifecycle spine, wedge-age p99 + liveness-margin p05 forewarning, the #417
+supervisor-flood signal, runs-by-state, lease transitions, non-terminal liveness events (F-A6), and
+an exporter-health/data-quality row (snapshot age, tick status, cardinality clips, lifecycle
+balance, doctor). It copies two load-bearing PromQL conventions from the rule files: the wedge-age
+and liveness-margin **gauge histograms** are read by `histogram_quantile` directly (never through
+`rate()`), and `cardinality_clipped_total` is a per-tick snapshot read with `max_over_time` (never
+`increase()`). Regenerate with
+`python3 dashboards/build_striatum_dashboard.py > dashboards/striatum-proximal.json`.
+
+> **Restart hazard (learned wiring this in).** Pinning the port requires a `striatumd` restart,
+> which re-exec's the on-disk binary `~/.local/bin/striatumd`. That binary is **committee-managed
+> and drifts**; if it has drifted to one that supports an *older* DB schema than the live DB it
+> crash-loops (`daemon PostgreSQL schema version N is newer than supported M`) and takes `/metrics`
+> down with it. Recovery is to rebuild from a **clean worktree off `origin/main`** (which tracks the
+> current schema) and install just the daemon binary — **never** `make install` (it runs the
+> forbidden `striatum daemon install`, #509). Full detail in
+> [`../striatum/README.md`](../striatum/README.md) (#503 / binary-drift).
+
+**Verify striatumd end-to-end:**
+```bash
+curl -s http://127.0.0.1:9464/metrics | grep -c '^# HELP striatum_'                      # 15
+curl -s http://100.85.100.81:9091/api/v1/targets | jq -r '.data.activeTargets[]|select(.labels.job=="striatumd")|.health'  # up
+curl -s http://100.85.100.81:9091/api/v1/rules | jq '.data.groups|map(.rules|length)|add' # 14 (5+9)
+# Grafana: dashboard "Striatum daemon — proximal (RFC 0137)" in folder proximal, panels live.
+```
 
 ## Secrets (never in git)
 

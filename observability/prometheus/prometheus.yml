@@ -11,7 +11,15 @@ global:
 alerting:
   alertmanagers: []
 
-rule_files: []
+# RFC 0137 striatumd exporter rules, vendored verbatim from the striatum repo
+# (go/pkg/metrics/rules/) — recording rules pre-aggregate the counters/histograms
+# the alerts and dashboard read; alerting rules map each striatumd failure class to
+# a signal. They evaluate here but are not yet routed (no Alertmanager on this box —
+# see `alerting:` above); firing alerts are visible at :9091/alerts. Refresh by
+# re-copying from the striatum checkout (see README "striatumd exporter").
+rule_files:
+  - /etc/prometheus/rules/striatum-recording.rules.yml
+  - /etc/prometheus/rules/striatum-alerting.rules.yml
 
 scrape_configs:
   - job_name: prometheus
@@ -43,3 +51,15 @@ scrape_configs:
         labels:
           instance: peecee
           gpu: 'rtx-3090-ti'
+
+  # striatumd RFC 0137 exporter. /metrics is multiplexed onto the daemon's loopback
+  # MCP/HTTP listener, pinned to 127.0.0.1:9464 via STRIATUM_DAEMON_MCP_HTTP_ADDR in
+  # the striatumd.service unit (it binds a random port per boot otherwise). Loopback
+  # + tokenless by RFC 0137 §4; Prometheus runs on this host so it scrapes directly,
+  # no TLS/bearer. Do NOT move this to the tailnet IP — keep /metrics off-box (front
+  # it with `tailscale serve` + a scoped token if remote scrape is ever needed).
+  - job_name: striatumd
+    static_configs:
+      - targets: ['127.0.0.1:9464']
+        labels:
+          instance: proximal
