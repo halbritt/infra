@@ -262,9 +262,12 @@ tiers share `#proximal-alerts` but get different urgency:
 An **inhibit rule** suppresses a `warning` when a `page` for the same `alertname`+`instance` is
 already firing (no double-notify). Grouping is by `alertname`/`severity`/`instance`.
 
-**The Slack app + the one secret.** The app is created from `alertmanager/proximal-alerts.slack-manifest.json`
-via the manifest API (`apps.manifest.create`, needs an `xoxe.xoxp-` config token minted at
-api.slack.com/apps, ~12h TTL), then an **Incoming Webhook** is added to `#proximal-alerts`. That
+**The Slack app + the one secret.** Live app: **`proximal-alerts`** (`app_id A0BBJQQPGQ7`) in
+workspace **`gearheads`** — an account-level fact, not a secret. Created from
+`alertmanager/proximal-alerts.slack-manifest.json` via the manifest API (`apps.manifest.create`
+with `--data-urlencode manifest@…` — Slack wants the manifest as a form field, not `-F …=@file`;
+needs an `xoxe.xoxp-` config token minted at api.slack.com/apps, ~12h TTL), then an **Incoming
+Webhook** is added to `#proximal-alerts` (browser, one click — see below). That
 webhook URL is the **only** credential and is **never in git** — Alertmanager reads it from
 `/etc/alertmanager/slack_webhook_url` (0640 `root:prometheus`) via `slack_configs.api_url_file`. The
 repo carries `slack_webhook_url.template` (provisioning steps) + the manifest only.
