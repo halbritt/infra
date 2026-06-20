@@ -3,7 +3,9 @@
 System-wide monitoring for host **proximal**: a `node_exporter` (whole-host metrics), a
 `postgres_exporter` (PostgreSQL 17.10 cluster), and an `nvidia_gpu_exporter` (RTX 3090) feeding
 Prometheus → Grafana. The observability subsystem of the [`proximal`](../README.md) whole-system
-repo, stood up 2026-06-18 (GPU exporter added 2026-06-19).
+repo, stood up 2026-06-18 (GPU exporter added 2026-06-19). A second GPU target — the **peecee**
+Windows 11 workstation (RTX 3090 Ti, the same `nvidia_gpu_exporter` as a WinSW service over the
+tailnet) — was added 2026-06-20; see [`nvidia-gpu-exporter-peecee/`](nvidia-gpu-exporter-peecee/).
 This dir holds the **canonical** copies; the box runs installed copies at the paths below.
 Edit here, then re-install. **No secrets are committed** (see "Secrets" at the bottom).
 
@@ -26,13 +28,16 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 | postgres_exporter   | `prometheus-postgres-exporter`  | `100.85.100.81:9187`  | 9187 free |
 | node_exporter       | `prometheus-node-exporter`      | `100.85.100.81:9100`  | dep of `prometheus`; rebound off `*` |
 | nvidia_gpu_exporter | `nvidia_gpu_exporter`           | `100.85.100.81:9835`  | 9835 free (project default) |
+| nvidia_gpu_exporter (peecee) | `nvidia_gpu_exporter` (WinSW, on **peecee**) | `100.113.63.58:9835` | RTX 3090 Ti; Windows host, scraped over tailnet |
 | Prometheus          | `prometheus`                    | `100.85.100.81:9091`  | 9090 = `cockpit.socket` |
 | Grafana             | `grafana-server`                | `100.85.100.81:3003`  | 3000/3001/3002 taken (open-webui, token-dashboard) |
 
-All five are `systemctl enable`d. Each has a `*.service.d/` drop-in that orders it
-`After=tailscaled.service` + `network-online.target` and sets `Restart=on-failure` /
+The five **proximal** units are `systemctl enable`d. Each has a `*.service.d/` drop-in that orders
+it `After=tailscaled.service` + `network-online.target` and sets `Restart=on-failure` /
 `RestartSec=5`, so a bind that races tailscale at boot self-heals. (`nvidia_gpu_exporter`'s
 drop-in also clears the `.deb`'s all-interfaces `ExecStart` and re-points it at the tailnet IP.)
+The peecee exporter is the one off-box piece — a Windows service (WinSW), not systemd; it gets the
+same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter-peecee/`).
 
 ## Files → install locations
 
@@ -44,6 +49,7 @@ drop-in also clears the `.deb`'s all-interfaces `ExecStart` and re-points it at 
 | `node-exporter/prometheus-node-exporter.default` | `/etc/default/prometheus-node-exporter` |
 | `node-exporter/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus-node-exporter.service.d/` |
 | `nvidia-gpu-exporter/10-tailnet-bind.conf` | `/etc/systemd/system/nvidia_gpu_exporter.service.d/` (binary+unit from the `.deb`) |
+| `nvidia-gpu-exporter-peecee/nvidia_gpu_exporter-svc.xml` | `C:\Program Files\nvidia_gpu_exporter\` on **peecee** (WinSW service config) |
 | `prometheus/prometheus.yml` | `/etc/prometheus/prometheus.yml` |
 | `prometheus/prometheus.default` | `/etc/default/prometheus` |
 | `prometheus/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus.service.d/` |
@@ -90,7 +96,8 @@ sudo systemctl enable --now prometheus-postgres-exporter prometheus-node-exporte
 curl -s http://100.85.100.81:9187/metrics | grep '^pg_up'                     # pg_up 1
 curl -s http://100.85.100.81:9187/metrics | grep '^pg_scrape_collector_success' # all 1
 curl -s http://100.85.100.81:9835/metrics | grep '^nvidia_smi_gpu_info'        # RTX 3090 line, value 1
-curl -s http://100.85.100.81:9091/api/v1/targets | jq '.data.activeTargets[].health' # all "up" (gpu/node/postgresql/prometheus)
+curl -s http://100.113.63.58:9835/metrics | grep '^nvidia_smi_gpu_info'        # peecee RTX 3090 Ti, value 1
+curl -s http://100.85.100.81:9091/api/v1/targets | jq '.data.activeTargets[].health' # all "up" (gpu×2/node/postgresql/prometheus)
 curl -s http://100.85.100.81:3003/api/health                                  # database ok
 ```
 

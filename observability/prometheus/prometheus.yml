@@ -37,3 +37,9 @@ scrape_configs:
         labels:
           instance: proximal
           gpu: 'rtx-3090'
+      # peecee — Windows 11 workstation, RTX 3090 Ti, nvidia_gpu_exporter as a
+      # WinSW service bound to its tailnet IP (see nvidia-gpu-exporter-peecee/).
+      - targets: ['100.113.63.58:9835']
+        labels:
+          instance: peecee
+          gpu: 'rtx-3090-ti'
