@@ -23,6 +23,12 @@ RestartSec=5
 # Peer-auth socket DSN: no password, authenticated by the unit's OS user.
 Environment=PRAXIS_DB_DSN=postgresql://halbritt@/praxis?host=/var/run/postgresql
 Environment=PRAXIS_TICK_SECONDS=5
+# Slack bot token + channel (PRAXIS_SLACK_BOT_TOKEN / _CHANNEL), shared with the
+# sibling praxis-slack listener. The daemon needs them to deliver a reflex/cognition
+# proposal back out the *originating* connector (RFC 0020 follow-on, propose-only,
+# egress-gated). Leading '-' => a missing file is non-fatal: with no carrier the
+# proposal router is simply a no-op (the proposal still lands as an internal delta).
+EnvironmentFile=-/home/halbritt/.config/praxis/praxisd.env
 # Flight recorder under the user state dir (~/.local/state/praxis), created by systemd.
 StateDirectory=praxis
 Environment=PRAXIS_BOOT_LOG_PATH=%S/praxis/boot.jsonl
