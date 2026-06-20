@@ -67,6 +67,20 @@ ExecStartPre=/usr/bin/chmod 0700 /run/striatum/rpc
 # read first (see /etc/profile.d/striatum.sh for the shell side).
 Environment=STRIATUM_DAEMON_RUNTIME_DIR=/run/striatum
 Environment=STRIATUM_DAEMON_SOCKET=/run/striatum/rpc/daemon-go.sock
+# Pin the loopback MCP/HTTP listener to a STABLE port (RFC 0137). That listener
+# also multiplexes the Prometheus exporter at /metrics; left unset it binds a
+# RANDOM port per boot (published to /run/striatum/mcp-http-endpoint), which gives
+# Prometheus no fixed scrape target. STRIATUM_DAEMON_MCP_HTTP_ADDR is the default
+# for the -mcp-http-addr flag (go/cmd/striatumd/main.go:75,1116), so setting it
+# here pins the addr without touching ExecStart. 9464 is the prometheus-community
+# default exporter port and is free on this box (9091 Prometheus, 9100 node, 9187
+# pg, 9835 gpu are the other observability ports). Loopback-only + tokenless by
+# RFC 0137 §4 — Prometheus runs on this host and scrapes 127.0.0.1:9464 directly;
+# do NOT bind /metrics to the tailnet (front it with `tailscale serve` if ever
+# remote-scraped). The daemon still writes the dynamic mcp-http-endpoint file;
+# scraping uses this pinned addr instead. Restart rebinds the MCP port, so drain
+# to no active run first (see README "Cutover").
+Environment=STRIATUM_DAEMON_MCP_HTTP_ADDR=127.0.0.1:9464
 ExecStart=/home/halbritt/.local/bin/striatumd -socket /run/striatum/rpc/daemon-go.sock
 
 # --- PATH (RFC: path.conf) ------------------------------------------------

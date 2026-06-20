@@ -84,11 +84,14 @@ socket dir be mode `0700`/`0710`, hence the `chmod` in `ExecStartPre`.) Validate
 
 **Fixed upstream** in `e9d01815` (striatum#495): `daemonSocketACLGrantTargets` now
 skips the traverse-ACL on any ancestor already world-traversable, so `/run` is
-left alone. **Deployed 2026-06-20** — the live daemon runs `01fea155` (origin/main,
-which contains this fix). The `rpc/` nesting is no longer load-bearing (the fixed
-daemon would also accept the un-nested `/run/striatum/daemon-go.sock`), but it is
-kept in place because it works identically on the fixed binary and removing it
-costs another restart — see [Deploy](#deploy-2026-06-20--final-state).
+left alone. **Deployed 2026-06-20** — this fix is present in the live binary (the
+committee-managed binary drifts, but every `main`-descended build contains
+`e9d01815`; verify with `git merge-base --is-ancestor e9d01815 $(striatumd -describe
+| grep -oE 'git_sha=[0-9a-f]+' | cut -d= -f2)`). The `rpc/` nesting is no longer
+load-bearing (the fixed daemon would also accept the un-nested
+`/run/striatum/daemon-go.sock`), but it is kept in place because it works
+identically on the fixed binary and removing it costs another restart — see
+[Deploy](#deploy-2026-06-20--final-state).
 
 ### How clients find the daemon
 
@@ -122,16 +125,27 @@ falsely reported `unit … (installed=false, active=inactive)` / `socket …
 
 ### Deploy (2026-06-20) — final state
 
-This deploy installed **`01fea155`** (origin/main: the #495/#496 fix +
-RFC 0136/0141 code). The exact daemon binary now **drifts** — the rfc-0137
-committee's `make install` step swaps `~/.local/bin/striatumd` to whatever commit
-it just built (e.g. it was already swapped to `202c1cc5`). That's fine and needs
-no intervention: every `main`-descended build carries the #495/#496 fix, and with
-the **DB at PG migration 42** any build (migration 40 or 42) starts cleanly — so
-the deployed *state* (fix live, no crash-loop) holds regardless of the exact
-commit. Verified after a committee swap: `daemon status` reads clean (above),
-`doctor ok`, lanes spawn, `sudo -u striatum-lane` can `connect()` the socket.
-Backup of the pre-migration binaries: `~/.local/bin/.striatum-prev-2026-06-20/`.
+This deploy *installed* **`01fea155`** (origin/main: the #495/#496 fix +
+RFC 0136/0141 code), but the exact daemon binary **drifts** and you should NOT
+assume the live binary is `01fea155`. The rfc-0137 committee's `make install` step
+swaps `~/.local/bin/striatumd` to whatever it just built — as of last verification
+the live binary was **`202c1cc5`** (`striatumd -describe`: `build_dirty=dirty`,
+`migration_count=40`), a build that *predates* `01fea155`. Check what is actually
+running with `striatumd -describe`; do not trust this commit hash to be current.
+
+What holds regardless of the drift:
+- **#495/#496 fix is present** in the live binary — `202c1cc5` descends from
+  `e9d01815` (verify any live sha with `git merge-base --is-ancestor e9d01815 <sha>`).
+- **#503 crash-loop is resolved at the DB level, not the binary level.** The live
+  `202c1cc5` does **not** contain the #503 source fix (it predates `01fea155`/#507)
+  and only knows migrations through 40 — yet it runs clean, because the **DB is
+  already at migration 42**, so its `-migrate` step finds nothing to apply and
+  never touches the broken `0041`. Any build (pre- or post-#507, migration 40 or
+  42) starts cleanly for the same reason.
+
+Verified after a committee swap: `daemon status` reads clean (above), `doctor ok`,
+lanes spawn, `sudo -u striatum-lane` can `connect()` the socket. Backup of the
+pre-migration binaries: `~/.local/bin/.striatum-prev-2026-06-20/`.
 
 It took three tries — the story is worth keeping because it's a two-role-split
 deployment hazard:
