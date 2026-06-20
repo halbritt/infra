@@ -44,6 +44,49 @@ for var in data.get("templating", {}).get("list", []):
     if var.get("name") == "job":
         var["current"] = {"text": "gpu", "value": "gpu", "selected": True}
 
+# Cross-GPU comparison panel: overlays every instance in job=gpu (proximal +
+# peecee) so the two GPUs can be read side by side. The stock panels filter by
+# the single-select $node/$gpu vars and only ever show one GPU; this one ignores
+# them. Appended below the grid so a re-fetch from upstream keeps it.
+def add_compare_panel(d):
+    panels = d.setdefault("panels", [])
+    next_y = max((p["gridPos"]["y"] + p["gridPos"]["h"] for p in panels if "gridPos" in p), default=0)
+    next_id = max((p.get("id", 0) for p in panels), default=0) + 1
+    panels.append({
+        "id": next_id,
+        "type": "timeseries",
+        "title": "GPU Utilization — all GPUs (proximal vs peecee)",
+        "description": "Every GPU in job=gpu overlaid for direct comparison; "
+                       "ignores the $node/$gpu selectors above.",
+        "datasource": {"type": "prometheus", "uid": DS_UID},
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": next_y},
+        "fieldConfig": {
+            "defaults": {
+                "unit": "percentunit", "min": 0, "max": 1,
+                "color": {"mode": "palette-classic"},
+                "custom": {
+                    "drawStyle": "line", "lineInterpolation": "smooth",
+                    "lineWidth": 2, "fillOpacity": 10, "showPoints": "never",
+                    "axisPlacement": "auto", "spanNulls": True,
+                },
+            },
+            "overrides": [],
+        },
+        "options": {
+            "legend": {"displayMode": "table", "placement": "bottom",
+                       "showLegend": True, "calcs": ["mean", "max", "lastNotNull"]},
+            "tooltip": {"mode": "multi", "sort": "desc"},
+        },
+        "targets": [{
+            "datasource": {"type": "prometheus", "uid": DS_UID},
+            "expr": "nvidia_smi_utilization_gpu_ratio{job=\"$job\"}",
+            "legendFormat": "{{instance}}",
+            "refId": "A",
+        }],
+    })
+
+add_compare_panel(data)
+
 json.dump(data, open("/home/halbritt/git/proximal/observability/grafana/dashboards/nvidia-gpu-proximal.json", "w"))
 print(f"OK title={data['title']!r} panels~={len(data.get('panels', []))} "
       f"templating_vars={[v.get('name') for v in data.get('templating', {}).get('list', [])]}")
