@@ -26,8 +26,12 @@ Routing decided with the operator: every alert → one Slack channel `#proximal-
 - **Secret:** the Slack incoming-webhook URL is the one credential — never in git. AM reads it from
   `/etc/alertmanager/slack_webhook_url` (0640 root:prometheus) via `slack_configs.api_url_file`;
   repo has `slack_webhook_url.template` + the app manifest (`proximal-alerts.slack-manifest.json`).
-- **Pending:** create the `proximal-alerts` app (manifest API + config token), add the incoming
-  webhook to `#proximal-alerts`, drop the URL into the file above, reload — then live Slack delivery.
+- **Live + verified.** Created the `proximal-alerts` app (`app_id A0BBJQQPGQ7`, workspace gearheads)
+  via `apps.manifest.create` (`--data-urlencode manifest@…`), added an Incoming Webhook to
+  `#proximal-alerts`, stored the URL in the file above. End-to-end verified 2026-06-20: a synthetic
+  page alert plus the two live striatumd alerts delivered to the channel
+  (`alertmanager_notifications_total{slack}` rising, `failed_total` flat), and both a silence
+  (active → suppressed → expired → active) and a resolve round-trip succeeded.
 
 ### Wired the `striatumd` RFC 0137 exporter into Prometheus + Grafana
 The local workflow daemon's lifecycle/liveness exporter (15 families, RFC 0137) is now scraped,
