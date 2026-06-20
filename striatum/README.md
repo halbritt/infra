@@ -84,11 +84,11 @@ socket dir be mode `0700`/`0710`, hence the `chmod` in `ExecStartPre`.) Validate
 
 **Fixed upstream** in `e9d01815` (striatum#495): `daemonSocketACLGrantTargets` now
 skips the traverse-ACL on any ancestor already world-traversable, so `/run` is
-left alone. **Deployed 2026-06-20** — the live daemon runs `e9d01815`. The `rpc/`
-nesting is no longer load-bearing (the fixed daemon would also accept the
-un-nested `/run/striatum/daemon-go.sock`), but it is kept in place because it
-works identically on the fixed binary and removing it costs another restart — see
-[Deploy](#deploy-2026-06-20).
+left alone. **Deployed 2026-06-20** — the live daemon runs `01fea155` (origin/main,
+which contains this fix). The `rpc/` nesting is no longer load-bearing (the fixed
+daemon would also accept the un-nested `/run/striatum/daemon-go.sock`), but it is
+kept in place because it works identically on the fixed binary and removing it
+costs another restart — see [Deploy](#deploy-2026-06-20--final-state).
 
 ### How clients find the daemon
 
@@ -120,35 +120,40 @@ falsely reported `unit … (installed=false, active=inactive)` / `socket …
   doctor:  ok
 ```
 
-### Deploy (2026-06-20)
+### Deploy (2026-06-20) — final state
 
-The `e9d01815` binaries (#495/#496 fix) are installed at `~/.local/bin` and the
-daemon was restarted onto them. Verified: `daemon status` reads clean (above),
-`doctor ok`, lanes spawn, `sudo -u striatum-lane` can `connect()` the socket.
+The daemon and CLI run **`01fea155`** (origin/main: the #495/#496 fix +
+RFC 0136/0141 code) at **PG migration 42**, aligned with the DB (also at 42).
+Verified: `daemon status` reads clean (above), `doctor ok`, lanes spawn,
+`sudo -u striatum-lane` can `connect()` the socket. Backup of the pre-migration
+binaries: `~/.local/bin/.striatum-prev-2026-06-20/`.
 
-**Watch out — the migration trap (striatum#503).** `e9d01815` sits at PG
-**migration 40**, deliberately. `origin/main` HEAD (`bff9e682`) is at migration
-42, and migration **0041** (`event_chain_segments`) adds an inbound FK to the
-**owner-held** `repositories` table — which `striatumd_rw` lacks `REFERENCES` on,
-so a daemon that auto-applies it (`-migrate` defaults true) **crash-loops** with
-`permission denied for table repositories (SQLSTATE 42501)`. A first deploy of
-`bff9e682` hit exactly this and was rolled back; `e9d01815` (migration 40) is the
-pinned-safe build. **Do not `git pull && make install` past migration 40 until
-striatum#503 is fixed** — it will take the daemon down. The previous binaries are
-backed up at `~/.local/bin/.striatum-prev-2026-06-20/` (rollback: `install` them
-back + `sudo systemctl restart striatumd`).
+It took three tries — the story is worth keeping because it's a two-role-split
+deployment hazard:
 
-**⚠️ Active conflict (2026-06-20): a committee self-installs migration-42 binaries.**
-Within ~80s of this deploy, an rfc-0137 committee build/verify step ran
-`make install` from a migration-42 checkout (`a88c9dd8`), overwrote
-`~/.local/bin/striatumd`, and the daemon crash-looped (35 restarts) on the #503
-trap until re-pinned to `e9d01815`. As long as a committee that self-installs the
-daemon is running, `~/.local/bin/striatumd` can be clobbered back to a
-crash-looping migration-42 build at any time. Until #503 is resolved, the daemon
-binary is **not stably pinned** here — this needs either (a) striatum#503 fixed in
-code (drop the 0041 owner-FK) so migration-42 builds run, (b) migrations 0041/0042
-applied as the **owner** to advance the DB to 42 (then both builds run), or (c)
-the committee's self-install pointed at a protected daemon path. Decision pending.
+1. **Migration trap (striatum#503).** Migration **0041** (`event_chain_segments`)
+   originally added an inbound FK to the **owner-held** `repositories` table.
+   `striatumd_rw` (the runtime role that auto-applies migrations, `-migrate`
+   defaults true) lacks `REFERENCES` on owner tables, so the first deploy of the
+   migration-42 build crash-looped with `permission denied for table repositories
+   (SQLSTATE 42501)`. Rolled back to a migration-40 build to restore service.
+2. **Clobber.** Within ~80s, an rfc-0137 committee's build/verify step
+   `make install`ed its own migration-42 binary over `~/.local/bin/striatumd`,
+   re-triggering the crash-loop (35 restarts). Re-pinned to migration 40 again.
+3. **Resolution.** striatum#503 was fixed upstream as **`01fea155` (#507)** —
+   drop the owner-FK, keep `repository_id` a bare column, integrity in Go (the
+   same pattern `0042` already uses). An AFK process then owner-applied the fixed
+   `0041`/`0042`, advancing the **DB to migration 42 at 15:03** (verified:
+   `event_chain_segments` exists with **no** inbound FK). Deployed `01fea155`.
+
+**Why it's stable now:** the DB is at migration 42, so *every* migration-42 binary
+— `01fea155` or any committee build — sees the migrations already applied, skips
+`0041`, and starts cleanly. The clobber is permanently harmless; the daemon binary
+no longer needs pinning. `git pull && make install` is safe again.
+
+Lesson (striatum#503): a migration applied by the runtime role must never add an
+inbound FK to (or otherwise DDL) an owner-held table — enforce that integrity in
+Go, or ship it as an owner bundle.
 
 The `rpc/` socket nesting is **kept** (it works identically on the fixed binary).
 Un-nesting back to `/run/striatum/daemon-go.sock` is now possible (the fixed
