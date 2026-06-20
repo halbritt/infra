@@ -34,6 +34,7 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 | nvidia_gpu_exporter (peecee) | `nvidia_gpu_exporter` (WinSW, on **peecee**) | `100.113.63.58:9835` | RTX 3090 Ti; Windows host, scraped over tailnet |
 | Prometheus          | `prometheus`                    | `100.85.100.81:9091`  | 9090 = `cockpit.socket` |
 | Grafana             | `grafana-server`                | `100.85.100.81:3003`  | 3000/3001/3002 taken (open-webui, token-dashboard) |
+| Alertmanager        | `prometheus-alertmanager`       | `100.85.100.81:9093`  | 9093 free; HA cluster listener (:9094) disabled (single node) |
 | striatumd exporter  | `striatumd` (RFC 0137 `/metrics`) | **`127.0.0.1:9464`** | loopback-only + tokenless (RFC 0137 §4); 9464 = prometheus-community default, free here |
 
 > The striatumd exporter is the one **loopback-bound** target: `/metrics` is multiplexed onto the
@@ -41,8 +42,9 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 > host, so it scrapes `127.0.0.1:9464` directly. Do **not** rebind it to the tailnet — front it with
 > `tailscale serve` + a scoped bearer if remote scrape is ever needed (mirrors the RFC 0085 web-ui).
 
-The five **proximal** units are `systemctl enable`d. Each has a `*.service.d/` drop-in that orders
-it `After=tailscaled.service` + `network-online.target` and sets `Restart=on-failure` /
+The six **proximal** units are `systemctl enable`d (the five exporters/servers above plus
+`prometheus-alertmanager`). Each has a `*.service.d/` drop-in that orders it
+`After=tailscaled.service` + `network-online.target` and sets `Restart=on-failure` /
 `RestartSec=5`, so a bind that races tailscale at boot self-heals. (`nvidia_gpu_exporter`'s
 drop-in also clears the `.deb`'s all-interfaces `ExecStart` and re-points it at the tailnet IP.)
 The peecee exporter is the one off-box piece — a Windows service (WinSW), not systemd; it gets the
@@ -64,6 +66,11 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 | `prometheus/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus.service.d/` |
 | `prometheus/rules/striatum-recording.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
 | `prometheus/rules/striatum-alerting.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
+| `alertmanager/alertmanager.yml` | `/etc/prometheus/alertmanager.yml` |
+| `alertmanager/prometheus-alertmanager.default` | `/etc/default/prometheus-alertmanager` |
+| `alertmanager/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus-alertmanager.service.d/` |
+| `alertmanager/slack_webhook_url.template` | `/etc/alertmanager/slack_webhook_url` (0640 root:prometheus, **add real webhook URL**) |
+| `alertmanager/proximal-alerts.slack-manifest.json` | (not installed — used once to create the Slack app via the manifest API) |
 | `grafana/grafana-server.env.overrides` | appended to `/etc/default/grafana-server` |
 | `grafana/10-proximal.conf` | `/etc/systemd/system/grafana-server.service.d/` |
 | `grafana/provisioning-datasources-proximal.yaml` | `/etc/grafana/provisioning/datasources/proximal.yaml` |
@@ -229,8 +236,70 @@ curl -s http://100.85.100.81:9091/api/v1/rules | jq '.data.groups|map(.rules|len
 # Grafana: dashboard "Striatum daemon — proximal (RFC 0137)" in folder proximal, panels live.
 ```
 
+## Alertmanager — alert routing
+
+Until 2026-06-20 the alerting rules **evaluated but went nowhere** (`alerting.alertmanagers: []`);
+firing alerts were only visible at `:9091/alerts`. Now `prometheus-alertmanager` (apt, 0.26.0)
+routes them to **Slack `#proximal-alerts`** via a **dedicated** Slack app `proximal-alerts`
+(workspace `gearheads`), deliberately isolated from the `praxis` app so alert traffic and Praxis
+traffic never mix tokens.
+
+**Topology.** `prometheus-alertmanager.service` binds the tailnet IP `100.85.100.81:9093` (ARGS in
+`/etc/default/prometheus-alertmanager`; the HA gossip listener `:9094` is **disabled** —
+`--cluster.listen-address=` empty — because this is a single Alertmanager, not a cluster). The
+`10-tailnet-bind.conf` drop-in orders it `After=tailscaled` + `network-online.target` /
+`Restart=on-failure`, like every other unit. Prometheus points at it via `alerting.alertmanagers`
+in `prometheus.yml`.
+
+**Routing (`alertmanager/alertmanager.yml`).** One receiver, one channel. The two striatumd severity
+tiers share `#proximal-alerts` but get different urgency:
+
+| severity | alerts | group_wait | repeat_interval |
+|---|---|---|---|
+| `page` | NecrosisRate, DoctorRed, SupervisorOriginFlood | 10s | 1h |
+| `warning` | the other 6 striatumd alerts | 30s | 4h |
+
+An **inhibit rule** suppresses a `warning` when a `page` for the same `alertname`+`instance` is
+already firing (no double-notify). Grouping is by `alertname`/`severity`/`instance`.
+
+**The Slack app + the one secret.** The app is created from `alertmanager/proximal-alerts.slack-manifest.json`
+via the manifest API (`apps.manifest.create`, needs an `xoxe.xoxp-` config token minted at
+api.slack.com/apps, ~12h TTL), then an **Incoming Webhook** is added to `#proximal-alerts`. That
+webhook URL is the **only** credential and is **never in git** — Alertmanager reads it from
+`/etc/alertmanager/slack_webhook_url` (0640 `root:prometheus`) via `slack_configs.api_url_file`. The
+repo carries `slack_webhook_url.template` (provisioning steps) + the manifest only.
+
+**Provision the webhook (final step):**
+```bash
+# 1. create the app (config token from api.slack.com/apps -> "Your App Configuration Tokens"):
+curl -s -F token="$XOXE_CONFIG_TOKEN" \
+  -F manifest=@observability/alertmanager/proximal-alerts.slack-manifest.json \
+  https://slack.com/api/apps.manifest.create | jq '{ok,app_id,error}'
+# 2. install the app to gearheads + add an Incoming Webhook to #proximal-alerts (browser:
+#    api.slack.com/apps -> proximal-alerts -> Incoming Webhooks -> Add New Webhook to Workspace).
+# 3. drop the URL in (replaces the placeholder) and reload:
+printf '%s' 'https://hooks.slack.com/services/T.../B.../XXXX' | sudo tee /etc/alertmanager/slack_webhook_url >/dev/null
+sudo chown root:prometheus /etc/alertmanager/slack_webhook_url && sudo chmod 0640 /etc/alertmanager/slack_webhook_url
+sudo systemctl reload prometheus-alertmanager
+```
+
+**Verify routing end-to-end:**
+```bash
+amtool check-config /etc/prometheus/alertmanager.yml                                   # SUCCESS
+curl -s http://100.85.100.81:9093/-/healthy                                            # OK
+curl -s http://100.85.100.81:9091/api/v1/alertmanagers | jq '.data.activeAlertmanagers' # [{url:.../9093/api/v2/alerts}]
+curl -s http://100.85.100.81:9093/api/v2/alerts | jq -r '.[].labels.alertname'          # the firing alerts
+# fire a synthetic alert through to Slack, then resolve it:
+amtool alert add --alertmanager.url=http://100.85.100.81:9093 \
+  test_route severity=warning --annotation=summary="routing smoke test"
+journalctl -u prometheus-alertmanager -n 20 | grep -i slack                            # no "Notify ... failed"
+```
+
 ## Secrets (never in git)
 
+- **Slack incoming-webhook URL** — the `proximal-alerts` app's webhook, only in
+  `/etc/alertmanager/slack_webhook_url` (0640 `root:prometheus`, read by Alertmanager via
+  `api_url_file`). The repo has `alertmanager/slack_webhook_url.template`. See "Alertmanager" above.
 - **Exporter DB password** — only in `/etc/default/prometheus-postgres-exporter` (0600 root).
   The repo has a redacted `.template`. `role.sql` documents the role without the password.
 - **Grafana admin password** — generated at install, stored only in `/etc/grafana/admin.env`

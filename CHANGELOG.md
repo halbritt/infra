@@ -7,6 +7,28 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-20
 
+### Stood up Alertmanager → Slack alert routing
+Closed the gap where alerting rules evaluated but went nowhere (`alerting.alertmanagers: []`).
+Routing decided with the operator: every alert → one Slack channel `#proximal-alerts` via a
+**dedicated** Slack app `proximal-alerts` (workspace gearheads), isolated from the praxis app.
+- **Alertmanager** installed from apt (`prometheus-alertmanager 0.26.0`), same house pattern as
+  the rest: ARGS in `/etc/default/prometheus-alertmanager` bind the tailnet IP
+  `100.85.100.81:9093` (HA cluster listener disabled — single node, nothing on `:9094`), a
+  `10-tailnet-bind.conf` drop-in orders it `After=tailscaled` + `network-online.target` with
+  `Restart=on-failure`. Config `observability/alertmanager/alertmanager.yml` → `/etc/prometheus/`.
+- **Routing:** one receiver, channel `#proximal-alerts`. The two striatumd severity tiers share
+  the channel but differ in urgency — `page` (NecrosisRate/DoctorRed/SupervisorOriginFlood) waits
+  10s and re-alerts hourly; `warning` batches 30s and re-alerts every 4h. An inhibit rule
+  suppresses a `warning` when a `page` for the same alertname+instance is already firing.
+- **Prometheus** wired: `alerting.alertmanagers` → `100.85.100.81:9093`; verified at
+  `:9091/api/v1/alertmanagers` (active). Live `LivenessMarginCollapse` + `WedgeAgeTail` now reach
+  AM (`:9093/api/v2/alerts`); AM attempts Slack delivery — proven end-to-end.
+- **Secret:** the Slack incoming-webhook URL is the one credential — never in git. AM reads it from
+  `/etc/alertmanager/slack_webhook_url` (0640 root:prometheus) via `slack_configs.api_url_file`;
+  repo has `slack_webhook_url.template` + the app manifest (`proximal-alerts.slack-manifest.json`).
+- **Pending:** create the `proximal-alerts` app (manifest API + config token), add the incoming
+  webhook to `#proximal-alerts`, drop the URL into the file above, reload — then live Slack delivery.
+
 ### Wired the `striatumd` RFC 0137 exporter into Prometheus + Grafana
 The local workflow daemon's lifecycle/liveness exporter (15 families, RFC 0137) is now scraped,
 ruled, and dashboarded. Cross-subsystem (`observability/` + `striatum/`).

@@ -1,0 +1,9 @@
+# /etc/default/prometheus-alertmanager — ARGS for prometheus-alertmanager.service.
+# Mirrors prometheus.default: the listen address is set here (the .deb default ARGS="").
+# Bind the tailnet IP only (no host firewall — binding 100.85.100.81 keeps :9093 off LAN
+# 192.168.1.92, same rule as every other observability unit). The unit has no
+# WorkingDirectory, so config/storage paths are given explicitly. --cluster.listen-address=
+# (empty) disables the HA gossip listener — this is a single Alertmanager, not a cluster, so
+# nothing should bind :9094. --web.external-url makes the "Silence"/source links in Slack
+# notifications resolve back to this box.
+ARGS="--config.file=/etc/prometheus/alertmanager.yml --storage.path=/var/lib/prometheus/alertmanager --web.listen-address=100.85.100.81:9093 --web.external-url=http://100.85.100.81:9093 --cluster.listen-address="

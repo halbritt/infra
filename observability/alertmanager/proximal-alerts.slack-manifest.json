@@ -1,0 +1,26 @@
+{
+  "_comment": "Slack app manifest for the dedicated alert app. Config (no secret) — committable. Create the app with: curl -s -F token=$XOXE_CONFIG_TOKEN -F manifest=@proximal-alerts.slack-manifest.json https://slack.com/api/apps.manifest.create  (the xoxe.xoxp- config token is minted at api.slack.com/apps; ~12h TTL). After create, install to the gearheads workspace and add an Incoming Webhook to #proximal-alerts (api.slack.com/apps -> proximal-alerts -> Incoming Webhooks -> Add New Webhook to Workspace). The webhook URL is the secret -> /etc/alertmanager/slack_webhook_url (see slack_webhook_url.template). Isolated from the praxis app on purpose.",
+  "display_information": {
+    "name": "proximal-alerts",
+    "description": "Prometheus Alertmanager notifications for host proximal (observability subsystem).",
+    "background_color": "#a30f0f"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "proximal-alerts",
+      "always_online": false
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "incoming-webhook"
+      ]
+    }
+  },
+  "settings": {
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

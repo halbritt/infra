@@ -7,9 +7,14 @@ global:
   external_labels:
     monitor: proximal
 
-# No Alertmanager installed on this box yet.
+# Alertmanager (prometheus-alertmanager.service) on the tailnet IP :9093. Routes the rules
+# below to Slack #proximal-alerts — see observability/alertmanager/. After changing this,
+# promtool check config && sudo systemctl reload prometheus, then confirm at
+# :9091/api/v1/alertmanagers (activeAlertmanagers should list 100.85.100.81:9093).
 alerting:
-  alertmanagers: []
+  alertmanagers:
+    - static_configs:
+        - targets: ['100.85.100.81:9093']
 
 # RFC 0137 striatumd exporter rules, vendored verbatim from the striatum repo
 # (go/pkg/metrics/rules/) — recording rules pre-aggregate the counters/histograms

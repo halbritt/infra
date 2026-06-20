@@ -1,0 +1,19 @@
+# TEMPLATE — the real file is /etc/alertmanager/slack_webhook_url (NOT in git).
+#
+# Alertmanager reads the Slack incoming-webhook URL from this file (slack_configs.api_url_file)
+# so the secret never lands in alertmanager.yml or the repo. The file must contain ONLY the URL
+# on a single line (no quotes, no key=, no trailing comment) — api_url_file reads the whole file
+# as the URL.
+#
+# Provision it:
+#   sudo install -d -m 0755 /etc/alertmanager
+#   printf '%s' 'https://hooks.slack.com/services/T.../B.../XXXXXXXX' | sudo tee /etc/alertmanager/slack_webhook_url >/dev/null
+#   sudo chown root:prometheus /etc/alertmanager/slack_webhook_url
+#   sudo chmod 0640 /etc/alertmanager/slack_webhook_url      # root writes, the prometheus user (Alertmanager) reads
+#   sudo systemctl reload prometheus-alertmanager
+#
+# Where the URL comes from: the dedicated "proximal-alerts" Slack app (workspace gearheads),
+# api.slack.com/apps → proximal-alerts → Incoming Webhooks → "Add New Webhook to Workspace"
+# → pick #proximal-alerts. The app itself is created from proximal-alerts.slack-manifest.json.
+
+https://hooks.slack.com/services/REPLACE_WITH_REAL_WEBHOOK_URL
