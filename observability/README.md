@@ -66,6 +66,10 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 | `prometheus/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus.service.d/` |
 | `prometheus/rules/striatum-recording.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
 | `prometheus/rules/striatum-alerting.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
+| `prometheus/rules/node-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
+| `prometheus/rules/gpu-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
+| `prometheus/rules/postgres-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
+| `prometheus/rules/infra-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
 | `alertmanager/alertmanager.yml` | `/etc/prometheus/alertmanager.yml` |
 | `alertmanager/prometheus-alertmanager.default` | `/etc/default/prometheus-alertmanager` |
 | `alertmanager/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus-alertmanager.service.d/` |
@@ -235,6 +239,31 @@ curl -s http://100.85.100.81:9091/api/v1/targets | jq -r '.data.activeTargets[]|
 curl -s http://100.85.100.81:9091/api/v1/rules | jq '.data.groups|map(.rules|length)|add' # 14 (5+9)
 # Grafana: dashboard "Striatum daemon — proximal (RFC 0137)" in folder proximal, panels live.
 ```
+
+## Alerting rules (what fires)
+
+Two provenances under `prometheus/rules/`, both referenced from `rule_files:` and installed to
+`/etc/prometheus/rules/`:
+
+- **Vendored** — `striatum-{recording,alerting}.rules.yml`, byte-identical from the striatum repo
+  (see "striatumd exporter" above; a guardrail test there pins them).
+- **proximal-authored** — `node/gpu/postgres/infra-alerting.rules.yml`, written here against this
+  host's own exporters (2026-06-21). Every series was verified live before authoring, and every
+  label-matching expr (`group_left`, `and`, `scalar`) was checked to produce a non-empty result so
+  a rule can't silently never-fire. Thresholds sit clear of current readings (nothing false-fires
+  on install). All use the house `page`/`warning` severities, so they route through Alertmanager
+  to `#proximal-alerts` automatically.
+
+| file | alerts | notable design choices |
+|---|---|---|
+| `node-alerting` | filesystem low/critical space, low inodes, read-only fs, memory low, OOM kills, high load | pseudo-fs excluded; read-only fs excluded from space alerts (it's its own alert); load normalized by core count via `group_left` |
+| `gpu-alerting` | high/critical temp, HW thermal throttling | **no VRAM alert** — the LLM pins ~22.8 GiB by design, so VRAM-full would fire forever; temp + the driver's thermal-slowdown flag are the real hardware-risk signals. Fires per-GPU (proximal 3090 + peecee 3090 Ti) |
+| `postgres-alerting` | pg down, connections >80/90%, deadlocks, long-running txn, XID wraparound warn/crit | wraparound metric is **XID age** (not seconds) → thresholds 1.5e9/1.9e9 of the 2³¹ limit; long-txn "oldest" is a Unix **timestamp** → age is `time() - it`, guarded by `count>0` |
+| `infra-alerting` | `TargetDown` (any `up==0` for 10m) | covers every job uniformly; the off-box peecee GPU target can flap when that host sleeps — silence there, don't loosen the rule |
+
+Refresh/verify after editing: `promtool check rules prometheus/rules/*.yml`, `sudo cp` to
+`/etc/prometheus/rules/`, `sudo systemctl reload prometheus`, then
+`curl -s :9091/api/v1/rules | jq '[.data.groups[].rules[]|select(.health!="ok")]|length'` → 0.
 
 ## Alertmanager — alert routing
 

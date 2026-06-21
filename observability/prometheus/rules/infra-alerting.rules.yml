@@ -1,0 +1,18 @@
+# proximal-authored cross-cutting infra alerting rules. Installed to
+# /etc/prometheus/rules/infra-alerting.rules.yml. NOT vendored — authored here. `up` is
+# synthesized by Prometheus for every scrape target, so this covers all jobs
+# (prometheus/node/postgresql/gpu×2/striatumd) uniformly — a down exporter is a blind spot.
+groups:
+  - name: infra_alerts
+    rules:
+      # Any scrape target unreachable for 10m. for:10m rides out service restarts; the peecee GPU
+      # target (off-box Windows host) can legitimately flap when that machine sleeps — silence it
+      # there rather than loosening the rule for everything.
+      - alert: TargetDown
+        expr: up == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "scrape target {{ $labels.job }} / {{ $labels.instance }} is down"
+          description: "Prometheus has not scraped {{ $labels.job }} on {{ $labels.instance }} for 10m (up=0) — metrics for it are blind."

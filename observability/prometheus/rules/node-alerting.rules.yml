@@ -1,0 +1,93 @@
+# proximal-authored node_exporter (host) alerting rules. Installed to
+# /etc/prometheus/rules/node-alerting.rules.yml. UNLIKE the striatum rules these are NOT
+# vendored — they are authored here for this host's own exporters. Every series below was
+# verified live against node_exporter 1.7.0 on proximal (2026-06-21). Severity follows the
+# house scheme: `page` = fast/hourly, `warning` = batched/4h (see alertmanager/alertmanager.yml).
+# Thresholds chosen against live values (i5-11400F / 12 threads, 125 GiB RAM): all sit clear of
+# current readings so nothing false-fires on install.
+#
+# Pseudo filesystems (tmpfs/overlay/…) are excluded; alerts apply to the real ext4/xfs/vfat/zfs
+# mounts. Read-only filesystems are excluded from the space alerts (a RO fs is its own alert).
+groups:
+  - name: node_alerts
+    rules:
+      # Disk filling — warn with headroom, page when nearly out. predict_linear is deliberately
+      # NOT used here (zfs/xfs snapshot churn makes the slope noisy); a plain threshold on a real
+      # mount is the honest signal.
+      - alert: NodeFilesystemLowSpace
+        expr: |
+          (node_filesystem_avail_bytes{fstype!~"tmpfs|devtmpfs|squashfs|overlay|fuse.*|ramfs|autofs"}
+           / node_filesystem_size_bytes < 0.15)
+          and node_filesystem_readonly == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.mountpoint }} on {{ $labels.instance }} below 15% free"
+          description: "Filesystem {{ $labels.device }} ({{ $labels.mountpoint }}) is {{ $value | humanizePercentage }} free."
+
+      - alert: NodeFilesystemCriticalSpace
+        expr: |
+          (node_filesystem_avail_bytes{fstype!~"tmpfs|devtmpfs|squashfs|overlay|fuse.*|ramfs|autofs"}
+           / node_filesystem_size_bytes < 0.05)
+          and node_filesystem_readonly == 0
+        for: 30m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.mountpoint }} on {{ $labels.instance }} below 5% free"
+          description: "Filesystem {{ $labels.device }} ({{ $labels.mountpoint }}) is critically low at {{ $value | humanizePercentage }} free."
+
+      # Inodes can exhaust independently of bytes. Guard against vfat (files==0 → NaN).
+      - alert: NodeFilesystemLowInodes
+        expr: |
+          (node_filesystem_files_free{fstype!~"tmpfs|devtmpfs|squashfs|overlay|fuse.*|ramfs|autofs"}
+           / node_filesystem_files < 0.10)
+          and node_filesystem_files > 0
+          and node_filesystem_readonly == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.mountpoint }} on {{ $labels.instance }} below 10% free inodes"
+          description: "Filesystem {{ $labels.device }} ({{ $labels.mountpoint }}) has {{ $value | humanizePercentage }} inodes free."
+
+      # A filesystem flipped to read-only — almost always an underlying disk/controller error.
+      - alert: NodeFilesystemReadonly
+        expr: node_filesystem_readonly{fstype!~"tmpfs|devtmpfs|squashfs|overlay|fuse.*|ramfs|autofs"} == 1
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.mountpoint }} on {{ $labels.instance }} is read-only"
+          description: "Filesystem {{ $labels.device }} ({{ $labels.mountpoint }}) remounted read-only — likely a disk/controller fault."
+
+      # Sustained low available memory → imminent reclaim/OOM pressure.
+      - alert: NodeMemoryLow
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }} available memory below 10%"
+          description: "MemAvailable is {{ $value | humanizePercentage }} of total — memory pressure building."
+
+      # The kernel OOM-killed something in the last window — a process was sacrificed.
+      - alert: NodeOOMKills
+        expr: increase(node_vmstat_oom_kill[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }} OOM-killed a process"
+          description: "{{ $value | printf \"%.0f\" }} OOM kill(s) in the last 15m — something exceeded available memory."
+
+      # Load per core sustained high. Generous threshold + long `for` to ride out build/inference spikes.
+      - alert: NodeHighLoad
+        expr: node_load5 / on(instance) group_left count by (instance) (node_cpu_seconds_total{mode="idle"}) > 2.5
+        for: 20m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }} load5 above 2.5× core count"
+          description: "5-minute load average is {{ $value | printf \"%.1f\" }}× the number of CPUs — sustained saturation."

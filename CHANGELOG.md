@@ -5,6 +5,31 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-06-21
+
+### Authored alerting rules for node / gpu / postgres / infra
+Phase 2 of the alerting work (Phase 1 was the routing path, 2026-06-20). The exporters had
+dashboards but no alerts; now they do — 18 proximal-authored rules under
+`observability/prometheus/rules/{node,gpu,postgres,infra}-alerting.rules.yml`, routing to Slack
+`#proximal-alerts` through the same Alertmanager pipe.
+- **node** (7): filesystem low (<15%) / critical (<5%) space, low inodes, read-only fs, memory
+  <10%, OOM kills, load >2.5×cores. Pseudo-filesystems excluded; read-only mounts excluded from
+  the space alerts; load normalized by core count via `group_left`.
+- **gpu** (3): high (>84°C) / critical (>90°C) temp, HW thermal throttling — fires per-GPU
+  (proximal 3090 + peecee 3090 Ti). **No VRAM alert on purpose**: the local LLM pins ~22.8 GiB, so
+  a VRAM-full rule would fire permanently; temperature + the driver thermal-slowdown flag are the
+  honest hardware-risk signals.
+- **postgres** (7): pg down, connections >80/90% of max_connections, deadlocks, long-running txn
+  (>10m), XID wraparound warn/crit. Caught two metric quirks: wraparound is **XID age** not
+  seconds (thresholds vs the 2³¹ limit), and the long-txn "oldest" series is a Unix **timestamp**
+  so age = `time() - it`, guarded by `count>0` to avoid a stale-timestamp false fire.
+- **infra** (1): `TargetDown` for any `up==0` (10m) across all jobs.
+- **Verified**, not just installed: all 32 rule groups evaluate `health=ok`, nothing false-fires
+  (thresholds sit clear of live readings), and every label-matching expr (`group_left`/`and`/
+  `scalar`) was checked to return non-empty so no rule can silently never-fire. Both severity tiers
+  already proven live end-to-end — `DoctorRed` (page) and `LivenessMarginCollapse` (warning) are
+  routing to `#proximal-alerts` right now via the identical path.
+
 ## 2026-06-20
 
 ### Stood up Alertmanager → Slack alert routing

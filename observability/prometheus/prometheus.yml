@@ -16,15 +16,19 @@ alerting:
     - static_configs:
         - targets: ['100.85.100.81:9093']
 
-# RFC 0137 striatumd exporter rules, vendored verbatim from the striatum repo
-# (go/pkg/metrics/rules/) — recording rules pre-aggregate the counters/histograms
-# the alerts and dashboard read; alerting rules map each striatumd failure class to
-# a signal. They evaluate here but are not yet routed (no Alertmanager on this box —
-# see `alerting:` above); firing alerts are visible at :9091/alerts. Refresh by
-# re-copying from the striatum checkout (see README "striatumd exporter").
+# Rule files. The striatum pair is vendored verbatim from the striatum repo
+# (go/pkg/metrics/rules/) — recording rules pre-aggregate the counters/histograms the alerts and
+# dashboard read; alerting rules map each striatumd failure class to a signal. The node/gpu/
+# postgres/infra files are proximal-AUTHORED (not vendored) against this host's own exporters —
+# every series verified live. All route to Slack #proximal-alerts via the Alertmanager above.
+# Refresh the striatum copies from the striatum checkout (see README "striatumd exporter").
 rule_files:
   - /etc/prometheus/rules/striatum-recording.rules.yml
   - /etc/prometheus/rules/striatum-alerting.rules.yml
+  - /etc/prometheus/rules/node-alerting.rules.yml
+  - /etc/prometheus/rules/gpu-alerting.rules.yml
+  - /etc/prometheus/rules/postgres-alerting.rules.yml
+  - /etc/prometheus/rules/infra-alerting.rules.yml
 
 scrape_configs:
   - job_name: prometheus

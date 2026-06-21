@@ -1,0 +1,78 @@
+# proximal-authored postgres_exporter alerting rules. Installed to
+# /etc/prometheus/rules/postgres-alerting.rules.yml. NOT vendored — authored here. Series
+# verified live (2026-06-21) against postgres_exporter 0.15.0 + the custom queries.yaml on the
+# PG17 cluster (max_connections=100). Thresholds sit clear of current readings.
+groups:
+  - name: postgres_alerts
+    rules:
+      # The exporter is up (scrape succeeds) but the database connection is down — distinct from
+      # TargetDown, which is the exporter itself being unreachable.
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "PostgreSQL on {{ $labels.instance }} is down"
+          description: "pg_up=0 — the exporter cannot connect to the PG17 cluster."
+
+      # Connection pool nearing max_connections. numbackends summed across dbs vs the setting.
+      - alert: PostgresHighConnections
+        expr: sum(pg_stat_database_numbackends) / scalar(max(pg_settings_max_connections)) > 0.80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connections above 80% of max_connections"
+          description: "{{ $value | humanizePercentage }} of max_connections (100) in use — approaching exhaustion."
+
+      - alert: PostgresConnectionsExhausting
+        expr: sum(pg_stat_database_numbackends) / scalar(max(pg_settings_max_connections)) > 0.90
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "PostgreSQL connections above 90% of max_connections"
+          description: "{{ $value | humanizePercentage }} of max_connections (100) in use — new connections will start failing."
+
+      # Deadlocks are being detected — application contention worth investigating.
+      - alert: PostgresDeadlocks
+        expr: sum(rate(pg_stat_database_deadlocks[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL is detecting deadlocks"
+          description: "{{ $value | printf \"%.3f\" }} deadlocks/sec over 5m — concurrent transactions are conflicting."
+
+      # A genuinely long transaction (well past transaction_timeout=120s) holds locks and pins
+      # the vacuum horizon. The custom metric reports the OLDEST qualifying txn's start as a Unix
+      # timestamp, so age = time() - it; guard with count>0 so a stale/absent timestamp can't fire.
+      - alert: PostgresLongRunningTransaction
+        expr: (time() - pg_long_running_transactions_oldest_timestamp_seconds > 600) and (pg_long_running_transactions > 0)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has a transaction running >10m"
+          description: "The oldest long-running transaction is {{ $value | humanizeDuration }} old — it pins the vacuum horizon and holds locks."
+
+      # XID freeze age approaching wraparound. The metric is XID age (despite the _seconds suffix);
+      # 2^31 ≈ 2.15e9 is the wraparound limit. Warn at ~70%, page at ~88%.
+      - alert: PostgresXidWraparoundApproaching
+        expr: pg_database_wraparound_age_datfrozenxid_seconds > 1.5e9
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.datname }} XID age past 1.5e9 (toward wraparound)"
+          description: "datfrozenxid age for {{ $labels.datname }} is {{ $value | printf \"%.2e\" }} of the 2.15e9 wraparound limit — autovacuum freeze is falling behind."
+
+      - alert: PostgresXidWraparoundCritical
+        expr: pg_database_wraparound_age_datfrozenxid_seconds > 1.9e9
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.datname }} XID age past 1.9e9 — wraparound imminent"
+          description: "datfrozenxid age for {{ $labels.datname }} is {{ $value | printf \"%.2e\" }}; at ~2.15e9 PostgreSQL refuses writes. Run an aggressive VACUUM FREEZE now."

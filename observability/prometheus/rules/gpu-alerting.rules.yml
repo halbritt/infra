@@ -1,0 +1,43 @@
+# proximal-authored nvidia_gpu_exporter alerting rules. Installed to
+# /etc/prometheus/rules/gpu-alerting.rules.yml. NOT vendored — authored here. Series verified
+# live (2026-06-21) against utkuozdemir/nvidia_gpu_exporter on both GPU targets: proximal
+# (RTX 3090) and peecee (RTX 3090 Ti). Each series carries instance/gpu labels from the scrape
+# config, so alerts fire per-GPU and name which card.
+#
+# DELIBERATELY NO VRAM-utilization alert: on proximal the local LLM server pins ~22.8/25.8 GiB
+# by design (see observability/README "GPU dashboard"), so a "VRAM full" rule would fire
+# permanently. The honest hardware-risk signals are TEMPERATURE and the driver's own
+# thermal-slowdown flag — those are what we alert on.
+groups:
+  - name: gpu_alerts
+    rules:
+      # Core temp sustained high. 3090/3090 Ti begin thermal management ~83 °C; 84 °C for 10m is a
+      # real cooling concern (dust, fan curve, ambient), not a transient inference spike.
+      - alert: GpuHighTemp
+        expr: nvidia_smi_temperature_gpu > 84
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }} {{ $labels.gpu }} above 84°C"
+          description: "GPU core temperature is {{ $value }}°C (sustained ≥10m) — check cooling/airflow."
+
+      - alert: GpuCriticalTemp
+        expr: nvidia_smi_temperature_gpu > 90
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.instance }} {{ $labels.gpu }} above 90°C"
+          description: "GPU core temperature is {{ $value }}°C — approaching the ~93°C hard limit; throttling/shutdown risk."
+
+      # The driver is actively clocking the card down for heat — past warning, the GPU is in
+      # thermal distress regardless of the absolute reading.
+      - alert: GpuThermalThrottling
+        expr: nvidia_smi_clocks_event_reasons_hw_thermal_slowdown == 1
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.instance }} {{ $labels.gpu }} hardware thermal throttling"
+          description: "nvidia-smi reports active HW thermal slowdown — the card is overheating and being clocked down."
