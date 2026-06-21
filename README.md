@@ -52,6 +52,30 @@ curl -s http://peecee:11434/api/tags
 - **Apply / re-apply:** `ollama/install-ollama-service.ps1` (idempotent, elevated).
 - **Roll back to the desktop app:** `ollama/uninstall-ollama-service.ps1`.
 
+## Marker — batch GPU document conversion
+
+peecee is the fleet's **batch** node for document conversion: marker (surya models)
+converts PDF/image/office files to markdown/JSON on the 3090 Ti, keeping proximal's
+**interactive** llama-server untouched. Installed 2026-06-20
+(`marker/install-marker.ps1`):
+
+- **Install:** uv-managed venv at `C:\Users\halbr\marker\.venv` (Python 3.12),
+  `marker-pdf` + CUDA torch (`torch 2.12.1+cu130`, matches driver 610). Surya models
+  cache under `%LOCALAPPDATA%\datalab`.
+- **Run (on peecee):** `marker/convert.ps1 -Source <file> [-Format markdown|json|html|chunks]`.
+  It **frees VRAM first** (`ollama stop` on any resident model) so surya fits on the
+  24 GiB card, then converts on the GPU. ollama reloads on its next request.
+- **Run (from proximal):** the `marker-convert` skill's
+  `scripts/convert-peecee.sh <file>` uploads, runs `convert.ps1` here, and pulls the
+  result back — proximal's interactive LLM is never touched.
+- **Speed:** ~2.4 s GPU conversion for a 1-page doc (vs ~28 s on proximal CPU);
+  first ever run also downloads the surya models.
+
+The GPU is single-tenant: marker and a resident ollama model cannot both hold the
+24 GiB at once, so `convert.ps1` unloads ollama for the duration. This is the
+proximal-interactive / peecee-batch split: heavy document jobs run here, chat stays
+on proximal.
+
 ## Fleet integration (`halbritt/gpu-fleet`)
 
 peecee is a fleet node addressed by capability via the `gpu_slots` heartbeat table.
@@ -63,3 +87,6 @@ gpu-fleet roadmap's "scheduled task (Windows)" item. (Not yet wired; the
 ## Subsystems
 
 - `ollama/` — the Ollama headless-server desired-state + install/rollback scripts.
+- `marker/` — marker-pdf GPU document conversion: `install-marker.ps1` (uv venv +
+  CUDA torch) and `convert.ps1` (VRAM-freeing GPU runner). Proximal-side caller is
+  `marker-convert/scripts/convert-peecee.sh` in `halbritt/skills`.
