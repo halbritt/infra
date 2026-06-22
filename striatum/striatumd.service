@@ -148,7 +148,16 @@ RestartSec=2
 # `failed` (with the exact error in `systemctl status`) instead of looping.
 # Validate before a restart with `striatumd -check-config`. Transient failures
 # keep their non-78 exit and still auto-restart.
-RestartPreventExitStatus=78
+#
+# 79 = exitAwaitingOwnerDDL (RFC 0142 Layer 2): the daemon deliberately HALTS
+# CLEANLY (apoptosis, not necrosis) when a pending owner bundle has not been
+# applied (version shortfall, or the runtime role cannot read owner_bundle_meta
+# mid-deploy — 42501, striatum#581) or on a refused schema-drift. The daemon logs
+# "will NOT auto-restart this condition (exit 79)" — without 79 here systemd
+# restarted it anyway, crash-looping ~50x (~112s downtime) until owner DDL was
+# applied out-of-band. Park it in `failed` with the remediation in `systemctl
+# status`; apply owner DDL (or reconcile the schema) then restart manually.
+RestartPreventExitStatus=78 79
 # RFC 0103 W3 (striatum#141): a daemon restart must not orphan supervised lane
 # helpers. KillMode=process signals ONLY the main daemon process, so a restart
 # (or on-failure auto-restart) leaves the Setsid-detached supervisor helpers,
