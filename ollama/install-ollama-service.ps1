@@ -22,10 +22,14 @@ Write-Host "models dir : $ModelsDir"
 #    - point at the existing user model store (SYSTEM's default profile differs)
 #    - preserve the current keep-alive behaviour (-1 = never unload). For marker
 #      co-tenancy on this GPU later, change to e.g. '5m'.
-[Environment]::SetEnvironmentVariable('OLLAMA_HOST',       '0.0.0.0:11434', 'Machine')
-[Environment]::SetEnvironmentVariable('OLLAMA_MODELS',     $ModelsDir,      'Machine')
-[Environment]::SetEnvironmentVariable('OLLAMA_KEEP_ALIVE', '-1',            'Machine')
-Write-Host "Set machine env: OLLAMA_HOST=0.0.0.0:11434, OLLAMA_MODELS, OLLAMA_KEEP_ALIVE=-1"
+[Environment]::SetEnvironmentVariable('OLLAMA_HOST',         '0.0.0.0:11434', 'Machine')
+[Environment]::SetEnvironmentVariable('OLLAMA_MODELS',       $ModelsDir,      'Machine')
+[Environment]::SetEnvironmentVariable('OLLAMA_KEEP_ALIVE',   '-1',            'Machine')
+# q8_0 KV-cache quant halves KV memory so a Q4-class 27B stays fully resident on the
+# 24 GiB card at a long context (no CPU spill). It silently no-ops without flash attn.
+[Environment]::SetEnvironmentVariable('OLLAMA_KV_CACHE_TYPE',  'q8_0', 'Machine')
+[Environment]::SetEnvironmentVariable('OLLAMA_FLASH_ATTENTION','1',    'Machine')
+Write-Host "Set machine env: OLLAMA_HOST, OLLAMA_MODELS, OLLAMA_KEEP_ALIVE=-1, OLLAMA_KV_CACHE_TYPE=q8_0, OLLAMA_FLASH_ATTENTION=1"
 
 # 2. Stop the desktop app + any running serve so port 11434 is free.
 Get-Process 'ollama app','ollama' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -39,15 +43,26 @@ if (Test-Path $lnk) {
   Write-Host "Parked startup shortcut: $lnk -> $lnk.disabled"
 }
 
-# 4. (Re)create the scheduled task: run `ollama serve` as SYSTEM, at boot, no time limit.
+# 4. (Re)create the scheduled task. The SYSTEM service has no console, and a bare
+#    `ollama serve` writes no logfile, so wrap it in a cmd that redirects stdout+stderr
+#    to a logfile -- this is what makes the startup "server config" line and the
+#    per-load KV-cache line auditable (e.g. confirming type_k=q8_0, not f16).
+$LogDir = 'C:\ProgramData\Ollama'
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+$Wrapper = Join-Path $LogDir 'run-ollama-serve.cmd'
+@"
+@echo off
+"$OllamaExe" serve >> "$LogDir\server.log" 2>&1
+"@ | Set-Content -Path $Wrapper -Encoding ASCII
+
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
-$action    = New-ScheduledTaskAction  -Execute $OllamaExe -Argument 'serve'
+$action    = New-ScheduledTaskAction  -Execute 'cmd.exe' -Argument "/c `"$Wrapper`""
 $trigger   = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
 $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
               -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
-Write-Host "Registered scheduled task '$TaskName' (SYSTEM, AtStartup, no time limit)"
+Write-Host "Registered scheduled task '$TaskName' (SYSTEM, AtStartup, logs -> $LogDir\server.log)"
 
 # 5. Start it now.
 Start-ScheduledTask -TaskName $TaskName

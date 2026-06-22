@@ -20,23 +20,34 @@ one directory per subsystem. Values and desired-state, never credentials.
 Ollama runs as a **headless server**, not the desktop tray app. Swapped
 2026-06-20 (`ollama/install-ollama-service.ps1`):
 
-- **Run mode:** a Scheduled Task `OllamaServer` running `ollama.exe serve` as
-  **SYSTEM**, trigger **At startup**, no time limit, auto-restart. Survives logout
-  and reboot with no login session (the desktop `Ollama.lnk` startup shortcut is
-  parked as `.disabled`). This is the gpu-fleet-sanctioned Windows approach
-  ("scheduled task or service").
+- **Run mode:** a Scheduled Task `OllamaServer` running `ollama serve` as
+  **SYSTEM** (via a `C:\ProgramData\Ollama\run-ollama-serve.cmd` wrapper that
+  redirects stdout+stderr to `C:\ProgramData\Ollama\server.log` — the bare SYSTEM
+  serve has no console/logfile, so the wrapper is what makes the startup config +
+  per-load KV-cache lines auditable). Trigger **At startup**, no time limit,
+  auto-restart. Survives logout and reboot with no login session (the desktop
+  `Ollama.lnk` startup shortcut is parked `.disabled`). gpu-fleet-sanctioned
+  Windows approach ("scheduled task or service").
 - **Endpoint:** `http://peecee:11434` (OpenAI-compatible at `/v1`), bound
   `0.0.0.0:11434` → reachable on LAN + tailnet. **Same port as the old desktop app.**
 - **Models:** `C:\Users\halbr\.ollama\models` (qwen3.6 27b / 35b-a3b / latest,
   llama3, llama2-uncensored). Set via machine env `OLLAMA_MODELS` so the SYSTEM
   account finds the existing user store.
 - **GPU:** confirmed working under SYSTEM (`ollama ps` → `100% GPU`).
+- **KV-cache quant (2026-06-22):** `OLLAMA_KV_CACHE_TYPE=q8_0` + `OLLAMA_FLASH_ATTENTION=1`
+  (the quant silently no-ops without flash attn). Halves KV memory so the **dense
+  Q4_K_M `qwen3.6:27b` (~17 GB)** stays fully resident at long context: verified at
+  `num_ctx=32768` the KV is `1088 MiB (K q8_0 / V q8_0)`, total ~18.9 GB used /
+  ~5.4 GB free, `ollama ps` = `100% GPU`. The dense 27B is the intended resident
+  model here, NOT the 35B-A3B MoE (do not pull a Q6/Q8 27B — won't stay resident on
+  a display-shared 24 GB card).
 - **Keep-alive:** machine env `OLLAMA_KEEP_ALIVE=-1` (models never unload — pins
-  ~22 GiB). ⚠️ For GPU co-tenancy with marker/surya on this box later, set this to
-  e.g. `5m` so VRAM frees when idle.
+  the loaded model's VRAM). ⚠️ For GPU co-tenancy with marker/surya, `marker/convert.ps1`
+  issues `ollama stop` to free VRAM per job.
 
 Machine env set by the installer: `OLLAMA_HOST=0.0.0.0:11434`,
-`OLLAMA_MODELS=C:\Users\halbr\.ollama\models`, `OLLAMA_KEEP_ALIVE=-1`.
+`OLLAMA_MODELS=C:\Users\halbr\.ollama\models`, `OLLAMA_KEEP_ALIVE=-1`,
+`OLLAMA_KV_CACHE_TYPE=q8_0`, `OLLAMA_FLASH_ATTENTION=1`.
 
 ### Operate
 
