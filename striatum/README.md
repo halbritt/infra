@@ -40,6 +40,9 @@ the home-dir config/checkout all require the owner UID.
 | [`warmtier-autoingest.service.d-daemon-socket.conf`](warmtier-autoingest.service.d-daemon-socket.conf) | `~/.config/systemd/user/striatum-warmtier-autoingest.service.d/daemon-socket.conf` | halbritt 0644 | gives the warmtier timer the new socket path |
 | — (secrets, never vendored) | `~/.config/striatum/blob.env` | halbritt 0600 | Garage S3 keys; referenced by the unit as `EnvironmentFile=` |
 | — (secrets, never vendored) | `~/.config/striatum/daemon.toml` | halbritt 0600 | `postgres_url` (password DSN) read by the daemon |
+| [`striatum-lane-cred-resync.sh`](striatum-lane-cred-resync.sh) | `/usr/local/bin/striatum-lane-cred-resync.sh` | root:root 0755 | copies the operator's Claude OAuth credential → `striatum-lane` (0600), rotating-token-safe — [striatum#583](https://github.com/halbritt/striatum/issues/583) |
+| [`striatum-lane-cred-resync.service`](striatum-lane-cred-resync.service) | `/etc/systemd/system/striatum-lane-cred-resync.service` | root:root 0644 | root oneshot wrapping the script |
+| [`striatum-lane-cred-resync.timer`](striatum-lane-cred-resync.timer) | `/etc/systemd/system/striatum-lane-cred-resync.timer` | root:root 0644 | fires the resync every 15 min (+2 min after boot) |
 | [`migration/`](migration/) | — | — | verbatim copy of the pre-migration user unit + drop-ins (provenance + revert source) |
 
 **Edit here, then re-install.** After editing `striatumd.service`:
@@ -49,6 +52,35 @@ sudo install -m 0644 ~/git/proximal/striatum/striatumd.service /etc/systemd/syst
 sudo systemctl daemon-reload
 sudo systemctl restart striatumd        # KillMode=process: leaves live lane helpers running
 systemctl status striatumd
+```
+
+## Lane Claude-credential resync (`striatum-lane-cred-resync.timer`)
+
+Supervised lanes run as the `striatum-lane` OS user and authenticate to Claude via
+`~striatum-lane/.claude/.credentials.json`. That file used to be a point-in-time
+copy of the operator's (`halbritt`) credential taken at lane launch — and Claude
+OAuth uses **rotating refresh tokens**, so once the operator's CLI refreshes, a
+frozen copy holds a stale refresh token and can no longer self-refresh. During a
+long dogfood the lane copy expired and every claude lane launched afterward wedged
+on `agent_mcp_discovery_stall` → `recovery_exhausted` / red doctor
+([striatum#583](https://github.com/halbritt/striatum/issues/583)).
+
+A root oneshot (`striatum-lane-cred-resync.sh`), fired every 15 min by the timer,
+copies the operator's *current* credential to the lane home (`0600`, owned by the
+lane user) whenever the content differs. 15 min is comfortably under the
+access-token TTL, so the lane copy is never more than one interval stale. This is
+the **operational backstop**; the complementary supervisor-relaunch resync is
+RFC 0165 (in design). Caveat: it can only forward a *fresh* operator credential —
+if the operator's own `~/.claude/.credentials.json` is itself stale (no interactive
+or daemon refresh for hours) the lane inherits that staleness, no worse than today.
+
+```bash
+sudo install -m 0755 ~/git/proximal/striatum/striatum-lane-cred-resync.sh /usr/local/bin/striatum-lane-cred-resync.sh
+sudo install -m 0644 ~/git/proximal/striatum/striatum-lane-cred-resync.service /etc/systemd/system/
+sudo install -m 0644 ~/git/proximal/striatum/striatum-lane-cred-resync.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now striatum-lane-cred-resync.timer
+systemctl list-timers striatum-lane-cred-resync.timer    # confirm NEXT is scheduled
 ```
 
 ## Runtime layout (`/run/striatum`)

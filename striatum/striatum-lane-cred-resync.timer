@@ -1,0 +1,17 @@
+[Unit]
+Description=Periodic striatum-lane Claude credential resync (halbritt/striatum#583)
+Documentation=https://github.com/halbritt/striatum/issues/583
+
+[Timer]
+# Every 15 min — comfortably under the Claude access-token TTL, so the lane copy
+# is never more than one interval behind the operator's rotating credential, yet
+# not chatty. OnBootSec syncs promptly after a reboot; the script is a cheap
+# no-op when the credential is unchanged. A small jitter avoids a thundering herd
+# with the other host timers.
+OnBootSec=2min
+OnUnitActiveSec=15min
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target
