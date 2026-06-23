@@ -5,6 +5,19 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-06-23
+
+### Captured the intero sense-organ surfacing timers (`intero/`)
+New subsystem dir for the two `--user` systemd timers that run the `showerthoughts`
+coordination/intero blind-spot ledger: `intero-ledger.{service,timer}` (daily, 09:00 —
+the existing surface) and `intero-drift.{service,timer}` (weekly, Mon 09:15 — new this
+day, reads each repo's `.intero.json` `history` ring for actual-vs-declared cadence).
+Both `Type=oneshot`, `Persistent=true`, output to the journal + a digest under
+`~/.local/state/intero/`. Canonical copies + file→install-path mapping in
+[`intero/README.md`](intero/README.md). Stateless, zero-GPU, no daemon; not a cloud
+routine. Capturing them keeps the sense organ's own liveness auditable and
+reimage-survivable.
+
 ## 2026-06-21
 
 ### Authored alerting rules for node / gpu / postgres / infra

@@ -1,0 +1,11 @@
+[Unit]
+Description=intero drift read — WEEKLY hormonal surface (coordination/intero sense organ)
+Documentation=file:///home/halbritt/git/showerthoughts/coordination/intero/SPEC.md
+
+[Service]
+Type=oneshot
+# Stateless, zero-GPU, no daemon. DISPLAYS, never interprets: per repo, the declared
+# cadence beside the raw last-N actual inter-write intervals from each .intero.json
+# `history` ring (refusal of false precision — no average, no drift score). Output goes
+# to the journal (journalctl --user -u intero-drift) and to a stable digest file.
+ExecStart=/bin/sh -c 'mkdir -p %h/.local/state/intero && /usr/bin/python3 %h/git/showerthoughts/coordination/intero/ledger.py --drift | tee %h/.local/state/intero/drift-latest.txt'

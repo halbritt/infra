@@ -1,0 +1,12 @@
+[Unit]
+Description=Weekly intero drift read — actual-vs-declared cadence (coordination/intero)
+Documentation=file:///home/halbritt/git/showerthoughts/coordination/intero/SPEC.md
+
+[Timer]
+# WEEKLY HORMONAL read. Mondays, 15m after the daily ledger so the two never collide.
+# Persistent=true catches up a missed run after the box was off.
+OnCalendar=Mon *-*-* 09:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

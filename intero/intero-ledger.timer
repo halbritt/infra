@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily intero blind-spot ledger surface (coordination/intero)
+Documentation=file:///home/halbritt/git/showerthoughts/coordination/intero/SPEC.md
+
+[Timer]
+# DAILY surface. (The weekly HORMONAL drift read now exists: intero-drift.timer,
+# reading each record's bounded `history` ring — Mondays 09:15.)
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=intero blind-spot ledger — DAILY surface (coordination/intero sense organ)
+Documentation=file:///home/halbritt/git/showerthoughts/coordination/intero/SPEC.md
+
+[Service]
+Type=oneshot
+# Stateless, zero-GPU, no daemon. SURFACES, never gates: the ledger ranks repos by
+# missed self-promised heartbeats ("silence is not calm"). Output goes to the journal
+# (journalctl --user -u intero-ledger) and to a stable digest file the human can read.
+ExecStart=/bin/sh -c 'mkdir -p %h/.local/state/intero && /usr/bin/python3 %h/git/showerthoughts/coordination/intero/ledger.py | tee %h/.local/state/intero/ledger-latest.txt'
