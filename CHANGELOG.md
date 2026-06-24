@@ -5,6 +5,22 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-06-24
+
+### Captured the striatum worktree-GC timer (`striatum/`)
+New root oneshot + 6h timer (`striatum-worktree-gc.{sh,service,timer}`) that periodically
+reclaims terminal-run git worktrees and keeps `git gc` working on the `~/git/striatum`
+checkout. Lanes run as `striatum-lane` and leave lane-owned files in each worktree and its
+reflog; the operator-side daemon/`git` (both `halbritt`) then can't remove them, so worktrees
+accumulated to 240 and `git gc --auto` was silently failing on `HEAD.lock` permission errors.
+The timer runs the daemon-blessed `striatum worktree gc` (over the socket, refreshing the CLI
+capability-token cache from the live runtime token so it survives boot-epoch rotation), then —
+**only when zero runs are active** — `chown`s the worktree trees back to the operator and
+re-sweeps, then `git gc --auto`. First run: 240 → 74 worktrees, clean `git gc`. Operational
+backstop for [striatum#612](https://github.com/halbritt/striatum/issues/612) (retire when the
+daemon-side ACL/staging fix lands). Canonical copies + file→install-path mapping in
+[`striatum/README.md`](striatum/README.md).
+
 ## 2026-06-23
 
 ### Captured the intero sense-organ surfacing timers (`intero/`)

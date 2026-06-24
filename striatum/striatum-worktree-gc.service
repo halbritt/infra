@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodic striatum worktree GC + ownership normalization (halbritt/striatum#612)
+Documentation=https://github.com/halbritt/striatum/issues/612
+After=striatumd.service
+Wants=striatumd.service
+
+[Service]
+Type=oneshot
+# Runs as root (no User=): must chown striatum-lane-owned worktree files and reflogs back
+# to the operator so `git gc` and `striatum worktree gc` (both run as halbritt inside the
+# script) can manage them. The script drops to halbritt for every daemon/git operation.
+ExecStart=/usr/local/bin/striatum-worktree-gc.sh

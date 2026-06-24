@@ -1,0 +1,16 @@
+[Unit]
+Description=Periodic striatum worktree GC (halbritt/striatum#612)
+Documentation=https://github.com/halbritt/striatum/issues/612
+
+[Timer]
+# Every 6h keeps terminal-run worktree debris bounded without being chatty; the script is
+# a cheap no-op when nothing is reclaimable. OnBootSec runs a pass shortly after boot;
+# Persistent catches a missed window after downtime; a small jitter avoids colliding with
+# the other striatum host timers.
+OnBootSec=10min
+OnUnitActiveSec=6h
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

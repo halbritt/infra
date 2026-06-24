@@ -43,6 +43,9 @@ the home-dir config/checkout all require the owner UID.
 | [`striatum-lane-cred-resync.sh`](striatum-lane-cred-resync.sh) | `/usr/local/bin/striatum-lane-cred-resync.sh` | root:root 0755 | copies the operator's Claude OAuth credential → `striatum-lane` (0600), rotating-token-safe — [striatum#583](https://github.com/halbritt/striatum/issues/583) |
 | [`striatum-lane-cred-resync.service`](striatum-lane-cred-resync.service) | `/etc/systemd/system/striatum-lane-cred-resync.service` | root:root 0644 | root oneshot wrapping the script |
 | [`striatum-lane-cred-resync.timer`](striatum-lane-cred-resync.timer) | `/etc/systemd/system/striatum-lane-cred-resync.timer` | root:root 0644 | fires the resync every 15 min (+2 min after boot) |
+| [`striatum-worktree-gc.sh`](striatum-worktree-gc.sh) | `/usr/local/bin/striatum-worktree-gc.sh` | root:root 0755 | periodic worktree GC + ownership normalization; quiescence-gated chown — [striatum#612](https://github.com/halbritt/striatum/issues/612) |
+| [`striatum-worktree-gc.service`](striatum-worktree-gc.service) | `/etc/systemd/system/striatum-worktree-gc.service` | root:root 0644 | root oneshot wrapping the script |
+| [`striatum-worktree-gc.timer`](striatum-worktree-gc.timer) | `/etc/systemd/system/striatum-worktree-gc.timer` | root:root 0644 | fires the GC every 6h (+10 min after boot) |
 | [`migration/`](migration/) | — | — | verbatim copy of the pre-migration user unit + drop-ins (provenance + revert source) |
 
 **Edit here, then re-install.** After editing `striatumd.service`:
@@ -81,6 +84,50 @@ sudo install -m 0644 ~/git/proximal/striatum/striatum-lane-cred-resync.timer   /
 sudo systemctl daemon-reload
 sudo systemctl enable --now striatum-lane-cred-resync.timer
 systemctl list-timers striatum-lane-cred-resync.timer    # confirm NEXT is scheduled
+```
+
+## Worktree GC (`striatum-worktree-gc.timer`)
+
+The daemon gives each job its own git worktree under `~/git/striatum/.striatum/worktrees/`.
+Supervised lanes run as `striatum-lane` and write **lane-owned** files both inside those
+worktrees and into their per-worktree reflog (`.git/worktrees/<id>/logs/HEAD`). The daemon
+and `git` both run as `halbritt`, so once a run is terminal those lane-owned files block
+cleanup from the operator side:
+
+- `git gc` / `git reflog expire --all` → `failed to create HEAD.lock: Permission denied`
+- `striatum worktree gc` → `git worktree remove … Permission denied`
+
+Left alone this compounds: on 2026-06-24 the checkout had **240 registered worktrees** and
+the host's `git gc --auto` had been silently failing for weeks ([striatum#612](https://github.com/halbritt/striatum/issues/612)).
+
+A root oneshot (`striatum-worktree-gc.sh`), fired every 6h by the timer, does the cleanup the
+operator can't from a plain shell:
+
+1. `striatum worktree gc` — the daemon-blessed sweep (removes only terminal worktrees
+   reachable from the run branch; retains divergent pins). It runs **as the operator over
+   the unix socket**, with the CLI capability-token cache refreshed each run from the live
+   `/run/striatum/client-token`, so it survives a daemon boot-epoch rotation (cf.
+   [striatum#512](https://github.com/halbritt/striatum/issues/512)). The MCP-HTTP endpoint is
+   per-login-session, so the socket is the only session-independent transport.
+2. **Only when the daemon reports zero active runs**, `chown -R halbritt:halbritt` the
+   `.striatum/worktrees` + `.git/worktrees` trees (normalizing lane-owned debris so the
+   daemon/git can manage it) then a re-sweep. The quiescence gate guarantees it never chowns
+   a file an active lane is mid-write.
+3. `git worktree prune` + `git gc --auto`.
+
+This is the **operational backstop**; the real fix (setgid + default ACL on the worktree tree,
+or daemon-side publish-from-staging so leaves are never lane-owned) lives in
+[striatum#612](https://github.com/halbritt/striatum/issues/612) — **retire this timer when it
+lands**. The first run took the box from 240 → 74 worktrees (74 = main + 73 divergent pins the
+daemon retains) and restored a clean `git gc`.
+
+```bash
+sudo install -m 0755 ~/git/proximal/striatum/striatum-worktree-gc.sh /usr/local/bin/striatum-worktree-gc.sh
+sudo install -m 0644 ~/git/proximal/striatum/striatum-worktree-gc.service /etc/systemd/system/
+sudo install -m 0644 ~/git/proximal/striatum/striatum-worktree-gc.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now striatum-worktree-gc.timer
+systemctl list-timers striatum-worktree-gc.timer    # confirm NEXT is scheduled
 ```
 
 ## Runtime layout (`/run/striatum`)
