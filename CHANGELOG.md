@@ -22,6 +22,13 @@ Plane pilot's `API_KEY_RATE_LIMIT` to `600/minute` because the default `60/minut
 rate limit throttled the bulk local scaffold; this is local/private automation
 posture, not public-service posture.
 
+After owner review, deleted 35 stale/fork GitHub remotes from `halbritt/*` and deleted
+their matching Plane projects by `external_id`; `export-chatgpt` was explicitly kept.
+Plane now has 32 projects: the 31 remaining GitHub repositories plus `PXLAB`. Deletion
+evidence is in `/tmp/halbritt-delete-results-2026-06-28T21-43-24Z.tsv` and
+`/tmp/plane-project-delete-results-2026-06-28T22-15-37Z.tsv`; both contain only names,
+project IDs, status, and HTTP result codes.
+
 ### Captured the local/private Plane CE pilot (`plane/`)
 New subsystem for the local Plane Community Edition pilot on `proximal`, intended for
 Striatum/meta-operator issue-tracker experiments and explicitly separate from any future

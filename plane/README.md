@@ -163,7 +163,18 @@ Rollout result on 2026-06-28:
 - 62 remote `AGENTS.md` files created or confirmed with the Plane tracking block.
 - `proximal` and `praxis` were handled through local checkouts.
 - `memory-price-tracker` and `saltitall` had no default branch for `AGENTS.md`
-  writes at rollout time. Their Plane projects still exist.
+  writes at rollout time.
+
+Cleanup result on 2026-06-28:
+
+- After owner review, 35 stale/fork GitHub remotes were deleted from `halbritt/*`.
+- The 35 matching Plane projects were deleted by `external_id`; every DELETE returned
+  HTTP `204`.
+- `export-chatgpt` was explicitly kept.
+- Current Plane project count is 32: 31 remaining GitHub repo projects plus `PXLAB`.
+- `saltitall` was among the deleted repos/projects; `memory-price-tracker` remains.
+- Evidence logs: `/tmp/halbritt-delete-results-2026-06-28T21-43-24Z.tsv` and
+  `/tmp/plane-project-delete-results-2026-06-28T22-15-37Z.tsv`.
 
 ## Verify
 
