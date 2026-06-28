@@ -7,6 +7,21 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-28
 
+### Scaffolded Plane tracking for `halbritt/*` repos
+Bulk scaffolded the local/private Plane workspace for all 66 GitHub repositories under
+`halbritt/*`: one Plane project per repo, common agent workflow states/labels, and a
+marked Plane tracking block in repo `AGENTS.md` where the repo had a default branch.
+`proximal` and `praxis` were handled through local checkouts; `memory-price-tracker`
+and `saltitall` had no default branch for remote `AGENTS.md` writes at rollout time.
+
+Created the separate `Praxis Plane Connector Lab` project (`PXLAB`) for local Praxis
+Plane connector development and wrote a dedicated token to the uncommitted pointer
+`/home/halbritt/.config/plane/repos/praxis-pxlab.env` (`0600`). The token value was not
+printed or committed. Praxis `AGENTS.md` now points at that file. Raised the local
+Plane pilot's `API_KEY_RATE_LIMIT` to `600/minute` because the default `60/minute`
+rate limit throttled the bulk local scaffold; this is local/private automation
+posture, not public-service posture.
+
 ### Captured the local/private Plane CE pilot (`plane/`)
 New subsystem for the local Plane Community Edition pilot on `proximal`, intended for
 Striatum/meta-operator issue-tracker experiments and explicitly separate from any future

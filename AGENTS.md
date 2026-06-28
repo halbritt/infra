@@ -40,3 +40,16 @@ Live box facts (hardware, ports, the local LLM service, restart commands) are in
   is down; capture unit files / drop-ins as the desired-state for that subsystem.
 - **Commit and push often.** Never end a turn with a dirty tree or unpushed commits
   (`origin` = `github.com/halbritt/proximal`).
+
+<!-- BEGIN PROXIMAL PLANE TRACKING -->
+## Plane Tracking
+
+This repository is represented in the local/private Plane workspace `Proximal`.
+
+- Plane project: `Proximal` (`PROXIMAL`)
+- Plane URL: `https://proximal.tail0ecc2e.ts.net:10000/`
+- GitHub repo: `https://github.com/halbritt/proximal`
+- Use Plane work items for multi-agent planning, claims, submitted artifacts, reviews, and acceptance decisions.
+- When updating Plane, include the repo, branch/worktree, `run_id`, `base_sha`, artifact links, verification evidence, and authority scope in the work item description or comments.
+- Do not commit Plane API tokens. Local tokens and MCP env files live outside git under `~/.config/plane/`.
+<!-- END PROXIMAL PLANE TRACKING -->
