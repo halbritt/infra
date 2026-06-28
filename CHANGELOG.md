@@ -5,6 +5,23 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-06-28
+
+### Captured the local/private Plane CE pilot (`plane/`)
+New subsystem for the local Plane Community Edition pilot on `proximal`, intended for
+Striatum/meta-operator issue-tracker experiments and explicitly separate from any future
+public `plane.harm.org` deployment. Live state verified before capture: Plane CE `v1.3.1`
+running from `/home/halbritt/services/plane-selfhost`, proxy ports bound only to
+`127.0.0.1:8090` and `127.0.0.1:8091`, Tailscale Serve `:10000` proxying to the loopback
+HTTP port, and bundled Compose Postgres/Valkey/RabbitMQ/MinIO in use.
+
+Captured only non-secret desired state: public URL/port values, the loopback proxy patch,
+the stdio MCP wrapper, verification commands, and stop conditions. The real Plane env file
+and MCP API token stay outside git (`plane.env` and
+`~/.config/plane/proximal-mcp.env`, respectively). Added `plane-selfhost.service` as the
+host lifecycle wrapper so the pilot is managed by systemd like other long-running local
+infra while still running the official generated Docker Compose stack.
+
 ## 2026-06-24
 
 ### Captured the striatum worktree-GC timer (`striatum/`)

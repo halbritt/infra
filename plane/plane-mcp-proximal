@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+env_file="${PLANE_MCP_ENV_FILE:-$HOME/.config/plane/proximal-mcp.env}"
+if [[ ! -r "$env_file" ]]; then
+  echo "Plane MCP env file not readable: $env_file" >&2
+  exit 1
+fi
+
+while IFS='=' read -r key value; do
+  case "$key" in
+    PLANE_API_KEY|PLANE_WORKSPACE_SLUG|PLANE_BASE_URL|PLANE_INTERNAL_BASE_URL)
+      export "$key=$value"
+      ;;
+    ''|\#*)
+      ;;
+  esac
+done < "$env_file"
+
+: "${PLANE_API_KEY:?PLANE_API_KEY is required}"
+: "${PLANE_WORKSPACE_SLUG:?PLANE_WORKSPACE_SLUG is required}"
+: "${PLANE_BASE_URL:?PLANE_BASE_URL is required}"
+
+exec /home/halbritt/.local/bin/plane-mcp-server stdio
