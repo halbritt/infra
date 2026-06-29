@@ -5,6 +5,25 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-06-29
+
+### Migrated open Striatum GitHub issues into Plane
+Imported the 24 open `halbritt/striatum` GitHub issues into the local/private Plane
+`Striatum` project (`STRIATUM`) as work items with stable `external_source=github`
+and `external_id=halbritt/striatum#<number>` values. Mirrored the seven GitHub labels
+currently present on open issues (`bug`, `enhancement`, `needs-triage`,
+`ready-for-agent`, `ready-for-human`, `rfc-0091`, `security`) and preserved issue
+bodies plus the 31 open-issue comments as description snapshots. GitHub was not
+mutated or closed.
+
+State mapping for the import: `ready-for-agent` -> `Ready`, `ready-for-human` ->
+`Blocked` plus `authority-required`, everything else -> `Backlog`. Live result:
+5 `Ready`, 6 `Blocked`, 13 `Backlog`. The idempotence check re-ran the importer and
+reported 24 unchanged items. Evidence:
+`/tmp/plane-striatum-gh-issue-migration-2026-06-29.json`,
+`/tmp/plane-striatum-gh-issue-migration-idempotence-2026-06-29.json`, and
+`/tmp/plane-striatum-work-items-after-migration-2026-06-29.json`.
+
 ## 2026-06-28
 
 ### Scaffolded Plane tracking for `halbritt/*` repos

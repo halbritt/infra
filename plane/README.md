@@ -47,6 +47,7 @@ service.
 | [`plane-public-env.values`](plane-public-env.values) | values inside `/home/halbritt/services/plane-selfhost/plane-app/plane.env` | uncommitted secret-bearing file | only the listed non-secret keys are captured here |
 | [`docker-compose-proxy-loopback.patch`](docker-compose-proxy-loopback.patch) | patch against `plane-app/docker-compose.yaml` | uncommitted generated compose file | documents the loopback-only proxy publish change |
 | [`scripts/scaffold_github_repos.py`](scripts/scaffold_github_repos.py) | run from this checkout | - | idempotently scaffolds Plane projects/states/labels and remote `AGENTS.md` tracking blocks for `halbritt/*` repos |
+| [`scripts/migrate_striatum_github_issues.py`](scripts/migrate_striatum_github_issues.py) | run from this checkout | - | idempotently imports open `halbritt/striatum` GitHub issues into the Striatum Plane project |
 | [`API_TOKENS.md`](API_TOKENS.md) | policy only | - | token storage paths and creation boundary; no token values |
 | - secrets, never vendored | `/home/halbritt/.config/plane/proximal-mcp.env` | halbritt:halbritt 0600 | contains `PLANE_API_KEY` and non-secret URL/workspace vars |
 
@@ -175,6 +176,44 @@ Cleanup result on 2026-06-28:
 - `saltitall` was among the deleted repos/projects; `memory-price-tracker` remains.
 - Evidence logs: `/tmp/halbritt-delete-results-2026-06-28T21-43-24Z.tsv` and
   `/tmp/plane-project-delete-results-2026-06-28T22-15-37Z.tsv`.
+
+## GitHub issue migration
+
+The Striatum Plane project (`STRIATUM`) also carries an idempotent snapshot of open
+`halbritt/striatum` GitHub issues as Plane work items. Run from this checkout:
+
+```bash
+plane/scripts/migrate_striatum_github_issues.py \
+  --report-out /tmp/plane-striatum-gh-issue-migration-$(date -u +%Y-%m-%dT%H-%M-%SZ).json
+```
+
+The importer:
+
+- reads GitHub with `gh issue list --state open` and does not mutate GitHub
+- writes Plane through `/home/halbritt/.config/plane/proximal-mcp.env`
+- sets `external_source=github` and `external_id=halbritt/striatum#<number>`
+- mirrors GitHub labels found on open issues into the Striatum Plane project
+- snapshots the issue body and comments into the Plane description
+- maps `ready-for-agent` to `Ready`
+- maps `ready-for-human` to `Blocked` and adds `authority-required`
+- maps every other open issue to `Backlog`
+
+Plane normalizes submitted HTML, so reruns do not refresh descriptions by default.
+Use `--refresh-descriptions` only when you intentionally want to overwrite existing
+Plane descriptions from the current GitHub issue bodies/comments.
+
+Migration result on 2026-06-29:
+
+- 24 open GitHub issues imported as `STRIATUM-1` through `STRIATUM-24`.
+- 7 GitHub labels mirrored: `bug`, `enhancement`, `needs-triage`,
+  `ready-for-agent`, `ready-for-human`, `rfc-0091`, `security`.
+- 31 GitHub comments were preserved in description snapshots.
+- State distribution: 5 `Ready`, 6 `Blocked`, 13 `Backlog`.
+- Idempotence check: rerun reported 24 unchanged, 0 created, 0 updated.
+- Evidence logs:
+  `/tmp/plane-striatum-gh-issue-migration-2026-06-29.json`,
+  `/tmp/plane-striatum-gh-issue-migration-idempotence-2026-06-29.json`, and
+  `/tmp/plane-striatum-work-items-after-migration-2026-06-29.json`.
 
 ## Verify
 
