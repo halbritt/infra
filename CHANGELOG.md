@@ -7,6 +7,10 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-29
 
+### Upgraded system packages and installed sqlite3 CLI
+Ran system package updates (`apt-get update` and `apt-get upgrade`) and installed
+the `sqlite3` CLI tool on the host. Verified `sqlite3 --version` outputs 3.45.1.
+
 ### Wired local MCP/Praxis access for `plane.harm.org`
 Documented the `plane.harm.org` local-agent access pattern: keep the public URL
 as `https://plane.harm.org`, but send local MCP and Praxis runtime API calls to
