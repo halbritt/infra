@@ -7,6 +7,15 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-29
 
+### Wired local MCP/Praxis access for `plane.harm.org`
+Documented the `plane.harm.org` local-agent access pattern: keep the public URL
+as `https://plane.harm.org`, but send local MCP and Praxis runtime API calls to
+`http://127.0.0.1:8190` through `PLANE_INTERNAL_BASE_URL` /
+`PRAXIS_PLANE_INTERNAL_BASE_URL`. Created the `Praxis` project (`PRAXIS`) in the
+`harm` workspace and recorded its non-secret project id
+`978fcda1-c9c1-4437-b83a-5c3d6de0178e`. Token values remain only in mode-`0600`
+files under `~/.config/plane/`.
+
 ### Enabled public Cloudflare Tunnel ingress for `plane.harm.org`
 Added a `cloudflared/` subsystem for the existing `token-dashboard` Cloudflare
 Tunnel and routed `plane.harm.org` to the second Plane instance on

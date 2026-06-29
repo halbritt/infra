@@ -1,11 +1,11 @@
 # Plane API token policy
 
-Plane API tokens for the local `Proximal` workspace are credentials. They are never
-committed to this repo or to any application repo.
+Plane API tokens on `proximal` are credentials. They are never committed to this
+repo or to any application repo.
 
 ## Current token
 
-The current local MCP wrapper reads:
+The current local/private Proximal MCP wrapper reads:
 
 ```text
 /home/halbritt/.config/plane/proximal-mcp.env
@@ -14,6 +14,17 @@ The current local MCP wrapper reads:
 That file is mode `0600` inside a mode `0700` directory and contains the real
 `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_BASE_URL` values. Treat it as the
 operator/local-agent token for this host.
+
+The public-intended `plane.harm.org` MCP registration is separate:
+
+```text
+/home/halbritt/.config/plane/harm-mcp.env
+```
+
+That file is also mode `0600` and contains `PLANE_API_KEY`,
+`PLANE_WORKSPACE_SLUG=harm`, `PLANE_BASE_URL=https://plane.harm.org`, and
+`PLANE_INTERNAL_BASE_URL=http://127.0.0.1:8190`. Local agents should use the
+internal loopback URL for API calls so public edge failures do not break MCP work.
 
 ## Per-repo token slots
 
@@ -43,6 +54,7 @@ Current explicit per-repo token:
 | purpose | pointer | Plane project |
 |---|---|---|
 | Praxis Plane connector lab | `/home/halbritt/.config/plane/repos/praxis-pxlab.env` | `Praxis Plane Connector Lab` (`PXLAB`) |
+| Praxis personal runtime | `/home/halbritt/.config/plane/repos/praxis-personal.env` | `Praxis` (`PRAXIS`) on `plane.harm.org`, project id `978fcda1-c9c1-4437-b83a-5c3d6de0178e` |
 
 ## Automation boundary
 
