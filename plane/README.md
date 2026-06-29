@@ -136,7 +136,8 @@ Every `github.com/halbritt/*` repository with a default branch should have:
 - the standard coordination labels: `agent-coordination`, `needs-verification`,
   `authority-required`, `blocked`, `github`
 - a marked Plane tracking block in repo `AGENTS.md` that says the issue tracker
-  is Plane in the local/private `Proximal` workspace
+  is Plane in the local/private `Proximal` workspace and GitHub Issues are
+  deprecated
 
 Run the idempotent rollout script from this checkout:
 
@@ -189,6 +190,17 @@ Tracking-block update on 2026-06-29:
 - Evidence logs:
   `/tmp/plane-agents-issue-tracker-line-rollout-2026-06-29.json` and
   `/tmp/plane-agents-issue-tracker-line-verify-2026-06-29.tsv`.
+
+GitHub Issues deprecation update on 2026-06-29:
+
+- Current target set: 31 `github.com/halbritt/*` repos with Plane projects.
+- 30 remote `AGENTS.md` files updated through the GitHub API.
+- `proximal` was skipped by the remote script and updated through the local checkout.
+- Verification fetched all 30 remote `AGENTS.md` files and found
+  `GitHub Issues: deprecated` in each.
+- Evidence logs:
+  `/tmp/plane-agents-github-issues-deprecated-rollout-2026-06-29.json` and
+  `/tmp/plane-agents-github-issues-deprecated-verify-2026-06-29.tsv`.
 
 ## GitHub issue migration
 

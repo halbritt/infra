@@ -7,6 +7,17 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-29
 
+### Marked GitHub Issues deprecated in repo `AGENTS.md`
+Updated the marked Plane tracking block so repo agents keep the GitHub repository
+link but treat GitHub Issues as deprecated. New issue tracking, claims, reviews,
+and issue-state changes should go through Plane work items. Reran the scaffold
+against the 31 current `halbritt/*` repos with Plane projects: 30 remote
+`AGENTS.md` files updated and `proximal` updated locally for this commit.
+Verification fetched the 30 remote files through the GitHub API and confirmed
+`GitHub Issues: deprecated` in each. Evidence:
+`/tmp/plane-agents-github-issues-deprecated-rollout-2026-06-29.json` and
+`/tmp/plane-agents-github-issues-deprecated-verify-2026-06-29.tsv`.
+
 ### Marked Plane as the issue tracker in repo `AGENTS.md`
 Updated the marked Plane tracking block so every repo-backed Plane project says
 plainly that its issue tracker is Plane in the local/private `Proximal` workspace.
