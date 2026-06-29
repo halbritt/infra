@@ -1,0 +1,17 @@
+tunnel: e6e104cb-75a2-4ccc-a46f-aca2c725328c
+credentials-file: /etc/cloudflared/e6e104cb-75a2-4ccc-a46f-aca2c725328c.json
+
+ingress:
+  - hostname: tailscale.harm.org
+    service: http://localhost:3912
+  - hostname: tokens.harm.org
+    service: http://localhost:3001
+  - hostname: harm.org
+    service: http://localhost:18888
+  - hostname: www.harm.org
+    service: http://localhost:18888
+  - hostname: dram.harm.org
+    service: http://localhost:3011
+  - hostname: plane.harm.org
+    service: http://localhost:8190
+  - service: http_status:404

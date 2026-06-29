@@ -5,9 +5,9 @@ Community Edition instance on host `proximal`.
 
 This is **not** the local/private Plane pilot in [`../plane`](../plane). It uses
 its own compose project, database, Redis DB, Garage bucket/key, ports, and
-generated env file. The public edge is still a separate concern: this instance
-binds only loopback ports on `proximal` until an edge proxy is deliberately
-enabled.
+generated env file. Public ingress is handled by
+[`../cloudflared`](../cloudflared/); this instance still binds only loopback
+ports on `proximal`.
 
 ## At a glance
 
@@ -19,6 +19,7 @@ enabled.
 | compose project | `plane-harm-org` |
 | planned public URL | `https://plane.harm.org` |
 | local URL | `http://127.0.0.1:8190` |
+| public edge | Cloudflare Tunnel `token-dashboard`, `plane.harm.org` -> `http://localhost:8190` |
 | unit | `plane-harm-org.service` |
 | app state | system PostgreSQL 17, host Redis, Garage S3, bundled RabbitMQ |
 
@@ -85,6 +86,8 @@ redis-cli -n 1 ping
 curl -o /dev/null -sS -w 'plane_harm_local_root=%{http_code}\n' http://127.0.0.1:8190/
 curl -o /dev/null -sS -w 'plane_harm_instances=%{http_code}\n' http://127.0.0.1:8190/api/instances/
 curl -o /dev/null -sS -w 'plane_harm_users_me_no_auth=%{http_code}\n' http://127.0.0.1:8190/api/users/me/
+curl -o /dev/null -sS -w 'plane_harm_public_instances=%{http_code}\n' https://plane.harm.org/api/instances/
+curl -o /dev/null -sS -w 'plane_harm_public_users_me_no_auth=%{http_code}\n' https://plane.harm.org/api/users/me/
 ```
 
 Expected HTTP checks:
@@ -92,6 +95,8 @@ Expected HTTP checks:
 - local root: `200`
 - `/api/instances/`: `200`
 - `/api/users/me/` without auth: `401`
+- public `/api/instances/`: `200`
+- public `/api/users/me/` without auth: `401`
 
 Verified on 2026-06-29:
 
@@ -104,6 +109,8 @@ Verified on 2026-06-29:
 - The API startup check found Garage bucket `plane-harm-org`.
 - Local HTTP checks returned `plane_harm_local_root=200`,
   `plane_harm_instances=200`, and `plane_harm_users_me_no_auth=401`.
+- Public Cloudflare Tunnel checks returned `plane_harm_public_instances=200`
+  and `plane_harm_public_users_me_no_auth=401`.
 - The existing local/private Plane pilot at `http://127.0.0.1:8090/` still
   returned `200`.
 
@@ -111,7 +118,7 @@ Verified on 2026-06-29:
 
 Stop and ask before:
 
-- exposing this instance through public DNS, Tailscale Funnel, or GCP ingress
+- changing the public DNS/Cloudflare Tunnel edge after it is enabled
 - reusing or importing data from the local/private `plane/` pilot
 - printing or moving the generated `plane.env`, database password, Garage secret
   key, or future Plane API tokens

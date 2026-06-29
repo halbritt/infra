@@ -7,6 +7,14 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-29
 
+### Enabled public Cloudflare Tunnel ingress for `plane.harm.org`
+Added a `cloudflared/` subsystem for the existing `token-dashboard` Cloudflare
+Tunnel and routed `plane.harm.org` to the second Plane instance on
+`http://localhost:8190`. The Plane container proxy remains loopback-only on
+`proximal`; public TLS and DNS terminate at Cloudflare Tunnel. Verified public
+Plane API checks over `https://plane.harm.org`. Tunnel credentials remain only in
+`/etc/cloudflared`, not in git.
+
 ### Added public-intended Plane stack for `plane.harm.org`
 Added a separate `plane-public/` subsystem for a second Plane CE `v1.3.1`
 instance intended for `plane.harm.org`, without reusing the local/private
