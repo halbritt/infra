@@ -7,6 +7,17 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-29
 
+### Marked Plane as the issue tracker in repo `AGENTS.md`
+Updated the marked Plane tracking block so every repo-backed Plane project says
+plainly that its issue tracker is Plane in the local/private `Proximal` workspace.
+Reran the scaffold against the 31 current `halbritt/*` repos with Plane projects:
+29 remote `AGENTS.md` files updated, `memory-price-tracker` got a new `AGENTS.md`,
+and `proximal` was updated locally for this commit. Verification fetched the 30
+remote `AGENTS.md` files back through the GitHub API and confirmed the
+`Issue tracker: Plane` line in each. Evidence:
+`/tmp/plane-agents-issue-tracker-line-rollout-2026-06-29.json` and
+`/tmp/plane-agents-issue-tracker-line-verify-2026-06-29.tsv`.
+
 ### Migrated open Striatum GitHub issues into Plane
 Imported the 24 open `halbritt/striatum` GitHub issues into the local/private Plane
 `Striatum` project (`STRIATUM`) as work items with stable `external_source=github`

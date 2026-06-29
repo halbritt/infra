@@ -47,6 +47,7 @@ Live box facts (hardware, ports, the local LLM service, restart commands) are in
 This repository is represented in the local/private Plane workspace `Proximal`.
 
 - Plane project: `Proximal` (`PROXIMAL`)
+- Issue tracker: Plane (`Proximal` workspace), project `Proximal` (`PROXIMAL`).
 - Plane URL: `https://proximal.tail0ecc2e.ts.net:10000/`
 - GitHub repo: `https://github.com/halbritt/proximal`
 - Use Plane work items for multi-agent planning, claims, submitted artifacts, reviews, and acceptance decisions.

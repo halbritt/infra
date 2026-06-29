@@ -135,7 +135,8 @@ Every `github.com/halbritt/*` repository with a default branch should have:
   `Submitted`, `Review`, `Accepted`, `Rejected`, `Refused`, `Blocked`
 - the standard coordination labels: `agent-coordination`, `needs-verification`,
   `authority-required`, `blocked`, `github`
-- a marked Plane tracking block in repo `AGENTS.md`
+- a marked Plane tracking block in repo `AGENTS.md` that says the issue tracker
+  is Plane in the local/private `Proximal` workspace
 
 Run the idempotent rollout script from this checkout:
 
@@ -176,6 +177,18 @@ Cleanup result on 2026-06-28:
 - `saltitall` was among the deleted repos/projects; `memory-price-tracker` remains.
 - Evidence logs: `/tmp/halbritt-delete-results-2026-06-28T21-43-24Z.tsv` and
   `/tmp/plane-project-delete-results-2026-06-28T22-15-37Z.tsv`.
+
+Tracking-block update on 2026-06-29:
+
+- Current target set: 31 `github.com/halbritt/*` repos with Plane projects.
+- 29 remote `AGENTS.md` files updated through the GitHub API.
+- `memory-price-tracker` got a new `AGENTS.md` on `main`.
+- `proximal` was skipped by the remote script and updated through the local checkout.
+- Verification fetched all 30 remote `AGENTS.md` files and found
+  `Issue tracker: Plane` in each.
+- Evidence logs:
+  `/tmp/plane-agents-issue-tracker-line-rollout-2026-06-29.json` and
+  `/tmp/plane-agents-issue-tracker-line-verify-2026-06-29.tsv`.
 
 ## GitHub issue migration
 
