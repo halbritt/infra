@@ -7,6 +7,17 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-29
 
+### Added public-intended Plane stack for `plane.harm.org`
+Added a separate `plane-public/` subsystem for a second Plane CE `v1.3.1`
+instance intended for `plane.harm.org`, without reusing the local/private
+`plane/` pilot's state. The new stack uses system PostgreSQL 17, host Redis, and
+Garage S3 instead of bundled Compose Postgres/Redis/MinIO, while retaining bundled
+RabbitMQ. Installed host `redis-server`; PostgreSQL, Redis, and Garage remain
+loopback-only, and containers reach them through per-service Docker-bridge
+`socat` units bound on `172.17.0.1`. Verified the local proxy/API checks on
+`127.0.0.1:8190`. Secrets stay in the generated `plane.env` on the box, not in
+git.
+
 ### Marked GitHub Issues deprecated in repo `AGENTS.md`
 Updated the marked Plane tracking block so repo agents keep the GitHub repository
 link but treat GitHub Issues as deprecated. New issue tracking, claims, reviews,

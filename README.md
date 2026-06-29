@@ -24,9 +24,10 @@ Each top-level directory is one subsystem, self-contained with its own `README.m
 | [`striatum/`](striatum/) | `striatumd` workflow daemon | system unit (`User=halbritt`), `/run/striatum` runtime layout, shell/tailscale/warmtier glue; the 2026-06-19 user-unit→system-unit migration + revert source |
 | [`praxis/`](praxis/) | `praxisd` executive-function daemon + connectors | systemd user units (`praxisd` + `praxis-slack` Socket Mode listener), peer-auth `praxis` DB, secret var-names (values in `~/.config/praxis/praxisd.env`, uncommitted), the said/inferred wall rationale |
 | [`plane/`](plane/) | local/private Plane CE pilot | Docker Compose Plane CE `v1.3.1`, loopback-only proxy ports, Tailscale Serve `:10000`, systemd wrapper, MCP wrapper and non-secret API config posture |
+| [`plane-public/`](plane-public/) | public-intended Plane CE for `plane.harm.org` | separate Plane CE `v1.3.1` stack, loopback proxy ports, system PostgreSQL, host Redis, Garage S3, Docker-bridge state proxies |
 
 Planned siblings as they get captured: `llama/` (the `llama-27b.service` LLM
-server), `garage/` (S3), `whisper/` (STT). Add a directory when a subsystem's
+server), `garage/` (S3 service desired-state), `whisper/` (STT). Add a directory when a subsystem's
 config is worth versioning; don't pre-create empty ones.
 
 ## The one rule
