@@ -7,6 +7,15 @@ history. **Values and config, never credentials.**
 
 ## 2026-06-30
 
+### Captured the `harm.org` static site origin
+Added a `harm-enterprises/` subsystem for the static site served at
+`https://harm.org` and `https://www.harm.org`. Captured the root-owned systemd
+unit, the loopback-only Python static server, install paths, Cloudflare ingress
+relationship, and the Tailscale Serve mirror at
+`https://proximal.tail0ecc2e.ts.net:8890/`. The origin remains
+`127.0.0.1:18888`; Cloudflare routing stays in `cloudflared/`, and site content
+continues to live under `/home/halbritt/sites/harm-enterprises/public`.
+
 ### Reconciled local Ollama residency with the primary MoE server
 Confirmed proximal's system Ollama service is still needed as the local
 `nomic-embed-text:latest` embedding endpoint for Hippo / striatum-warmtier ingest

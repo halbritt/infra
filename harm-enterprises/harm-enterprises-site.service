@@ -1,0 +1,14 @@
+[Unit]
+Description=Harm Enterprises static website
+After=network.target
+
+[Service]
+Type=simple
+User=halbritt
+WorkingDirectory=/home/halbritt/sites/harm-enterprises
+ExecStart=/usr/bin/python3 /home/halbritt/sites/harm-enterprises/bin/serve.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -21,8 +21,8 @@ The final catch-all rule must remain `http_status:404`.
 |---|---|
 | `tailscale.harm.org` | `http://localhost:3912` |
 | `tokens.harm.org` | `http://localhost:3001` |
-| `harm.org` | `http://localhost:18888` |
-| `www.harm.org` | `http://localhost:18888` |
+| `harm.org` | `http://localhost:18888` ([`../harm-enterprises`](../harm-enterprises/)) |
+| `www.harm.org` | `http://localhost:18888` ([`../harm-enterprises`](../harm-enterprises/)) |
 | `dram.harm.org` | `http://localhost:3011` |
 | `plane.harm.org` | `http://localhost:8190` |
 
@@ -54,15 +54,19 @@ Do not print the tunnel credentials JSON.
 cloudflared --config cloudflared/config.yml tunnel ingress validate
 systemctl status cloudflared cloudflared-update.timer --no-pager
 curl -o /dev/null -sS -w 'plane_origin=%{http_code}\n' http://127.0.0.1:8190/api/instances/
+curl -I --max-time 10 http://127.0.0.1:18888/
+curl -I --max-time 15 https://harm.org/
+curl -I --max-time 15 https://www.harm.org/
 curl -o /dev/null -sS -w 'plane_public=%{http_code}\n' https://plane.harm.org/api/instances/
 curl -o /dev/null -sS -w 'plane_public_unauth=%{http_code}\n' https://plane.harm.org/api/users/me/
 ```
 
-Expected Plane checks:
+Expected checks:
 
 - local origin `/api/instances/`: `200`
 - public `/api/instances/`: `200`
 - public `/api/users/me/` without auth: `401`
+- root `harm.org` / `www.harm.org`: `200`
 
 Verified on 2026-06-29:
 

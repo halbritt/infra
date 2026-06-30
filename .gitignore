@@ -6,6 +6,8 @@ pg_hba.conf
 *.env
 .envrc
 *.dsn
+__pycache__/
+*.pyc
 *secret*
 *credential*
 id_rsa*
