@@ -5,6 +5,25 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-06-30
+
+### Reconciled local Ollama residency with the primary MoE server
+Confirmed proximal's system Ollama service is still needed as the local
+`nomic-embed-text:latest` embedding endpoint for Hippo / striatum-warmtier ingest
+on `127.0.0.1:11434`; it is not the primary chat/agent model path. Unloaded the
+stale `qwen3:14b` Ollama runner that had been pulled in by sentiment work, then
+warmed and verified `nomic-embed-text:latest` with a 768-dimension `/api/embed`
+probe. Verified the intended coexistence state after cleanup:
+
+- `llama-server` on `:8081` serves `qwen3.6-35b-a3b` at 262144 context, reported
+  by `/v1/models` as 34,660,610,688 parameters, using ~20,190 MiB VRAM.
+- Ollama `/api/ps` reports only `nomic-embed-text:latest` resident; `nvidia-smi`
+  shows the Ollama process using ~490 MiB VRAM.
+- `whisper-server` remains resident at ~1,004 MiB VRAM.
+- `memory-price-tracker-ingest.service` is running with the peecee sentiment
+  drop-in (`OLLAMA_HOST=http://peecee:11434`, `OLLAMA_MODEL=qwen3.6:27b`), so
+  future sentiment ingest should not reload proximal `qwen3:14b`.
+
 ## 2026-06-29
 
 ### Upgraded system packages and installed sqlite3 CLI
