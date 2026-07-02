@@ -49,6 +49,18 @@ non-fatal — the handler then exits 78 and nothing can egress). The variable *n
   reply loops). Live value: `U0BC0EN59DF`.
 - `PRAXIS_SLACK_CHANNEL` — default post channel (`#praxis-chat`).
 - `PRAXIS_TWILIO_*` / `PRAXIS_SMS_OWNER` — SMS connector (RFC 0019), placeholders for now.
+- `PRAXIS_LOCAL_MODEL_ENABLED` — Tier-1 cognition switch (see 2026-06-24 lesson: it must
+  live HERE to survive restarts, not in a shell).
+- **Plane standing sync (ADR 0014, owner-enabled 2026-07-02)** — work items created in
+  the personal Plane project (`plane.harm.org`, workspace `harm`, project `PRAXIS`)
+  import as Praxis reminders; the poll is read-only toward Plane, watermarked, no
+  backfill. Variable names: `PRAXIS_PLANE_STANDING_SYNC=1` (master switch — set `0` +
+  restart praxisd as the emergency disable), `PRAXIS_PLANE_STANDING_SYNC_SCOPE=personal`,
+  `PRAXIS_PLANE_STANDING_SYNC_ENABLEMENT=ADR-0014`, `PRAXIS_PLANE_PRODUCTION_LIVE=1`,
+  `PRAXIS_PLANE_PRODUCTION_ENABLEMENT=ADR-0013`, and `PRAXIS_PLANE_PERSONAL_ENV`
+  pointing at `~/.config/plane/repos/praxis-personal.env` (`0600`, holds the Plane API
+  token — outside git). Verify: `journalctl --user -u praxisd | grep "plane standing sync"`
+  (compact handles only) and the `plane_sync_watermarks` table in db `praxis`.
 
 The Postgres DSN in the units is peer-auth (`postgresql://halbritt@/praxis?host=/var/run/postgresql`)
 — **no password**, authenticated by the unit's OS user, so it is config not credential.
