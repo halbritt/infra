@@ -61,6 +61,17 @@ non-fatal — the handler then exits 78 and nothing can egress). The variable *n
   pointing at `~/.config/plane/repos/praxis-personal.env` (`0600`, holds the Plane API
   token — outside git). Verify: `journalctl --user -u praxisd | grep "plane standing sync"`
   (compact handles only) and the `plane_sync_watermarks` table in db `praxis`.
+- **Slack → Plane owner commands (owner-enabled 2026-07-02)** —
+  `PRAXIS_PLANE_OWNER_COMMANDS=1` + `PRAXIS_PLANE_OWNER_COMMAND_SCOPE=personal`: the
+  explicit grammar route ("file an issue for ..." / "create a work item ...", `Praxis,`
+  prefix optional) creates items in the personal PRAXIS project through the Praxis
+  gateway. Disable: set `0` + restart.
+- **Inferred creation, no confirmation (ADR 0015, owner-enabled 2026-07-02)** —
+  `PRAXIS_PLANE_INFERRED_COMMANDS=ADR-0015`: when the grammar misses, the on-box
+  Tier-1 model derives the tracker intent from an owner Slack message and creates the
+  item immediately (`agent_inferred` + the ADR marker on every gateway packet;
+  owner-identity gated; fail-closed to ordinary cognition on model doubt). Disable:
+  remove the marker + restart.
 
 The Postgres DSN in the units is peer-auth (`postgresql://halbritt@/praxis?host=/var/run/postgresql`)
 — **no password**, authenticated by the unit's OS user, so it is config not credential.
