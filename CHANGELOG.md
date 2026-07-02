@@ -5,6 +5,25 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-02
+
+### Reconciled local `halbritt/*` checkout `AGENTS.md` Plane routing
+Swept local GitHub-origin checkouts under `/home/halbritt/git` whose `origin`
+points at `github.com/halbritt/*` and reconciled their `AGENTS.md` files to the
+local/private Plane workspace. Created missing minimal `AGENTS.md` files where a
+local checkout had none, refreshed older marked Plane tracking blocks, and fixed
+active Striatum/Genome-Core agent instructions that still named GitHub Issues as
+the tracker. This was a local checkout reconciliation only; several repositories
+were intentionally left unsynced or uncommitted because they already had unrelated
+behind/ahead or dirty state.
+
+Verification:
+
+- every matching local checkout has an `AGENTS.md` with `Issue tracker: Plane`
+- no matching local `AGENTS.md` still contains active `GitHub is the issue
+  tracker`, `open GitHub issues`, or `file or update a GitHub issue` guidance
+- `git diff --check -- AGENTS.md` passes for every matching local checkout
+
 ## 2026-06-30
 
 ### Captured the `harm.org` static site origin
