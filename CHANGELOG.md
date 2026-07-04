@@ -5,6 +5,23 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-04
+
+### Applied host package updates
+Ran host software maintenance on Ubuntu 24.04.4: refreshed apt metadata, applied
+the available non-held apt upgrades, reloaded systemd after package unit-file
+changes, and refreshed snaps. Apt upgraded `iproute2`, `docker-compose-plugin`,
+`gh`, `google-cloud-cli`, and `google-cloud-cli-anthoscli`; snap refreshed
+`mesa-2404` to `25.0.7-snap211`.
+
+Left the standing Kubernetes/PostgreSQL apt holds in place, and did not override
+Ubuntu's phased `fwupd` rollout. `apt-get check` passed, all snaps reported up to
+date, `striatumd`, `llama-27b`, Docker, and PostgreSQL were active, and
+`localhost:8081/health` returned `{"status":"ok"}`. `nvidia-smi` remained healthy
+on the RTX 3090 with driver `610.43.02`. The host still has a reboot-required
+flag for `linux-image-6.8.0-134-generic` and `linux-base`, which was already
+present before this maintenance run.
+
 ## 2026-07-02
 
 ### Reconciled local `halbritt/*` checkout `AGENTS.md` Plane routing
