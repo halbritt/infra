@@ -7,6 +7,18 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-07
 
+### Captured the striatum garden token-refresh units
+Vendored the systemd user units behind striatum-next's Vertex Model Garden
+backends into [`striatum/`](striatum/): `striatum-garden-cred-refresh.{service,timer}`
+(30-min rewrite of `~/.config/striatum/garden.env` with a short-lived Vertex
+OAuth token, minted by impersonating the `striatum-garden` service account — no
+key files) and the `garden-env.conf` drop-in installed on every
+`striatum-wake-*.service` so autonomous drives see the credential. The refresh
+script and the cloud-side rationale live in the new
+[halbritt/gcp](https://github.com/halbritt/gcp) repo (the GCP-account
+provenance repo, registered as a striatum-next fleet subject the same day).
+Secrets file itself (`garden.env`) is never vendored.
+
 ### Added a shared Plane agent guide
 Added [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md) as an instance-neutral guide
 for agents working with Plane from this host. It summarizes Plane's workspace,

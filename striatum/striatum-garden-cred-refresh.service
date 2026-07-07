@@ -1,0 +1,6 @@
+[Unit]
+Description=Refresh Vertex Model Garden bearer token into ~/.config/striatum/garden.env (judgment-is-plural garden rung)
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/gcp/bin/garden-token-refresh.sh
