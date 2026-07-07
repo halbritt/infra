@@ -51,6 +51,9 @@ direct access to the private Garage endpoint.
 
 ## Local agent and Praxis access
 
+For agent-facing Plane usage guidance that applies to both `plane.harm.org` and
+the local/private pilot, read [`../PLANE_AGENT_GUIDE.md`](../PLANE_AGENT_GUIDE.md).
+
 Local agents should use stdio MCP plus the loopback Plane API. Keep
 `https://plane.harm.org` as the owner-facing/canonical URL, but route machine-local
 API calls to `http://127.0.0.1:8190` so a public Cloudflare/Caddy 502 does not break

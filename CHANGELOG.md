@@ -5,6 +5,17 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-07
+
+### Added a shared Plane agent guide
+Added [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md) as an instance-neutral guide
+for agents working with Plane from this host. It summarizes Plane's workspace,
+project, work item, state, label, cycle, module, view, page, intake, MCP, and REST
+model; records the local/private `plane` versus public-intended `plane-harm`
+boundary; and documents safe import, verification, and destructive-operation
+rules. Linked the guide from both Plane subsystem READMEs. The guide cites
+official Plane docs and records only pointer paths and non-secret endpoint shapes.
+
 ## 2026-07-04
 
 ### Applied host package updates

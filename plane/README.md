@@ -101,6 +101,9 @@ docker compose -f plane-app/docker-compose.yaml --env-file=plane-app/plane.env u
 
 ## MCP
 
+For agent-facing Plane usage guidance that applies to both the local/private
+pilot and `plane.harm.org`, read [`../PLANE_AGENT_GUIDE.md`](../PLANE_AGENT_GUIDE.md).
+
 The official Plane MCP server is installed as a uv tool:
 
 ```text
