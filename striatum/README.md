@@ -48,6 +48,7 @@ the home-dir config/checkout all require the owner UID.
 | [`striatum-worktree-gc.timer`](striatum-worktree-gc.timer) | `/etc/systemd/system/striatum-worktree-gc.timer` | root:root 0644 | fires the GC every 6h (+10 min after boot) |
 | [`migration/`](migration/) | — | — | verbatim copy of the pre-migration user unit + drop-ins (provenance + revert source) |
 | [`striatum-wake.service.d-openrouter-env.conf`](striatum-wake.service.d-openrouter-env.conf) | `~/.config/systemd/user/striatum-wake-<repoid>.service.d/openrouter-env.conf` — **one per wake unit** | halbritt 0644 | injects `EnvironmentFile=-%h/.config/striatum/openrouter.env` into every striatum-next liveness wake |
+| [`striatum-drive.sh`](striatum-drive.sh) | `~/.local/bin/striatum-drive` | halbritt 0755 | canonical **keyed** operator drive entrypoint — sources `openrouter.env` by reference, then execs `striatum … drive`. Use for any hand/agent-triggered drive so garden lanes get the key |
 | — (secrets, never vendored) | `~/.config/striatum/openrouter.env` | halbritt 0600 | `OPENROUTER_API_KEY` = static OpenRouter key for the judgment lanes (backends/{glm,kimi}) |
 
 **Edit here, then re-install.** After editing `striatumd.service`:
@@ -114,6 +115,20 @@ done
 systemctl --user daemon-reload
 systemctl --user show striatum-wake-<repoid> -p EnvironmentFiles   # expect openrouter.env
 ```
+
+⚠️ **The drop-in only keys wake-/timer-driven drives.** The EnvironmentFile is a
+property of the `striatum-wake-*.service` units, so a drive started any other way
+— a bare `striatum … drive`, `systemd-run --user --scope … drive`, or an agent
+shell — does **not** carry `OPENROUTER_API_KEY`. Every garden lane such a drive
+dispatches then crashes `OPENROUTER_API_KEY named but unset` (exit 2) and drains
+`missing required outputs: [review-ledger]`; the keyless environment propagates
+top-drive → lane supervisor → `adapter_wake` child, so one keyless hand-drive can
+exhaust the review redispatch budget across several passes and escalate
+`bounds_exhausted` (observed 2026-07-08, escalations 15571/15618). **For any
+hand- or agent-triggered drive use the keyed entrypoint** `striatum-drive`
+(`proximal/striatum/striatum-drive.sh`, installed to `~/.local/bin`), which
+sources `openrouter.env` by reference before driving. A bare `striatum drive` is
+safe only for repos with no OpenRouter-keyed backend.
 
 ## Worktree GC (`striatum-worktree-gc.timer`)
 
