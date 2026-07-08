@@ -47,10 +47,8 @@ the home-dir config/checkout all require the owner UID.
 | [`striatum-worktree-gc.service`](striatum-worktree-gc.service) | `/etc/systemd/system/striatum-worktree-gc.service` | root:root 0644 | root oneshot wrapping the script |
 | [`striatum-worktree-gc.timer`](striatum-worktree-gc.timer) | `/etc/systemd/system/striatum-worktree-gc.timer` | root:root 0644 | fires the GC every 6h (+10 min after boot) |
 | [`migration/`](migration/) | — | — | verbatim copy of the pre-migration user unit + drop-ins (provenance + revert source) |
-| [`striatum-garden-cred-refresh.service`](striatum-garden-cred-refresh.service) | `~/.config/systemd/user/striatum-garden-cred-refresh.service` | halbritt 0644 | user oneshot: refresh Vertex garden bearer token into `garden.env` (script lives in [halbritt/gcp](https://github.com/halbritt/gcp) `bin/garden-token-refresh.sh`) |
-| [`striatum-garden-cred-refresh.timer`](striatum-garden-cred-refresh.timer) | `~/.config/systemd/user/striatum-garden-cred-refresh.timer` | halbritt 0644 | fires the refresh every 30 min (+2 min after boot); token TTL ~1h |
-| [`striatum-wake.service.d-garden-env.conf`](striatum-wake.service.d-garden-env.conf) | `~/.config/systemd/user/striatum-wake-<repoid>.service.d/garden-env.conf` — **one per wake unit** | halbritt 0644 | injects `EnvironmentFile=-%h/.config/striatum/garden.env` into every striatum-next liveness wake |
-| — (secrets, never vendored) | `~/.config/striatum/garden.env` | halbritt 0600 | `GLM_API_KEY` / `KIMI_API_KEY` = short-lived Vertex OAuth token; rewritten by the refresh timer |
+| [`striatum-wake.service.d-openrouter-env.conf`](striatum-wake.service.d-openrouter-env.conf) | `~/.config/systemd/user/striatum-wake-<repoid>.service.d/openrouter-env.conf` — **one per wake unit** | halbritt 0644 | injects `EnvironmentFile=-%h/.config/striatum/openrouter.env` into every striatum-next liveness wake |
+| — (secrets, never vendored) | `~/.config/striatum/openrouter.env` | halbritt 0600 | `OPENROUTER_API_KEY` = static OpenRouter key for the judgment lanes (backends/{glm,kimi}) |
 
 **Edit here, then re-install.** After editing `striatumd.service`:
 
@@ -90,40 +88,31 @@ sudo systemctl enable --now striatum-lane-cred-resync.timer
 systemctl list-timers striatum-lane-cred-resync.timer    # confirm NEXT is scheduled
 ```
 
-## Garden token refresh (`striatum-garden-cred-refresh.timer`)
+## OpenRouter judgment-lane credential (`openrouter-env.conf` drop-ins)
 
-striatum-next's judgment-is-plural arc binds two Vertex Model Garden MaaS models
-(`zai-org/glm-5-maas`, `moonshotai/kimi-k2-thinking-maas`) as execution backends
-(`striatum-next/backends/{glm,kimi}`). Their declarations name env vars
-(`-api-key-env GLM_API_KEY` / `KIMI_API_KEY`) — the env-name credentials pattern:
-no secret in a declaration, a ledger record, or git. The value those vars must
-hold is a **short-lived Vertex OAuth access token** (~1h TTL) — the endpoint
-rejects static API keys (verified 2026-07-07) — minted by impersonating
-`striatum-garden@heath-stuff.iam.gserviceaccount.com` (`roles/aiplatform.user`
-only; no service-account key file exists on this box).
-
-Same rotating-credential shape as the lane resync above, but user-scoped: a user
-oneshot runs `~/git/gcp/bin/garden-token-refresh.sh` (versioned in
-[halbritt/gcp](https://github.com/halbritt/gcp) — the GCP-account provenance
-repo, which owns the cloud-side rationale) every 30 min, rewriting
-`~/.config/striatum/garden.env` (0600). Every `striatum-wake-*.service` gets the
-`garden-env.conf` drop-in so autonomous, timer-driven drives see the credential
-with nobody at the keyboard — without it, garden lanes only work from an
-interactive shell. New fleet registrations mint new wake units: **install the
-drop-in for each new `striatum-wake-<repoid>.service`** (the drop-in file is
-identical for all of them).
+striatum-next's judgment-is-plural arc binds the Principal-named frontier models
+(`z-ai/glm-5.2`, `moonshotai/kimi-k2.6`) as execution backends
+(`striatum-next/backends/{glm,kimi}`, declaration_version 2 — pivoted from the
+Vertex Model Garden 2026-07-08 on economics; account rationale lives in
+[halbritt/openrouter](https://github.com/halbritt/openrouter), the
+inference-provider provenance repo). The declarations name an env var
+(`-api-key-env OPENROUTER_API_KEY`) — the env-name credentials pattern: no
+secret in a declaration, a ledger record, or git. The value is a **static
+OpenRouter key** in `~/.config/striatum/openrouter.env` (0600), so unlike the
+decommissioned Vertex predecessor (`striatum-garden-cred-refresh.{service,timer}`
++ rotating ~1h OAuth token, removed 2026-07-08) there is no refresh machinery —
+just the drop-in. Every `striatum-wake-*.service` gets it so autonomous,
+timer-driven drives see the credential with nobody at the keyboard. New fleet
+registrations mint new wake units: **install the drop-in for each new
+`striatum-wake-<repoid>.service`** (the drop-in file is identical for all of them).
 
 ```bash
-install -m 0644 ~/git/proximal/striatum/striatum-garden-cred-refresh.service ~/.config/systemd/user/
-install -m 0644 ~/git/proximal/striatum/striatum-garden-cred-refresh.timer   ~/.config/systemd/user/
 for u in $(ls ~/.config/systemd/user/ | grep -oE '^striatum-wake-[0-9a-f]{8}\.service$'); do
   mkdir -p ~/.config/systemd/user/$u.d
-  install -m 0644 ~/git/proximal/striatum/striatum-wake.service.d-garden-env.conf ~/.config/systemd/user/$u.d/garden-env.conf
+  install -m 0644 ~/git/proximal/striatum/striatum-wake.service.d-openrouter-env.conf ~/.config/systemd/user/$u.d/openrouter-env.conf
 done
 systemctl --user daemon-reload
-systemctl --user enable --now striatum-garden-cred-refresh.timer
-systemctl --user start striatum-garden-cred-refresh.service   # first token now
-ls -l ~/.config/striatum/garden.env                           # expect mode 0600, fresh mtime
+systemctl --user show striatum-wake-<repoid> -p EnvironmentFiles   # expect openrouter.env
 ```
 
 ## Worktree GC (`striatum-worktree-gc.timer`)
