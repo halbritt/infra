@@ -30,17 +30,26 @@ Ollama runs as a **headless server**, not the desktop tray app. Swapped
   Windows approach ("scheduled task or service").
 - **Endpoint:** `http://peecee:11434` (OpenAI-compatible at `/v1`), bound
   `0.0.0.0:11434` → reachable on LAN + tailnet. **Same port as the old desktop app.**
-- **Models:** `C:\Users\halbr\.ollama\models` (qwen3.6 27b / 35b-a3b / latest,
-  llama3, llama2-uncensored). Set via machine env `OLLAMA_MODELS` so the SYSTEM
-  account finds the existing user store.
+- **Models:** `C:\Users\halbr\.ollama\models` (qwen3-vl 8b / 32b, qwen3.6 27b /
+  35b-a3b / latest, llama3, llama2-uncensored). Set via machine env `OLLAMA_MODELS`
+  so the SYSTEM account finds the existing user store.
 - **GPU:** confirmed working under SYSTEM (`ollama ps` → `100% GPU`).
 - **KV-cache quant (2026-06-22):** `OLLAMA_KV_CACHE_TYPE=q8_0` + `OLLAMA_FLASH_ATTENTION=1`
-  (the quant silently no-ops without flash attn). Halves KV memory so the **dense
-  Q4_K_M `qwen3.6:27b` (~17 GB)** stays fully resident at long context: verified at
-  `num_ctx=32768` the KV is `1088 MiB (K q8_0 / V q8_0)`, total ~18.9 GB used /
-  ~5.4 GB free, `ollama ps` = `100% GPU`. The dense 27B is the intended resident
-  model here, NOT the 35B-A3B MoE (do not pull a Q6/Q8 27B — won't stay resident on
-  a display-shared 24 GB card).
+  (the quant silently no-ops without flash attn). Halves KV memory so a large model
+  stays fully resident at long context.
+- **Intended resident model (2026-07-08): `qwen3-vl:8b`** — the fleet's first
+  vision-language capability, swapped in from the dense `qwen3.6:27b` under the
+  gpu-fleet contract `peecee-serves-qwen3-vl@1` (migration `011_peecee_qwen3_vl.sql`).
+  The fit rule prefers Qwen3-VL-32B **iff** it stays 100% GPU-resident at the 32768
+  context floor, else the 8B. Measured 2026-07-07 on this card (marker idle):
+  `qwen3-vl:32b` at 32768 spills to `7%/93% CPU/GPU` (25 GB demand) — **fails** the
+  residency gate; `qwen3-vl:8b` at 32768 is `100% GPU`, 8.0 GB (`ollama ps`
+  confirmed post-swap: `8.0 GB / 100% GPU / 32768 / Forever`), ~131 tok/s. So **8B
+  is the intended resident model** — do NOT advertise the 32B at the 32768 floor
+  (won't stay resident on a display-shared 24 GB card), and do not shrink context to
+  make it fit. Historical: the dense Q4_K_M `qwen3.6:27b` (~17 GB, verified
+  `num_ctx=32768`, KV `1088 MiB`, ~18.9 GB used / ~5.4 GB free, `100% GPU`) was the
+  prior resident model here before this swap.
 - **Keep-alive:** machine env `OLLAMA_KEEP_ALIVE=-1` (models never unload — pins
   the loaded model's VRAM). ⚠️ For GPU co-tenancy with marker/surya, `marker/convert.ps1`
   issues `ollama stop` to free VRAM per job.
