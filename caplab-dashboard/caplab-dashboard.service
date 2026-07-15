@@ -1,0 +1,28 @@
+[Unit]
+Description=CAPLAB read-only study-results dashboard
+Documentation=file://%h/.local/share/caplab-dashboard/current/app/caplab/dashboard/README.md
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/caplab-dashboard/current/app
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 -m caplab.dashboard.server --bind 127.0.0.1 --port 3021
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+# These protections are compatible with an unprivileged user manager. The
+# service only reads its immutable release and opens a loopback TCP socket.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=read-only
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=default.target
