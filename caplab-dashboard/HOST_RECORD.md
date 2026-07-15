@@ -1,0 +1,185 @@
+# CAPLAB dashboard host record — 2026-07-15
+
+This record captures the first enactment of the read-only Study 001 dashboard
+on host `proximal`. It records deployment observations and technical
+verification. It does not admit CAPLAB evidence, perform CAPLAB recomputation,
+make a capability inference, revise the ADR 0006 card selection, or record
+CAPLAB acceptance.
+
+## Authority and source binding
+
+- Owner execution prompt:
+  `/tmp/caplab-study-dashboard-build-prompt.md`, SHA-256
+  `0a306a14f2148c4437fb89cc97b4add3eb112e05136b2dd1053c3fb0aee978ad`.
+- Books branch: `agent/caplab-study-dashboard`.
+- Exact books source commit:
+  `e4636d2628adbbfca953734d4dc7cdfa91d72b04`; the pushed remote ref resolved to
+  the same commit immediately before installation.
+- Installed Study 001 projection SHA-256:
+  `7b710b3188ab97228acbeb4c05066e3a7aefa31891bf160780337b177941a55d`.
+- Proximal branch: `agent/caplab-study-dashboard-host`.
+- Initial desired-state commit: `a779d9a`.
+- User-unit compatibility correction: `d3ba0f7`.
+
+## Captured before state
+
+The following observations were recaptured immediately before the first live
+change:
+
+| Surface | Before observation |
+|---|---|
+| TCP `3021` | no listener |
+| Tailscale HTTPS `8784` | no TCP or Web entry |
+| `caplab-dashboard.service` | unit absent |
+| `~/.local/share/caplab-dashboard` | absent |
+| Tailscale Serve JSON | SHA-256 `0aca4fa0c6133b5942902a803527df1aa8a4c0af1e577e17006e17913d9f8947` |
+| Tailscale Funnel | `AllowFunnel: null` |
+| public-index source | `/home/halbritt/git/tailscale-index/site/index.html`, 6,085 bytes, mode `0664`, owner `halbritt:halbritt` |
+| public-index SHA-256 | `7f2c961532eed79e51505ae67f19cccbd6ac563736a761695448fa86e9154c5f` |
+| public index over HTTPS | byte-identical to the local before file |
+| Cloudflare config | tracked and installed SHA-256 `f25f08d4bf4495476da693fa59e0359d17e644c91bdb2ad2e0a0a8c495b1e98f`; no CAPLAB, `3021`, or `8784` route |
+
+The exact before-index bytes were retained during enactment at
+`/tmp/tailscale-index-before-caplab-2026-07-15.html`. The durable reverse
+operation is the committed [`tailscale-index-card.patch`](tailscale-index-card.patch),
+whose forward and reverse hashes were independently exercised.
+
+## Enacted state
+
+- Release directory:
+  `~/.local/share/caplab-dashboard/releases/e4636d2628adbbfca953734d4dc7cdfa91d72b04/`.
+- Active symlink:
+  `~/.local/share/caplab-dashboard/current` ->
+  `releases/e4636d2628adbbfca953734d4dc7cdfa91d72b04`.
+- Installed stamp: exact full source commit above.
+- Installed unit:
+  `~/.config/systemd/user/caplab-dashboard.service`, SHA-256
+  `a4c7d9940ddfb85a85238b0a8181486aa28ddecbf90ed46ec763771eece8a0fa`;
+  byte-identical to the canonical unit.
+- Origin: `http://127.0.0.1:3021/`, with no wildcard, LAN, or tailnet-IP
+  listener.
+- Tailnet route: `https://proximal.tail0ecc2e.ts.net:8784/` ->
+  `http://127.0.0.1:3021`.
+- Public index: one card titled `Agent Capability Lab (CAPLAB)`, linked to the
+  tailnet URL, with separate `study results` and `tailnet only` tags.
+
+### User-unit compatibility observation
+
+The first user-service start failed closed with `status=218/CAPABILITIES`.
+Journal evidence named capability dropping before the Python process began.
+`PrivateDevices=true` was the credible directive-specific rival because the
+unit had already excluded the four kernel-object hardening directives known to
+fail in this host's user manager. Removing only `PrivateDevices` in canonical
+commit `d3ba0f7`, reinstalling that unit, and restarting produced an active
+service with the same remaining user-safe hardening. The service was then
+reset to a clean `Result=success`, `NRestarts=0` state. The application's
+fail-closed loopback bind remains the network boundary.
+
+## Route preservation evidence
+
+- Serve JSON after adding CAPLAB SHA-256:
+  `95da350a26d93cc0d00e87cd03992007d06481aaf86b9b598868696635982edb`.
+- After deleting only `TCP["8784"]` and
+  `Web["proximal.tail0ecc2e.ts.net:8784"]` from the after JSON, the canonical
+  SHA-256 is exactly the before hash:
+  `0aca4fa0c6133b5942902a803527df1aa8a4c0af1e577e17006e17913d9f8947`.
+- The CAPLAB TCP entry is exactly `{"HTTPS": true}`.
+- The complete CAPLAB Web entry contains only `/` proxying to
+  `http://127.0.0.1:3021`.
+- Existing `:443` remained `/` -> `http://127.0.0.1:8909`.
+- `AllowFunnel` remained null.
+
+This normalized equality is the model-free proof that every pre-existing Serve
+route is unchanged.
+
+## Index change and rollback identity
+
+| State | SHA-256 |
+|---|---|
+| immediately before edit | `7f2c961532eed79e51505ae67f19cccbd6ac563736a761695448fa86e9154c5f` |
+| immediately after edit | `8acec320a1bbb4d1bd6e591b0e7b124960c02776e91a35ab5acd058fd690d27a` |
+| public `https://tailscale.harm.org/` after edit | `8acec320a1bbb4d1bd6e591b0e7b124960c02776e91a35ab5acd058fd690d27a` |
+
+The exact semantic change is the single eleven-line CAPLAB article in
+`tailscale-index-card.patch`: title, tailnet URL, and the two requested tags.
+No study identity, aggregate, claim, evidence, or private locator was added.
+The live file remained otherwise byte-identical.
+
+The patch was applied to a copy of the captured before bytes and produced the
+exact after hash. Applying the patch in reverse to that result reproduced the
+exact before hash. This is a model-free rollback proof, not a claim that live
+rollback was executed.
+
+## Verification observations
+
+- `caplab-dashboard/verify.sh` passed after publication. It re-archived the
+  pinned Git commit and compared every installed application byte, compared the
+  installed unit, checked the process working directory, required enabled and
+  active state, required a loopback-only listener, exercised health/catalog and
+  405 behavior, required the complete `:8784` route, rejected Funnel, and fetched
+  the tailnet HTTPS health endpoint.
+- User linger is `yes`; the unit is enabled under `default.target`, active, and
+  running with `Result=success`, `NRestarts=0`.
+- The service process working directory is the exact commit-named release's
+  `app` directory.
+- Local `/` returned 200 with no-store, noindex, CSP, nosniff, and no-referrer
+  headers. Local `POST /` returned 405 with `Allow: GET, HEAD`.
+- The catalog returned exactly `caplab-study-001` as available and retained the
+  unavailable cross-study comparison state.
+- Installed and books-source projection hashes both equal
+  `7b710b3188ab97228acbeb4c05066e3a7aefa31891bf160780337b177941a55d`.
+- Chromium rendered the public index card and the tailnet dashboard. Screenshot
+  SHA-256 values are `67ca510b2f68ec5d718fee11975f9b6d33fbb5e19aeb8af99faf7a29c5121186`
+  (`/tmp/caplab-live-public-index.png`) and
+  `6d92b4a464a1d1a2a63e18181a0d7817e100e5bbd2cadd659ad8f0cae62baf4d`
+  (`/tmp/caplab-live-tailnet-dashboard.png`).
+- Remote-node HTTPS verification was attempted through the online `liminal` and
+  `homeassistant` tailnet nodes; both refused TCP 22, so no remote shell was
+  available. Same-host MagicDNS/TLS/browser verification is therefore the
+  available route evidence and is explicitly weaker than a remote-node fetch.
+- Tracked and installed Cloudflare config remained byte-identical at the before
+  hash and validates successfully. The tailnet's wildcard DNS resolves
+  `caplab.harm.org`, but HTTPS returns 404 through the existing terminal ingress
+  rule; no CAPLAB public route exists.
+
+## Restore the captured before state
+
+Stop if any compare-before-mutate check fails.
+
+1. Require the live index to equal the recorded after hash. Dry-run, then
+   reverse the committed patch:
+
+   ```bash
+   test "$(sha256sum /home/halbritt/git/tailscale-index/site/index.html | awk '{print $1}')" = 8acec320a1bbb4d1bd6e591b0e7b124960c02776e91a35ab5acd058fd690d27a
+   patch --dry-run --reverse --batch -p1 -d /home/halbritt/git/tailscale-index < caplab-dashboard/tailscale-index-card.patch
+   patch --reverse --batch -p1 -d /home/halbritt/git/tailscale-index < caplab-dashboard/tailscale-index-card.patch
+   test "$(sha256sum /home/halbritt/git/tailscale-index/site/index.html | awk '{print $1}')" = 7f2c961532eed79e51505ae67f19cccbd6ac563736a761695448fa86e9154c5f
+   ```
+
+2. Run `caplab-dashboard/verify.sh` immediately before withdrawing publication;
+   it refuses a changed handler or Funnel. Remove only the CAPLAB route, then
+   require the complete Serve JSON to reproduce the before hash:
+
+   ```bash
+   caplab-dashboard/verify.sh
+   tailscale serve --https=8784 off
+   test "$(tailscale serve status --json | jq -S . | sha256sum | awk '{print $1}')" = 0aca4fa0c6133b5942902a803527df1aa8a4c0af1e577e17006e17913d9f8947
+   ```
+
+3. Require the installed unit hash above, then restore the absent unit state:
+
+   ```bash
+   test "$(sha256sum /home/halbritt/.config/systemd/user/caplab-dashboard.service | awk '{print $1}')" = a4c7d9940ddfb85a85238b0a8181486aa28ddecbf90ed46ec763771eece8a0fa
+   systemctl --user disable --now caplab-dashboard.service
+   rm /home/halbritt/.config/systemd/user/caplab-dashboard.service
+   systemctl --user daemon-reload
+   ```
+
+4. The captured data-root state was absent. After checking that `current` and
+   every release stamp name only the recorded source commit, remove
+   `~/.local/share/caplab-dashboard`. This removal is intentionally separate and
+   destructive; do not run it as part of ordinary application-version rollback.
+
+The public index service itself is not restarted by either enactment or
+rollback because it reads the current file on each request. Verify public bytes
+after either operation.

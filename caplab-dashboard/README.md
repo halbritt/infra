@@ -34,6 +34,8 @@ mutation endpoint and no public Cloudflare or Tailscale Funnel route.
 | [`install.sh`](install.sh) | not installed | idempotent release install/update |
 | [`verify.sh`](verify.sh) | not installed | source, unit, bind, HTTP, and Serve verification |
 | [`rollback.sh`](rollback.sh) | not installed | switch to the retained previous release |
+| [`tailscale-index-card.patch`](tailscale-index-card.patch) | applied to `/home/halbritt/git/tailscale-index/site/index.html` | exact public-index card and reverse operation |
+| [`HOST_RECORD.md`](HOST_RECORD.md) | not installed | captured enactment, verification, hashes, and initial-state rollback |
 
 The installer stages `git archive SOURCE_COMMIT caplab`, verifies required
 runtime files, and moves the complete tree under its immutable commit-named
@@ -98,9 +100,9 @@ Only after local and tailnet verification succeeds, add one card to
 - tags: `study results`, `tailnet only`
 
 Capture the complete index SHA-256 immediately before editing and stop if it
-changes concurrently. The card must contain no study data. Record the before
-hash, after hash, and exact semantic edit in this host record after the live
-enactment has been verified.
+changes concurrently. The card must contain no study data. The first enactment's
+before hash, after hash, exact semantic edit, verification, and reverse procedure
+are recorded in [`HOST_RECORD.md`](HOST_RECORD.md).
 
 ## Verify
 
