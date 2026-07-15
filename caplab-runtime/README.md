@@ -154,6 +154,7 @@ active CAPLAB authorization or exact source pin differs.
    empty namespaces.
 
    ```bash
+   sudo install -d -o root -g root -m 0755 /usr/local/libexec
    sudo install -o root -g root -m 0755 \
      caplab-runtime/caplab-hostctl.py /usr/local/libexec/caplab-hostctl
    sudo install -o root -g root -m 0644 \

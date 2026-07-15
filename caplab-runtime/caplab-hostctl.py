@@ -620,7 +620,10 @@ class HostController:
         ):
             raise HostctlError("pinned CAPLAB source package is not a plain directory")
         files: list[dict[str, object]] = []
-        for path in sorted(source_package.rglob("*")):
+        for path in sorted(
+            source_package.rglob("*"),
+            key=lambda candidate: candidate.relative_to(source_package).as_posix(),
+        ):
             relative = path.relative_to(source_package)
             if path.is_symlink():
                 raise HostctlError("source package contains a symlink")

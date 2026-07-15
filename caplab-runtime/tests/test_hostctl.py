@@ -685,6 +685,22 @@ class HostctlCommandTests(unittest.TestCase):
             installed = purelib / "caplab/runtime/__pycache__/generated.cpython-312.pyc"
             self.assertFalse(installed.exists())
 
+    def test_source_manifest_uses_git_path_order_for_sibling_module_and_package(self) -> None:
+        hostctl = load_hostctl()
+        with tempfile.TemporaryDirectory() as directory:
+            source_package = Path(directory) / "caplab"
+            package = source_package / "runtime/migrations"
+            package.mkdir(parents=True)
+            (source_package / "runtime/migrations.py").write_text("# module\n", encoding="ascii")
+            (package / "0001.sql").write_text("SELECT 1;\n", encoding="ascii")
+
+            manifest = hostctl.HostController._source_tree_manifest(source_package)
+
+            self.assertEqual(
+                ["runtime/migrations.py", "runtime/migrations/0001.sql"],
+                [entry["path"] for entry in manifest["files"]],
+            )
+
     def test_empty_rollback_removes_only_verified_bootstrap_resources(self) -> None:
         hostctl = load_hostctl()
         with tempfile.TemporaryDirectory() as directory:
