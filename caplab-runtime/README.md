@@ -6,9 +6,14 @@ round trip. CAPLAB owns its runtime and research records in
 integration selected by CAPLAB ADR 0007 and moved to the standalone repository
 by ADR 0008.
 
-This branch has not been installed. No CAPLAB account, group, path, PostgreSQL
-namespace, Garage bucket, key, credential, timer, or synthetic attempt was
-created while authoring it.
+This host surface is installed. The authorized P4 round trip completed on
+2026-07-15, and campaign access was then disabled: the three PostgreSQL peer
+roles are `NOLOGIN`, their Garage keys and credential files are absent, and
+their OS accounts are locked and expired. The content-addressed synthetic
+object, independent `/nvr` copy, append-only metadata, cleanup plan, host
+lifecycle record, and execution artifacts remain preserved. The expiry timer
+remains active as a revocation backstop. These are execution observations, not
+CAPLAB acceptance.
 
 ## Current source pin
 

@@ -21,9 +21,12 @@ pinned to reviewed standalone commit
 that Git tree into a hash-named virtual environment and verified against a
 commit-bound host manifest.
 
-This change records desired state only; it did not create or modify live CAPLAB
-accounts, paths, database objects, Garage resources, credentials, timers, or
-evidence.
+The initial desired-state commit made no live change. The later authorized P4
+execution installed the surface, completed one synthetic register, replay,
+conflict refusal, retrieval, reconciliation, and cleanup-plan round trip, then
+disabled all campaign access. It intentionally preserves the synthetic object,
+independent copy, append-only metadata, cleanup plan, and lifecycle evidence;
+it does not claim recovery fitness, purge correctness, or CAPLAB acceptance.
 
 ## 2026-07-07
 
