@@ -142,6 +142,97 @@ rollback was executed.
   `caplab.harm.org`, but HTTPS returns 404 through the existing terminal ingress
   rule; no CAPLAB public route exists.
 
+## Explanatory-content update — 2026-07-15
+
+The repository owner requested enough context for a first-time reviewer to
+understand the study, its purpose, and its claim boundary. This update changed
+only committed application bytes and the canonical source pin. It did not
+change the Tailscale route, public index, systemd unit, Cloudflare ingress, or
+CAPLAB evidence and review state.
+
+### Source and release binding
+
+- Previous books source:
+  `e4636d2628adbbfca953734d4dc7cdfa91d72b04`.
+- Updated books source:
+  `3314c9fc47204542ebbb3ac473f5edafca022654`, pushed on
+  `agent/caplab-study-dashboard`.
+- Proximal source-pin commit:
+  `b9182edf55029c9924153505a3eb57eba55de0b7`, pushed on
+  `agent/caplab-study-dashboard-host` before installation.
+- Active release: `releases/3314c9fc47204542ebbb3ac473f5edafca022654`.
+- Previous release retained for rollback:
+  `releases/e4636d2628adbbfca953734d4dc7cdfa91d72b04`.
+- Updated Study 001 projection SHA-256:
+  `c1a3555a900bca0b54c51eaee9efe8a71b1c00c43e04556995b351621ebc36b5`;
+  installed and source bytes matched.
+
+The updated projection uses `study-results-dashboard/2` and requires a
+study-specific explanation of the scenario, selection rationale, question,
+hypothesis, treatment arms, outcome, design, result, interpretation, metrics,
+reading order, and glossary. The server rejects a projection missing that
+context. The renderer presents it before the primary result and moves the full
+status ledger behind the scientific reading path.
+
+### Deployment observation
+
+The installer created the immutable release, switched `current`, retained the
+old release as `previous`, and restarted the unit. The first chained
+`verify.sh --local-only` invocation then reported `nothing is listening on TCP
+port 3021`. Twelve seconds after the restart, systemd reported the new process
+active with `Result=success` and `NRestarts=0`; the journal contained one clean
+stop/start pair, the expected loopback listener was present, and health
+returned `ok`. Re-running local and full verification passed.
+
+**Inference:** the first verification observed the interval between systemd's
+successful process start and the socket becoming visible. A transient process
+failure is the main rival; the absence of a failed unit state, restart, or
+journal error and the later live process from the exact release oppose that
+rival. This observation does not weaken or bypass the verification gate: the
+deployment was considered technically verified only after both complete reruns
+passed.
+
+### Preservation and live verification
+
+- Complete canonical Serve JSON SHA-256 before and after:
+  `95da350a26d93cc0d00e87cd03992007d06481aaf86b9b598868696635982edb`.
+  The `:8784` handler remained the one HTTPS proxy to
+  `http://127.0.0.1:3021`, `:443` remained unchanged, and `AllowFunnel`
+  remained null.
+- Local and public index SHA-256 before and after:
+  `8acec320a1bbb4d1bd6e591b0e7b124960c02776e91a35ab5acd058fd690d27a`.
+  The file retained exactly one CAPLAB card and no study data.
+- Canonical and installed user-unit SHA-256:
+  `a4c7d9940ddfb85a85238b0a8181486aa28ddecbf90ed46ec763771eece8a0fa`.
+- Canonical and installed Cloudflare configuration SHA-256:
+  `f25f08d4bf4495476da693fa59e0359d17e644c91bdb2ad2e0a0a8c495b1e98f`;
+  ingress validation passed.
+- The service remained enabled and active with a loopback-only listener,
+  `Result=success`, and `NRestarts=0`. Its process working directory resolved
+  to the updated commit-named release.
+- Local and tailnet API reads returned `study-results-dashboard/2` and the new
+  title. Full `verify.sh` passed, including the tailnet HTTPS health read.
+- Live Chromium loaded the tailnet URL, rendered the first-screen customer-harm
+  summary, followed the overview jump link, opened the glossary, and rendered
+  at 390 pixels without document-level overflow or console errors.
+- Live screenshot SHA-256 values are
+  `f588594df1afe6135004cb9512b7e0b48fca5a642a3a70fbf8240575b8a84013`
+  (`/tmp/caplab-study-dashboard-live-top.png`),
+  `b68dda92cd95136dfa7e0cfb8a78bcc7996017609fa9251120bbe73004ab7c11`
+  (`/tmp/caplab-study-dashboard-live-overview.png`), and
+  `f6e2e34f2c4aff81322d5515a2a154c541ff4fb27591f5028d25f504bd3f3d3c`
+  (`/tmp/caplab-study-dashboard-live-narrow.png`).
+
+The route itself did not change, so the initial enactment's remote-node
+verification residual remains unchanged and was not re-tested. The exact
+installed application bytes and same-host tailnet TLS path were reverified.
+
+Application rollback now has an exact retained target: run `rollback.sh` to
+switch to the previous `e4636d2` release, then restore the canonical
+`SOURCE_COMMIT` to that full commit and run the installer and verification from
+the matching pushed desired state. The Tailscale route and public index require
+no rollback because this update did not change them.
+
 ## Restore the captured before state
 
 Stop if any compare-before-mutate check fails.
