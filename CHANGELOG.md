@@ -5,6 +5,26 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-15
+
+### Added the standalone CAPLAB P4 host desired state
+
+Added [`caplab-runtime/`](caplab-runtime/) for the bounded, model-free CAPLAB
+P4 synthetic round trip: a fail-closed host CLI, non-secret runtime config,
+standalone-source pin, and a one-shot systemd expiry backstop. The tool keeps
+PostgreSQL peer roles disabled until three campaign-scoped Garage credentials
+are contained in role-owned files, records an irreversible pre-write boundary,
+captures fixed store inventories around the idempotency conflict, and permits
+bootstrap removal only after independent zero-state checks. The runtime is
+pinned to reviewed standalone commit
+`405efb136b221d1270578417c64b3f7878383f32`; regular-file blobs are read from
+that Git tree into a hash-named virtual environment and verified against a
+commit-bound host manifest.
+
+This change records desired state only; it did not create or modify live CAPLAB
+accounts, paths, database objects, Garage resources, credentials, timers, or
+evidence.
+
 ## 2026-07-07
 
 ### Captured the striatum garden token-refresh units

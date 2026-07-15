@@ -1,0 +1,16 @@
+[runtime]
+campaign_id = "caplab-p4-roundtrip-2026-07-15"
+authorization_expires_at = "2026-07-22T23:59:59Z"
+runtime_commit = "405efb136b221d1270578417c64b3f7878383f32"
+
+[postgres]
+conninfo = "dbname=caplab host=/var/run/postgresql"
+
+[garage]
+endpoint_url = "http://127.0.0.1:3900"
+region = "garage"
+bucket = "caplab-v0"
+credentials_root = "/etc/caplab/credentials"
+
+[local_copy]
+root = "/nvr/caplab/v0"

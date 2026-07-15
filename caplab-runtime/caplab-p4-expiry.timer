@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule CAPLAB P4 campaign access expiry
+
+[Timer]
+OnCalendar=2026-07-22 23:50:00 UTC
+Persistent=true
+AccuracySec=1s
+Unit=caplab-p4-expiry.service
+
+[Install]
+WantedBy=timers.target
