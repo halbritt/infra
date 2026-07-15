@@ -5,6 +5,24 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-15
+
+### Added pinned WezTerm SSH-mux desired state
+Added [`wezterm/`](wezterm/) for the headless WezTerm multiplexer used to carry
+persistent native tabs between macOS and Windows clients. Pinned the host's
+user-local Ubuntu 24.04 x86_64 install to
+`20260715-174104-3658b656`, recorded the mutable nightly asset's SHA-256, added
+an idempotent no-root installer, and captured both the server config and matching
+cross-platform client profile. Automatic client updates are disabled so a client
+cannot silently outrun the server's mux protocol.
+
+The live Mac/client and `proximal` server were installed at the same version.
+Verification terminated and relaunched the Mac GUI while the remote mux PID and
+PTY remained unchanged, then reimported the pane successfully. This establishes
+session persistence across GUI loss; the original external-display wake rendering
+incident still needs repeated sleep/wake observation in WezTerm before it can be
+called resolved.
+
 ## 2026-07-07
 
 ### Captured the striatum garden token-refresh units
