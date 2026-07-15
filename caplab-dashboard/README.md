@@ -62,7 +62,10 @@ The unit's hardening is deliberately limited to directives an unprivileged
 user manager can apply. Do not add `ProtectKernelModules`,
 `ProtectKernelTunables`, `ProtectControlGroups`, or `ProtectClock`: on this host
 those system-unit directives make a user unit fail with
-`status=218/CAPABILITIES`.
+`status=218/CAPABILITIES`. `PrivateDevices` is also excluded: the live initial
+start on 2026-07-15 proved that it triggers the same user-manager capability
+failure on this host. The load-bearing network control is the application's
+fail-closed loopback bind.
 
 ## Publish on the tailnet
 
