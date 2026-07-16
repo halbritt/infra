@@ -118,6 +118,8 @@ class P5HostSurfaceTests(unittest.TestCase):
         self.assertIn('state.get("phase") == "disabled"', hostctl)
         self.assertIn('retained != "0|0|0"', hostctl)
         self.assertIn("ALTER ROLE caplab_p5_operator LOGIN", hostctl)
+        self.assertIn("P4 runtime roles are not disabled during P5 retry", hostctl)
+        self.assertIn("if not retry:", hostctl)
 
 
 if __name__ == "__main__":

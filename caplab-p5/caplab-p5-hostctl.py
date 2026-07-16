@@ -243,6 +243,8 @@ def preflight() -> None:
     require_active()
     cfg = config()
     commit = source_commit()
+    state = read_state(required=False)
+    retry = bool(state) and state.get("phase") == "disabled"
     if run(git_command("rev-parse", "HEAD")).strip() != commit:
         raise HostctlError("CAPLAB source checkout differs from the frozen commit")
     if run(git_command("status", "--porcelain")).strip():
@@ -250,15 +252,14 @@ def preflight() -> None:
     for service in ("postgresql.service", "garage.service"):
         if run(["systemctl", "is-active", service]).strip() != "active":
             raise HostctlError(f"required service is not active: {service}")
-    run(["/usr/local/libexec/caplab-hostctl", "verify", "--phase", "disabled"])
+    if not retry:
+        run(["/usr/local/libexec/caplab-hostctl", "verify", "--phase", "disabled"])
     if run(["systemctl", "is-active", "restic-backup.service"], allowed=(0, 3)).strip() == "active":
         raise HostctlError("restic backup is active")
     if run(["systemctl", "is-active", "restic-prune.service"], allowed=(0, 3)).strip() == "active":
         raise HostctlError("restic prune is active")
     if not p4_control().startswith("op-caplab-p4-roundtrip-0001|"):
         raise HostctlError("P4 control registration is absent")
-    state = read_state(required=False)
-    retry = bool(state) and state.get("phase") == "disabled"
     if retry and state.get("source_commit") != commit:
         raise HostctlError("disabled P5 retry state has the wrong source identity")
     for role in ROLES:
@@ -271,6 +272,30 @@ def preflight() -> None:
         if key_by_alias(KEY_ALIASES[role]) is not None:
             raise HostctlError(f"target Garage key alias exists: {KEY_ALIASES[role]}")
     if retry:
+        p4_login = run(
+            [
+                "runuser",
+                "--user",
+                "postgres",
+                "--",
+                "psql",
+                "-X",
+                "--tuples-only",
+                "--no-align",
+                "--dbname",
+                "postgres",
+                "--command",
+                "SELECT rolname || ':' || rolcanlogin FROM pg_roles "
+                "WHERE rolname IN ('caplab_writer','caplab_reader','caplab_verifier') "
+                "ORDER BY rolname;",
+            ]
+        ).splitlines()
+        if p4_login != [
+            "caplab_reader:false",
+            "caplab_verifier:false",
+            "caplab_writer:false",
+        ]:
+            raise HostctlError("P4 runtime roles are not disabled during P5 retry")
         if not role_exists("caplab_custodian"):
             raise HostctlError("disabled P5 retry state lacks its custodian role")
         if CREDENTIAL_ROOT.exists():
