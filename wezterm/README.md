@@ -84,6 +84,16 @@ wezterm connect proximal
 the GUI disconnects the client while leaving remote panes alive. Closing an
 individual tab or pane intentionally terminates that remote pane's process.
 
+### Scrollback and full-screen applications
+
+The 100,000-line history applies to the terminal's normal screen buffer.
+Full-screen applications can switch to the alternate screen buffer, which has no
+native WezTerm scrollback. Claude Code's `tui: fullscreen` renderer does this.
+Keep `tui` set to `default` in `~/.claude/settings.json`, or run `/tui default`
+inside Claude Code, when terminal-native scrollback is required. Changing the
+saved setting affects the next Claude process; an already-running full-screen
+session must relaunch before it starts writing to normal scrollback.
+
 ## Verify persistence
 
 On `proximal`, inspect the server and hosted panes:

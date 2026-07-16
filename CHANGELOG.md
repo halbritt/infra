@@ -12,7 +12,9 @@ Mapped horizontal mouse-wheel events in the canonical WezTerm client profile to
 three-line vertical scrollback movement. This makes a mouse side wheel useful in
 terminal panes while preserving the normal vertical-wheel bindings. Raised the
 scrollbar thumb's contrast and minimum height so the enabled scrollbar is visible
-against the default dark terminal background.
+against the default dark terminal background. Restored Claude Code's classic TUI
+renderer on the host so interactive Claude output populates WezTerm's native
+scrollback instead of an alternate screen buffer with application-owned history.
 
 ### Added pinned WezTerm SSH-mux desired state
 Added [`wezterm/`](wezterm/) for the headless WezTerm multiplexer used to carry
