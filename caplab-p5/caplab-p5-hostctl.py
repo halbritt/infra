@@ -577,7 +577,7 @@ def verify(expected_phase: str) -> None:
             "ORDER BY rolname;",
         ]
     ).splitlines()
-    expected_login = "t" if expected_phase == "ready" else "f"
+    expected_login = "true" if expected_phase == "ready" else "false"
     if role_rows != [
         f"{OPERATOR}:{expected_login}",
         f"{VERIFIER}:{expected_login}",

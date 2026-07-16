@@ -103,6 +103,10 @@ class P5HostSurfaceTests(unittest.TestCase):
         self.assertIn('"u=rwX,g=rX,o="', hostctl)
         self.assertIn("os.chmod(CREDENTIAL_ROOT, 0o750)", hostctl)
 
+    def test_role_login_verification_uses_postgres_boolean_text(self) -> None:
+        hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
+        self.assertIn('"true" if expected_phase == "ready" else "false"', hostctl)
+
 
 if __name__ == "__main__":
     unittest.main()
