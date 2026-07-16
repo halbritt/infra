@@ -68,6 +68,11 @@ class P5HostSurfaceTests(unittest.TestCase):
         self.assertNotIn("purge-object", completed.stdout)
         self.assertNotIn("restic-prune", completed.stdout)
 
+    def test_root_git_reads_trust_only_the_exact_caplab_checkout(self) -> None:
+        hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
+        self.assertIn("safe.directory={SOURCE_REPO}", hostctl)
+        self.assertNotIn("safe.directory=*", hostctl)
+
     def test_receipt_wrapper_records_a_direct_numeric_status(self) -> None:
         receipt = (ROOT / "bin/run-receipt").read_text(encoding="utf-8")
         self.assertIn('printf \'%d\\n\' "$rc" >"$rc_file"', receipt)

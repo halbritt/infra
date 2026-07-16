@@ -226,14 +226,25 @@ def p4_control() -> str:
     ).strip()
 
 
+def git_command(*arguments: str) -> list[str]:
+    return [
+        "git",
+        "-c",
+        f"safe.directory={SOURCE_REPO}",
+        "-C",
+        str(SOURCE_REPO),
+        *arguments,
+    ]
+
+
 def preflight() -> None:
     require_root()
     require_active()
     cfg = config()
     commit = source_commit()
-    if run(["git", "-C", str(SOURCE_REPO), "rev-parse", "HEAD"]).strip() != commit:
+    if run(git_command("rev-parse", "HEAD")).strip() != commit:
         raise HostctlError("CAPLAB source checkout differs from the frozen commit")
-    if run(["git", "-C", str(SOURCE_REPO), "status", "--porcelain"]).strip():
+    if run(git_command("status", "--porcelain")).strip():
         raise HostctlError("CAPLAB source checkout is dirty")
     for service in ("postgresql.service", "garage.service"):
         if run(["systemctl", "is-active", service]).strip() != "active":
@@ -301,7 +312,7 @@ def install_source(commit: str) -> Path:
         archive = scratch / "source.tar"
         source = scratch / "source"
         source.mkdir()
-        run(["git", "-C", str(SOURCE_REPO), "archive", "--format=tar", "-o", str(archive), commit])
+        run(git_command("archive", "--format=tar", "-o", str(archive), commit))
         run(["tar", "-xf", str(archive), "-C", str(source)])
         run(["python3", "-m", "venv", str(scratch / "venv")])
         run(
