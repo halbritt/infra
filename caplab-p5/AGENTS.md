@@ -3,8 +3,8 @@
 Read [`README.md`](README.md) before changing or enacting this subsystem.
 
 CAPLAB product authority lives in `/home/halbritt/git/caplab`. This directory
-owns only the Proximal host integration authorized by CAPLAB ADR 0009:
-temporary identities, exact installed source and configuration, backup
+owns only the Proximal host integration authorized by CAPLAB ADRs 0009 and
+0010: temporary identities, exact installed source and configuration, backup
 serialization, isolated PostgreSQL restore, root-custodied staging, expiry,
 disablement, and host verification.
 
@@ -18,10 +18,12 @@ environment. Generated credentials are role-owned `0400` files under
 `/etc/caplab-p5/credentials/` and are removed during disablement.
 
 `SOURCE_COMMIT`, `recovery.toml`, fixtures, scripts, unit files, and their
-hashes are one frozen host surface. Repository checks do not authorize live
-effects. Stop on source drift, expired authority, a running restic operation,
-P4 control change, identity mismatch, missing verifier, or any target outside
-the exact P5 closure.
+hashes are one frozen host surface. The corrective config keeps the installed
+executor source separate from the runtime commit retained in the immutable P5
+request. Repository checks do not authorize live effects. Stop on source
+drift, expired authority, a running restic operation, P4 control change,
+identity mismatch, missing verifier, or any target outside the exact P5
+closure.
 
 Never run destructive `restic prune`, stop or replace the live PostgreSQL
 cluster, alter another Garage object, or remove the isolated restore before

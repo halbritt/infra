@@ -1,8 +1,11 @@
 [campaign]
 campaign_id = "caplab-p5-recovery-2026-07-16"
+corrective_campaign_id = "caplab-p5-corrective-2026-07-16"
 authorization_expires_at = "2026-07-23T23:59:59Z"
-authorization_sha256 = "e8cd172af19cb631ba6814a3fd57c7b91f381cd799de862d9bd277b6ef68d34f"
-runtime_commit = "c82b5512661c537db06f725af70198eccc818358"
+authorization_sha256 = "0b0682acaa749f7715687e10f3c0565f0776da951375d9f3fb5ed329c94e2b9a"
+superseded_authorization_sha256 = "e8cd172af19cb631ba6814a3fd57c7b91f381cd799de862d9bd277b6ef68d34f"
+executor_source_commit = "e86ed0ecd734b902be2afcd0d20d5a07225c2579"
+registration_runtime_commit = "c82b5512661c537db06f725af70198eccc818358"
 
 [identity]
 operation_id = "op-p5-recovery-0001"

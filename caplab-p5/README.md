@@ -1,10 +1,11 @@
 # CAPLAB P5 recovery host surface on `proximal`
 
 Desired state for the bounded CAPLAB-23/P5 failure and recovery campaign
-selected by standalone CAPLAB ADR 0009. CAPLAB owns product decisions and the
-recovery implementation at `/home/halbritt/git/caplab`; this subsystem owns
-only temporary Proximal identities, installed source and configuration,
-backup serialization, isolated restore, root staging, expiry, and disablement.
+selected by standalone CAPLAB ADR 0009 and its corrective continuation in ADR
+0010. CAPLAB owns product decisions and the recovery implementation at
+`/home/halbritt/git/caplab`; this subsystem owns only temporary Proximal
+identities, installed source and configuration, backup serialization, isolated
+restore, root staging, expiry, and disablement.
 
 This is an authorized execution surface, not evidence that P5 has run or
 passed. The P4 subsystem under `caplab-runtime/` is unchanged and its preserved
@@ -14,8 +15,10 @@ registration is read-only control state.
 
 | Surface | Value |
 |---|---|
-| CAPLAB source | [`SOURCE_COMMIT`](SOURCE_COMMIT) |
-| campaign | `caplab-p5-recovery-2026-07-16` |
+| corrected executor source | [`SOURCE_COMMIT`](SOURCE_COMMIT) |
+| registered request source | `c82b5512661c537db06f725af70198eccc818358` |
+| data campaign | `caplab-p5-recovery-2026-07-16` |
+| corrective campaign | `caplab-p5-corrective-2026-07-16` |
 | authorization expiry | `2026-07-23T23:59:59Z` |
 | operation | `op-p5-recovery-0001` |
 | PostgreSQL | `caplab`, `caplab_v0` |
@@ -24,8 +27,9 @@ registration is read-only control state.
 | operator | `caplab_p5_operator` |
 | independent verifier | `caplab_p5_verifier` |
 
-[`recovery.toml`](recovery.toml) freezes the authorization, request, content,
-object, manifest, and identity-layer hashes. It contains no credentials.
+[`recovery.toml`](recovery.toml) freezes both authorization hashes, both source
+identities, the request, content, object, manifest, and identity-layer hashes.
+It contains no credentials.
 
 ## Canonical files and install paths
 
@@ -86,10 +90,11 @@ git diff --check
    verifier, then run `bootstrap`.
 3. Create one root-only execution directory. Run every CAPLAB command through
    a receipt wrapper that writes stdout, stderr, and a direct numeric `.rc`.
-4. Follow ADR 0009 steps in order: P4 control, P5 registration and refusals,
-   controlled interruption, object and copy recovery, locked restic check,
+4. Replay and verify the exact quarantined registration under ADR 0010, then
+   finish ADR 0009 at object and copy recovery, locked restic check,
    pgBackRest backup and isolated restore, dependency refusal, staged byte
-   removal, guarded database purge, and disablement.
+   removal, guarded database purge, and disablement. The earlier refusal and
+   interruption receipts remain in the original execution roots.
 5. Do not remove the isolated restore or root staging until the independent
    verifier preserves its report. Verification can pass or fail P5; it cannot
    accept CAPLAB or authorize P6.

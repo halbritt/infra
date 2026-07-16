@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import grp
+import hashlib
 import json
 import os
 import pwd
@@ -19,6 +20,11 @@ from pathlib import Path
 from typing import Any
 
 CAMPAIGN_ID = "caplab-p5-recovery-2026-07-16"
+CORRECTIVE_CAMPAIGN_ID = "caplab-p5-corrective-2026-07-16"
+ORIGINAL_AUTHORIZATION_SHA256 = "e8cd172af19cb631ba6814a3fd57c7b91f381cd799de862d9bd277b6ef68d34f"
+CORRECTIVE_AUTHORIZATION_SHA256 = "0b0682acaa749f7715687e10f3c0565f0776da951375d9f3fb5ed329c94e2b9a"
+REGISTRATION_RUNTIME_COMMIT = "c82b5512661c537db06f725af70198eccc818358"
+P5_CONTENT_SHA256 = "a1ac9f819a8a9e330290910b1049e70fe1a2a73a7ee98068a5fd9fe0c0d8b43d"
 EXPIRY = datetime(2026, 7, 23, 23, 59, 59, tzinfo=UTC)
 SOURCE_REPO = Path("/home/halbritt/git/caplab")
 SOURCE_COMMIT_FILE = Path("/etc/caplab-p5/SOURCE_COMMIT")
@@ -28,6 +34,7 @@ VENV_ROOT = Path("/opt/caplab-p5/venvs")
 CREDENTIAL_ROOT = Path("/etc/caplab-p5/credentials")
 LOCAL_COPY_ROOT = Path("/nvr/caplab/v0")
 LOCAL_COPY_PREFIX = LOCAL_COPY_ROOT / "objects/sha256/a1"
+P5_LOCAL_COPY = LOCAL_COPY_PREFIX / P5_CONTENT_SHA256
 GROUP = "caplab-p5"
 OPERATOR = "caplab_p5_operator"
 VERIFIER = "caplab_p5_verifier"
@@ -133,9 +140,18 @@ def config() -> dict[str, Any]:
         raise HostctlError("CAPLAB P5 configuration is invalid") from error
     if value.get("campaign", {}).get("campaign_id") != CAMPAIGN_ID:
         raise HostctlError("CAPLAB P5 configuration campaign is wrong")
-    if value.get("campaign", {}).get("runtime_commit") != source_commit():
+    campaign = value.get("campaign", {})
+    if campaign.get("corrective_campaign_id") != CORRECTIVE_CAMPAIGN_ID:
+        raise HostctlError("CAPLAB P5 corrective campaign is wrong")
+    if campaign.get("executor_source_commit") != source_commit():
         raise HostctlError("CAPLAB P5 configuration source identity is wrong")
-    if value.get("campaign", {}).get("authorization_expires_at") != "2026-07-23T23:59:59Z":
+    if campaign.get("registration_runtime_commit") != REGISTRATION_RUNTIME_COMMIT:
+        raise HostctlError("CAPLAB P5 registered source identity is wrong")
+    if campaign.get("authorization_sha256") != CORRECTIVE_AUTHORIZATION_SHA256:
+        raise HostctlError("CAPLAB P5 corrective authorization is wrong")
+    if campaign.get("superseded_authorization_sha256") != ORIGINAL_AUTHORIZATION_SHA256:
+        raise HostctlError("CAPLAB P5 original authorization is wrong")
+    if campaign.get("authorization_expires_at") != "2026-07-23T23:59:59Z":
         raise HostctlError("CAPLAB P5 configuration expiry is wrong")
     return value
 
@@ -244,7 +260,7 @@ def preflight() -> None:
     cfg = config()
     commit = source_commit()
     state = read_state(required=False)
-    retry = bool(state) and state.get("phase") == "disabled"
+    corrective_retry = bool(state) and state.get("phase") == "disabled"
     if run(git_command("rev-parse", "HEAD")).strip() != commit:
         raise HostctlError("CAPLAB source checkout differs from the frozen commit")
     if run(git_command("status", "--porcelain")).strip():
@@ -252,7 +268,7 @@ def preflight() -> None:
     for service in ("postgresql.service", "garage.service"):
         if run(["systemctl", "is-active", service]).strip() != "active":
             raise HostctlError(f"required service is not active: {service}")
-    if not retry:
+    if not corrective_retry:
         run(["/usr/local/libexec/caplab-hostctl", "verify", "--phase", "disabled"])
     if run(["systemctl", "is-active", "restic-backup.service"], allowed=(0, 3)).strip() == "active":
         raise HostctlError("restic backup is active")
@@ -260,18 +276,21 @@ def preflight() -> None:
         raise HostctlError("restic prune is active")
     if not p4_control().startswith("op-caplab-p4-roundtrip-0001|"):
         raise HostctlError("P4 control registration is absent")
-    if retry and state.get("source_commit") != commit:
+    if corrective_retry and state.get("source_commit") not in {
+        commit,
+        cfg["campaign"]["registration_runtime_commit"],
+    }:
         raise HostctlError("disabled P5 retry state has the wrong source identity")
     for role in ROLES:
-        if _user_exists(role) != retry:
-            condition = "absent" if retry else "exists"
+        if _user_exists(role) != corrective_retry:
+            condition = "absent" if corrective_retry else "exists"
             raise HostctlError(f"target operating-system identity is not {condition}: {role}")
-        if role_exists(role) != retry:
-            condition = "absent" if retry else "exists"
+        if role_exists(role) != corrective_retry:
+            condition = "absent" if corrective_retry else "exists"
             raise HostctlError(f"target PostgreSQL identity is not {condition}: {role}")
         if key_by_alias(KEY_ALIASES[role]) is not None:
             raise HostctlError(f"target Garage key alias exists: {KEY_ALIASES[role]}")
-    if retry:
+    if corrective_retry:
         p4_login = run(
             [
                 "runuser",
@@ -316,14 +335,22 @@ def preflight() -> None:
                 "SELECT "
                 "(SELECT count(*) FROM caplab_v0.operation_requests "
                 " WHERE operation_id = 'op-p5-recovery-0001') || '|' || "
+                "(SELECT count(*) FROM caplab_v0.registrations "
+                " WHERE operation_id = 'op-p5-recovery-0001') || '|' || "
                 "(SELECT count(*) FROM caplab_v0.custody_requests "
                 " WHERE operation_id = 'op-p5-recovery-0001') || '|' || "
                 "(SELECT count(*) FROM caplab_v0.purge_tombstones "
                 " WHERE operation_id = 'op-p5-recovery-0001');",
             ]
         ).strip()
-        if retained != "0|0|0":
-            raise HostctlError("disabled P5 retry state retains campaign data")
+        if retained != "1|1|0|0":
+            raise HostctlError("disabled P5 retry state differs from quarantine")
+        if (
+            not P5_LOCAL_COPY.is_file()
+            or P5_LOCAL_COPY.is_symlink()
+            or hashlib.sha256(P5_LOCAL_COPY.read_bytes()).hexdigest() != P5_CONTENT_SHA256
+        ):
+            raise HostctlError("P5 quarantine local copy is absent or mismatched")
     if cfg["identity"]["operation_id"] != "op-p5-recovery-0001":
         raise HostctlError("P5 operation identity is wrong")
 
@@ -548,11 +575,15 @@ def issue_keys(state: dict[str, Any]) -> None:
         write_state(state)
 
 
-def prepare_local_copy_prefix() -> None:
+def prepare_local_copy_prefix(*, corrective_retry: bool) -> None:
     if LOCAL_COPY_PREFIX.is_symlink():
         raise HostctlError("P5 local-copy prefix is a symlink")
     LOCAL_COPY_PREFIX.mkdir(mode=0o750, parents=False, exist_ok=True)
-    if next(LOCAL_COPY_PREFIX.iterdir(), None) is not None:
+    entries = list(LOCAL_COPY_PREFIX.iterdir())
+    if corrective_retry:
+        if entries != [P5_LOCAL_COPY]:
+            raise HostctlError("P5 quarantine local-copy prefix has unexpected entries")
+    elif entries:
         raise HostctlError("P5 local-copy prefix is not empty before bootstrap")
     operator = pwd.getpwnam(OPERATOR)
     group_id = LOCAL_COPY_ROOT.stat().st_gid
@@ -563,10 +594,15 @@ def prepare_local_copy_prefix() -> None:
 def bootstrap() -> None:
     preflight()
     commit = source_commit()
+    previous_state = read_state(required=False)
+    corrective_retry = bool(previous_state) and previous_state.get("phase") == "disabled"
     state: dict[str, Any] = {
         "schema_version": 1,
         "campaign_id": CAMPAIGN_ID,
+        "corrective_campaign_id": CORRECTIVE_CAMPAIGN_ID,
         "source_commit": commit,
+        "registration_runtime_commit": REGISTRATION_RUNTIME_COMMIT,
+        "previous_source_commit": previous_state.get("source_commit"),
         "phase": "bootstrapping",
         "garage_keys": [],
         "p4_control_before": p4_control(),
@@ -581,7 +617,7 @@ def bootstrap() -> None:
         venv = install_source(commit)
         create_database_roles()
         apply_migration(venv)
-        prepare_local_copy_prefix()
+        prepare_local_copy_prefix(corrective_retry=corrective_retry)
         CREDENTIAL_ROOT.mkdir(mode=0o750, parents=True, exist_ok=True)
         os.chown(CREDENTIAL_ROOT, 0, grp.getgrnam(GROUP).gr_gid)
         os.chmod(CREDENTIAL_ROOT, 0o750)
@@ -609,7 +645,10 @@ def verify(expected_phase: str) -> None:
         raise HostctlError(
             f"CAPLAB P5 phase is {state.get('phase')!r}, expected {expected_phase!r}"
         )
-    if state.get("source_commit") != source_commit():
+    accepted_state_sources = {source_commit()}
+    if expected_phase == "disabled" and not state.get("corrective_campaign_id"):
+        accepted_state_sources.add(cfg["campaign"]["registration_runtime_commit"])
+    if state.get("source_commit") not in accepted_state_sources:
         raise HostctlError("CAPLAB P5 state source identity is wrong")
     if p4_control() != state.get("p4_control_before"):
         raise HostctlError("P4 control changed during P5")
@@ -783,7 +822,9 @@ AND pid <> pg_backend_pid();
         {
             "schema_version": 1,
             "campaign_id": CAMPAIGN_ID,
-            "source_commit": state.get("source_commit", source_commit()),
+            "corrective_campaign_id": CORRECTIVE_CAMPAIGN_ID,
+            "source_commit": source_commit(),
+            "registration_runtime_commit": REGISTRATION_RUNTIME_COMMIT,
             "phase": "disable-failed" if failures else "disabled",
             "garage_keys": state.get("garage_keys", []),
             "p4_control_before": state.get("p4_control_before", p4_control()),

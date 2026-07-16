@@ -15,10 +15,26 @@ class P5HostSurfaceTests(unittest.TestCase):
         config = tomllib.loads((ROOT / "recovery.toml").read_text(encoding="utf-8"))
 
         self.assertRegex(source_commit, r"\A[0-9a-f]{40}\Z")
-        self.assertEqual(config["campaign"]["runtime_commit"], source_commit)
+        self.assertEqual(config["campaign"]["executor_source_commit"], source_commit)
+        self.assertEqual(
+            config["campaign"]["registration_runtime_commit"],
+            "c82b5512661c537db06f725af70198eccc818358",
+        )
         self.assertEqual(
             config["campaign"]["campaign_id"],
             "caplab-p5-recovery-2026-07-16",
+        )
+        self.assertEqual(
+            config["campaign"]["corrective_campaign_id"],
+            "caplab-p5-corrective-2026-07-16",
+        )
+        self.assertEqual(
+            config["campaign"]["authorization_sha256"],
+            "0b0682acaa749f7715687e10f3c0565f0776da951375d9f3fb5ed329c94e2b9a",
+        )
+        self.assertEqual(
+            config["campaign"]["superseded_authorization_sha256"],
+            "e8cd172af19cb631ba6814a3fd57c7b91f381cd799de862d9bd277b6ef68d34f",
         )
         self.assertEqual(
             config["campaign"]["authorization_expires_at"],
@@ -110,16 +126,18 @@ class P5HostSurfaceTests(unittest.TestCase):
     def test_local_write_custody_uses_only_the_exact_content_prefix(self) -> None:
         hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
         self.assertIn('LOCAL_COPY_PREFIX = LOCAL_COPY_ROOT / "objects/sha256/a1"', hostctl)
-        self.assertIn("prepare_local_copy_prefix()", hostctl)
+        self.assertIn("prepare_local_copy_prefix(corrective_retry=corrective_retry)", hostctl)
         self.assertNotIn("setfacl", hostctl)
 
-    def test_disabled_empty_state_can_retry_without_widening_identity(self) -> None:
+    def test_disabled_quarantine_can_resume_without_rewriting_request(self) -> None:
         hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
         self.assertIn('state.get("phase") == "disabled"', hostctl)
-        self.assertIn('retained != "0|0|0"', hostctl)
+        self.assertIn('retained != "1|1|0|0"', hostctl)
+        self.assertIn('"registration_runtime_commit"', hostctl)
+        self.assertIn("P5 quarantine local copy is absent", hostctl)
         self.assertIn("ALTER ROLE caplab_p5_operator LOGIN", hostctl)
         self.assertIn("P4 runtime roles are not disabled during P5 retry", hostctl)
-        self.assertIn("if not retry:", hostctl)
+        self.assertIn("if not corrective_retry:", hostctl)
 
 
 if __name__ == "__main__":
