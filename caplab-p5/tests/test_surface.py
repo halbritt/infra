@@ -91,8 +91,17 @@ class P5HostSurfaceTests(unittest.TestCase):
         installer = (ROOT / "install-desired-state.sh").read_text(encoding="utf-8")
         self.assertIn("/usr/local/libexec/caplab-p5-hostctl", installer)
         self.assertIn("/etc/caplab-p5/recovery.toml", installer)
+        self.assertIn("-g caplab-p5 /etc/caplab-p5", installer)
         self.assertIn("systemctl daemon-reload", installer)
         self.assertNotIn("restic prune", installer)
+
+    def test_pinned_source_tree_is_group_traversable_despite_executor_umask(
+        self,
+    ) -> None:
+        hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
+        self.assertIn("os.chmod(VENV_ROOT, 0o750)", hostctl)
+        self.assertIn('"u=rwX,g=rX,o="', hostctl)
+        self.assertIn("os.chmod(CREDENTIAL_ROOT, 0o750)", hostctl)
 
 
 if __name__ == "__main__":

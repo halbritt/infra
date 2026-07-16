@@ -304,9 +304,14 @@ def ensure_user(name: str) -> None:
 
 def install_source(commit: str) -> Path:
     target = VENV_ROOT / commit
-    if target.exists():
-        return target
     VENV_ROOT.mkdir(mode=0o755, parents=True, exist_ok=True)
+    os.chown(VENV_ROOT.parent, 0, grp.getgrnam(GROUP).gr_gid)
+    os.chmod(VENV_ROOT.parent, 0o750)
+    os.chown(VENV_ROOT, 0, grp.getgrnam(GROUP).gr_gid)
+    os.chmod(VENV_ROOT, 0o750)
+    if target.exists():
+        secure_source_tree(target)
+        return target
     with tempfile.TemporaryDirectory(prefix="caplab-p5-source-") as scratch_name:
         scratch = Path(scratch_name)
         archive = scratch / "source.tar"
@@ -347,7 +352,13 @@ def install_source(commit: str) -> Path:
             scratch / "venv/share/caplab-p5/synthetic-payload.json",
         )
         os.replace(scratch / "venv", target)
+    secure_source_tree(target)
     return target
+
+
+def secure_source_tree(target: Path) -> None:
+    run(["chown", "--recursive", f"root:{GROUP}", str(target)])
+    run(["chmod", "--recursive", "u=rwX,g=rX,o=", str(target)])
 
 
 def create_database_roles() -> None:
@@ -495,6 +506,8 @@ def bootstrap() -> None:
         apply_migration(venv)
         run(["setfacl", "-m", f"u:{OPERATOR}:rwx", str(LOCAL_COPY_ROOT / "objects/sha256")])
         CREDENTIAL_ROOT.mkdir(mode=0o750, parents=True, exist_ok=True)
+        os.chown(CREDENTIAL_ROOT, 0, grp.getgrnam(GROUP).gr_gid)
+        os.chmod(CREDENTIAL_ROOT, 0o750)
         issue_keys(state)
         run(["systemctl", "enable", "--now", "caplab-p5-expiry.timer"])
         state["phase"] = "ready"
