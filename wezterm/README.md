@@ -66,6 +66,7 @@ Install the same WezTerm build as the server and install
 - uses `/home/halbritt/.local/bin/wezterm` as the remote executable
 - leaves `front_end` unset, preserving WezTerm's default GPU renderer
 - uses JetBrains Mono with Cascadia Mono and Menlo fallbacks
+- shows a high-contrast scrollbar thumb with a three-cell minimum height
 - maps horizontal thumbwheel events to three-line vertical scrollback movement
 - disables automatic updates so protocol versions remain coordinated
 

@@ -10,6 +10,10 @@ config.font = wezterm.font_with_fallback {
 config.font_size = 14.0
 config.scrollback_lines = 100000
 config.enable_scroll_bar = true
+config.min_scroll_bar_height = '3cell'
+config.colors = {
+  scrollbar_thumb = '#7a8492',
+}
 config.hide_tab_bar_if_only_one_tab = false
 config.check_for_updates = false
 

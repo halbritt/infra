@@ -10,7 +10,9 @@ history. **Values and config, never credentials.**
 ### Added WezTerm thumbwheel scrollback bindings
 Mapped horizontal mouse-wheel events in the canonical WezTerm client profile to
 three-line vertical scrollback movement. This makes a mouse side wheel useful in
-terminal panes while preserving the normal vertical-wheel bindings.
+terminal panes while preserving the normal vertical-wheel bindings. Raised the
+scrollbar thumb's contrast and minimum height so the enabled scrollbar is visible
+against the default dark terminal background.
 
 ### Added pinned WezTerm SSH-mux desired state
 Added [`wezterm/`](wezterm/) for the headless WezTerm multiplexer used to carry
