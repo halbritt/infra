@@ -1,0 +1,25 @@
+[campaign]
+campaign_id = "caplab-p5-recovery-2026-07-16"
+authorization_expires_at = "2026-07-23T23:59:59Z"
+authorization_sha256 = "e8cd172af19cb631ba6814a3fd57c7b91f381cd799de862d9bd277b6ef68d34f"
+runtime_commit = "c82b5512661c537db06f725af70198eccc818358"
+
+[identity]
+operation_id = "op-p5-recovery-0001"
+request_sha256 = "4164a5d4febd4f429158d5917a15ae303392ecf1d9d6a57e84ae9a731282b229"
+content_sha256 = "a1ac9f819a8a9e330290910b1049e70fe1a2a73a7ee98068a5fd9fe0c0d8b43d"
+object_key = "objects/sha256/a1/a1ac9f819a8a9e330290910b1049e70fe1a2a73a7ee98068a5fd9fe0c0d8b43d"
+manifest_sha256 = "77acb678e5fa2d99374ba5a2e5841a043d904333a7718612fd3b0153a057f1b4"
+identity_sha256 = { model = "19cb5fbd3843196eba85d7b31ff63823cd7d06bc7cd2fc6c58e606a2352077e2", agent_configuration = "f5e67388f43393b898e6cdb44df0ec56e14ea4d4fbb9678b9110f78222f5f9f8", administration = "863d33bd593e5cbdae932005b7e0b43272b1ce2881ac6d08781b16827b22bea1", trial_context = "b67475845891b6d3279d0d968626ae47dc483d8f8e74442c8065da2c6d3f604d", trial_assignment = "f2b1c2c7a17fb1bc8a278cb3dce65d14120bd045adb72b94aef42170fafe9b8b", attempt = "def54a5a1cdf9610049165c4f4d2cd823955354234ca319ecfb849ed69cdbda0", analysis = "1f1de7a2b62874c29fe9be7e232c92f3c22224e24ec29d29a1c84342c3ff6f3f" }
+
+[postgres]
+conninfo = "dbname=caplab host=/var/run/postgresql"
+
+[garage]
+endpoint_url = "http://127.0.0.1:3900"
+region = "garage"
+bucket = "caplab-v0"
+credentials_root = "/etc/caplab-p5/credentials"
+
+[local_copy]
+root = "/nvr/caplab/v0"

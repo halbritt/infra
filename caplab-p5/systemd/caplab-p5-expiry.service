@@ -1,0 +1,13 @@
+[Unit]
+Description=Disable CAPLAB P5 campaign access before authorization expiry
+After=postgresql.service garage.service
+Wants=postgresql.service garage.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/caplab-p5-hostctl disable
+Restart=on-failure
+RestartSec=60
+TimeoutStartSec=180
+UMask=0077

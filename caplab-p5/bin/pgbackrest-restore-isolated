@@ -1,0 +1,30 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ $# -ne 1 || ! "$1" =~ ^[0-9]{8}-[0-9]{6}F(_[0-9]{8}-[0-9]{6}[DI])?$ ]]; then
+  echo "usage: pgbackrest-restore-isolated BACKUP_LABEL" >&2
+  exit 64
+fi
+
+label="$1"
+target=/var/tmp/caplab-p5-pgrestore
+port=55435
+socket="$target/socket"
+if [[ -e "$target" ]]; then
+  echo "isolated restore target already exists" >&2
+  exit 73
+fi
+
+install -d -m 0700 -o postgres -g postgres "$target"
+runuser --user postgres -- \
+  pgbackrest --stanza=proximal --set="$label" --pg1-path="$target" \
+  --type=immediate --target-action=promote restore
+install -d -m 0700 -o postgres -g postgres "$socket"
+runuser --user postgres -- \
+  /usr/lib/postgresql/17/bin/pg_ctl \
+  --pgdata="$target" \
+  --options="-p $port -h 127.0.0.1 -k $socket -c archive_mode=off -c shared_preload_libraries=''" \
+  --wait start
+printf '%s\n' "$label" >"$target/CAPLAB_P5_BACKUP_LABEL"
+printf '%s\n' "$port" >"$target/CAPLAB_P5_PORT"
+chmod 0600 "$target"/CAPLAB_P5_*

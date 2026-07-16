@@ -5,6 +5,19 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-16
+
+### Added the bounded CAPLAB P5 recovery host surface
+
+Added [`caplab-p5/`](caplab-p5/) for the CAPLAB-23 campaign authorized by
+standalone CAPLAB ADR 0009. The subsystem freezes the CAPLAB source and P5
+identity, provisions separate expiring operator and independent-verifier
+identities, serializes Restic backup/prune/check operations with one blocking
+lock, records direct numeric command receipts, and supports a pgBackRest restore
+only into an isolated `/var/tmp` PostgreSQL 17 instance on loopback port 55435.
+It also owns fail-closed disablement of P5 access. The existing P4 host surface
+and retained registration remain unchanged read-only control state.
+
 ## 2026-07-15
 
 ### Added WezTerm thumbwheel scrollback bindings

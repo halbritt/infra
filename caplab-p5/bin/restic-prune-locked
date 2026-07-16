@@ -1,0 +1,7 @@
+#!/bin/bash
+set -euo pipefail
+
+exec 9>/run/lock/caplab-backup.lock
+/usr/bin/flock --exclusive 9
+/usr/bin/restic prune
+/usr/bin/restic check

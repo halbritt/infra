@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+
+target=/var/tmp/caplab-p5-pgrestore
+if [[ ! -d "$target" || -L "$target" ]]; then
+  echo "isolated restore target is absent" >&2
+  exit 2
+fi
+runuser --user postgres -- \
+  /usr/lib/postgresql/17/bin/pg_ctl --pgdata="$target" --mode=fast --wait stop

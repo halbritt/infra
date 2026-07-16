@@ -1,0 +1,60 @@
+#!/bin/bash
+set -uo pipefail
+
+if [[ $# -lt 3 || "$2" != "--" ]]; then
+  echo "usage: run-receipt LABEL -- COMMAND [ARG ...]" >&2
+  exit 64
+fi
+
+label="$1"
+shift 2
+if [[ ! "$label" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
+  echo "receipt label is invalid" >&2
+  exit 64
+fi
+if [[ "${CAPLAB_P5_EXECUTION_ROOT:-}" != /var/tmp/caplab-p5-execution.* ]]; then
+  echo "CAPLAB_P5_EXECUTION_ROOT must be a bounded /var/tmp execution root" >&2
+  exit 64
+fi
+
+umask 077
+mkdir -p -- "$CAPLAB_P5_EXECUTION_ROOT"
+chmod 0700 -- "$CAPLAB_P5_EXECUTION_ROOT"
+stdout="$CAPLAB_P5_EXECUTION_ROOT/$label.stdout"
+stderr="$CAPLAB_P5_EXECUTION_ROOT/$label.stderr"
+receipt="$CAPLAB_P5_EXECUTION_ROOT/$label.command"
+rc_file="$CAPLAB_P5_EXECUTION_ROOT/$label.rc"
+if [[ -e "$stdout" || -e "$stderr" || -e "$receipt" || -e "$rc_file" ]]; then
+  echo "receipt label already exists" >&2
+  exit 73
+fi
+
+python3 - "$receipt" "$@" <<'PY'
+import json
+import os
+import sys
+from datetime import UTC, datetime
+
+path, *command = sys.argv[1:]
+document = {
+    "schema_version": "caplab-p5-command/1",
+    "argv": command,
+    "effective_uid": os.geteuid(),
+    "started_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+}
+descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+    json.dump(document, stream, sort_keys=True)
+    stream.write("\n")
+PY
+
+env -i \
+  HOME=/root \
+  LANG=C.UTF-8 \
+  LC_ALL=C.UTF-8 \
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  PYTHONNOUSERSITE=1 \
+  "$@" >"$stdout" 2>"$stderr"
+rc=$?
+printf '%d\n' "$rc" >"$rc_file"
+exit "$rc"

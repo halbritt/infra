@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+
+exec 9>/run/lock/caplab-backup.lock
+/usr/bin/flock --exclusive 9
+/usr/bin/restic backup --tag scheduled \
+  --exclude-file=/etc/restic/home-excludes.txt \
+  /nvr/pg-backups /nvr/engram-backups /home/halbritt
+/usr/bin/restic forget --tag scheduled \
+  --keep-daily 7 --keep-weekly 4 --keep-monthly 6
