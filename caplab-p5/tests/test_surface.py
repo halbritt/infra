@@ -96,12 +96,50 @@ class P5HostSurfaceTests(unittest.TestCase):
         self.assertNotIn("eval ", receipt)
 
     def test_isolated_restore_never_stops_or_replaces_live_postgres(self) -> None:
+        common = (ROOT / "bin/isolated-postgres-common").read_text(encoding="utf-8")
         restore = (ROOT / "bin/pgbackrest-restore-isolated").read_text(encoding="utf-8")
-        self.assertIn("/var/tmp/caplab-p5-pgrestore", restore)
-        self.assertIn("55435", restore)
+        stop = (ROOT / "bin/pgbackrest-stop-isolated").read_text(encoding="utf-8")
+
+        self.assertIn("/var/tmp/caplab-p5-pgrestore", common)
+        self.assertIn("55435", common)
         self.assertIn('--pg1-path="$target"', restore)
-        self.assertNotIn("systemctl stop postgresql", restore)
-        self.assertNotIn("/var/lib/postgresql/17/main", restore)
+        self.assertIn('source /usr/local/libexec/caplab-p5/isolated-postgres-common', restore)
+        self.assertIn('source /usr/local/libexec/caplab-p5/isolated-postgres-common', stop)
+        self.assertIn('isolated_postmaster_pid" == "$live_postmaster_pid', common)
+        self.assertIn("stop_verified_isolated", common)
+        self.assertIn("run_as_postgres", common)
+        self.assertIn('marker="$target/CAPLAB_P5_ISOLATED_STATE"', common)
+        for script in (restore, stop):
+            self.assertIn("live_data_directory", script)
+            self.assertIn("live_postmaster_pid", script)
+            self.assertIn("verify_live_unchanged", script)
+            self.assertNotIn("systemctl stop postgresql", script)
+            self.assertNotIn("kill ", script)
+            self.assertNotIn("/var/lib/postgresql/17/main", script)
+
+    def test_isolated_restore_uses_target_owned_config_and_rejects_tcp_clients(
+        self,
+    ) -> None:
+        common = (ROOT / "bin/isolated-postgres-common").read_text(encoding="utf-8")
+        restore = (ROOT / "bin/pgbackrest-restore-isolated").read_text(encoding="utf-8")
+        stop = (ROOT / "bin/pgbackrest-stop-isolated").read_text(encoding="utf-8")
+
+        self.assertIn('config="$target/postgresql.conf"', common)
+        self.assertIn('hba="$target/pg_hba.conf"', common)
+        self.assertIn("data_directory = '$target'", restore)
+        self.assertIn("port = $port", restore)
+        self.assertIn("unix_socket_directories = '$socket'", restore)
+        self.assertIn("host all all 127.0.0.1/32 reject", restore)
+        self.assertIn("local all postgres peer", restore)
+        self.assertIn("archive_mode = off", restore)
+        self.assertIn("ssl = off", restore)
+        self.assertIn("max_wal_senders = 0", restore)
+        self.assertIn("SHOW data_directory", restore)
+        self.assertIn("SHOW port", restore)
+        self.assertIn("recovery_target = 'immediate'", restore)
+        self.assertNotIn("archive_command =", restore)
+        self.assertIn('chown root:root "$marker"', restore)
+        self.assertIn('stat -c \'%U:%G:%a\' -- "$marker"', stop)
 
     def test_installer_copies_canonical_files_before_reload(self) -> None:
         installer = (ROOT / "install-desired-state.sh").read_text(encoding="utf-8")

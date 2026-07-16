@@ -1,30 +1,175 @@
 #!/bin/bash
 set -euo pipefail
 
+source /usr/local/libexec/caplab-p5/isolated-postgres-common
+require_root
+
 if [[ $# -ne 1 || ! "$1" =~ ^[0-9]{8}-[0-9]{6}F(_[0-9]{8}-[0-9]{6}[DI])?$ ]]; then
   echo "usage: pgbackrest-restore-isolated BACKUP_LABEL" >&2
   exit 64
 fi
 
 label="$1"
-target=/var/tmp/caplab-p5-pgrestore
-port=55435
-socket="$target/socket"
+if [[ "$label" != "$selected_backup" ]]; then
+  echo "backup label differs from the authorized isolated restore" >&2
+  exit 64
+fi
 if [[ -e "$target" ]]; then
   echo "isolated restore target already exists" >&2
   exit 73
 fi
+if [[ -e "$state" || -L "$state" ]]; then
+  echo "isolated restore state already exists" >&2
+  exit 73
+fi
 
-install -d -m 0700 -o postgres -g postgres "$target"
-runuser --user postgres -- \
-  pgbackrest --stanza=proximal --set="$label" --pg1-path="$target" \
+capture_live_identity
+test -n "$live_data_directory"
+test -n "$live_postmaster_pid"
+install_live_exit_guard
+isolated_started=0
+restore_exit_guard() {
+  local command_rc=$?
+  trap - EXIT
+  if [[ "$command_rc" -ne 0 \
+    && ( "$isolated_started" -eq 1 || -f "$target/postmaster.pid" ) ]]; then
+    if ! stop_verified_isolated; then
+      echo "failed to stop the verified isolated PostgreSQL after an error" >&2
+      command_rc=70
+    fi
+  fi
+  if ! verify_live_unchanged; then
+    command_rc=70
+  fi
+  exit "$command_rc"
+}
+trap restore_exit_guard EXIT
+if [[ -n "$(/usr/bin/ss -H -ltn "sport = :$port")" ]]; then
+  echo "isolated restore port is already listening" >&2
+  exit 73
+fi
+
+/usr/bin/install -d -m 0700 -o postgres -g postgres "$target"
+if [[ ! -d "$target" || -L "$target" \
+  || "$(/usr/bin/realpath -e -- "$target")" != "$target_canonical" ]]; then
+  echo "isolated restore target changed identity during creation" >&2
+  exit 73
+fi
+run_as_postgres \
+  /usr/bin/pgbackrest --stanza=proximal --set="$label" --pg1-path="$target" \
   --type=immediate --target-action=promote restore
-install -d -m 0700 -o postgres -g postgres "$socket"
-runuser --user postgres -- \
+/usr/bin/install -d -m 0700 -o postgres -g postgres "$socket"
+
+cat >"$config" <<EOF
+data_directory = '$target'
+hba_file = '$hba'
+ident_file = '$ident'
+listen_addresses = '127.0.0.1'
+port = $port
+unix_socket_directories = '$socket'
+unix_socket_permissions = 0700
+ssl = off
+archive_mode = off
+shared_preload_libraries = ''
+session_preload_libraries = ''
+max_wal_senders = 0
+logging_collector = off
+log_destination = 'stderr'
+cluster_name = 'caplab-p5-isolated'
+EOF
+cat >"$hba" <<'EOF'
+local all postgres peer
+local all all reject
+host all all 127.0.0.1/32 reject
+host all all ::1/128 reject
+EOF
+cat >"$ident" <<'EOF'
+# The isolated restore uses direct local peer authentication for postgres only.
+EOF
+cat >"$auto_config" <<EOF
+# Recovery-only settings for the authorized CAPLAB P5 isolated restore.
+restore_command = 'pgbackrest --pg1-path=$target --stanza=proximal archive-get %f "%p"'
+recovery_target = 'immediate'
+recovery_target_action = 'promote'
+recovery_target_timeline = 'current'
+EOF
+/usr/bin/chown postgres:postgres "$config" "$hba" "$ident" "$auto_config"
+/usr/bin/chmod 0600 "$config" "$hba" "$ident" "$auto_config"
+
+config_sha256="$(/usr/bin/sha256sum "$config" | /usr/bin/awk '{print $1}')"
+hba_sha256="$(/usr/bin/sha256sum "$hba" | /usr/bin/awk '{print $1}')"
+ident_sha256="$(/usr/bin/sha256sum "$ident" | /usr/bin/awk '{print $1}')"
+auto_config_sha256="$(/usr/bin/sha256sum "$auto_config" | /usr/bin/awk '{print $1}')"
+umask 077
+cat >"$marker" <<EOF
+schema_version=caplab-p5-isolated-postgres-state-1
+campaign=$campaign
+authorization_sha256=$authorization_sha256
+backup=$label
+target=$target
+port=$port
+socket=$socket
+config_sha256=$config_sha256
+hba_sha256=$hba_sha256
+ident_sha256=$ident_sha256
+auto_config_sha256=$auto_config_sha256
+EOF
+/usr/bin/chown root:root "$marker"
+/usr/bin/chmod 0600 "$marker"
+cat >"$state" <<EOF
+schema_version=caplab-p5-isolated-postgres-state-1
+phase=starting
+campaign=$campaign
+authorization_sha256=$authorization_sha256
+backup=$label
+target=$target
+port=$port
+socket=$socket
+live_data_directory=$live_data_directory
+live_postmaster_pid=$live_postmaster_pid
+live_start_time=$live_start_time
+config_sha256=$config_sha256
+hba_sha256=$hba_sha256
+ident_sha256=$ident_sha256
+auto_config_sha256=$auto_config_sha256
+EOF
+/usr/bin/chown root:root "$state"
+/usr/bin/chmod 0600 "$state"
+
+run_as_postgres \
   /usr/lib/postgresql/17/bin/pg_ctl \
   --pgdata="$target" \
-  --options="-p $port -h 127.0.0.1 -k $socket -c archive_mode=off -c shared_preload_libraries=''" \
+  --options="-c config_file=$config" \
   --wait start
-printf '%s\n' "$label" >"$target/CAPLAB_P5_BACKUP_LABEL"
-printf '%s\n' "$port" >"$target/CAPLAB_P5_PORT"
-chmod 0600 "$target"/CAPLAB_P5_*
+isolated_started=1
+
+isolated_data_directory="$(postgres_isolated_query "SHOW data_directory;")"
+isolated_port="$(postgres_isolated_query "SHOW port;")"
+isolated_socket="$(postgres_isolated_query "SHOW unix_socket_directories;")"
+isolated_hba="$(postgres_isolated_query "SHOW hba_file;")"
+isolated_ident="$(postgres_isolated_query "SHOW ident_file;")"
+isolated_archive_mode="$(postgres_isolated_query "SHOW archive_mode;")"
+isolated_ssl="$(postgres_isolated_query "SHOW ssl;")"
+isolated_shared_preload="$(postgres_isolated_query "SHOW shared_preload_libraries;")"
+isolated_session_preload="$(postgres_isolated_query "SHOW session_preload_libraries;")"
+isolated_recovery="$(postgres_isolated_query "SELECT pg_is_in_recovery();")"
+read_isolated_postmaster_pid
+if [[ "$isolated_data_directory" != "$target" \
+  || "$isolated_port" != "$port" \
+  || "$isolated_socket" != "$socket" \
+  || "$isolated_hba" != "$hba" \
+  || "$isolated_ident" != "$ident" \
+  || "$isolated_archive_mode" != off \
+  || "$isolated_ssl" != off \
+  || -n "$isolated_shared_preload" \
+  || -n "$isolated_session_preload" \
+  || "$isolated_recovery" != f ]]; then
+  echo "isolated PostgreSQL identity differs from the authorized target" >&2
+  exit 1
+fi
+
+/usr/bin/sed -i 's/^phase=starting$/phase=ready/' "$state"
+verify_live_unchanged
+printf 'backup=%s\ntarget=%s\nport=%s\nisolated_postmaster_pid=%s\nlive_postmaster_pid=%s\nconfig_sha256=%s\nhba_sha256=%s\nident_sha256=%s\nauto_config_sha256=%s\n' \
+  "$label" "$target" "$port" "$isolated_postmaster_pid" "$live_postmaster_pid" \
+  "$config_sha256" "$hba_sha256" "$ident_sha256" "$auto_config_sha256"

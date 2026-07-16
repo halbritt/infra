@@ -1,0 +1,172 @@
+#!/bin/bash
+
+target=/var/tmp/caplab-p5-pgrestore
+port=55435
+socket="$target/socket"
+config="$target/postgresql.conf"
+hba="$target/pg_hba.conf"
+ident="$target/pg_ident.conf"
+auto_config="$target/postgresql.auto.conf"
+marker="$target/CAPLAB_P5_ISOLATED_STATE"
+state=/var/lib/caplab-p5-isolated-restore.state
+campaign=caplab-p5-isolated-restore-corrective-2026-07-16
+authorization_sha256=d110fd0e74285f22ecffb31e36eae256190a4eeaf50cd082cd14fc9c03cc15fb
+selected_backup=20260712-010203F_20260716-195901D
+live_socket=/var/run/postgresql
+live_port=5432
+
+run_as_postgres() {
+  /usr/bin/env -i \
+    HOME=/var/lib/postgresql \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    /usr/sbin/runuser --user postgres -- "$@"
+}
+
+postgres_live_query() {
+  run_as_postgres \
+    /usr/lib/postgresql/17/bin/psql \
+    -X --no-password --tuples-only --no-align \
+    --host="$live_socket" --port="$live_port" --dbname=postgres \
+    --command "$1"
+}
+
+postgres_isolated_query() {
+  run_as_postgres \
+    /usr/lib/postgresql/17/bin/psql \
+    -X --no-password --tuples-only --no-align \
+    --host="$socket" --port="$port" --dbname=postgres \
+    --command "$1"
+}
+
+read_isolated_postmaster_pid() {
+  if [[ ! -f "$target/postmaster.pid" || -L "$target/postmaster.pid" ]]; then
+    echo "isolated PostgreSQL PID file is absent or unsafe" >&2
+    return 1
+  fi
+  isolated_postmaster_pid="$(/usr/bin/head -n 1 -- "$target/postmaster.pid")"
+  if [[ ! "$isolated_postmaster_pid" =~ ^[1-9][0-9]*$ \
+    || "$isolated_postmaster_pid" == "$live_postmaster_pid" \
+    || ! -r "/proc/$isolated_postmaster_pid/cmdline" ]]; then
+    echo "isolated PostgreSQL PID is invalid or aliases the live postmaster" >&2
+    return 1
+  fi
+  if ! /usr/bin/tr '\0' '\n' <"/proc/$isolated_postmaster_pid/cmdline" \
+    | /usr/bin/grep -Fx -- "$target" >/dev/null; then
+    echo "isolated PostgreSQL process does not name the authorized target" >&2
+    return 1
+  fi
+}
+
+verify_isolated_identity() {
+  local observed_directory observed_port observed_socket
+
+  read_isolated_postmaster_pid
+  observed_directory="$(postgres_isolated_query "SHOW data_directory;")"
+  observed_port="$(postgres_isolated_query "SHOW port;")"
+  observed_socket="$(postgres_isolated_query "SHOW unix_socket_directories;")"
+  if [[ "$observed_directory" != "$target" \
+    || "$observed_port" != "$port" \
+    || "$observed_socket" != "$socket" ]]; then
+    echo "isolated PostgreSQL endpoint differs from the authorized target" >&2
+    return 1
+  fi
+}
+
+stop_verified_isolated() {
+  verify_isolated_identity
+  verify_live_unchanged
+  run_as_postgres \
+    /usr/lib/postgresql/17/bin/pg_ctl \
+    --pgdata="$target" --mode=fast --wait stop
+  if [[ -e "$target/postmaster.pid" \
+    || -n "$(/usr/bin/ss -H -ltn "sport = :$port")" ]]; then
+    echo "isolated PostgreSQL did not stop cleanly" >&2
+    return 1
+  fi
+  verify_live_unchanged
+}
+
+capture_live_identity() {
+  if [[ "$(/usr/bin/systemctl is-active postgresql.service)" != active ]]; then
+    echo "live PostgreSQL service is not active" >&2
+    return 1
+  fi
+
+  live_data_directory="$(postgres_live_query "SHOW data_directory;")"
+  live_data_directory="$(/usr/bin/realpath -e -- "$live_data_directory")"
+  live_observed_port="$(postgres_live_query "SHOW port;")"
+  live_start_time="$(postgres_live_query "SELECT pg_postmaster_start_time();")"
+  live_postmaster_pid="$(/usr/bin/head -n 1 -- "$live_data_directory/postmaster.pid")"
+  target_canonical="$(/usr/bin/realpath -m -- "$target")"
+
+  if [[ "$live_observed_port" != "$live_port" ]]; then
+    echo "live PostgreSQL port differs from the guarded endpoint" >&2
+    return 1
+  fi
+  if [[ ! "$live_postmaster_pid" =~ ^[1-9][0-9]*$ ]]; then
+    echo "live PostgreSQL postmaster PID is invalid" >&2
+    return 1
+  fi
+  if [[ "$target_canonical" == "$live_data_directory" ]]; then
+    echo "isolated target equals the live PostgreSQL data directory" >&2
+    return 1
+  fi
+  case "$target_canonical/" in
+    "$live_data_directory/"*)
+      echo "isolated target is inside the live PostgreSQL data directory" >&2
+      return 1
+      ;;
+  esac
+  case "$live_data_directory/" in
+    "$target_canonical/"*)
+      echo "live PostgreSQL data directory is inside the isolated target" >&2
+      return 1
+      ;;
+  esac
+}
+
+verify_live_unchanged() {
+  local observed_directory observed_pid observed_port observed_start
+
+  if [[ "$(/usr/bin/systemctl is-active postgresql.service)" != active ]]; then
+    echo "live PostgreSQL service stopped during isolated operation" >&2
+    return 1
+  fi
+  observed_directory="$(postgres_live_query "SHOW data_directory;")"
+  observed_directory="$(/usr/bin/realpath -e -- "$observed_directory")"
+  observed_port="$(postgres_live_query "SHOW port;")"
+  observed_start="$(postgres_live_query "SELECT pg_postmaster_start_time();")"
+  observed_pid="$(/usr/bin/head -n 1 -- "$observed_directory/postmaster.pid")"
+  if [[ "$observed_directory" != "$live_data_directory" \
+    || "$observed_port" != "$live_observed_port" \
+    || "$observed_start" != "$live_start_time" \
+    || "$observed_pid" != "$live_postmaster_pid" ]]; then
+    echo "live PostgreSQL identity changed during isolated operation" >&2
+    return 1
+  fi
+}
+
+install_live_exit_guard() {
+  live_guard_on_exit() {
+    local command_rc=$?
+    trap - EXIT
+    if ! verify_live_unchanged; then
+      exit 70
+    fi
+    exit "$command_rc"
+  }
+  trap live_guard_on_exit EXIT
+}
+
+state_value() {
+  /usr/bin/awk -F= -v key="$1" '$1 == key {print substr($0, length(key) + 2)}' "$state"
+}
+
+require_root() {
+  if [[ $EUID -ne 0 ]]; then
+    echo "isolated PostgreSQL helper requires root" >&2
+    exit 77
+  fi
+}

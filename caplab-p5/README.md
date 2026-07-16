@@ -1,8 +1,8 @@
 # CAPLAB P5 recovery host surface on `proximal`
 
 Desired state for the bounded CAPLAB-23/P5 failure and recovery campaign
-selected by standalone CAPLAB ADR 0009 and its corrective continuation in ADR
-0010. CAPLAB owns product decisions and the recovery implementation at
+selected by standalone CAPLAB ADR 0009 and its corrective continuations in ADR
+0010 and ADR 0011. CAPLAB owns product decisions and the recovery implementation at
 `/home/halbritt/git/caplab`; this subsystem owns only temporary Proximal
 identities, installed source and configuration, backup serialization, isolated
 restore, root staging, expiry, and disablement.
@@ -19,6 +19,8 @@ registration is read-only control state.
 | registered request source | `c82b5512661c537db06f725af70198eccc818358` |
 | data campaign | `caplab-p5-recovery-2026-07-16` |
 | corrective campaign | `caplab-p5-corrective-2026-07-16` |
+| isolated-restore correction | `caplab-p5-isolated-restore-corrective-2026-07-16` |
+| isolated-restore authorization | ADR 0011 SHA-256 `d110fd0e74285f22ecffb31e36eae256190a4eeaf50cd082cd14fc9c03cc15fb` |
 | authorization expiry | `2026-07-23T23:59:59Z` |
 | operation | `op-p5-recovery-0001` |
 | PostgreSQL | `caplab`, `caplab_v0` |
@@ -51,6 +53,8 @@ Generated state and credentials are not committed:
 - `/var/tmp/caplab-p5-execution.*` is the root-only execution record;
 - `/var/tmp/caplab-p5-recovery.*` stages only the exact P5 bytes; and
 - `/var/tmp/caplab-p5-pgrestore` is the isolated PostgreSQL restore target.
+- `/var/lib/caplab-p5-isolated-restore.state` is the root-only guard record
+  for the exact isolated target and live-cluster identity.
 
 `run-receipt` requires `CAPLAB_P5_EXECUTION_ROOT` to name a root-only
 `/var/tmp/caplab-p5-execution.*` directory and writes one immutable command
@@ -59,8 +63,18 @@ not carry credentials in arguments.
 
 `pgbackrest-restore-isolated BACKUP_LABEL` restores only into
 `/var/tmp/caplab-p5-pgrestore` and starts PostgreSQL 17 on loopback port
-`55435`. It never stops or replaces the live cluster. The paired stop command
-does not remove the target; removal remains gated on independent verification.
+`55435`. It writes target-owned PostgreSQL, HBA, ident, and recovery-only
+configuration, rejects TCP clients, and permits only local peer access by the
+`postgres` verifier path. The root-only target marker and external guard record
+freeze the selected backup, target, authorization, configuration hashes, and
+live postmaster identity.
+
+Both helpers observe the live cluster read-only before acting and verify its
+data directory, postmaster PID, port, start time, and active state on exit. The
+stop path refuses marker or hash drift, requires a separately queryable
+isolated endpoint and PID, rejects the live PID, and invokes `pg_ctl` only with
+the exact isolated target. It does not remove the target; removal remains gated
+on the ADR 0011 interim independent report.
 
 ## Backup lock
 
@@ -90,11 +104,11 @@ git diff --check
    verifier, then run `bootstrap`.
 3. Create one root-only execution directory. Run every CAPLAB command through
    a receipt wrapper that writes stdout, stderr, and a direct numeric `.rc`.
-4. Replay and verify the exact quarantined registration under ADR 0010, then
-   finish ADR 0009 at object and copy recovery, locked restic check,
-   pgBackRest backup and isolated restore, dependency refusal, staged byte
-   removal, guarded database purge, and disablement. The earlier refusal and
-   interruption receipts remain in the original execution roots.
-5. Do not remove the isolated restore or root staging until the independent
-   verifier preserves its report. Verification can pass or fail P5; it cannot
-   accept CAPLAB or authorize P6.
+4. Under ADR 0011, preserve and remove only the already-stopped failed target,
+   then retry only backup `20260712-010203F_20260716-195901D` with the committed
+   isolated helper. Query the restored database and obtain the fresh
+   verifier's interim report while it remains available.
+5. Stop only the verified isolated instance, re-prove the live identity,
+   preserve the evidence, remove only the isolated target, and obtain the
+   verifier's final report. ADR 0011 does not authorize dependency creation,
+   byte deletion, database purge, P6, or CAPLAB acceptance.

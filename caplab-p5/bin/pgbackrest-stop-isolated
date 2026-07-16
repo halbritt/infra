@@ -1,10 +1,61 @@
 #!/bin/bash
 set -euo pipefail
 
-target=/var/tmp/caplab-p5-pgrestore
-if [[ ! -d "$target" || -L "$target" ]]; then
+source /usr/local/libexec/caplab-p5/isolated-postgres-common
+require_root
+
+if [[ ! -d "$target" || -L "$target" || ! -f "$state" || -L "$state" ]]; then
   echo "isolated restore target is absent" >&2
   exit 2
 fi
-runuser --user postgres -- \
-  /usr/lib/postgresql/17/bin/pg_ctl --pgdata="$target" --mode=fast --wait stop
+
+capture_live_identity
+test -n "$live_data_directory"
+test -n "$live_postmaster_pid"
+install_live_exit_guard
+
+if [[ "$(state_value schema_version)" != caplab-p5-isolated-postgres-state-1 \
+  || "$(state_value phase)" != ready \
+  || "$(state_value campaign)" != "$campaign" \
+  || "$(state_value authorization_sha256)" != "$authorization_sha256" \
+  || "$(state_value backup)" != "$selected_backup" \
+  || "$(state_value target)" != "$target" \
+  || "$(state_value port)" != "$port" \
+  || "$(state_value socket)" != "$socket" \
+  || "$(state_value live_data_directory)" != "$live_data_directory" \
+  || "$(state_value live_postmaster_pid)" != "$live_postmaster_pid" \
+  || "$(state_value live_start_time)" != "$live_start_time" ]]; then
+  echo "isolated restore state differs from the authorized target" >&2
+  exit 2
+fi
+for file in "$config" "$hba" "$ident" "$auto_config" "$marker"; do
+  if [[ ! -f "$file" || -L "$file" ]]; then
+    echo "isolated PostgreSQL configuration is absent or unsafe" >&2
+    exit 2
+  fi
+done
+if [[ "$(/usr/bin/stat -c '%U:%G:%a' -- "$marker")" != root:root:600 ]]; then
+  echo "isolated PostgreSQL marker ownership or mode drifted" >&2
+  exit 2
+fi
+if [[ "$(/usr/bin/sha256sum "$config" | /usr/bin/awk '{print $1}')" != "$(state_value config_sha256)" \
+  || "$(/usr/bin/sha256sum "$hba" | /usr/bin/awk '{print $1}')" != "$(state_value hba_sha256)" \
+  || "$(/usr/bin/sha256sum "$ident" | /usr/bin/awk '{print $1}')" != "$(state_value ident_sha256)" \
+  || "$(/usr/bin/sha256sum "$auto_config" | /usr/bin/awk '{print $1}')" != "$(state_value auto_config_sha256)" ]]; then
+  echo "isolated PostgreSQL configuration hash drifted" >&2
+  exit 2
+fi
+for key in schema_version campaign authorization_sha256 backup target port socket \
+  config_sha256 hba_sha256 ident_sha256 auto_config_sha256; do
+  if [[ "$(/usr/bin/awk -F= -v key="$key" '$1 == key {print substr($0, length(key) + 2)}' "$marker")" \
+    != "$(state_value "$key")" ]]; then
+    echo "isolated PostgreSQL target marker drifted" >&2
+    exit 2
+  fi
+done
+
+stop_verified_isolated
+/usr/bin/sed -i 's/^phase=ready$/phase=stopped/' "$state"
+verify_live_unchanged
+printf 'target=%s\nphase=stopped\nlive_postmaster_pid=%s\n' \
+  "$target" "$live_postmaster_pid"
