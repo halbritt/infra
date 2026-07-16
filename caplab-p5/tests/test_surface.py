@@ -107,6 +107,18 @@ class P5HostSurfaceTests(unittest.TestCase):
         hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
         self.assertIn('"true" if expected_phase == "ready" else "false"', hostctl)
 
+    def test_local_write_custody_uses_only_the_exact_content_prefix(self) -> None:
+        hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
+        self.assertIn('LOCAL_COPY_PREFIX = LOCAL_COPY_ROOT / "objects/sha256/a1"', hostctl)
+        self.assertIn("prepare_local_copy_prefix()", hostctl)
+        self.assertNotIn("setfacl", hostctl)
+
+    def test_disabled_empty_state_can_retry_without_widening_identity(self) -> None:
+        hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
+        self.assertIn('state.get("phase") == "disabled"', hostctl)
+        self.assertIn('retained != "0|0|0"', hostctl)
+        self.assertIn("ALTER ROLE caplab_p5_operator LOGIN", hostctl)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -27,6 +27,7 @@ STATE_FILE = Path("/var/lib/caplab-p5-recovery.state.json")
 VENV_ROOT = Path("/opt/caplab-p5/venvs")
 CREDENTIAL_ROOT = Path("/etc/caplab-p5/credentials")
 LOCAL_COPY_ROOT = Path("/nvr/caplab/v0")
+LOCAL_COPY_PREFIX = LOCAL_COPY_ROOT / "objects/sha256/a1"
 GROUP = "caplab-p5"
 OPERATOR = "caplab_p5_operator"
 VERIFIER = "caplab_p5_verifier"
@@ -256,13 +257,48 @@ def preflight() -> None:
         raise HostctlError("restic prune is active")
     if not p4_control().startswith("op-caplab-p4-roundtrip-0001|"):
         raise HostctlError("P4 control registration is absent")
+    state = read_state(required=False)
+    retry = bool(state) and state.get("phase") == "disabled"
+    if retry and state.get("source_commit") != commit:
+        raise HostctlError("disabled P5 retry state has the wrong source identity")
     for role in ROLES:
-        if _user_exists(role):
-            raise HostctlError(f"target operating-system identity exists: {role}")
-        if role_exists(role):
-            raise HostctlError(f"target PostgreSQL identity exists: {role}")
+        if _user_exists(role) != retry:
+            condition = "absent" if retry else "exists"
+            raise HostctlError(f"target operating-system identity is not {condition}: {role}")
+        if role_exists(role) != retry:
+            condition = "absent" if retry else "exists"
+            raise HostctlError(f"target PostgreSQL identity is not {condition}: {role}")
         if key_by_alias(KEY_ALIASES[role]) is not None:
             raise HostctlError(f"target Garage key alias exists: {KEY_ALIASES[role]}")
+    if retry:
+        if not role_exists("caplab_custodian"):
+            raise HostctlError("disabled P5 retry state lacks its custodian role")
+        if CREDENTIAL_ROOT.exists():
+            raise HostctlError("disabled P5 retry state retains credentials")
+        retained = run(
+            [
+                "runuser",
+                "--user",
+                "postgres",
+                "--",
+                "psql",
+                "-X",
+                "--tuples-only",
+                "--no-align",
+                "--dbname",
+                "caplab",
+                "--command",
+                "SELECT "
+                "(SELECT count(*) FROM caplab_v0.operation_requests "
+                " WHERE operation_id = 'op-p5-recovery-0001') || '|' || "
+                "(SELECT count(*) FROM caplab_v0.custody_requests "
+                " WHERE operation_id = 'op-p5-recovery-0001') || '|' || "
+                "(SELECT count(*) FROM caplab_v0.purge_tombstones "
+                " WHERE operation_id = 'op-p5-recovery-0001');",
+            ]
+        ).strip()
+        if retained != "0|0|0":
+            raise HostctlError("disabled P5 retry state retains campaign data")
     if cfg["identity"]["operation_id"] != "op-p5-recovery-0001":
         raise HostctlError("P5 operation identity is wrong")
 
@@ -300,6 +336,8 @@ def ensure_user(name: str) -> None:
                 name,
             ]
         )
+    else:
+        run(["usermod", "--expiredate", "-1", name])
 
 
 def install_source(commit: str) -> Path:
@@ -379,6 +417,8 @@ $p5$;
 GRANT caplab_writer, caplab_reader, caplab_verifier, caplab_custodian
   TO caplab_p5_operator;
 GRANT caplab_reader, caplab_verifier TO caplab_p5_verifier;
+ALTER ROLE caplab_p5_operator LOGIN;
+ALTER ROLE caplab_p5_verifier LOGIN;
 """
     run(
         [
@@ -483,6 +523,18 @@ def issue_keys(state: dict[str, Any]) -> None:
         write_state(state)
 
 
+def prepare_local_copy_prefix() -> None:
+    if LOCAL_COPY_PREFIX.is_symlink():
+        raise HostctlError("P5 local-copy prefix is a symlink")
+    LOCAL_COPY_PREFIX.mkdir(mode=0o750, parents=False, exist_ok=True)
+    if next(LOCAL_COPY_PREFIX.iterdir(), None) is not None:
+        raise HostctlError("P5 local-copy prefix is not empty before bootstrap")
+    operator = pwd.getpwnam(OPERATOR)
+    group_id = LOCAL_COPY_ROOT.stat().st_gid
+    os.chown(LOCAL_COPY_PREFIX, operator.pw_uid, group_id)
+    os.chmod(LOCAL_COPY_PREFIX, 0o750)
+
+
 def bootstrap() -> None:
     preflight()
     commit = source_commit()
@@ -504,7 +556,7 @@ def bootstrap() -> None:
         venv = install_source(commit)
         create_database_roles()
         apply_migration(venv)
-        run(["setfacl", "-m", f"u:{OPERATOR}:rwx", str(LOCAL_COPY_ROOT / "objects/sha256")])
+        prepare_local_copy_prefix()
         CREDENTIAL_ROOT.mkdir(mode=0o750, parents=True, exist_ok=True)
         os.chown(CREDENTIAL_ROOT, 0, grp.getgrnam(GROUP).gr_gid)
         os.chmod(CREDENTIAL_ROOT, 0o750)
@@ -540,6 +592,17 @@ def verify(expected_phase: str) -> None:
         "objects/sha256/a1/a1ac9f819a8a9e330290910b1049e70fe1a2a73a7ee98068a5fd9fe0c0d8b43d"
     ):
         raise HostctlError("P5 object identity drifted")
+    prefix = LOCAL_COPY_PREFIX
+    if expected_phase == "ready":
+        operator = pwd.getpwnam(OPERATOR)
+        metadata = prefix.stat()
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or stat.S_IMODE(metadata.st_mode) != 0o750
+            or metadata.st_uid != operator.pw_uid
+            or metadata.st_gid != LOCAL_COPY_ROOT.stat().st_gid
+        ):
+            raise HostctlError("P5 local-copy prefix custody is wrong")
     live_ids = {str(key.get("id")) for key in garage_keys()}
     for record in state.get("garage_keys", []):
         role = str(record["role"])
@@ -639,10 +702,14 @@ def disable() -> None:
             shutil.rmtree(CREDENTIAL_ROOT)
         except OSError:
             failures.append("credential removal failed")
-    try:
-        run(["setfacl", "-x", f"u:{OPERATOR}", str(LOCAL_COPY_ROOT / "objects/sha256")])
-    except HostctlError:
-        failures.append("local-copy ACL revocation failed")
+    if LOCAL_COPY_PREFIX.exists():
+        try:
+            os.chown(LOCAL_COPY_PREFIX, 0, LOCAL_COPY_ROOT.stat().st_gid)
+            os.chmod(LOCAL_COPY_PREFIX, 0o750)
+            if next(LOCAL_COPY_PREFIX.iterdir(), None) is None:
+                LOCAL_COPY_PREFIX.rmdir()
+        except OSError:
+            failures.append("local-copy prefix revocation failed")
     sql = """
 DO $p5$
 BEGIN
