@@ -7,6 +7,11 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-15
 
+### Added WezTerm thumbwheel scrollback bindings
+Mapped horizontal mouse-wheel events in the canonical WezTerm client profile to
+three-line vertical scrollback movement. This makes a mouse side wheel useful in
+terminal panes while preserving the normal vertical-wheel bindings.
+
 ### Added pinned WezTerm SSH-mux desired state
 Added [`wezterm/`](wezterm/) for the headless WezTerm multiplexer used to carry
 persistent native tabs between macOS and Windows clients. Pinned the host's

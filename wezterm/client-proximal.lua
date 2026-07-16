@@ -13,6 +13,19 @@ config.enable_scroll_bar = true
 config.hide_tab_bar_if_only_one_tab = false
 config.check_for_updates = false
 
+config.mouse_bindings = {
+  {
+    event = { Down = { streak = 1, button = { WheelLeft = 1 } } },
+    mods = 'NONE',
+    action = wezterm.action.ScrollByLine(-3),
+  },
+  {
+    event = { Down = { streak = 1, button = { WheelRight = 1 } } },
+    mods = 'NONE',
+    action = wezterm.action.ScrollByLine(3),
+  },
+}
+
 config.ssh_domains = {
   {
     name = 'proximal',
