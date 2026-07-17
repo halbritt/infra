@@ -142,6 +142,171 @@ rollback was executed.
   `caplab.harm.org`, but HTTPS returns 404 through the existing terminal ingress
   rule; no CAPLAB public route exists.
 
+## Explanatory-content update — 2026-07-15
+
+The repository owner requested enough context for a first-time reviewer to
+understand the study, its purpose, and its claim boundary. This update changed
+only committed application bytes and the canonical source pin. It did not
+change the Tailscale route, public index, systemd unit, Cloudflare ingress, or
+CAPLAB evidence and review state.
+
+### Source and release binding
+
+- Previous books source:
+  `e4636d2628adbbfca953734d4dc7cdfa91d72b04`.
+- Updated books source:
+  `3314c9fc47204542ebbb3ac473f5edafca022654`, pushed on
+  `agent/caplab-study-dashboard`.
+- Proximal source-pin commit:
+  `b9182edf55029c9924153505a3eb57eba55de0b7`, pushed on
+  `agent/caplab-study-dashboard-host` before installation.
+- Active release: `releases/3314c9fc47204542ebbb3ac473f5edafca022654`.
+- Previous release retained for rollback:
+  `releases/e4636d2628adbbfca953734d4dc7cdfa91d72b04`.
+- Updated Study 001 projection SHA-256:
+  `c1a3555a900bca0b54c51eaee9efe8a71b1c00c43e04556995b351621ebc36b5`;
+  installed and source bytes matched.
+
+The updated projection uses `study-results-dashboard/2` and requires a
+study-specific explanation of the scenario, selection rationale, question,
+hypothesis, treatment arms, outcome, design, result, interpretation, metrics,
+reading order, and glossary. The server rejects a projection missing that
+context. The renderer presents it before the primary result and moves the full
+status ledger behind the scientific reading path.
+
+### Deployment observation
+
+The installer created the immutable release, switched `current`, retained the
+old release as `previous`, and restarted the unit. The first chained
+`verify.sh --local-only` invocation then reported `nothing is listening on TCP
+port 3021`. Twelve seconds after the restart, systemd reported the new process
+active with `Result=success` and `NRestarts=0`; the journal contained one clean
+stop/start pair, the expected loopback listener was present, and health
+returned `ok`. Re-running local and full verification passed.
+
+**Inference:** the first verification observed the interval between systemd's
+successful process start and the socket becoming visible. A transient process
+failure is the main rival; the absence of a failed unit state, restart, or
+journal error and the later live process from the exact release oppose that
+rival. This observation does not weaken or bypass the verification gate: the
+deployment was considered technically verified only after both complete reruns
+passed.
+
+### Preservation and live verification
+
+- Complete canonical Serve JSON SHA-256 before and after:
+  `95da350a26d93cc0d00e87cd03992007d06481aaf86b9b598868696635982edb`.
+  The `:8784` handler remained the one HTTPS proxy to
+  `http://127.0.0.1:3021`, `:443` remained unchanged, and `AllowFunnel`
+  remained null.
+- Local and public index SHA-256 before and after:
+  `8acec320a1bbb4d1bd6e591b0e7b124960c02776e91a35ab5acd058fd690d27a`.
+  The file retained exactly one CAPLAB card and no study data.
+- Canonical and installed user-unit SHA-256:
+  `a4c7d9940ddfb85a85238b0a8181486aa28ddecbf90ed46ec763771eece8a0fa`.
+- Canonical and installed Cloudflare configuration SHA-256:
+  `f25f08d4bf4495476da693fa59e0359d17e644c91bdb2ad2e0a0a8c495b1e98f`;
+  ingress validation passed.
+- The service remained enabled and active with a loopback-only listener,
+  `Result=success`, and `NRestarts=0`. Its process working directory resolved
+  to the updated commit-named release.
+- Local and tailnet API reads returned `study-results-dashboard/2` and the new
+  title. Full `verify.sh` passed, including the tailnet HTTPS health read.
+- Live Chromium loaded the tailnet URL, rendered the first-screen customer-harm
+  summary, followed the overview jump link, opened the glossary, and rendered
+  at 390 pixels without document-level overflow or console errors.
+- Live screenshot SHA-256 values are
+  `f588594df1afe6135004cb9512b7e0b48fca5a642a3a70fbf8240575b8a84013`
+  (`/tmp/caplab-study-dashboard-live-top.png`),
+  `b68dda92cd95136dfa7e0cfb8a78bcc7996017609fa9251120bbe73004ab7c11`
+  (`/tmp/caplab-study-dashboard-live-overview.png`), and
+  `f6e2e34f2c4aff81322d5515a2a154c541ff4fb27591f5028d25f504bd3f3d3c`
+  (`/tmp/caplab-study-dashboard-live-narrow.png`).
+
+The route itself did not change, so the initial enactment's remote-node
+verification residual remains unchanged and was not re-tested. The exact
+installed application bytes and same-host tailnet TLS path were reverified.
+
+Application rollback now has an exact retained target: run `rollback.sh` to
+switch to the previous `e4636d2` release, then restore the canonical
+`SOURCE_COMMIT` to that full commit and run the installer and verification from
+the matching pushed desired state. The Tailscale route and public index require
+no rollback because this update did not change them.
+
+## Subject-configuration update — 2026-07-15
+
+The repository owner observed that the explanatory dashboard did not mention
+the harness/model/effort tuple. This update makes the exercised subject
+configuration required reviewer context and displays it before the treatment
+arms. It changes committed application bytes and the canonical source pin only;
+it does not change the Tailscale route, public index, user unit, Cloudflare
+ingress, historical evidence, or CAPLAB review state.
+
+### Source and release binding
+
+- Previous books source:
+  `3314c9fc47204542ebbb3ac473f5edafca022654`.
+- Updated books source:
+  `0900f04e484186a837cc8231d2756407fd31a9da`, pushed on
+  `agent/caplab-study-dashboard`.
+- Proximal source-pin commit:
+  `a6320c53d17a4a15ea719cd6fa705f92ae017d94`, pushed on
+  `agent/caplab-study-dashboard-host` before installation.
+- Active release:
+  `releases/0900f04e484186a837cc8231d2756407fd31a9da`.
+- Previous release retained for rollback:
+  `releases/3314c9fc47204542ebbb3ac473f5edafca022654`.
+- Updated Study 001 projection SHA-256:
+  `cea1f4004a11f5f3b443ff4d85e81fcfb4f2d2df02b0db11287900481f01e64f`;
+  installed and source bytes matched.
+
+The updated projection uses `study-results-dashboard/3`. Its required
+`study_context.subject_tuple` records the harness profile `codex-luna-max`,
+provider/model route `gpt-5.6-luna`, reasoning effort `max`, runtime
+`Codex CLI 0.144.1`, and unavailable immutable model-weight identity. The
+renderer places the tuple after the study question and before the B/V treatment
+arms. The adjacent scope note says that the observed result does not transfer
+automatically to another harness, model route, reasoning effort, runtime, or
+model-weight identity.
+
+### Deployment and verification observations
+
+- The installer created the commit-named immutable release, switched `current`,
+  retained the old release as `previous`, and restarted the user unit.
+- Health, the loopback listener, and the active unit were ready on the first
+  bounded poll after installation. The unit reported `Result=success` and
+  `NRestarts=0`.
+- Complete local and tailnet `verify.sh` runs passed. The service remained
+  enabled and active, and its only TCP `3021` listener remained
+  `127.0.0.1:3021`.
+- The live tailnet API returned `study-results-dashboard/3` and the exact five
+  subject-configuration values listed above.
+- Complete canonical Serve JSON SHA-256 before and after remained
+  `95da350a26d93cc0d00e87cd03992007d06481aaf86b9b598868696635982edb`.
+  The `:8784` handler remained the one HTTPS proxy to
+  `http://127.0.0.1:3021`, and Funnel remained absent.
+- Local and public index SHA-256 before and after remained
+  `8acec320a1bbb4d1bd6e591b0e7b124960c02776e91a35ab5acd058fd690d27a`.
+- Canonical and installed user-unit SHA-256 remained
+  `a4c7d9940ddfb85a85238b0a8181486aa28ddecbf90ed46ec763771eece8a0fa`.
+- Canonical and installed Cloudflare configuration SHA-256 remained
+  `f25f08d4bf4495476da693fa59e0359d17e644c91bdb2ad2e0a0a8c495b1e98f`;
+  ingress validation passed before installation.
+- Live Chromium rendered the tuple at 1440 and 390 pixels. Both views placed
+  it before the treatment arms, showed the transfer warning, had no
+  document-level overflow, and emitted no console or page errors.
+- Live screenshot SHA-256 values are
+  `81bcddb3578c6f3fd8c156b7fad695f7b6ea6e0b4dbfa36293f212913d131d9b`
+  (`/tmp/caplab-study-dashboard-live-subject-tuple-desktop.png`) and
+  `6254bab6e4cb8dbe815b98072f6ea6cc8c3a506d4039c96fae2382e75a48aead`
+  (`/tmp/caplab-study-dashboard-live-subject-tuple-narrow.png`).
+
+**Observation:** the historical record identifies the exercised harness
+profile, provider/model route, effort, and runtime but does not contain an
+immutable model-weight digest. Displaying `unavailable` preserves that evidence
+limit; it is not an inference that the provider route uniquely identifies the
+weights.
+
 ## Restore the captured before state
 
 Stop if any compare-before-mutate check fails.
