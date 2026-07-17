@@ -1,0 +1,19 @@
+--- a/site/index.html
++++ b/site/index.html
+@@ -137,5 +137,16 @@
+         <article class="service">
+           <div>
++            <h2>Agent Capability Lab (CAPLAB)</h2>
++            <a href="https://proximal.tail0ecc2e.ts.net:8784/">https://proximal.tail0ecc2e.ts.net:8784/</a>
++          </div>
++          <div>
++            <span class="tag">study results</span>
++            <span class="tag">tailnet only</span>
++          </div>
++        </article>
++
++        <article class="service">
++          <div>
+             <h2>OpenClaw Control</h2>
+             <a href="https://proximal.tail0ecc2e.ts.net/">https://proximal.tail0ecc2e.ts.net/</a>
+           </div>

@@ -32,6 +32,27 @@ session persistence across GUI loss; the original external-display wake renderin
 incident still needs repeated sleep/wake observation in WezTerm before it can be
 called resolved.
 
+### Added the standalone CAPLAB P4 host desired state
+
+Added [`caplab-runtime/`](caplab-runtime/) for the bounded, model-free CAPLAB
+P4 synthetic round trip: a fail-closed host CLI, non-secret runtime config,
+standalone-source pin, and a one-shot systemd expiry backstop. The tool keeps
+PostgreSQL peer roles disabled until three campaign-scoped Garage credentials
+are contained in role-owned files, records an irreversible pre-write boundary,
+captures fixed store inventories around the idempotency conflict, and permits
+bootstrap removal only after independent zero-state checks. The runtime is
+pinned to reviewed standalone commit
+`405efb136b221d1270578417c64b3f7878383f32`; regular-file blobs are read from
+that Git tree into a hash-named virtual environment and verified against a
+commit-bound host manifest.
+
+The initial desired-state commit made no live change. The later authorized P4
+execution installed the surface, completed one synthetic register, replay,
+conflict refusal, retrieval, reconciliation, and cleanup-plan round trip, then
+disabled all campaign access. It intentionally preserves the synthetic object,
+independent copy, append-only metadata, cleanup plan, and lifecycle evidence;
+it does not claim recovery fitness, purge correctness, or CAPLAB acceptance.
+
 ## 2026-07-07
 
 ### Captured the striatum garden token-refresh units
