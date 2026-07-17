@@ -1,0 +1,19 @@
+[authorization]
+expires_at = "2026-07-24T23:59:59Z"
+source_commit = "137d0724ca22956d04d75f41e02e0b36b146e5f6"
+
+[postgres]
+conninfo = "dbname=caplab host=/var/run/postgresql"
+
+[garage]
+endpoint_url = "http://127.0.0.1:3900"
+region = "garage"
+bucket = "caplab-v0"
+credentials_root = "/etc/caplab/credentials"
+
+[local_copy]
+root = "/nvr/caplab/v0"
+
+[source]
+preservation_root = "/var/tmp/striatum-bench/luna-bv-confirmation-preserved-2026-07-14"
+git_stage = "/var/lib/caplab-p6/source-git"
