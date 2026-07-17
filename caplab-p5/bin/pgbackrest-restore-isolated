@@ -72,14 +72,17 @@ ssl = off
 archive_mode = off
 shared_preload_libraries = ''
 session_preload_libraries = ''
-max_wal_senders = 0
+max_wal_senders = 10
 logging_collector = off
 log_destination = 'stderr'
 cluster_name = 'caplab-p5-isolated'
 EOF
 cat >"$hba" <<'EOF'
+local replication all reject
 local all postgres peer
 local all all reject
+host replication all 127.0.0.1/32 reject
+host replication all ::1/128 reject
 host all all 127.0.0.1/32 reject
 host all all ::1/128 reject
 EOF
@@ -152,7 +155,22 @@ isolated_archive_mode="$(postgres_isolated_query "SHOW archive_mode;")"
 isolated_ssl="$(postgres_isolated_query "SHOW ssl;")"
 isolated_shared_preload="$(postgres_isolated_query "SHOW shared_preload_libraries;")"
 isolated_session_preload="$(postgres_isolated_query "SHOW session_preload_libraries;")"
+isolated_max_wal_senders="$(postgres_isolated_query "SHOW max_wal_senders;")"
+isolated_replication_senders="$(postgres_isolated_query "SELECT count(*) FROM pg_stat_replication;")"
 isolated_recovery="$(postgres_isolated_query "SELECT pg_is_in_recovery();")"
+if tcp_probe_output="$(run_as_postgres \
+  /usr/lib/postgresql/17/bin/psql \
+  -X --no-password --tuples-only --no-align \
+  --host=127.0.0.1 --port="$port" --dbname=postgres \
+  --command "SELECT 1;" 2>&1)"; then
+  echo "TCP access to isolated PostgreSQL unexpectedly succeeded" >&2
+  exit 1
+fi
+if ! printf '%s\n' "$tcp_probe_output" \
+  | /usr/bin/grep -Fq "pg_hba.conf rejects connection"; then
+  echo "TCP probe did not prove rejection by the isolated HBA" >&2
+  exit 1
+fi
 read_isolated_postmaster_pid
 if [[ "$isolated_data_directory" != "$target" \
   || "$isolated_port" != "$port" \
@@ -163,6 +181,8 @@ if [[ "$isolated_data_directory" != "$target" \
   || "$isolated_ssl" != off \
   || -n "$isolated_shared_preload" \
   || -n "$isolated_session_preload" \
+  || "$isolated_max_wal_senders" != 10 \
+  || "$isolated_replication_senders" != 0 \
   || "$isolated_recovery" != f ]]; then
   echo "isolated PostgreSQL identity differs from the authorized target" >&2
   exit 1
@@ -170,6 +190,7 @@ fi
 
 /usr/bin/sed -i 's/^phase=starting$/phase=ready/' "$state"
 verify_live_unchanged
-printf 'backup=%s\ntarget=%s\nport=%s\nisolated_postmaster_pid=%s\nlive_postmaster_pid=%s\nconfig_sha256=%s\nhba_sha256=%s\nident_sha256=%s\nauto_config_sha256=%s\n' \
+printf 'backup=%s\ntarget=%s\nport=%s\nisolated_postmaster_pid=%s\nlive_postmaster_pid=%s\nmax_wal_senders=%s\nreplication_senders=%s\ntcp_access=rejected_by_hba\nconfig_sha256=%s\nhba_sha256=%s\nident_sha256=%s\nauto_config_sha256=%s\n' \
   "$label" "$target" "$port" "$isolated_postmaster_pid" "$live_postmaster_pid" \
+  "$isolated_max_wal_senders" "$isolated_replication_senders" \
   "$config_sha256" "$hba_sha256" "$ident_sha256" "$auto_config_sha256"

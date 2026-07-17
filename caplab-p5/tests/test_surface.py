@@ -102,6 +102,15 @@ class P5HostSurfaceTests(unittest.TestCase):
 
         self.assertIn("/var/tmp/caplab-p5-pgrestore", common)
         self.assertIn("55435", common)
+        self.assertIn(
+            "campaign=caplab-p5-recovery-compatibility-corrective-2026-07-17",
+            common,
+        )
+        self.assertIn(
+            "authorization_sha256="
+            "7dabe6891bc1679ccbad4a893ba864ba42a59a301cbce472de15a2b03fbd64f0",
+            common,
+        )
         self.assertIn('--pg1-path="$target"', restore)
         self.assertIn('source /usr/local/libexec/caplab-p5/isolated-postgres-common', restore)
         self.assertIn('source /usr/local/libexec/caplab-p5/isolated-postgres-common', stop)
@@ -130,12 +139,28 @@ class P5HostSurfaceTests(unittest.TestCase):
         self.assertIn("port = $port", restore)
         self.assertIn("unix_socket_directories = '$socket'", restore)
         self.assertIn("host all all 127.0.0.1/32 reject", restore)
+        self.assertIn("local replication all reject", restore)
+        self.assertIn("host replication all 127.0.0.1/32 reject", restore)
+        self.assertIn("host replication all ::1/128 reject", restore)
         self.assertIn("local all postgres peer", restore)
+        self.assertLess(
+            restore.index("local replication all reject"),
+            restore.index("local all postgres peer"),
+        )
+        self.assertLess(
+            restore.index("host replication all 127.0.0.1/32 reject"),
+            restore.index("host all all 127.0.0.1/32 reject"),
+        )
         self.assertIn("archive_mode = off", restore)
         self.assertIn("ssl = off", restore)
-        self.assertIn("max_wal_senders = 0", restore)
+        self.assertIn("max_wal_senders = 10", restore)
+        self.assertNotIn("max_wal_senders = 0", restore)
         self.assertIn("SHOW data_directory", restore)
         self.assertIn("SHOW port", restore)
+        self.assertIn("SHOW max_wal_senders", restore)
+        self.assertIn("SELECT count(*) FROM pg_stat_replication", restore)
+        self.assertIn("TCP access to isolated PostgreSQL unexpectedly succeeded", restore)
+        self.assertIn("pg_hba.conf rejects connection", restore)
         self.assertIn("recovery_target = 'immediate'", restore)
         self.assertNotIn("archive_command =", restore)
         self.assertIn('chown root:root "$marker"', restore)
