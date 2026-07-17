@@ -21,3 +21,8 @@ The repo holds desired state; installed copies run on the box. If you change the
 Cloudflared config or units here, install them to the mapped paths, reload or
 restart the affected service, verify externally, and update `README.md` plus the
 root changelog.
+
+
+## Branch hygiene
+
+Do not leave unmerged code lying around. If a task uses a branch, merge its authorized work into the intended target branch before reporting completion. If merge authority is absent, report that as a blocker instead of treating the branch as finished. Clean up branches and associated worktrees after merge.

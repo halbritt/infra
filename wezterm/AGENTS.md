@@ -18,3 +18,8 @@ Read `README.md` before changing this subsystem.
   GPU renderer. Software rendering is a diagnostic fallback, not desired state.
 - Re-run the verification and persistence checks in `README.md`, then commit and
   push. Never leave this repo dirty or ahead of `origin/master`.
+
+
+## Branch hygiene
+
+Do not leave unmerged code lying around. If a task uses a branch, merge its authorized work into the intended target branch before reporting completion. If merge authority is absent, report that as a blocker instead of treating the branch as finished. Clean up branches and associated worktrees after merge.

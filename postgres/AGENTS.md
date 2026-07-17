@@ -59,3 +59,8 @@ primary, `wal_level`) and **reliability blockers outrank performance wins**.
 - **Commit and push often.** This repo's value is its history — commit after every
   change and push to `origin` so the rest of the fleet sees it. Never end a turn with
   a dirty tree or unpushed commits.
+
+
+## Branch hygiene
+
+Do not leave unmerged code lying around. If a task uses a branch, merge its authorized work into the intended target branch before reporting completion. If merge authority is absent, report that as a blocker instead of treating the branch as finished. Clean up branches and associated worktrees after merge.
