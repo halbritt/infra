@@ -5,6 +5,17 @@ implementation and research records. This subsystem binds the installed
 environment, exact historical source stage, local PostgreSQL/Garage/NVR
 targets, temporary writer, and independent verifier access window.
 
+P6 completed with independent PASS on 2026-07-17. Manifest
+`d2d4f821146c3f39e6726133c383807ec9f6051834e74fbd3a5f33aae8ef148e`
+registers 684 restricted evidence records as 325 unique byte identities and
+links 20 assignments, first attempts, and mechanical outcomes. Writer,
+reader, and verifier PostgreSQL roles are `NOLOGIN`; their P6 Garage keys and
+credential files are absent; writer and verifier preservation ACLs were
+removed. The installed environment, non-secret config, restricted Git stage,
+append-only database registration, Garage bytes, and `/nvr` copies remain.
+These are execution and verification observations, not CAPLAB acceptance or
+P7 authority.
+
 ## Fixed boundary
 
 | Surface | Value |
