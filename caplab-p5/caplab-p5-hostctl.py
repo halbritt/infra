@@ -26,7 +26,7 @@ CORRECTIVE_AUTHORIZATION_SHA256 = "0b0682acaa749f7715687e10f3c0565f0776da951375d
 REGISTRATION_RUNTIME_COMMIT = "c82b5512661c537db06f725af70198eccc818358"
 P5_CONTENT_SHA256 = "a1ac9f819a8a9e330290910b1049e70fe1a2a73a7ee98068a5fd9fe0c0d8b43d"
 EXPIRY = datetime(2026, 7, 23, 23, 59, 59, tzinfo=UTC)
-SOURCE_REPO = Path("/home/halbritt/git/caplab")
+SOURCE_REPO = Path("/home/halbritt/git/caplab.worktrees/p5-executor-e86ed0e")
 SOURCE_COMMIT_FILE = Path("/etc/caplab-p5/SOURCE_COMMIT")
 CONFIG_FILE = Path("/etc/caplab-p5/recovery.toml")
 STATE_FILE = Path("/var/lib/caplab-p5-recovery.state.json")
@@ -254,9 +254,20 @@ def git_command(*arguments: str) -> list[str]:
     ]
 
 
+def require_source_checkout() -> None:
+    try:
+        metadata = SOURCE_REPO.lstat()
+        resolved = SOURCE_REPO.resolve(strict=True)
+    except OSError as error:
+        raise HostctlError("frozen CAPLAB source worktree is unavailable") from error
+    if not stat.S_ISDIR(metadata.st_mode) or resolved != SOURCE_REPO:
+        raise HostctlError("frozen CAPLAB source worktree is not an exact directory")
+
+
 def preflight() -> None:
     require_root()
     require_active()
+    require_source_checkout()
     cfg = config()
     commit = source_commit()
     state = read_state(required=False)

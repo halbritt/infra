@@ -2,8 +2,9 @@
 
 Desired state for the bounded CAPLAB-23/P5 failure and recovery campaign
 selected by standalone CAPLAB ADR 0009 and its corrective continuations in ADR
-0010 through ADR 0013. CAPLAB owns product decisions and the recovery
-implementation at `/home/halbritt/git/caplab`; this subsystem owns only
+0010 through ADR 0015. CAPLAB owns product decisions and the recovery
+implementation. ADR 0015 binds the immutable executor source to
+`/home/halbritt/git/caplab.worktrees/p5-executor-e86ed0e`; this subsystem owns only
 temporary Proximal identities, installed source and configuration, backup
 serialization, isolated restore, root staging, expiry, and disablement.
 
@@ -16,6 +17,7 @@ registration is read-only control state.
 | Surface | Value |
 |---|---|
 | corrected executor source | [`SOURCE_COMMIT`](SOURCE_COMMIT) |
+| frozen executor worktree | `/home/halbritt/git/caplab.worktrees/p5-executor-e86ed0e` |
 | registered request source | `c82b5512661c537db06f725af70198eccc818358` |
 | data campaign | `caplab-p5-recovery-2026-07-16` |
 | corrective campaign | `caplab-p5-corrective-2026-07-16` |
@@ -118,7 +120,10 @@ git diff --check
    ADR 0013, retry only backup `20260712-010203F_20260716-195901D` with the
    committed isolated helper. Query the restored database and obtain the fresh
    verifier's interim report while it remains available.
-5. Stop only the verified isolated instance, re-prove the live identity,
-   preserve the evidence, remove only the isolated target, and obtain the
-   verifier's final report. ADR 0013 does not authorize dependency creation,
-   byte deletion, database purge, P6, or CAPLAB acceptance.
+5. ADR 0013's isolated instance has been verified and removed. Under ADR 0014,
+   preserve the exact dependency-refusal receipt, stage and remove only the P5
+   bytes, invoke the guarded exact-identity purge, retain its tombstone, and
+   disable access.
+6. Obtain a fresh independent P5 PASS before removing the ADR 0015 source
+   worktree or allowing the separately authorized P6 stage. P7 and CAPLAB
+   acceptance remain unauthorized.

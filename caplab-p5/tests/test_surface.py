@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -8,6 +9,15 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_hostctl():
+    path = ROOT / "caplab-p5-hostctl.py"
+    spec = importlib.util.spec_from_file_location("caplab_p5_hostctl_test", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class P5HostSurfaceTests(unittest.TestCase):
@@ -180,8 +190,34 @@ wait_for_isolated_promotion
 
     def test_root_git_reads_trust_only_the_exact_caplab_checkout(self) -> None:
         hostctl = (ROOT / "caplab-p5-hostctl.py").read_text(encoding="utf-8")
+        self.assertIn(
+            'SOURCE_REPO = Path("/home/halbritt/git/caplab.worktrees/'
+            'p5-executor-e86ed0e")',
+            hostctl,
+        )
+        self.assertNotIn('SOURCE_REPO = Path("/home/halbritt/git/caplab")', hostctl)
         self.assertIn("safe.directory={SOURCE_REPO}", hostctl)
         self.assertNotIn("safe.directory=*", hostctl)
+
+    def test_source_checkout_guard_accepts_only_the_real_directory(self) -> None:
+        hostctl = load_hostctl()
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            source = Path(temporary_directory) / "source"
+            source.mkdir()
+            hostctl.SOURCE_REPO = source
+            hostctl.require_source_checkout()
+
+    def test_source_checkout_guard_refuses_a_symlink_alias(self) -> None:
+        hostctl = load_hostctl()
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source = root / "source"
+            source.mkdir()
+            alias = root / "alias"
+            alias.symlink_to(source, target_is_directory=True)
+            hostctl.SOURCE_REPO = alias
+            with self.assertRaisesRegex(hostctl.HostctlError, "exact directory"):
+                hostctl.require_source_checkout()
 
     def test_receipt_wrapper_records_a_direct_numeric_status(self) -> None:
         receipt = (ROOT / "bin/run-receipt").read_text(encoding="utf-8")
