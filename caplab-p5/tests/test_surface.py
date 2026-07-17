@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tempfile
 import tomllib
 import unittest
 from pathlib import Path
@@ -10,6 +11,99 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class P5HostSurfaceTests(unittest.TestCase):
+    def test_isolated_restore_waits_for_automatic_promotion(self) -> None:
+        common = ROOT / "bin/isolated-postgres-common"
+        restore = (ROOT / "bin/pgbackrest-restore-isolated").read_text(
+            encoding="utf-8"
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            query_counter = Path(temporary_directory) / "query-count"
+            live_counter = Path(temporary_directory) / "live-count"
+            query_counter.write_text("0\n", encoding="ascii")
+            live_counter.write_text("0\n", encoding="ascii")
+            completed = subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    r'''
+set -euo pipefail
+source "$COMMON"
+postgres_isolated_query() {
+  local count
+  count="$(<"$QUERY_COUNTER")"
+  count=$((count + 1))
+  printf '%d\n' "$count" >"$QUERY_COUNTER"
+  if [[ "$count" -eq 1 ]]; then
+    printf 't\n'
+  else
+    printf 'f\n'
+  fi
+}
+verify_live_unchanged() {
+  local count
+  count="$(<"$LIVE_COUNTER")"
+  printf '%d\n' "$((count + 1))" >"$LIVE_COUNTER"
+}
+wait_for_isolated_promotion
+printf '%s|%s|%s\n' \
+  "$promotion_wait_attempts" \
+  "$isolated_recovery" \
+  "$(<"$LIVE_COUNTER")"
+''',
+                ],
+                text=True,
+                capture_output=True,
+                env={
+                    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                    "COMMON": str(common),
+                    "QUERY_COUNTER": str(query_counter),
+                    "LIVE_COUNTER": str(live_counter),
+                },
+                check=False,
+            )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(completed.stdout, "2|f|1\n")
+        self.assertIn("promotion_wait_seconds=30", common.read_text(encoding="utf-8"))
+        self.assertLess(
+            restore.index("wait_for_isolated_promotion"),
+            restore.index("SHOW data_directory"),
+        )
+        self.assertLess(
+            restore.index("isolated_started=1"),
+            restore.index("wait_for_isolated_promotion"),
+        )
+
+        failure_cases = (
+            ("printf 'unknown\\n'", 1, "unexpected recovery state"),
+            ("return 23", 23, ""),
+        )
+        for query_action, expected_status, expected_stderr in failure_cases:
+            with self.subTest(query_action=query_action):
+                failed = subprocess.run(
+                    [
+                        "bash",
+                        "-c",
+                        f'''\
+set -euo pipefail
+source "$COMMON"
+postgres_isolated_query() {{ {query_action}; }}
+verify_live_unchanged() {{ :; }}
+wait_for_isolated_promotion
+''',
+                    ],
+                    text=True,
+                    capture_output=True,
+                    env={
+                        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                        "COMMON": str(common),
+                    },
+                    check=False,
+                )
+                self.assertEqual(failed.returncode, expected_status)
+                self.assertIn(expected_stderr, failed.stderr)
+
     def test_source_config_and_identity_are_frozen(self) -> None:
         source_commit = (ROOT / "SOURCE_COMMIT").read_text(encoding="ascii").strip()
         config = tomllib.loads((ROOT / "recovery.toml").read_text(encoding="utf-8"))
@@ -103,12 +197,12 @@ class P5HostSurfaceTests(unittest.TestCase):
         self.assertIn("/var/tmp/caplab-p5-pgrestore", common)
         self.assertIn("55435", common)
         self.assertIn(
-            "campaign=caplab-p5-recovery-compatibility-corrective-2026-07-17",
+            "campaign=caplab-p5-promotion-readiness-corrective-2026-07-17",
             common,
         )
         self.assertIn(
             "authorization_sha256="
-            "7dabe6891bc1679ccbad4a893ba864ba42a59a301cbce472de15a2b03fbd64f0",
+            "2e2660cebd6d2b35704b9ffe3b586997ff639eebe1df08fbf7348f3950baa075",
             common,
         )
         self.assertIn('--pg1-path="$target"', restore)

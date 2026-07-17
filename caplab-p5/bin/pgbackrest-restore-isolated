@@ -145,6 +145,7 @@ run_as_postgres \
   --options="-c config_file=$config" \
   --wait start
 isolated_started=1
+wait_for_isolated_promotion
 
 isolated_data_directory="$(postgres_isolated_query "SHOW data_directory;")"
 isolated_port="$(postgres_isolated_query "SHOW port;")"
@@ -157,7 +158,6 @@ isolated_shared_preload="$(postgres_isolated_query "SHOW shared_preload_librarie
 isolated_session_preload="$(postgres_isolated_query "SHOW session_preload_libraries;")"
 isolated_max_wal_senders="$(postgres_isolated_query "SHOW max_wal_senders;")"
 isolated_replication_senders="$(postgres_isolated_query "SELECT count(*) FROM pg_stat_replication;")"
-isolated_recovery="$(postgres_isolated_query "SELECT pg_is_in_recovery();")"
 if tcp_probe_output="$(run_as_postgres \
   /usr/lib/postgresql/17/bin/psql \
   -X --no-password --tuples-only --no-align \
@@ -190,7 +190,8 @@ fi
 
 /usr/bin/sed -i 's/^phase=starting$/phase=ready/' "$state"
 verify_live_unchanged
-printf 'backup=%s\ntarget=%s\nport=%s\nisolated_postmaster_pid=%s\nlive_postmaster_pid=%s\nmax_wal_senders=%s\nreplication_senders=%s\ntcp_access=rejected_by_hba\nconfig_sha256=%s\nhba_sha256=%s\nident_sha256=%s\nauto_config_sha256=%s\n' \
+printf 'backup=%s\ntarget=%s\nport=%s\nisolated_postmaster_pid=%s\nlive_postmaster_pid=%s\npromotion_wait_attempts=%s\nrecovery=%s\nmax_wal_senders=%s\nreplication_senders=%s\ntcp_access=rejected_by_hba\nconfig_sha256=%s\nhba_sha256=%s\nident_sha256=%s\nauto_config_sha256=%s\n' \
   "$label" "$target" "$port" "$isolated_postmaster_pid" "$live_postmaster_pid" \
+  "$promotion_wait_attempts" "$isolated_recovery" \
   "$isolated_max_wal_senders" "$isolated_replication_senders" \
   "$config_sha256" "$hba_sha256" "$ident_sha256" "$auto_config_sha256"

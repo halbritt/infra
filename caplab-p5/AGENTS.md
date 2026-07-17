@@ -4,7 +4,7 @@ Read [`README.md`](README.md) before changing or enacting this subsystem.
 
 CAPLAB product authority lives in `/home/halbritt/git/caplab`. This directory
 owns only the Proximal host integration authorized by CAPLAB ADRs 0009 through
-0012: temporary identities, exact installed source and configuration, backup
+0013: temporary identities, exact installed source and configuration, backup
 serialization, isolated PostgreSQL restore, root-custodied staging, expiry,
 disablement, and host verification.
 
@@ -27,5 +27,5 @@ closure.
 
 Never run destructive `restic prune`, stop or replace the live PostgreSQL
 cluster, alter another Garage object, or remove the isolated restore before
-the independent verifier preserves its interim report. ADR 0012 does not
+the independent verifier preserves its interim report. ADR 0013 does not
 authorize dependency creation, P5 byte removal, database purge, or P6.

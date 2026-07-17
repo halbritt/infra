@@ -9,11 +9,12 @@ ident="$target/pg_ident.conf"
 auto_config="$target/postgresql.auto.conf"
 marker="$target/CAPLAB_P5_ISOLATED_STATE"
 state=/var/lib/caplab-p5-isolated-restore.state
-campaign=caplab-p5-recovery-compatibility-corrective-2026-07-17
-authorization_sha256=7dabe6891bc1679ccbad4a893ba864ba42a59a301cbce472de15a2b03fbd64f0
+campaign=caplab-p5-promotion-readiness-corrective-2026-07-17
+authorization_sha256=2e2660cebd6d2b35704b9ffe3b586997ff639eebe1df08fbf7348f3950baa075
 selected_backup=20260712-010203F_20260716-195901D
 live_socket=/var/run/postgresql
 live_port=5432
+readonly promotion_wait_seconds=30
 
 run_as_postgres() {
   /usr/bin/env -i \
@@ -146,6 +147,34 @@ verify_live_unchanged() {
     echo "live PostgreSQL identity changed during isolated operation" >&2
     return 1
   fi
+}
+
+wait_for_isolated_promotion() {
+  local deadline
+
+  deadline=$((SECONDS + promotion_wait_seconds))
+  promotion_wait_attempts=0
+  while true; do
+    isolated_recovery="$(postgres_isolated_query "SELECT pg_is_in_recovery();")"
+    promotion_wait_attempts=$((promotion_wait_attempts + 1))
+    case "$isolated_recovery" in
+      f)
+        return 0
+        ;;
+      t)
+        ;;
+      *)
+        echo "isolated PostgreSQL returned an unexpected recovery state" >&2
+        return 1
+        ;;
+    esac
+    if (( SECONDS >= deadline )); then
+      echo "isolated PostgreSQL did not finish promotion within 30 seconds" >&2
+      return 1
+    fi
+    verify_live_unchanged
+    /usr/bin/sleep 1
+  done
 }
 
 install_live_exit_guard() {

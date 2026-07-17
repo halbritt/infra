@@ -2,7 +2,7 @@
 
 Desired state for the bounded CAPLAB-23/P5 failure and recovery campaign
 selected by standalone CAPLAB ADR 0009 and its corrective continuations in ADR
-0010, ADR 0011, and ADR 0012. CAPLAB owns product decisions and the recovery
+0010 through ADR 0013. CAPLAB owns product decisions and the recovery
 implementation at `/home/halbritt/git/caplab`; this subsystem owns only
 temporary Proximal identities, installed source and configuration, backup
 serialization, isolated restore, root staging, expiry, and disablement.
@@ -23,6 +23,8 @@ registration is read-only control state.
 | isolated-restore authorization | ADR 0011 SHA-256 `d110fd0e74285f22ecffb31e36eae256190a4eeaf50cd082cd14fc9c03cc15fb` |
 | recovery-compatibility correction | `caplab-p5-recovery-compatibility-corrective-2026-07-17` |
 | recovery-compatibility authorization | ADR 0012 SHA-256 `7dabe6891bc1679ccbad4a893ba864ba42a59a301cbce472de15a2b03fbd64f0` |
+| promotion-readiness correction | `caplab-p5-promotion-readiness-corrective-2026-07-17` |
+| promotion-readiness authorization | ADR 0013 SHA-256 `2e2660cebd6d2b35704b9ffe3b586997ff639eebe1df08fbf7348f3950baa075` |
 | authorization expiry | `2026-07-23T23:59:59Z` |
 | operation | `op-p5-recovery-0001` |
 | PostgreSQL | `caplab`, `caplab_v0` |
@@ -70,8 +72,10 @@ configuration, rejects TCP clients, and permits only local peer access by the
 `postgres` verifier path. Its explicit `max_wal_senders=10` matches the
 selected backup's recovery control value; it grants process capacity only,
 while explicit HBA rules reject local and TCP physical replication. After
-promotion, the helper proves the effective value, zero active replication
-senders, and HBA rejection of a loopback TCP database connection. The
+hot-standby readiness, the helper polls the isolated socket for automatic
+promotion for at most 30 seconds and re-proves the live identity before every
+one-second sleep. After promotion, it proves the effective value, zero active
+replication senders, and HBA rejection of a loopback TCP database connection. The
 root-only target marker and external guard record freeze the selected backup,
 target, authorization, configuration hashes, and live postmaster identity.
 
@@ -111,10 +115,10 @@ git diff --check
 3. Create one root-only execution directory. Run every CAPLAB command through
    a receipt wrapper that writes stdout, stderr, and a direct numeric `.rc`.
 4. Preserve and remove only the already-stopped ADR 0011 target, then, under
-   ADR 0012, retry only backup `20260712-010203F_20260716-195901D` with the
+   ADR 0013, retry only backup `20260712-010203F_20260716-195901D` with the
    committed isolated helper. Query the restored database and obtain the fresh
    verifier's interim report while it remains available.
 5. Stop only the verified isolated instance, re-prove the live identity,
    preserve the evidence, remove only the isolated target, and obtain the
-   verifier's final report. ADR 0012 does not authorize dependency creation,
+   verifier's final report. ADR 0013 does not authorize dependency creation,
    byte deletion, database purge, P6, or CAPLAB acceptance.
