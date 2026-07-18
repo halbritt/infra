@@ -25,6 +25,7 @@ cleanup sequence, and the independent checks before this runbook may run.
 | Garage | loopback `127.0.0.1:3900`, bucket `caplab-v0`, read only |
 | independent copy | `/nvr/caplab/v0` |
 | access state | `/var/lib/caplab-study-001-p7-recompute-2026-07-18.state.json` |
+| execution evidence | `/var/tmp/caplab-p7-execution-2026-07-18` |
 | expiry backstop | `caplab-p7-expiry.timer`, 2026-07-25 23:50 UTC |
 
 The live PostgreSQL start identity, P4 control, P6 registration, all 326 Garage
@@ -87,11 +88,11 @@ This sequence is a preparation artifact, not an execution record.
 3. Install the five canonical files at the paths and modes above. Run
    `systemctl daemon-reload`, enable and start the expiry timer, and prove the
    installed controller and unit hashes match the committed Proximal files.
-4. Create a root-only evidence directory with `mktemp -d` under `/var/tmp`.
-   Record the source/config/install hashes, clean commits, test output, UTC
-   clock, PostgreSQL start identity and cardinalities, P4 control identity,
-   326/326 store counts, disabled writer/verifier/reader state, and empty P7
-   key/credential inventory.
+4. Require `/var/tmp/caplab-p7-execution-2026-07-18` to be absent, then create
+   it as `root:root 0700`. Record the source/config/install hashes, clean
+   commits, test output, UTC clock, PostgreSQL start identity and
+   cardinalities, P4 control identity, 326/326 store counts, disabled
+   writer/verifier/reader state, and empty P7 key/credential inventory.
 5. Install an `EXIT` trap that runs
    `/usr/local/libexec/caplab-p7-accessctl disable` and records its status.
    Run `enable`, then `verify --phase ready`. Stop if any writer or verifier
