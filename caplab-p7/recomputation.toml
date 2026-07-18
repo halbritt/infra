@@ -1,0 +1,17 @@
+[authorization]
+campaign_id = "caplab-study-001-p7-recompute-2026-07-18"
+expires_at = "2026-07-25T23:59:59Z"
+source_commit = "04ed8213ec7741d76d8bb9f9b6f972ebb4deaf3e"
+admission_manifest_sha256 = "d2d4f821146c3f39e6726133c383807ec9f6051834e74fbd3a5f33aae8ef148e"
+
+[postgres]
+conninfo = "dbname=caplab host=/var/run/postgresql"
+
+[garage]
+endpoint_url = "http://127.0.0.1:3900"
+region = "garage"
+bucket = "caplab-v0"
+credentials_root = "/etc/caplab/credentials"
+
+[local_copy]
+root = "/nvr/caplab/v0"

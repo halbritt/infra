@@ -1,0 +1,11 @@
+[Unit]
+Description=Expire CAPLAB P7 reader access
+
+[Timer]
+OnCalendar=2026-07-25 23:50:00 UTC
+Persistent=true
+AccuracySec=1s
+Unit=caplab-p7-expiry.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Revoke CAPLAB P7 reader access
+After=postgresql.service garage.service
+Wants=postgresql.service garage.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/caplab-p7-accessctl disable
+Restart=on-failure
+RestartSec=60
+TimeoutStartSec=120
+UMask=0077
