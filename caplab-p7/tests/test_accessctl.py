@@ -66,6 +66,8 @@ class FakeRunner:
                 "buckets": [
                     {
                         "globalAliases": ["caplab-v0"],
+                        "id": "85b5ca4bbb912841999ca5f44a77bddc4fc97ab84635d665d00e05b322b866f1",
+                        "localAliases": [],
                         "permissions": {"owner": False, "read": True, "write": False},
                     }
                 ],
@@ -202,6 +204,27 @@ class AccessLifecycleTests(unittest.TestCase):
                 if arguments[:3] == ["garage", "json-api", "GetKeyInfo"]:
                     document = json.loads(response)
                     document["buckets"][0]["permissions"]["write"] = True
+                    return json.dumps(document)
+                return response
+
+            runner.run = widened
+            with self.assertRaisesRegex(accessctl.HostctlError, "bucket authority"):
+                controller.verify("ready")
+
+    def test_ready_verification_rejects_a_local_bucket_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner = FakeRunner()
+            controller = self.controller(root, runner)
+            controller.enable()
+
+            original = runner.run
+
+            def widened(arguments, **kwargs):
+                response = original(arguments, **kwargs)
+                if arguments[:3] == ["garage", "json-api", "GetKeyInfo"]:
+                    document = json.loads(response)
+                    document["buckets"][0]["localAliases"] = ["unexpected"]
                     return json.dumps(document)
                 return response
 

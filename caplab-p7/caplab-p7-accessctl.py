@@ -262,11 +262,20 @@ class HostController:
             or document.get("permissions") != {"createBucket": False}
         ):
             raise HostctlError("Garage key global authority or expiry is wrong")
-        expected = {
-            "globalAliases": [GARAGE_BUCKET],
-            "permissions": {"owner": False, "read": True, "write": False},
-        }
-        if document.get("buckets") != [expected]:
+        buckets = document.get("buckets")
+        if not isinstance(buckets, list) or len(buckets) != 1:
+            raise HostctlError("Garage key bucket authority is wrong")
+        bucket = buckets[0]
+        if (
+            not isinstance(bucket, dict)
+            or set(bucket) != {"globalAliases", "id", "localAliases", "permissions"}
+            or not isinstance(bucket.get("id"), str)
+            or not bucket["id"]
+            or bucket.get("globalAliases") != [GARAGE_BUCKET]
+            or bucket.get("localAliases") != []
+            or bucket.get("permissions")
+            != {"owner": False, "read": True, "write": False}
+        ):
             raise HostctlError("Garage key bucket authority is wrong")
 
     def _postgres_state(self) -> tuple[bool, int]:
