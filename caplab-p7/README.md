@@ -86,12 +86,14 @@ This sequence is a preparation artifact, not an execution record.
    commits. Re-run the CAPLAB `make check`, the model-free checks above, and
    read-only P6/P4/cluster controls. Stop on any drift.
 2. Create a temporary detached CAPLAB worktree at the source commit. Build the
-   runtime at a temporary sibling of the fixed `/opt` path, install dependencies
-   with `pip --require-hashes` from `src/caplab/runtime/requirements.lock`,
-   install CAPLAB with `--no-deps`, emit hashes for every installed CAPLAB
-   source file, then atomically rename the complete environment into place.
-   Remove the temporary worktree. Make the runtime `root:caplab`, group
-   readable/executable, and group non-writable.
+   runtime at a temporary sibling of the fixed `/opt` path using
+   `/usr/bin/python3 -m venv --copies`; the installed `bin/python` must be a
+   regular, non-symlinked file under `lstat`. Install dependencies with
+   `pip --require-hashes` from `src/caplab/runtime/requirements.lock`, install
+   CAPLAB with `--no-deps`, emit hashes for every installed CAPLAB source file,
+   then atomically rename the complete environment into place. Remove the
+   temporary worktree. Make the runtime `root:caplab`, group readable/executable,
+   and group non-writable. Stop before `enable` on any interpreter custody drift.
 3. Install the five canonical files at the paths and modes above. Run
    `systemctl daemon-reload`, enable and start the expiry timer, and prove the
    installed controller and unit hashes match the committed Proximal files.

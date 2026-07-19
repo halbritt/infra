@@ -193,6 +193,23 @@ class AccessLifecycleTests(unittest.TestCase):
                 any(command[:3] == ["garage", "key", "create"] for command in runner.commands)
             )
 
+    def test_symlinked_runtime_stops_before_key_issue(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner = FakeRunner()
+            controller = self.controller(root, runner)
+            target = root / "python-target"
+            target.touch(mode=0o750)
+            controller.paths.runtime_python.unlink()
+            controller.paths.runtime_python.symlink_to(target)
+
+            with self.assertRaisesRegex(accessctl.HostctlError, "runtime interpreter"):
+                controller.enable()
+
+            self.assertFalse(
+                any(command[:3] == ["garage", "key", "create"] for command in runner.commands)
+            )
+
     def test_disable_discovers_the_live_alias_when_state_is_unreadable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
