@@ -308,6 +308,84 @@ class HostController:
             raise HostctlError("PostgreSQL reader session count is invalid") from error
         return parts[0] == "t", sessions
 
+    def _verify_postgres_access_boundary(self) -> None:
+        output = self.runner.run(
+            [
+                "runuser",
+                "--user",
+                "postgres",
+                "--",
+                "psql",
+                "-X",
+                "--set",
+                "ON_ERROR_STOP=1",
+                "--tuples-only",
+                "--no-align",
+                "--dbname",
+                "caplab",
+                "--command",
+                "WITH expected_roles(rolname) AS (VALUES "
+                "('caplab_reader'),('caplab_verifier'),('caplab_writer')), "
+                "roles AS (SELECT e.rolname, r.rolname AS present_role, "
+                "r.rolcanlogin, r.rolpassword "
+                "FROM expected_roles e LEFT JOIN pg_authid r USING (rolname)), "
+                "write_authorities AS (SELECT 1 FROM pg_class c JOIN pg_namespace n "
+                "ON n.oid=c.relnamespace WHERE n.nspname='caplab_v0' AND "
+                "CASE WHEN c.relkind IN ('r','p','v','m','f') THEN "
+                "has_table_privilege('caplab_reader',c.oid,"
+                "'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') ELSE false END "
+                "UNION ALL SELECT 1 FROM pg_class c JOIN pg_namespace n ON "
+                "n.oid=c.relnamespace WHERE n.nspname='caplab_v0' AND CASE WHEN "
+                "c.relkind='S' THEN has_sequence_privilege("
+                "'caplab_reader',c.oid,'USAGE,UPDATE') ELSE false END "
+                "UNION ALL SELECT 1 FROM pg_proc p JOIN pg_namespace n ON "
+                "n.oid=p.pronamespace WHERE n.nspname='caplab_v0' AND "
+                "has_function_privilege('caplab_reader',p.oid,'EXECUTE') "
+                "UNION ALL SELECT 1 WHERE has_schema_privilege("
+                "'caplab_reader','caplab_v0','CREATE') UNION ALL SELECT 1 WHERE "
+                "has_database_privilege('caplab_reader','caplab','CREATE') "
+                "UNION ALL SELECT 1 WHERE pg_has_role("
+                "'caplab_reader','caplab_writer','USAGE') OR pg_has_role("
+                "'caplab_reader','caplab_verifier','USAGE')) "
+                "SELECT COALESCE(bool_or(rolcanlogin) FILTER "
+                "(WHERE rolname='caplab_reader'),false) AS reader_login, "
+                "COALESCE(bool_or(rolcanlogin) FILTER "
+                "(WHERE rolname='caplab_writer'),false) AS writer_login, "
+                "COALESCE(bool_or(rolcanlogin) FILTER "
+                "(WHERE rolname='caplab_verifier'),false) AS verifier_login, "
+                "(COUNT(present_role)=3 AND "
+                "bool_and(rolpassword IS NULL OR rolpassword='*')) "
+                "AS passwords_unusable, (SELECT COUNT(*) FROM pg_stat_activity "
+                "WHERE usename='caplab_reader') AS reader_sessions, "
+                "(SELECT COUNT(*) FROM pg_stat_activity WHERE usename IN "
+                "('caplab_writer','caplab_verifier')) AS writer_verifier_sessions, "
+                "(SELECT COUNT(*) FROM write_authorities) AS reader_write_authorities, "
+                "(SELECT bool_and(trim(address) IN "
+                "('','localhost','127.0.0.1','::1')) FROM "
+                "regexp_split_to_table(current_setting('listen_addresses'), ',') "
+                "AS configured(address)) AS listener_loopback_only FROM roles;",
+            ]
+        ).strip()
+        parts = output.split("|")
+        if len(parts) != 8 or any(part not in {"t", "f"} for part in parts[:4]):
+            raise HostctlError("PostgreSQL access-boundary result is invalid")
+        if parts[7] not in {"t", "f"}:
+            raise HostctlError("PostgreSQL listener result is invalid")
+        try:
+            reader_sessions, writer_verifier_sessions, reader_write_authorities = (
+                int(value) for value in parts[4:7]
+            )
+        except ValueError as error:
+            raise HostctlError("PostgreSQL access-boundary count is invalid") from error
+        if (
+            parts[:4] != ["t", "f", "f", "t"]
+            or reader_sessions
+            or writer_verifier_sessions
+            or reader_write_authorities
+            or parts[7] != "t"
+        ):
+            raise HostctlError("PostgreSQL access boundary is not ready")
+
     def _write_credential(self, key_id: str, secret: str) -> None:
         path = self.paths.credential_file
         if path.parent.is_symlink() or not path.parent.is_dir():
@@ -445,6 +523,7 @@ class HostController:
                 or not login
             ):
                 raise HostctlError("reader identity is not ready")
+            self._verify_postgres_access_boundary()
             self._validate_key(self._key_info(show_secret=False), key_id)
             metadata = self.paths.credential_file.lstat()
             uid, gid = self.identity_resolver(ROLE)

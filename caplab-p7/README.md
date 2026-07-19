@@ -52,6 +52,13 @@ failure runs aggregate disablement. `disable` independently revokes PostgreSQL
 login and sessions, reader processes, every state- or alias-discovered P7 key,
 the credential, and the OS-account window.
 
+`verify --phase ready` also owns the complete PostgreSQL readiness boundary. It
+requires exactly the reader, writer, and verifier roles; accepts only an absent
+password or PostgreSQL's unusable `*` marker without emitting the stored value;
+requires writer and verifier `NOLOGIN`; requires zero reader, writer, and
+verifier sessions; rejects reader write authority in `caplab_v0`; and requires
+loopback-only PostgreSQL listening.
+
 ## Model-free checks
 
 These commands make no live changes:
@@ -95,8 +102,11 @@ This sequence is a preparation artifact, not an execution record.
    writer/verifier/reader state, and empty P7 key/credential inventory.
 5. Install an `EXIT` trap that runs
    `/usr/local/libexec/caplab-p7-accessctl disable` and records its status.
-   Run `enable`, then `verify --phase ready`. Stop if any writer or verifier
-   identity, write grant, public listener, or unexpected session exists.
+   Run `enable`, then `verify --phase ready`. Treat that versioned verification
+   as the readiness authority; do not add a second assertion about PostgreSQL's
+   password storage representation. Stop if it reports any missing role, usable
+   password, writer or verifier login, reader write authority, public listener,
+   or unexpected session.
 6. Run exactly this product command as `caplab_reader` with an empty
    environment and capture stdout and stderr separately:
 

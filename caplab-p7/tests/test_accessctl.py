@@ -25,6 +25,13 @@ class FakeRunner:
         self.role_login = False
         self.sessions = 0
         self.account_expiry = "1"
+        self.passwords_unusable = True
+        self.roles_present = True
+        self.writer_login = False
+        self.verifier_login = False
+        self.writer_verifier_sessions = 0
+        self.reader_write_authorities = 0
+        self.listener_loopback_only = True
 
     def run(
         self,
@@ -95,6 +102,19 @@ class FakeRunner:
             if "ALTER ROLE caplab_reader NOLOGIN" in sql:
                 self.role_login = False
                 self.sessions = 0
+            if "passwords_unusable" in sql:
+                return "|".join(
+                    (
+                        "t" if self.role_login else "f",
+                        "t" if self.writer_login else "f",
+                        "t" if self.verifier_login else "f",
+                        "t" if self.passwords_unusable and self.roles_present else "f",
+                        str(self.sessions),
+                        str(self.writer_verifier_sessions),
+                        str(self.reader_write_authorities),
+                        "t" if self.listener_loopback_only else "f",
+                    )
+                ) + "\n"
             if "rolcanlogin" in sql:
                 return f"{'t' if self.role_login else 'f'}|{self.sessions}\n"
             return ""
@@ -231,6 +251,38 @@ class AccessLifecycleTests(unittest.TestCase):
             runner.run = widened
             with self.assertRaisesRegex(accessctl.HostctlError, "bucket authority"):
                 controller.verify("ready")
+
+    def test_ready_verification_accepts_unusable_postgres_password_markers(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner = FakeRunner()
+            controller = self.controller(root, runner)
+
+            controller.enable()
+            controller.verify("ready")
+
+    def test_ready_verification_rejects_every_widened_postgres_boundary(self) -> None:
+        scenarios = (
+            ("passwords_unusable", False),
+            ("roles_present", False),
+            ("writer_login", True),
+            ("verifier_login", True),
+            ("writer_verifier_sessions", 1),
+            ("reader_write_authorities", 1),
+            ("listener_loopback_only", False),
+        )
+        for attribute, widened_value in scenarios:
+            with self.subTest(attribute=attribute), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                runner = FakeRunner()
+                controller = self.controller(root, runner)
+                controller.enable()
+                setattr(runner, attribute, widened_value)
+
+                with self.assertRaisesRegex(
+                    accessctl.HostctlError, "access boundary is not ready"
+                ):
+                    controller.verify("ready")
 
 
 class CommandSurfaceTests(unittest.TestCase):
