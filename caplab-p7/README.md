@@ -1,7 +1,7 @@
 # CAPLAB P7 host surface on `proximal`
 
 This directory is the desired state for CAPLAB-25/P7. CAPLAB commit
-`04ed8213ec7741d76d8bb9f9b6f972ebb4deaf3e` implements one deterministic,
+`bf6de2b24ac61e82107208cdc609c7e534c6eaaa` implements one deterministic,
 read-only Study 001 recomputation command. This host surface installs that
 commit without replacing P4 or P6, gives `caplab_reader` one expiring read-only
 Garage key and PostgreSQL login, captures the result, and revokes all access.
@@ -16,11 +16,11 @@ cleanup sequence, and the independent checks before this runbook may run.
 | Surface | Value |
 |---|---|
 | campaign | `caplab-study-001-p7-recompute-2026-07-18` |
-| CAPLAB source | `04ed8213ec7741d76d8bb9f9b6f972ebb4deaf3e` |
+| CAPLAB source | `bf6de2b24ac61e82107208cdc609c7e534c6eaaa` |
 | requirements lock | `b5c05b76c4e383b9bdedb783ed658fe33c368d660a1efe45f80c98e0f8adb3a0` |
 | P6 admission | `d2d4f821146c3f39e6726133c383807ec9f6051834e74fbd3a5f33aae8ef148e` |
 | authorization expiry | `2026-07-25T23:59:59Z` |
-| runtime | `/opt/caplab/p7/04ed8213ec7741d76d8bb9f9b6f972ebb4deaf3e` |
+| runtime | `/opt/caplab/p7/bf6de2b24ac61e82107208cdc609c7e534c6eaaa` |
 | PostgreSQL | database `caplab`, schema `caplab_v0`, peer role `caplab_reader` |
 | Garage | loopback `127.0.0.1:3900`, bucket `caplab-v0`, read only |
 | independent copy | `/nvr/caplab/v0` |
@@ -113,7 +113,7 @@ This sequence is a preparation artifact, not an execution record.
    ```bash
    sudo -n -u caplab_reader -- /usr/bin/env -i \
      PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 \
-     /opt/caplab/p7/04ed8213ec7741d76d8bb9f9b6f972ebb4deaf3e/bin/python \
+     /opt/caplab/p7/bf6de2b24ac61e82107208cdc609c7e534c6eaaa/bin/python \
      -m caplab.recomputation --config /etc/caplab/recomputation.toml \
      recompute
    ```
