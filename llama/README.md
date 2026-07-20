@@ -35,7 +35,10 @@ passing the old `qwen3.6-27b` name keep working.
   stage2 backfill (≫ 27B dense at long context) plus a full single-slot context for big stage2
   buckets — full rationale in `~/git/agent-artifact-miner/SPEC.md` → "Inference server & model
   choice". The 35B config runs **no MTP draft** and does not honor `enable_thinking:false`
-  (both were stock-27B-only behaviors).
+  (both were stock-27B-only behaviors). Since 2026-07-20 (PROXIMAL-4) it also passes
+  `--metrics`: Prometheus-compatible `/metrics` (`llamacpp:*` series) on the API port,
+  scraped by the local Prometheus over loopback with down/queue-pressure alerts — see
+  [`../observability/`](../observability/).
 
 **Revert to stock 27B** (recorded verbatim from `~/CLAUDE.md`):
 
@@ -65,6 +68,7 @@ systemctl status llama-27b
 sudo systemctl restart llama-27b
 journalctl -u llama-27b -f
 curl -s localhost:8081/health                          # {"status":"ok"}
+curl -s localhost:8081/metrics | grep -c '^llamacpp:'  # 11 Prometheus series (--metrics)
 curl -s localhost:8081/v1/models | jq '.data[].id'     # loaded model alias
 curl -s localhost:8081/v1/chat/completions -H 'Content-Type: application/json' \
   -d '{"model":"qwen3.6-35b-a3b","messages":[{"role":"user","content":"hi"}],"max_tokens":256}' \

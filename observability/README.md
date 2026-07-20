@@ -36,11 +36,15 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 | Grafana             | `grafana-server`                | `100.85.100.81:3003`  | 3000/3001/3002 taken (open-webui, token-dashboard) |
 | Alertmanager        | `prometheus-alertmanager`       | `100.85.100.81:9093`  | 9093 free; HA cluster listener (:9094) disabled (single node) |
 | striatumd exporter  | `striatumd` (RFC 0137 `/metrics`) | **`127.0.0.1:9464`** | loopback-only + tokenless (RFC 0137 §4); 9464 = prometheus-community default, free here |
+| llama-server /metrics | `llama-27b` (llama.cpp `--metrics`) | **`127.0.0.1:8081`** (scrape) | multiplexed on the API port; server binds 0.0.0.0 but is scraped via loopback — see [`../llama/`](../llama/) |
 
 > The striatumd exporter is the one **loopback-bound** target: `/metrics` is multiplexed onto the
 > daemon's MCP/HTTP listener, which is loopback + tokenless by RFC 0137 §4. Prometheus runs on this
 > host, so it scrapes `127.0.0.1:9464` directly. Do **not** rebind it to the tailnet — front it with
 > `tailscale serve` + a scoped bearer if remote scrape is ever needed (mirrors the RFC 0085 web-ui).
+> The llama-server target follows the same precedent: its `/metrics` (enabled 2026-07-20 via
+> `--metrics` in the drop-in, PROXIMAL-4) shares the OpenAI-compatible API port `:8081`, and
+> Prometheus scrapes it over loopback even though the server itself binds 0.0.0.0.
 
 The six **proximal** units are `systemctl enable`d (the five exporters/servers above plus
 `prometheus-alertmanager`). Each has a `*.service.d/` drop-in that orders it
@@ -125,7 +129,8 @@ curl -s http://100.85.100.81:9187/metrics | grep '^pg_scrape_collector_success' 
 curl -s http://100.85.100.81:9835/metrics | grep '^nvidia_smi_gpu_info'        # RTX 3090 line, value 1
 curl -s http://100.113.63.58:9835/metrics | grep '^nvidia_smi_gpu_info'        # peecee RTX 3090 Ti, value 1
 curl -s http://127.0.0.1:9464/metrics | grep -c '^# HELP striatum_'            # 15 striatumd families
-curl -s http://100.85.100.81:9091/api/v1/targets | jq '.data.activeTargets[].health' # all "up" (gpu×2/node/postgresql/prometheus/striatumd)
+curl -s http://127.0.0.1:8081/metrics | grep -c '^llamacpp:'                   # 11 llama-server series
+curl -s http://100.85.100.81:9091/api/v1/targets | jq '.data.activeTargets[].health' # all "up" (gpu×2/node/postgresql/prometheus/striatumd/llama)
 curl -s http://100.85.100.81:9091/api/v1/rules | jq '[.data.groups[].rules[]|select(.health!="ok")]|length' # 0 rule errors
 curl -s http://100.85.100.81:3003/api/health                                  # database ok
 ```
@@ -259,7 +264,7 @@ Two provenances under `prometheus/rules/`, both referenced from `rule_files:` an
 | `node-alerting` | filesystem low/critical space, low inodes, read-only fs, memory low, OOM kills, high load | pseudo-fs excluded; read-only fs excluded from space alerts (it's its own alert); load normalized by core count via `group_left` |
 | `gpu-alerting` | high/critical temp, HW thermal throttling | **no VRAM alert** — the LLM pins ~22.8 GiB by design, so VRAM-full would fire forever; temp + the driver's thermal-slowdown flag are the real hardware-risk signals. Fires per-GPU (proximal 3090 + peecee 3090 Ti) |
 | `postgres-alerting` | pg down, connections >80/90%, deadlocks, long-running txn, XID wraparound warn/crit | wraparound metric is **XID age** (not seconds) → thresholds 1.5e9/1.9e9 of the 2³¹ limit; long-txn "oldest" is a Unix **timestamp** → age is `time() - it`, guarded by `count>0` |
-| `infra-alerting` | `TargetDown` (any `up==0` for 10m) | covers every job uniformly; the off-box peecee GPU target can flap when that host sleeps — silence there, don't loosen the rule |
+| `infra-alerting` | `TargetDown` (any `up==0` for 10m); `LlamaServerDown` (`up{job="llama"}==0` for 1m, `page`); `LlamaSlotSaturated` (`llamacpp:requests_deferred>0` for 5m) | `TargetDown` covers every job uniformly; the off-box peecee GPU target can flap when that host sleeps — silence there, don't loosen the rule. llama gets its own fast down-alert (1m — primary inference endpoint; a normal restart stays pending) and a queue-pressure alert: **no KV-cache-usage series exists** in this llama.cpp build (upstream removed `kv_cache_usage_ratio`), so deferred requests behind the single `-np 1` slot are the pressure signal. Down-alert fire-tested 2026-07-20 (90s deliberate stop, fired at 75s, reached Alertmanager) |
 
 Refresh/verify after editing: `promtool check rules prometheus/rules/*.yml`, `sudo cp` to
 `/etc/prometheus/rules/`, `sudo systemctl reload prometheus`, then

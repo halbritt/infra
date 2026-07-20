@@ -16,3 +16,36 @@ groups:
         annotations:
           summary: "scrape target {{ $labels.job }} / {{ $labels.instance }} is down"
           description: "Prometheus has not scraped {{ $labels.job }} on {{ $labels.instance }} for 10m (up=0) — metrics for it are blind."
+
+  # llama-server (job "llama", :8081) — the most load-bearing service on the box: every
+  # praxis/engram/mining call hits it. Series are llamacpp:* from --metrics (see
+  # llama/llama-27b.service.d/override.conf). NOTE: this llama.cpp build (76da2450a) exposes
+  # NO KV-cache-usage series — upstream removed kv_cache_usage_ratio/kv_cache_tokens (only a
+  # stale reference in tools/server/bench/bench.py remains), so queue depth
+  # (requests_deferred) is the pressure signal, not cache fill.
+  - name: llama_alerts
+    rules:
+      # Down fast: unlike the generic TargetDown (for:10m), 1m is deliberate — a normal
+      # restart (model load ~20-30s, scrape every 15s) stays pending and never fires, but a
+      # real outage of the primary endpoint should page well before 10m of blindness.
+      - alert: LlamaServerDown
+        expr: up{job="llama"} == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "llama-server (:8081) is down"
+          description: "Prometheus cannot scrape llama-server on {{ $labels.instance }} (up=0 for 1m) — the primary inference endpoint is unreachable. Check: systemctl status llama-27b / journalctl -u llama-27b."
+
+      # Demand, not utilization: the unit runs -np 1 (one full-context slot), so any
+      # deferred request means callers are queueing behind the busy slot. Sustained 5m of
+      # queueing = real contention (a lone burst rides out the `for`). A long-running
+      # mining job holding the slot with NO queue behind it stays silent by design.
+      - alert: LlamaSlotSaturated
+        expr: llamacpp:requests_deferred > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "llama-server requests queueing behind the single slot"
+          description: "llama-server on {{ $labels.instance }} has had {{ $value }} deferred request(s) for 5m — demand exceeds the single -np 1 slot. Long jobs (mining/backfill) may be starving interactive callers."

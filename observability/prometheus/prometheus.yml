@@ -72,3 +72,14 @@ scrape_configs:
       - targets: ['127.0.0.1:9464']
         labels:
           instance: proximal
+
+  # llama-server (llama-27b.service) — the box's primary inference endpoint. /metrics is
+  # enabled via --metrics in the unit's drop-in override (see llama/llama-27b.service.d/)
+  # and multiplexed onto the API port :8081. The server binds 0.0.0.0, but scrape via
+  # loopback per the striatumd precedent — no reason to route the scrape over the tailnet.
+  # Series are llamacpp:* (colon-namespaced, tokenless). Alerts: rules/infra-alerting.rules.yml.
+  - job_name: llama
+    static_configs:
+      - targets: ['127.0.0.1:8081']
+        labels:
+          instance: proximal
