@@ -22,7 +22,10 @@ Each top-level directory is one subsystem, self-contained with its own `README.m
 | [`observability/`](observability/) | Prometheus + Grafana + exporters | node_exporter (host) + postgres_exporter (PG) + nvidia_gpu_exporter (RTX 3090) → Prometheus → Grafana dashboards; all systemd, tailnet-bound |
 | [`cloudflared/`](cloudflared/) | Cloudflare Tunnel edge for `harm.org` | public hostname ingress to selected loopback services, including `plane.harm.org` -> Plane on `127.0.0.1:8190`; tunnel credentials stay root-only under `/etc/cloudflared` |
 | [`harm-enterprises/`](harm-enterprises/) | `harm.org` static site | `harm-enterprises-site.service` serving `/home/halbritt/sites/harm-enterprises/public` on `127.0.0.1:18888`; Cloudflare routes `harm.org` / `www.harm.org`, and Tailscale Serve mirrors it on `:8890` |
+| [`llama/`](llama/) | llama.cpp inference (`:8081`) | `llama-27b.service` + the live 35B-APEX drop-in override, revert-to-27B path; the box's primary LLM endpoint |
 | [`ollama/`](ollama/) | Ollama inference (`:11434`) | systemd unit + tuning drop-in, model inventory; secondary to the llama.cpp server (`:8081`) |
+| [`whisper/`](whisper/) | STT (`:8910` + shim `:8082`) | `whisper-stt.service` (whisper.cpp, GPU) + `praxis-stt-shim.service` and the shim script — Praxis's live loopback-only STT path |
+| [`garage/`](garage/) | Garage S3 (`:3900-3904`) | `garage.service` + secret-free `garage.toml`, LUKS-backed storage chain (crypttab/fstab), token files referenced never stored |
 | [`wezterm/`](wezterm/) | Headless WezTerm SSH multiplexer | pinned user-local mux binaries and server config, plus the matching cross-platform client profile for native persistent tabs |
 | [`striatum/`](striatum/) | `striatumd` workflow daemon | system unit (`User=halbritt`), `/run/striatum` runtime layout, shell/tailscale/warmtier glue; the 2026-06-19 user-unit→system-unit migration + revert source |
 | [`praxis/`](praxis/) | `praxisd` executive-function daemon + connectors | systemd user units (`praxisd` + `praxis-slack` Socket Mode listener), peer-auth `praxis` DB, secret var-names (values in `~/.config/praxis/praxisd.env`, uncommitted), the said/inferred wall rationale |
@@ -33,9 +36,7 @@ Each top-level directory is one subsystem, self-contained with its own `README.m
 Agents using either Plane instance should load
 [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md) before reading or writing Plane data.
 
-Planned siblings as they get captured: `llama/` (the `llama-27b.service` LLM
-server), `garage/` (S3 service desired-state), `whisper/` (STT). Add a directory when a subsystem's
-config is worth versioning; don't pre-create empty ones.
+Add a directory when a subsystem's config is worth versioning; don't pre-create empty ones.
 
 ## The one rule
 

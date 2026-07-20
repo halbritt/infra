@@ -1,0 +1,27 @@
+[Unit]
+Description=Garage Object Storage
+After=network-online.target var-lib-garage.mount
+Wants=network-online.target
+Requires=var-lib-garage.mount
+
+[Service]
+Type=simple
+User=garage
+Group=garage
+ExecStart=/usr/local/bin/garage -c /etc/garage.toml server
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/garage
+
+[Install]
+WantedBy=multi-user.target

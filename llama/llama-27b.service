@@ -1,0 +1,34 @@
+[Unit]
+Description=mainline llama.cpp server (Qwen3.6-27B MTP)
+After=network.target
+
+[Service]
+Type=simple
+User=halbritt
+WorkingDirectory=/home/halbritt/git/llama.cpp
+Environment=PATH=/usr/local/cuda/bin:/home/halbritt/git/llama.cpp/build/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/halbritt/git/llama.cpp/build/bin/llama-server \
+    -m /home/halbritt/models/Qwen3.6-27B-IQ4_XS.gguf \
+    -c 196608 \
+    -ctk q8_0 \
+    -ctv q8_0 \
+    -fa on \
+    -np 1 \
+    --spec-type draft-mtp \
+    --spec-draft-n-max 2 \
+    --spec-draft-p-min 0.0 \
+    --temp 0.6 \
+    --top-p 0.95 \
+    --top-k 20 \
+    --min-p 0.0 \
+    --jinja \
+    --host 0.0.0.0 \
+    --port 8081 \
+    --alias qwen3.6-27b
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

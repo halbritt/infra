@@ -1,0 +1,21 @@
+[Unit]
+Description=whisper.cpp STT server (small.en, GPU) — Praxis voice intake
+After=network.target
+
+[Service]
+Type=simple
+User=halbritt
+WorkingDirectory=/home/halbritt/git/whisper.cpp
+Environment=PATH=/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/halbritt/git/whisper.cpp/build/bin/whisper-server \
+    -m /home/halbritt/git/whisper.cpp/models/ggml-small.en.bin \
+    --host 127.0.0.1 \
+    --port 8910 \
+    -t 4
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target
