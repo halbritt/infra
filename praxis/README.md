@@ -51,6 +51,14 @@ non-fatal — the handler then exits 78 and nothing can egress). The variable *n
 - `PRAXIS_TWILIO_*` / `PRAXIS_SMS_OWNER` — SMS connector (RFC 0019), placeholders for now.
 - `PRAXIS_LOCAL_MODEL_ENABLED` — Tier-1 cognition switch (see 2026-06-24 lesson: it must
   live HERE to survive restarts, not in a shell).
+- `PRAXIS_STT_URL` — voice-path STT endpoint (M2): `http://127.0.0.1:8082/transcribe`,
+  the on-box `praxis-stt-shim.service` fronting `whisper-stt.service` (`:8910`, GPU
+  `small.en`) — both **system** units, see `whisper/`. Loopback-only, so I4 holds (audio
+  stays on-box) and the URL is config, not credential. Unset => `stt_from_env()` returns
+  `None` and the voice path is **silently inert** (the 2026-07-20 PRAXIS-15 lesson —
+  same class as the 2026-06-24 one above: env-selected organs must be wired in
+  `praxisd.env` to survive restarts). Boot now logs the selection; verify with
+  `journalctl --user -u praxisd | grep "stt engine"` → `LiveWhisperSTT`.
 - **Plane standing sync (ADR 0014, owner-enabled 2026-07-02)** — work items created in
   the personal Plane project (`plane.harm.org`, workspace `harm`, project `PRAXIS`)
   import as Praxis reminders; the poll is read-only toward Plane, watermarked, no
