@@ -39,6 +39,35 @@ change the unit's `-m` flag; other sizes need a
 | `whisper-stt.service` | `/etc/systemd/system/whisper-stt.service` |
 | `praxis-stt-shim.service` | `/etc/systemd/system/praxis-stt-shim.service` |
 | `praxis-stt-shim.py` | `/home/halbritt/git/whisper.cpp/praxis-stt-shim.py` |
+| `whisper-stt.service.d/gpu-fleet-lease.conf` | `/etc/systemd/system/whisper-stt.service.d/gpu-fleet-lease.conf` |
+| `whisper-stt-lease-renew.service` | `/etc/systemd/system/whisper-stt-lease-renew.service` |
+
+## gpu-fleet lease onboarding (2026-07-20, gpu-fleet RFC 0006 / Plane GPUFLE-1)
+
+whisper-stt is a **standing exclusive lease-holder** in the gpu-fleet registry: while STT
+is hot it holds the RFC 0001 lease on proximal's llama slot row
+(`gpu_slots` · `proximal / http://localhost:8081/v1 / 0`), so fleet `pick`/claim derive
+the shared 3090 below routable and skip it — the whisper-vs-llama OOM collision is now a
+scheduling skip in both directions (a whisper start under a live fleet lease defers with
+exit 75 until it drains; `StartLimitIntervalSec=0` keeps systemd retrying).
+
+Wiring (both files versioned here AND in `~/git/gpu-fleet/systemd/`, logic in
+`~/git/gpu-fleet/whisper_lease.py`):
+
+- **`whisper-stt.service.d/gpu-fleet-lease.conf`** — drop-in: `ExecStartPre` acquires,
+  `ExecStopPost` releases (fenced, never blocks the stop path).
+- **`whisper-stt-lease-renew.service`** — companion renew loop (`BindsTo=whisper-stt`,
+  enabled into `whisper-stt.service.wants/`), renews every 15 s (45 s TTL) and restores
+  coverage after any gap. It never kills whisper-stt.
+- Registry dark / slot not offerable → whisper starts **without** a lease (degrade open,
+  loud journal line): Praxis voice intake is never hostage to Postgres, and fleet
+  consumers can only be scheduled through that same registry anyway.
+- Lease state handoff file: `~/.local/state/gpu-fleet/whisper-stt-lease.json`.
+
+After editing: `sudo systemctl daemon-reload && sudo systemctl enable whisper-stt-lease-renew && sudo systemctl restart whisper-stt`.
+Check: `psql -d gpu_fleet -c "SELECT lease_holder, lease_expires FROM gpu_slots WHERE node='proximal'"`
+(expect `whisper-stt/proximal` with a future expiry while STT runs) and
+`journalctl -u whisper-stt-lease-renew -f` for `coverage:` transitions.
 
 The shim script is **untracked** in the upstream `whisper.cpp` clone (local addition), so the
 copy here is its only versioned home — edit here, re-install there.
