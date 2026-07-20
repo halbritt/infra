@@ -1,0 +1,13 @@
+{
+  "//": "Canonical wigolo MCP registration for any client on proximal. Synthesis is wired to the local llama.cpp server (:8081). Base URL must NOT include /v1 — wigolo appends /v1/chat/completions itself. Drop the two env vars to run fully keyless (host agent does synthesis).",
+  "mcpServers": {
+    "wigolo": {
+      "command": "/home/halbritt/.npm-global/bin/wigolo",
+      "args": [],
+      "env": {
+        "WIGOLO_LLM_PROVIDER": "http://localhost:8081",
+        "WIGOLO_LLM_MODEL": "qwen3.6-35b-a3b"
+      }
+    }
+  }
+}

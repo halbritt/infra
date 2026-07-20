@@ -5,6 +5,25 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-20
+
+### Added wigolo web-research subsystem (Tavily replacement)
+Adopted [`wigolo`](wigolo/) `0.2.1` — a keyless, local-first web-intelligence MCP
+server (search/fetch/crawl/extract/research/agent) — as the box's web-research layer
+for local agent work, replacing reliance on Tavily/generic hosted research services.
+Cloned and security-audited before adoption (static review of the public repo, source
+commit `180ac3d`): clean — no install-time code execution, no prompt injection in its
+own instructions, no phone-home, single-registry deps, sound credential handling, real
+SSRF guards. Full write-up gisted (linked from the subsystem README). Installed globally
+(`~/.npm-global/bin/wigolo`, no postinstall); `wigolo warmup` pulled the chromium engine +
+core search bootstrap into `~/.wigolo/`. Synthesis (`research`/`agent`) wired to the local
+llama.cpp server (`:8081`, model `qwen3.6-35b-a3b`) via `WIGOLO_LLM_PROVIDER` — base URL
+without `/v1` (wigolo appends it) — so the whole path is local + $0/query; smoke-tested
+keyless search and local-LLM cited synthesis both green. Registered as a Claude Code MCP
+server at user scope; canonical block for other clients in `wigolo/mcp-config.json`.
+Guardrail recorded: stay on the default `core` backend — `WIGOLO_SEARCH=searxng` pulls an
+unpinned tarball + `pip install` (the audit's only real supply-chain weakness).
+
 ## 2026-07-15
 
 ### Added WezTerm thumbwheel scrollback bindings
