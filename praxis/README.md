@@ -59,6 +59,16 @@ non-fatal — the handler then exits 78 and nothing can egress). The variable *n
   same class as the 2026-06-24 one above: env-selected organs must be wired in
   `praxisd.env` to survive restarts). Boot now logs the selection; verify with
   `journalctl --user -u praxisd | grep "stt engine"` → `LiveWhisperSTT`.
+- `PRAXIS_ENGRAM_BIN` — engram grounding (M7 ACL, PRAXIS-17 2026-07-20):
+  `/home/halbritt/git/engram/.venv/bin/engram`, the engram CLI whose public
+  `context-for` verb (`--format json`) is the ONLY engram surface praxis touches —
+  read-only bio:read, on-box, never engram's tables, so I4 holds and the path is
+  config, not credential. Grounding enters praxis as a **hedged claim** on the owner
+  surface (`POST /ground`), never a fact (I1). Unset => `engram_connector_from_env()`
+  carries `client=None` and the grounding path is **silently inert** (same
+  env-selected-organ class as `PRAXIS_STT_URL` above). Boot logs the selection;
+  verify with `journalctl --user -u praxisd | grep "engram grounding"` →
+  `CliEngramClient`.
 - **Plane standing sync (ADR 0014, owner-enabled 2026-07-02)** — work items created in
   the personal Plane project (`plane.harm.org`, workspace `harm`, project `PRAXIS`)
   import as Praxis reminders; the poll is read-only toward Plane, watermarked, no
