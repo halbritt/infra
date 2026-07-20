@@ -1,0 +1,10 @@
+# TEMPLATE for /etc/default/prometheus-postgres-exporter-gpufleet (0600 root) — secret REDACTED.
+# Same postgres_exporter role/password as the main instance's /etc/default file, database
+# swapped to gpu_fleet (grants: see ../role.sql). The real file is NEVER committed.
+DATA_SOURCE_NAME='postgresql://postgres_exporter:<SCRAM_PASSWORD>@127.0.0.1:5432/gpu_fleet?sslmode=disable'
+
+# --disable-default-metrics/-settings-metrics kill the legacy builtin maps; the nine
+# default-enabled NEW-style collectors (which --disable-default-metrics does NOT cover, and
+# which would duplicate the main :9187 instance's cluster series — stat_bgwriter even errors
+# on PG17) are each switched off explicitly. Net emission: pg_gpu_fleet_* + exporter internals.
+ARGS="--web.listen-address=100.85.100.81:9188 --extend.query-path=/etc/prometheus-postgres-exporter/queries-gpu-fleet.yaml --disable-default-metrics --disable-settings-metrics --no-collector.database --no-collector.locks --no-collector.replication --no-collector.replication_slot --no-collector.stat_bgwriter --no-collector.stat_database --no-collector.stat_user_tables --no-collector.statio_user_tables --no-collector.wal"

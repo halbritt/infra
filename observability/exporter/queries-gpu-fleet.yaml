@@ -1,0 +1,106 @@
+# gpu-fleet registry/lease metrics — custom queries for the DEDICATED second exporter
+# instance (prometheus-postgres-exporter-gpufleet.service, :9188). The fleet registry lives
+# in database `gpu_fleet` (owner halbritt), NOT in `striatum_daemon`, and postgres_exporter
+# custom queries cannot be scoped per-database — hence a second instance with its own DSN
+# and --disable-default-metrics (only these pg_gpu_fleet_* namespaces are emitted).
+# Schema source of truth: ~/git/gpu-fleet/migrations/ (001 gpu_slots/live_slots,
+# 007 exclusive leases, 009 status lifecycle + routable_slots).
+
+# --- Fleet-wide summary (always exactly one row => alert-safe zeros) -------------------------
+# routable_slots == 0 is the "fleet unroutable" page (see rules/infra-alerting.rules.yml).
+# routable_vram_free_mib is the derived free-VRAM headroom across slots a consumer may
+# actually route to (straight SUM over the routable_slots view).
+pg_gpu_fleet_summary:
+  query: |
+    SELECT
+      (SELECT count(*) FROM gpu_slots)      AS slots_total,
+      (SELECT count(*) FROM live_slots)     AS live_slots,
+      (SELECT count(*) FROM routable_slots) AS routable_slots,
+      (SELECT count(*) FROM gpu_slots
+        WHERE lease_id IS NOT NULL AND lease_expires > now()) AS active_leases,
+      (SELECT COALESCE(sum(vram_free_mib), 0) FROM routable_slots) AS routable_vram_free_mib
+  master: true
+  metrics:
+    - slots_total:            {usage: "GAUGE", description: "Registered slots (all statuses, incl. aged-out)"}
+    - live_slots:             {usage: "GAUGE", description: "Slots alive with heartbeat fresher than the 45s TTL (live_slots view)"}
+    - routable_slots:         {usage: "GAUGE", description: "Live AND status='routable' slots (routable_slots view) — 0 means the fleet is unroutable"}
+    - active_leases:          {usage: "GAUGE", description: "Exclusive leases currently held (lease_id set and unexpired)"}
+    - routable_vram_free_mib: {usage: "GAUGE", description: "Sum of vram_free_mib over routable slots (derived free VRAM)"}
+
+# --- Slots by lifecycle status (zero-filled over the CHECK enum) -----------------------------
+# LEFT JOIN off unnest of the full status enum so every status always emits a series, even
+# at 0 — a status silently going absent is exactly the failure mode this graph should show.
+pg_gpu_fleet_status:
+  query: |
+    SELECT s.status, count(g.node) AS slots
+    FROM unnest(ARRAY['unverified','probationary','routable','demoted']) AS s(status)
+    LEFT JOIN gpu_slots g ON g.status = s.status
+    GROUP BY s.status
+  master: true
+  metrics:
+    - status: {usage: "LABEL", description: "Lifecycle status (migration 009 enum)"}
+    - slots:  {usage: "GAUGE", description: "Slots currently in this status"}
+
+# --- Per-slot health (straight read of gpu_slots) --------------------------------------------
+# heartbeat_age_seconds is the stale-heartbeat alert signal (>90s = 2x the 45s live TTL).
+# Rows persist after a node leaves (they only age out of the views), so a dead node keeps
+# emitting a climbing age instead of vanishing — that is the point. status/served_model ride
+# along as labels; they churn series on transition/model-swap, which is acceptable churn.
+pg_gpu_fleet_slot:
+  query: |
+    SELECT
+      node,
+      endpoint_url,
+      slot_id::text          AS slot_id,
+      status,
+      COALESCE(served_model, 'none')  AS served_model,
+      latency_class,
+      EXTRACT(EPOCH FROM (now() - heartbeat_ts)) AS heartbeat_age_seconds,
+      alive::int                      AS alive,
+      COALESCE(vram_total_mib, 0)     AS vram_total_mib,
+      COALESCE(vram_free_mib, 0)      AS vram_free_mib,
+      COALESCE(gpu_util_pct, 0)       AS gpu_util_pct,
+      COALESCE(probe_ms, 0)           AS probe_ms,
+      probe_streak
+    FROM gpu_slots
+  master: true
+  metrics:
+    - node:                  {usage: "LABEL", description: "Fleet node (host identity)"}
+    - endpoint_url:          {usage: "LABEL", description: "OpenAI-compatible base URL / ssh endpoint"}
+    - slot_id:               {usage: "LABEL", description: "Slot index within the endpoint (0 = single slot)"}
+    - status:                {usage: "LABEL", description: "Lifecycle status"}
+    - served_model:          {usage: "LABEL", description: "Model id consumers should request ('none' if NULL)"}
+    - latency_class:         {usage: "LABEL", description: "interactive | batch"}
+    - heartbeat_age_seconds: {usage: "GAUGE", description: "Seconds since last heartbeat (live TTL is 45s)"}
+    - alive:                 {usage: "GAUGE", description: "1 if last decode-probe succeeded (NOT an HTTP health 200)"}
+    - vram_total_mib:        {usage: "GAUGE", description: "Total VRAM (MiB)"}
+    - vram_free_mib:         {usage: "GAUGE", description: "Free VRAM at last heartbeat (MiB)"}
+    - gpu_util_pct:          {usage: "GAUGE", description: "GPU utilization percent at last heartbeat"}
+    - probe_ms:              {usage: "GAUGE", description: "Decode-probe round-trip ms (0 if never probed)"}
+    - probe_streak:          {usage: "GAUGE", description: "Consecutive successful probes (graduation counter)"}
+
+# --- Active exclusive leases (RFC 0001, migration 007) ---------------------------------------
+# Only HELD leases (lease_id set, unexpired — an expired-but-unreleased lease reads FREE by
+# the RFC's own predicate, so it is excluded here too). The schema stores no claim
+# timestamp and leases self-renew, so "lease age" is not derivable; ttl_remaining_seconds
+# (lease_expires - now()) is the exported signal instead — a wedged consumer shows up as a
+# lease whose remaining TTL stops being topped up and slides to expiry.
+pg_gpu_fleet_lease:
+  query: |
+    SELECT
+      node,
+      endpoint_url,
+      slot_id::text AS slot_id,
+      COALESCE(lease_holder, 'unknown') AS holder,
+      EXTRACT(EPOCH FROM (lease_expires - now())) AS ttl_remaining_seconds,
+      1 AS held
+    FROM gpu_slots
+    WHERE lease_id IS NOT NULL AND lease_expires > now()
+  master: true
+  metrics:
+    - node:                  {usage: "LABEL", description: "Fleet node"}
+    - endpoint_url:          {usage: "LABEL", description: "Leased endpoint"}
+    - slot_id:               {usage: "LABEL", description: "Leased slot index"}
+    - holder:                {usage: "LABEL", description: "Consumer holding the lease (observability-only column)"}
+    - ttl_remaining_seconds: {usage: "GAUGE", description: "Seconds until autonomous lease expiry (self-renewing holders keep topping this up)"}
+    - held:                  {usage: "GAUGE", description: "Constant 1 per held lease (count with sum())"}

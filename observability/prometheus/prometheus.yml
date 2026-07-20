@@ -61,6 +61,18 @@ scrape_configs:
           instance: peecee
           gpu: 'rtx-3090-ti'
 
+  # Second postgres_exporter instance, dedicated to the gpu_fleet database (fleet
+  # registry/lease state — see exporter/queries-gpu-fleet.yaml). Separate instance because
+  # custom queries cannot be scoped per-database and gpu_slots lives in gpu_fleet, not
+  # striatum_daemon. Emits ONLY pg_gpu_fleet_* namespaces (--disable-default-metrics).
+  # Alerts: rules/infra-alerting.rules.yml (gpu_fleet_alerts group).
+  - job_name: gpu-fleet
+    static_configs:
+      - targets: ['100.85.100.81:9188']
+        labels:
+          instance: proximal
+          cluster: '17/main'
+
   # striatumd RFC 0137 exporter. /metrics is multiplexed onto the daemon's loopback
   # MCP/HTTP listener, pinned to 127.0.0.1:9464 via STRIATUM_DAEMON_MCP_HTTP_ADDR in
   # the striatumd.service unit (it binds a random port per boot otherwise). Loopback

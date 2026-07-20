@@ -22,6 +22,13 @@ ALTER ROLE postgres_exporter WITH LOGIN CONNECTION LIMIT 5 PASSWORD 'REDACTED_SE
 GRANT proximal_monitor TO postgres_exporter;            -- inherits pg_monitor
 GRANT CONNECT ON DATABASE striatum_daemon TO postgres_exporter;
 
+-- gpu-fleet registry metrics (PROXIMAL-5): the SECOND exporter instance (:9188, see
+-- exporter/prometheus-postgres-exporter-gpufleet.*) connects to gpu_fleet with this same
+-- role. pg_monitor does NOT grant SELECT on user tables, so the fleet tables/views need
+-- explicit read grants — run this block IN the gpu_fleet database, as its owner (halbritt):
+--   psql -d gpu_fleet -c "GRANT CONNECT ON DATABASE gpu_fleet TO postgres_exporter;"
+--   psql -d gpu_fleet -c "GRANT SELECT ON gpu_slots, live_slots, routable_slots TO postgres_exporter;"
+
 -- Verify (expects: 1 | t | t):
 --   SELECT 1,
 --          pg_has_role('postgres_exporter','pg_monitor','USAGE'),

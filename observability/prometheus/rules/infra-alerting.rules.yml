@@ -17,6 +17,39 @@ groups:
           summary: "scrape target {{ $labels.job }} / {{ $labels.instance }} is down"
           description: "Prometheus has not scraped {{ $labels.job }} on {{ $labels.instance }} for 10m (up=0) — metrics for it are blind."
 
+  # gpu-fleet registry (job "gpu-fleet", :9188 — second postgres_exporter instance reading
+  # database gpu_fleet). The registry is the routing truth for multi-host inference: slots
+  # graduate unverified -> probationary -> routable (migration 009) and evaporate from the
+  # live/routable views when their heartbeat ages past the 45s TTL. Exporter-down blindness
+  # is covered by the generic TargetDown above (the summary series just goes absent).
+  - name: gpu_fleet_alerts
+    rules:
+      # Whole-fleet outage: no slot is both live and routable, so every consumer pick fails.
+      # The summary query always returns exactly one row, so this is a real 0, not absence.
+      # for:3m rides out a single node's heartbeat blip or a probationary re-graduation.
+      - alert: GpuFleetZeroRoutableSlots
+        expr: pg_gpu_fleet_summary_routable_slots == 0
+        for: 3m
+        labels:
+          severity: page
+        annotations:
+          summary: "gpu-fleet has ZERO routable slots"
+          description: "No slot is live AND status='routable' for 3m — every fleet consumer pick fails. Check heartbeats (gpu-fleet-heartbeat) and slot status: psql -d gpu_fleet -c 'TABLE gpu_slots'."
+
+      # Dead heartbeat writer on a registered slot. 90s = 2x the 45s live TTL: by the time
+      # this fires the slot has long since evaporated from live_slots/routable_slots, so
+      # this is about a WEDGED/dead heartbeat process, not a transient miss. Rows persist
+      # after a node leaves, so a deliberately decommissioned slot alerts until its row is
+      # DELETEd from gpu_slots — that is intended (silent zombie rows are the failure mode).
+      - alert: GpuFleetHeartbeatStale
+        expr: pg_gpu_fleet_slot_heartbeat_age_seconds > 90
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "gpu-fleet heartbeat stale on {{ $labels.node }} {{ $labels.endpoint_url }}"
+          description: "Slot {{ $labels.node }}/{{ $labels.endpoint_url }}/{{ $labels.slot_id }} last heartbeat {{ $value | humanize }}s ago (>90s = 2x the 45s live TTL) — the heartbeat writer is dead or wedged, or the slot row needs deleting. Check gpu-fleet heartbeat units/journal on {{ $labels.node }}."
+
   # llama-server (job "llama", :8081) — the most load-bearing service on the box: every
   # praxis/engram/mining call hits it. Series are llamacpp:* from --metrics (see
   # llama/llama-27b.service.d/override.conf). NOTE: this llama.cpp build (76da2450a) exposes

@@ -29,6 +29,7 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 | service           | unit                            | bind                  | why this port |
 |-------------------|---------------------------------|-----------------------|---------------|
 | postgres_exporter   | `prometheus-postgres-exporter`  | `100.85.100.81:9187`  | 9187 free |
+| postgres_exporter (gpu-fleet) | `prometheus-postgres-exporter-gpufleet` | `100.85.100.81:9188` | second instance, DSN → db `gpu_fleet` (custom queries can't be scoped per-DB); emits only `pg_gpu_fleet_*` (PROXIMAL-5) |
 | node_exporter       | `prometheus-node-exporter`      | `100.85.100.81:9100`  | dep of `prometheus`; rebound off `*` |
 | nvidia_gpu_exporter | `nvidia_gpu_exporter`           | `100.85.100.81:9835`  | 9835 free (project default) |
 | nvidia_gpu_exporter (peecee) | `nvidia_gpu_exporter` (WinSW, on **peecee**) | `100.113.63.58:9835` | RTX 3090 Ti; Windows host, scraped over tailnet |
@@ -61,6 +62,9 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 | `exporter/prometheus-postgres-exporter.default.template` | `/etc/default/prometheus-postgres-exporter` (0600 root, **add real DSN**) |
 | `exporter/queries.yaml` | `/etc/prometheus-postgres-exporter/queries.yaml` |
 | `exporter/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus-postgres-exporter.service.d/` |
+| `exporter/prometheus-postgres-exporter-gpufleet.service` | `/etc/systemd/system/` (our own unit — tailnet-bind self-heal inlined) |
+| `exporter/prometheus-postgres-exporter-gpufleet.default.template` | `/etc/default/prometheus-postgres-exporter-gpufleet` (0600 root, **add real DSN** — same role/password, db `gpu_fleet`) |
+| `exporter/queries-gpu-fleet.yaml` | `/etc/prometheus-postgres-exporter/queries-gpu-fleet.yaml` |
 | `node-exporter/prometheus-node-exporter.default` | `/etc/default/prometheus-node-exporter` |
 | `node-exporter/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus-node-exporter.service.d/` |
 | `nvidia-gpu-exporter/10-tailnet-bind.conf` | `/etc/systemd/system/nvidia_gpu_exporter.service.d/` (binary+unit from the `.deb`) |
@@ -87,6 +91,7 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 | `grafana/dashboards/node-exporter-full-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/nvidia-gpu-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/striatum-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
+| `grafana/dashboards/gpu-fleet-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `role.sql` | run once via `sudo -u postgres psql` |
 
 The port-pin that makes `striatumd` scrapeable lives in the **striatum** subsystem, not here:
@@ -180,6 +185,45 @@ fan, clocks/throttle reasons). On the 3090, expect VRAM pinned ~23 GiB by the lo
 The exporter logs a few `level=ERROR … unexpected characters` lines for exotic `nvidia-smi` fields
 (`power_smoothing.*`) — best-effort parse warnings, harmless; metrics still serve.
 
+## gpu-fleet exporter (second postgres_exporter instance, PROXIMAL-5)
+
+The gpu-fleet registry (`~/git/gpu-fleet`) is live routing truth in Postgres — slots heartbeat
+into `gpu_slots`, graduate `unverified → probationary → routable` (migration 009), evaporate
+from the `live_slots`/`routable_slots` views past the 45s heartbeat TTL, and are claimed via
+exclusive self-renewing leases (migration 007/RFC 0001). Wired into this stack 2026-07-20.
+
+It lives in database **`gpu_fleet`**, not `striatum_daemon`, and postgres_exporter custom
+queries **cannot be scoped per-database** — a shared `queries.yaml` would error every scrape in
+one DB or the other. So a **second instance** of the same Debian binary runs as our own unit
+`prometheus-postgres-exporter-gpufleet.service` (`100.85.100.81:9188`, job `gpu-fleet`): same
+`postgres_exporter` role (plus explicit `SELECT` grants on the fleet tables — `role.sql`; the DB
+is halbritt-owned, so run those as halbritt, not postgres), DSN pointed at `gpu_fleet`,
+`--disable-default-metrics --disable-settings-metrics` **and** all nine default-enabled
+new-style collectors switched off — it emits only the `pg_gpu_fleet_*` namespaces from
+`exporter/queries-gpu-fleet.yaml`:
+
+- `pg_gpu_fleet_summary_*` — always-one-row fleet totals: `slots_total`, `live_slots`,
+  `routable_slots` (the alert-safe real-zero), `active_leases`, `routable_vram_free_mib`
+  (derived free VRAM over routable slots).
+- `pg_gpu_fleet_status_slots{status=…}` — slots per lifecycle status, zero-filled over the
+  full CHECK enum so an empty status emits 0 instead of going absent.
+- `pg_gpu_fleet_slot_*{node,endpoint_url,slot_id,…}` — per-slot heartbeat age, alive (decode
+  probe, not HTTP 200), VRAM total/free, util, probe ms/streak.
+- `pg_gpu_fleet_lease_*{holder,…}` — held exclusive leases: `held` 1 + `ttl_remaining_seconds`.
+  The schema stores **no claim timestamp** and leases self-renew, so "lease age" is not
+  derivable; a wedged holder shows as remaining TTL sliding to expiry un-topped-up.
+
+**Dashboard** — `gpu-fleet-proximal.json` (folder "proximal", uid `gpu-fleet-proximal`):
+overview stats (routable/live/registered/leases/free VRAM), status + heartbeat-age timeseries,
+slot registry table, lease TTL + per-slot VRAM. Regenerate with
+`python3 dashboards/build_gpu_fleet_dashboard.py > dashboards/gpu-fleet-proximal.json`.
+
+**Alerts** — `gpu_fleet_alerts` group in `infra-alerting.rules.yml`:
+`GpuFleetZeroRoutableSlots` (`…summary_routable_slots == 0` for 3m, `page` — every consumer
+pick fails) and `GpuFleetHeartbeatStale` (`…slot_heartbeat_age_seconds > 90` for 1m, `warning`
+— 2× the live TTL, i.e. a dead/wedged heartbeat writer or a decommissioned row needing DELETE).
+Exporter-down blindness is covered by the generic `TargetDown`.
+
 ## striatumd exporter (RFC 0137)
 
 The `striatumd` workflow daemon exports its lifecycle/liveness internals as 15 Prometheus
@@ -264,7 +308,7 @@ Two provenances under `prometheus/rules/`, both referenced from `rule_files:` an
 | `node-alerting` | filesystem low/critical space, low inodes, read-only fs, memory low, OOM kills, high load | pseudo-fs excluded; read-only fs excluded from space alerts (it's its own alert); load normalized by core count via `group_left` |
 | `gpu-alerting` | high/critical temp, HW thermal throttling | **no VRAM alert** — the LLM pins ~22.8 GiB by design, so VRAM-full would fire forever; temp + the driver's thermal-slowdown flag are the real hardware-risk signals. Fires per-GPU (proximal 3090 + peecee 3090 Ti) |
 | `postgres-alerting` | pg down, connections >80/90%, deadlocks, long-running txn, XID wraparound warn/crit | wraparound metric is **XID age** (not seconds) → thresholds 1.5e9/1.9e9 of the 2³¹ limit; long-txn "oldest" is a Unix **timestamp** → age is `time() - it`, guarded by `count>0` |
-| `infra-alerting` | `TargetDown` (any `up==0` for 10m); `LlamaServerDown` (`up{job="llama"}==0` for 1m, `page`); `LlamaSlotSaturated` (`llamacpp:requests_deferred>0` for 5m) | `TargetDown` covers every job uniformly; the off-box peecee GPU target can flap when that host sleeps — silence there, don't loosen the rule. llama gets its own fast down-alert (1m — primary inference endpoint; a normal restart stays pending) and a queue-pressure alert: **no KV-cache-usage series exists** in this llama.cpp build (upstream removed `kv_cache_usage_ratio`), so deferred requests behind the single `-np 1` slot are the pressure signal. Down-alert fire-tested 2026-07-20 (90s deliberate stop, fired at 75s, reached Alertmanager) |
+| `infra-alerting` | `TargetDown` (any `up==0` for 10m); `LlamaServerDown` (`up{job="llama"}==0` for 1m, `page`); `LlamaSlotSaturated` (`llamacpp:requests_deferred>0` for 5m) | `TargetDown` covers every job uniformly; the off-box peecee GPU target can flap when that host sleeps — silence there, don't loosen the rule. llama gets its own fast down-alert (1m — primary inference endpoint; a normal restart stays pending) and a queue-pressure alert: **no KV-cache-usage series exists** in this llama.cpp build (upstream removed `kv_cache_usage_ratio`), so deferred requests behind the single `-np 1` slot are the pressure signal. Down-alert fire-tested 2026-07-20 (90s deliberate stop, fired at 75s, reached Alertmanager). Also hosts `gpu_fleet_alerts`: `GpuFleetZeroRoutableSlots` (`==0` for 3m, `page`) + `GpuFleetHeartbeatStale` (`>90s` for 1m) — see "gpu-fleet exporter" above |
 
 Refresh/verify after editing: `promtool check rules prometheus/rules/*.yml`, `sudo cp` to
 `/etc/prometheus/rules/`, `sudo systemctl reload prometheus`, then

@@ -1,0 +1,23 @@
+# Second postgres_exporter instance, DEDICATED to the gpu_fleet database (PROXIMAL-5).
+# Same Debian binary and same postgres_exporter role as the main :9187 instance; a separate
+# instance because custom queries.yaml queries cannot be scoped per-database — the gpu-fleet
+# tables exist only in `gpu_fleet`, and the main instance's DSN points at `striatum_daemon`.
+# --disable-default-metrics / --disable-settings-metrics: only the pg_gpu_fleet_* custom
+# namespaces (queries-gpu-fleet.yaml) are emitted — no duplicate pg_* cluster series.
+# Install: /etc/systemd/system/prometheus-postgres-exporter-gpufleet.service
+# Tailnet-bind self-heal is inlined here (this is our own unit, no drop-in needed).
+[Unit]
+Description=Prometheus exporter for PostgreSQL — gpu_fleet registry/lease metrics
+Documentation=https://github.com/prometheus-community/postgres_exporter
+Wants=network-online.target
+After=network-online.target tailscaled.service
+
+[Service]
+User=prometheus
+EnvironmentFile=/etc/default/prometheus-postgres-exporter-gpufleet
+ExecStart=/usr/bin/prometheus-postgres-exporter $ARGS
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
