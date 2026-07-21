@@ -2,12 +2,22 @@
 
 > ## ⚠️ RETIRED — 2026-07-21
 >
-> Striatum is retired. On the Principal's instruction, everything was stopped and
-> disabled on 2026-07-21: `striatumd.service` plus its support timers
+> Striatum (the Go daemon `striatumd` and its host wiring — what this directory
+> documents) is retired. On the Principal's instruction, stopped and disabled on
+> 2026-07-21: `striatumd.service` plus its support timers
 > (`striatum-lane-cred-resync.timer`, `striatum-worktree-gc.timer`,
-> `pg-repack-bloated.timer` — system scope) and the user-scope
-> `striatum-wake-*.timer` liveness floors and `striatum-warmtier-autoingest.timer`.
-> Port `:39201` closed; zero `striatumd_rw` backends.
+> `pg-repack-bloated.timer` — system scope). Port `:39201` closed; zero
+> `striatumd_rw` backends.
+>
+> ⚠️ **NOT part of this retirement — do not touch on the strength of the name:**
+> the user-scope `striatum-wake-*.timer` units and
+> `striatum-warmtier-autoingest.timer` belong to **striatum-next**
+> (`~/git/striatum-next`, a separate live system driving hippo/engram/praxis/
+> vitae/gpu-fleet/fleet-knowledge). They were mistakenly disabled during this
+> retirement and restored (enabled+active) the same day. Warmtier's
+> `daemon-socket.conf` drop-in still points at the dead daemon's
+> `/run/striatum/rpc/daemon-go.sock` — a striatum-next follow-up, not a reason
+> to disable it.
 >
 > **Deliberately left in place** (reversible retirement, no data destroyed):
 > unit files on disk (only `wants/` symlinks removed), the binary + secrets, the

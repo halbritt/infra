@@ -8,10 +8,13 @@ history. **Values and config, never credentials.**
 ## 2026-07-21
 
 ### Striatum retired — daemon and all support units shut down
-On the Principal's instruction, stopped + disabled `striatumd.service` and every striatum
-support unit: system-scope `striatum-lane-cred-resync.timer`, `striatum-worktree-gc.timer`,
-`pg-repack-bloated.timer`; user-scope `striatum-wake-*.timer` (×7 liveness floors) and
-`striatum-warmtier-autoingest.timer`. Port `:39201` closed, zero `striatumd_rw` backends.
+On the Principal's instruction, stopped + disabled `striatumd.service` and its system-scope
+support timers: `striatum-lane-cred-resync.timer`, `striatum-worktree-gc.timer`,
+`pg-repack-bloated.timer`. Port `:39201` closed, zero `striatumd_rw` backends.
+**Correction (same day):** the user-scope `striatum-wake-*.timer` (×7) and
+`striatum-warmtier-autoingest.timer` were swept up by the `striatum*` name match but belong
+to **striatum-next** (separate, live) — restored enabled+active within the hour; each repo's
+liveness floor fires at most one interval late.
 Removed the `striatumd` Prometheus scrape job and the two striatum rule files from
 `observability/prometheus/` (repo + `/etc/prometheus`, promtool-validated, reloaded — 7/7
 remaining targets up) so the dead target can't page. **Not** destroyed: unit files, binary,
