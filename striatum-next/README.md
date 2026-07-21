@@ -31,12 +31,27 @@ This directory is that record.
 | `019f3d37` | `~/git/gpu-fleet` |
 | `019f3d58` | `~/git/hippo` |
 
-Timers: `OnActiveSec`/`OnUnitInactiveSec` 900 s floors (some with
-`OnCalendar=*:0/5` via `50-calendar-floor.conf` drop-ins), `Persistent=true`.
-Service drop-ins: `override.conf` (`KillMode=process` — detached lane supervisors
+Timers: `OnActiveSec`/`OnUnitInactiveSec` 900 s floors, `Persistent=true`.
+
+**Shared drop-in dir** `striatum-wake-.service.d/` (systemd truncated-prefix
+matching, v247+): `override.conf` (`KillMode=process` — detached lane supervisors
 must outlive the oneshot, see `../systemd-user/README.md`) and
 `openrouter-env.conf` (`EnvironmentFile=-~/.config/striatum/openrouter.env` —
-pointer only, the key lives outside this repo).
+pointer only, the key lives outside this repo). One dir covers every current and
+future `striatum-wake-*` unit, both name shapes. It replaced (2026-07-21) the
+per-repoid8 `striatum-wake-<repoid8>.service.d/` dirs, which — despite
+`../systemd-user/README.md`'s claim — **never applied to long-named units**
+(a drop-in dir must exact-match or dash-boundary-prefix the unit name;
+`019f22ef` is a mid-token truncation). Until then, four of seven graphs ran
+without the openrouter env and with default `KillMode=control-group`.
+
+**⚠️ ExecStart is self-referential** (`wakeCommand` → `os.Executable()`,
+`internal/cli/root.go`): every drive run re-projects the wake units with *the
+binary that ran* as ExecStart. Consequence: a drive launched from a throwaway
+binary bakes that path into the fleet's liveness floor (this is exactly how the
+hippo unit came to exec from a Claude session scratchpad in `/tmp`), and
+hand-edits to unit files are overwritten on the next drive. Fix paths, not unit
+files: launch drives only from durable binaries.
 
 ## warmtier
 
@@ -48,16 +63,23 @@ the export fails and the exhaust/lane-trajectory feedstocks self-quarantine —
 only the `operator_log` leg is live. The former `daemon-socket.conf` drop-in was
 removed 2026-07-21 (see `../striatum/README.md`).
 
-## ⚠️ Known fragilities (found at capture, left as-is)
+## Fragilities found at capture — fixed 2026-07-21 (same day)
 
-- **`019f3d58` (hippo) execs a binary out of a Claude session scratchpad**:
-  `ExecStart=/tmp/claude-1000/-home-halbritt-git-hippo/c0e99ee4…/scratchpad/striatum-head` —
-  gone on reboot or scratchpad GC, at which point the hippo floor dies with
-  203/EXEC. Repoint to a durable path (`~/git/striatum-next/bin/striatum` or a
-  pinned copy under `~/.local/bin`).
-- `019f22ef` mixes ExecStart binaries with the others (`~/.local/bin/striatum` vs
-  `~/git/striatum-next/bin/striatum`) — two build channels for the same fleet.
-- `019f3b99` and `019f3d58` lack the `KillMode=process` override the other five
-  have; their dispatched lanes die with the oneshot.
-- Four orphaned `striatum-wake-019f22ef…-<hash>.timer.d/` dirs remain from
-  GC'd wake units (their `.timer` files no longer exist); vendored as found.
+- **`019f3d58` (hippo) exec'd a binary out of a Claude session scratchpad**
+  (`/tmp/claude-1000/…/scratchpad/striatum-head`, a Jul 12 build — would die
+  203/EXEC on reboot/GC, and every firing re-baked the /tmp path via the
+  self-referential ExecStart above). Fixed by firing one drive from
+  `~/git/striatum-next/bin/striatum`: it self-projected the current-generation
+  long-named unit with the durable path; the stale legacy short pair
+  (`striatum-wake-019f3d58.{service,timer}`) was then disabled and removed.
+  The scratchpad binary is preserved at
+  `~/.local/bin/striatum.bak-hippo-scratchpad-jul12`.
+- **Four of seven graphs ran without `KillMode=process` + openrouter env**
+  (dead per-repoid8 drop-in dirs, see above). Fixed by the shared
+  `striatum-wake-.service.d/`; verified post-change: all 7 wake services show
+  `KillMode=process` + the EnvironmentFile.
+- Four orphaned `019f22ef…*.timer.d/` dirs from GC'd wake units — removed.
+- Still open: `019f22ef`/`019f274c` exec `~/.local/bin/striatum` while the
+  rest exec `~/git/striatum-next/bin/striatum` — two build channels for one
+  fleet (both durable, so left alone; converge when convenient by running one
+  drive per graph from the chosen binary).

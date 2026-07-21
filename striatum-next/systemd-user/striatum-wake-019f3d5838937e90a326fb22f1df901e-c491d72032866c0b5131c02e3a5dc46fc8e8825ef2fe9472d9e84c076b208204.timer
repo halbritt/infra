@@ -1,5 +1,5 @@
 [Unit]
-Description=Striatum liveness floor (striatum-wake-019f3d58)
+Description=Striatum liveness floor
 
 [Timer]
 OnActiveSec=300s

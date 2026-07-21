@@ -7,6 +7,22 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-21
 
+### striatum-next wake fleet: fragilities fixed, drop-ins consolidated
+Three fixes, verified live (all 7 wake services now show `KillMode=process` + the
+openrouter `EnvironmentFile`, zero `/tmp` ExecStarts):
+1. **hippo `/tmp` binary** — one drive fired from `~/git/striatum-next/bin/striatum`
+   self-projected the current-generation unit with the durable path (ExecStart is
+   self-referential: `wakeCommand` → `os.Executable()`, so unit-file edits are futile —
+   the running binary's path is what persists); stale legacy short pair removed,
+   scratchpad binary preserved as `~/.local/bin/striatum.bak-hippo-scratchpad-jul12`.
+2. **Dead drop-ins** — the `striatum-wake-<repoid8>.service.d/` dirs never applied to
+   long-named units (mid-token truncation ≠ dash-boundary prefix), so 4/7 graphs ran
+   without KillMode/env. Replaced with one shared truncated-prefix
+   `striatum-wake-.service.d/` covering the whole fleet; per-repoid8 dirs and 4 orphaned
+   `timer.d` dirs deleted. `systemd-user/README.md` corrected.
+3. Still open (recorded): 019f22ef/019f274c exec `~/.local/bin/striatum` vs the rest
+   `~/git/striatum-next/bin/striatum` — two durable build channels, converge later.
+
 ### New subsystem: `striatum-next/` — wake-fleet unit specs captured
 Vendored the live user-scope specs verbatim (33 files): 7 `striatum-wake-*` liveness-floor
 service+timer pairs (striatum-next, praxis, engram, fleet-knowledge, vitae, gpu-fleet,

@@ -39,6 +39,14 @@ file is still correct.
 **all five** registered graphs (019f22ef striatum-next, 019f274c praxis,
 019f2e17 engram, 019f3d21 vitae, 019f3d37 gpu-fleet).
 
+> **Superseded 2026-07-21:** the per-repoid8 dirs silently did NOT apply to
+> long-named wake units (drop-in dirs must exact-match or dash-boundary-prefix
+> the unit name; `<repoid8>` is a mid-token truncation) — four of seven graphs
+> ran without this override. Replaced by one shared truncated-prefix dir
+> `striatum-wake-.service.d/` covering every `striatum-wake-*` unit, both name
+> shapes; per-repoid8 dirs deleted. Specs + verification:
+> [`../striatum-next/README.md`](../striatum-next/README.md).
+
 **Why:** the wake units are `Type=oneshot`; `striatum drive` quiesces in ~1s
 after forking detached lane supervisors (D0013). With the default
 `KillMode=control-group`, systemd reaps the unit's whole cgroup at
