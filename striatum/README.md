@@ -14,10 +14,22 @@
 > `striatum-warmtier-autoingest.timer` belong to **striatum-next**
 > (`~/git/striatum-next`, a separate live system driving hippo/engram/praxis/
 > vitae/gpu-fleet/fleet-knowledge). They were mistakenly disabled during this
-> retirement and restored (enabled+active) the same day. Warmtier's
-> `daemon-socket.conf` drop-in still points at the dead daemon's
-> `/run/striatum/rpc/daemon-go.sock` — a striatum-next follow-up, not a reason
-> to disable it.
+> retirement and restored (enabled+active) the same day.
+>
+> **Warmtier decoupled from the dead daemon (same day):** removed the
+> `daemon-socket.conf` drop-in (it pointed `striatum corpus export` at the
+> retired daemon's `/run/striatum/rpc/daemon-go.sock`; vendored copy deleted
+> from this repo — restore from git history). The `striatum_exhaust` and
+> `lane_trajectory` feedstocks can no longer be fed (their producer is the
+> retired daemon; both were fully caught up — final run anti-joined 31 /
+> 122 592 rows, 0 new) and will self-quarantine after 3 consecutive failures
+> (warmtier's designed poison lane). The `operator_log` feedstock — warmtier's
+> live leg — continues; verified `ingested`, unit `Result=success` post-change.
+> The `corpus-bridge.conf` drop-in + `bridge-bin` shim (pre-archrem `striatum`
+> binary) were left in place: harmless, and they produce a clearer error
+> (`daemon unreachable`) than the current binary's `unknown verb` if the export
+> path is ever poked. If striatum-next grows an exhaust producer, wire it as a
+> new bridge rather than resurrecting this socket.
 >
 > **Deliberately left in place** (reversible retirement, no data destroyed):
 > unit files on disk (only `wants/` symlinks removed), the binary + secrets, the
@@ -70,7 +82,7 @@ the home-dir config/checkout all require the owner UID.
 |---|---|---|---|
 | [`striatumd.service`](striatumd.service) | `/etc/systemd/system/striatumd.service` | root:root 0644 | the system unit; all six former drop-ins folded inline |
 | [`profile.d-striatum.sh`](profile.d-striatum.sh) | `/etc/profile.d/striatum.sh` | root:root 0644 | points interactive shells at `/run/striatum` |
-| [`warmtier-autoingest.service.d-daemon-socket.conf`](warmtier-autoingest.service.d-daemon-socket.conf) | `~/.config/systemd/user/striatum-warmtier-autoingest.service.d/daemon-socket.conf` | halbritt 0644 | gives the warmtier timer the new socket path |
+| ~~`warmtier-autoingest.service.d-daemon-socket.conf`~~ | ~~`…/striatum-warmtier-autoingest.service.d/daemon-socket.conf`~~ | — | **removed 2026-07-21** (live + vendored) — pointed at the retired daemon's socket; see retirement banner |
 | — (secrets, never vendored) | `~/.config/striatum/blob.env` | halbritt 0600 | Garage S3 keys; referenced by the unit as `EnvironmentFile=` |
 | — (secrets, never vendored) | `~/.config/striatum/daemon.toml` | halbritt 0600 | `postgres_url` (password DSN) read by the daemon |
 | [`striatum-lane-cred-resync.sh`](striatum-lane-cred-resync.sh) | `/usr/local/bin/striatum-lane-cred-resync.sh` | root:root 0755 | copies the operator's Claude OAuth credential → `striatum-lane` (0600), rotating-token-safe — [striatum#583](https://github.com/halbritt/striatum/issues/583) |
