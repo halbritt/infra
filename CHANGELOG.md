@@ -5,6 +5,25 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-21
+
+### wigolo synthesis switched to GLM 5.2 (OpenRouter)
+Benchmarked research-synthesis quality across models and rewired [`wigolo`](wigolo/) from
+the local 35B MoE to **GLM 5.2** (`z-ai/glm-5.2`) via OpenRouter, using the OpenAI-compatible
+path (`WIGOLO_LLM_PROVIDER=openai` + `OPENAI_BASE_URL=https://openrouter.ai/api/v1`; key =
+`OPENROUTER_API_KEY` from `~/.config/striatum/openrouter.env`). Root-cause finding: wigolo
+caps synthesis at `reportChars/3` tokens with no headroom for model "thinking", so every
+reasoning model is starved — the local 35B collapses to wigolo's heuristic template on large
+source sets, and Gemini 3.x flash leaks its thinking scratchpad into the report (Gemini 2.5
+is also gated for our key). GLM 5.2 wins because OpenRouter returns reasoning in a separate
+field, so wigolo only ever sees clean final content: full, well-cited reports at
+`depth:"comprehensive"`, terse-but-correct at `standard`, ~1–2¢/call. The 35B stays the
+box's default `:8081` model (chosen for throughput); this change affects wigolo only. Qwen
+27B (peecee) benchmark still pending. Key currently rides the MCP env block (plaintext in
+user-local `~/.claude-harm/.claude.json`, uncommitted) — wigolo's encrypted keystore is
+interactive-only. Also noted: `wigolo research` CLI can hang on process exit — wrap headless
+calls in `timeout`.
+
 ## 2026-07-20
 
 ### Added wigolo web-research subsystem (Tavily replacement)

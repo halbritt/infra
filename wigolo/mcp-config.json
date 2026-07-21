@@ -1,12 +1,14 @@
 {
-  "//": "Canonical wigolo MCP registration for any client on proximal. Synthesis is wired to the local llama.cpp server (:8081). Base URL must NOT include /v1 — wigolo appends /v1/chat/completions itself. Drop the two env vars to run fully keyless (host agent does synthesis).",
+  "//": "Canonical wigolo MCP registration for any client on proximal. Synthesis is wired to GLM 5.2 via OpenRouter through the OpenAI-compatible path: WIGOLO_LLM_PROVIDER=openai + OPENAI_BASE_URL redirects the OpenAI SDK to OpenRouter. Prefer research depth:'comprehensive' with GLM 5.2 (reasoning model needs the larger token budget). Replace <OpenRouter key> with OPENROUTER_API_KEY from ~/.config/striatum/openrouter.env. To run fully keyless/on-box, drop the four env vars (host or core-only synthesis).",
   "mcpServers": {
     "wigolo": {
       "command": "/home/halbritt/.npm-global/bin/wigolo",
       "args": [],
       "env": {
-        "WIGOLO_LLM_PROVIDER": "http://localhost:8081",
-        "WIGOLO_LLM_MODEL": "qwen3.6-35b-a3b"
+        "WIGOLO_LLM_PROVIDER": "openai",
+        "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
+        "WIGOLO_LLM_MODEL": "z-ai/glm-5.2",
+        "OPENAI_API_KEY": "<OpenRouter key — OPENROUTER_API_KEY from ~/.config/striatum/openrouter.env>"
       }
     }
   }
