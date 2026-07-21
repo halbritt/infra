@@ -1,5 +1,28 @@
 # striatum
 
+> ## ⚠️ RETIRED — 2026-07-21
+>
+> Striatum is retired. On the Principal's instruction, everything was stopped and
+> disabled on 2026-07-21: `striatumd.service` plus its support timers
+> (`striatum-lane-cred-resync.timer`, `striatum-worktree-gc.timer`,
+> `pg-repack-bloated.timer` — system scope) and the user-scope
+> `striatum-wake-*.timer` liveness floors and `striatum-warmtier-autoingest.timer`.
+> Port `:39201` closed; zero `striatumd_rw` backends.
+>
+> **Deliberately left in place** (reversible retirement, no data destroyed):
+> unit files on disk (only `wants/` symlinks removed), the binary + secrets, the
+> `striatum_daemon` database (29 GB, in the last pgBackRest backup), and the
+> `token-dashboard*` services (still running — they only read the
+> `token_dashboard` DB; decide their fate separately).
+>
+> To reclaim the 29 GB: `sudo -u postgres psql -c 'DROP DATABASE striatum_daemon'`
+> — only after confirming the pgBackRest stanza retains a copy, and note that the
+> Prometheus `postgres_exporter` connects *to* that DB (repoint it to `postgres`
+> first, see `../observability/`). The `ALTER DATABASE`/table-level tuning in
+> `../postgres/desired.md` dies with the DB.
+>
+> The rest of this file is preserved as historical record of how it was wired.
+
 Desired-state for **`striatumd`**, the Striatum local workflow daemon — the Go
 service that drives multi-agent committee/refactoring runs against registered
 repositories on this box. Upstream + docs: `github.com/halbritt/striatum`

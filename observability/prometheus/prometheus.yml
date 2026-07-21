@@ -23,8 +23,8 @@ alerting:
 # every series verified live. All route to Slack #proximal-alerts via the Alertmanager above.
 # Refresh the striatum copies from the striatum checkout (see README "striatumd exporter").
 rule_files:
-  - /etc/prometheus/rules/striatum-recording.rules.yml
-  - /etc/prometheus/rules/striatum-alerting.rules.yml
+  # striatum-recording/-alerting rule files removed 2026-07-21 — striatum retired
+  # (see ../../striatum/README.md); restore from git history if it ever returns.
   - /etc/prometheus/rules/node-alerting.rules.yml
   - /etc/prometheus/rules/gpu-alerting.rules.yml
   - /etc/prometheus/rules/postgres-alerting.rules.yml
@@ -73,17 +73,9 @@ scrape_configs:
           instance: proximal
           cluster: '17/main'
 
-  # striatumd RFC 0137 exporter. /metrics is multiplexed onto the daemon's loopback
-  # MCP/HTTP listener, pinned to 127.0.0.1:9464 via STRIATUM_DAEMON_MCP_HTTP_ADDR in
-  # the striatumd.service unit (it binds a random port per boot otherwise). Loopback
-  # + tokenless by RFC 0137 §4; Prometheus runs on this host so it scrapes directly,
-  # no TLS/bearer. Do NOT move this to the tailnet IP — keep /metrics off-box (front
-  # it with `tailscale serve` + a scoped token if remote scrape is ever needed).
-  - job_name: striatumd
-    static_configs:
-      - targets: ['127.0.0.1:9464']
-        labels:
-          instance: proximal
+  # (striatumd scrape job removed 2026-07-21 — striatum retired, daemon stopped;
+  # the infra up==0 alert would page on the dead target. Restore from git history
+  # if it ever returns.)
 
   # llama-server (llama-27b.service) — the box's primary inference endpoint. /metrics is
   # enabled via --metrics in the unit's drop-in override (see llama/llama-27b.service.d/)

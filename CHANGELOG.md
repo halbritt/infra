@@ -7,6 +7,17 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-21
 
+### Striatum retired — daemon and all support units shut down
+On the Principal's instruction, stopped + disabled `striatumd.service` and every striatum
+support unit: system-scope `striatum-lane-cred-resync.timer`, `striatum-worktree-gc.timer`,
+`pg-repack-bloated.timer`; user-scope `striatum-wake-*.timer` (×7 liveness floors) and
+`striatum-warmtier-autoingest.timer`. Port `:39201` closed, zero `striatumd_rw` backends.
+Removed the `striatumd` Prometheus scrape job and the two striatum rule files from
+`observability/prometheus/` (repo + `/etc/prometheus`, promtool-validated, reloaded — 7/7
+remaining targets up) so the dead target can't page. **Not** destroyed: unit files, binary,
+secrets, the 29 GB `striatum_daemon` DB, and the still-running `token-dashboard*` services.
+Full retirement record + DB-reclaim path: [`striatum/README.md`](striatum/README.md).
+
 ### Linked observability surfaces on the tailnet index
 Verified the [`observability`](observability/) recording still matches live (all 8 Prometheus
 targets `up` — gpu×2/gpu-fleet/node/postgresql/prometheus/striatumd/llama — 0 rule errors,
