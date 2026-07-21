@@ -39,7 +39,7 @@ current model is a *reasoning* model, so this mismatch bites:
 | **GLM 5.2** (`z-ai/glm-5.2`, OpenRouter) | OpenRouter returns reasoning in a *separate* field, so wigolo's `content` is always clean prose — full, accurate, well-cited report at `comprehensive`; terse-but-correct at `standard` | ✅ **chosen** |
 | Local 35B MoE (`:8081`) | reasoning tokens starve the content budget → **collapses to the tier-3 template** on large source sets; fine only at `quick` depth | ⚠️ fallback |
 | Gemini 3.x flash (`@google/genai`) | thinking scratchpad **leaks into the report**; Gemini 2.5 gated for our key | ❌ rejected |
-| Qwen 27B (peecee) | not yet benchmarked | ⏸ pending |
+| Qwen 27B (`qwen3.6:27b`, peecee ollama `:11434`) | thinking model @ ~70 tok/s over tailnet → exceeds wigolo's **hardcoded 60s synthesis timeout** at both standard and comprehensive → **template fallback every call** | ❌ rejected |
 
 **Operational guidance:** prefer **`depth: "comprehensive"`** with GLM 5.2 — the larger token
 budget (~2000) fits its reasoning and yields a full report; `standard` runs correct but terse.
@@ -87,6 +87,10 @@ wigolo doctor                    # health probe
 - **Retrieval is keyword-sensitive.** Natural-language questions with words like "tradeoffs"
   can mis-retrieve (an early test pulled an NPR "Tradeoffs" podcast). Keyword-dense phrasing
   and `include_domains` help; the wired model correctly *refuses to fabricate* on bad evidence.
+- **Synthesis timeout is a hardcoded 60s** (`DEFAULT_TIMEOUT_MS`, `src/research/synthesis-local.ts` +
+  `run.ts`, no env knob). Any synthesis model must return within 60s or wigolo aborts to the
+  heuristic template — this is why the remote ~70 tok/s Qwen 27B was rejected. A future local
+  synthesis model must be both fast and (ideally) non-thinking to fit this + the token budget.
 - **CLI exit hang:** `wigolo research …` from the shell can finish its work but hang on process
   teardown. Wrap CLI/headless invocations in `timeout` (the JSON is flushed before the hang).
   Irrelevant under the persistent MCP server.
