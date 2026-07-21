@@ -41,12 +41,21 @@ current model is a *reasoning* model, so this mismatch bites:
 | Gemini 3.x flash (`@google/genai`) | thinking scratchpad **leaks into the report**; Gemini 2.5 gated for our key | ❌ rejected |
 | Qwen 27B (`qwen3.6:27b`, peecee ollama `:11434`) | thinking model @ ~70 tok/s over tailnet → exceeds wigolo's **hardcoded 60s synthesis timeout** at both standard and comprehensive → **template fallback every call** | ❌ rejected |
 
-**Operational guidance:** prefer **`depth: "comprehensive"`** with GLM 5.2 — the larger token
-budget (~2000) fits its reasoning and yields a full report; `standard` runs correct but terse.
-Cost is ~1–2¢ per research call. Fetched pages are public web content, so nothing private
-leaves the box; only that public content + the question reach OpenRouter for synthesis.
-To stay fully keyless/on-box for a run, drop to core `search`/`fetch` (no LLM) or use
-`quick` depth with a local model.
+**Operational guidance:** pick `depth` by the **question**, not by the model — `quick`/`standard`
+for most, `comprehensive` only when you genuinely want broad multi-source coverage. Do NOT
+reach for `comprehensive` just to get a fuller write-up: that only works around GLM's reasoning
+eating the `reportChars/3` synthesis budget (standard ≈1334 tok → terse-but-correct report,
+comprehensive ≈2000 tok → fuller), which wrongly couples research breadth to synthesis tokens.
+
+Crucially, **when wigolo is driven through a capable host (Claude Code), the host writes the
+final answer from the returned `evidence`/`sources`/`brief`/`citations` — no token cap — so a
+terse GLM `report` field is a non-issue there.** The wired GLM `report` matters mainly for the
+**headless / non-Claude path** (opencode, cron agents) that has no host model to synthesize;
+even there, terse-but-correct at `standard` is usually fine.
+
+Cost ~1–2¢ per research call. Fetched pages are public web content, so nothing private leaves
+the box; only that content + the question reach OpenRouter. To stay fully keyless/on-box, drop
+to core `search`/`fetch` (no LLM).
 
 ## Configuration (how it's wired)
 
