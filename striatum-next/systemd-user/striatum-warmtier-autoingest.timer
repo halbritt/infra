@@ -1,0 +1,15 @@
+[Unit]
+Description=Run striatum-warmtier autoingest frequently (cheap, GPU-free re-evaluation)
+Documentation=file:/home/halbritt/git/striatum-warmtier/docs/how-to/operator-runbook.md
+
+[Timer]
+# Frequent + cheap: the run re-evaluates the staleness gauge (DB-only, no GPU)
+# every 30 minutes and only proceeds to ingest behind the readiness gate.
+OnCalendar=*:0/30
+# Spread starts so a host with several timers does not stampede on the half-hour.
+RandomizedDelaySec=300
+# Catch up one missed run after the host was asleep/off.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

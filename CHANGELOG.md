@@ -7,6 +7,16 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-21
 
+### New subsystem: `striatum-next/` — wake-fleet unit specs captured
+Vendored the live user-scope specs verbatim (33 files): 7 `striatum-wake-*` liveness-floor
+service+timer pairs (striatum-next, praxis, engram, fleet-knowledge, vitae, gpu-fleet,
+hippo) with their `KillMode`/openrouter drop-ins, plus `striatum-warmtier-autoingest` and
+its corpus-bridge drop-in. Prompted by today's incident — nothing recorded that these
+belong to a live system distinct from the retired striatumd. Capture surfaced real
+fragilities (recorded in [`striatum-next/README.md`](striatum-next/README.md)): the hippo
+wake unit execs a binary from a **Claude session scratchpad in /tmp** (dies on reboot),
+two units lack the `KillMode=process` override, mixed build channels across the fleet.
+
 ### Striatum retired — daemon and all support units shut down
 On the Principal's instruction, stopped + disabled `striatumd.service` and its system-scope
 support timers: `striatum-lane-cred-resync.timer`, `striatum-worktree-gc.timer`,

@@ -1,0 +1,7 @@
+[Unit]
+Description=Striatum liveness wake (striatum-wake-019f3d37)
+
+[Service]
+Type=oneshot
+ExecStart=/home/halbritt/git/striatum-next/bin/striatum -repo /home/halbritt/git/gpu-fleet -data-home /home/halbritt/.local/share -catalog /home/halbritt/git/striatum-next/catalog -backends /home/halbritt/git/striatum-next/backends -policy /home/halbritt/git/gpu-fleet/policy/driver.yaml -backlog /home/halbritt/git/gpu-fleet/policy/backlog.yaml -checks /home/halbritt/git/gpu-fleet/policy/checks/repository.json -catalog-overlay /home/halbritt/git/striatum-instance/striatum-next/catalog drive -trigger timer
+SuccessExitStatus=4 5

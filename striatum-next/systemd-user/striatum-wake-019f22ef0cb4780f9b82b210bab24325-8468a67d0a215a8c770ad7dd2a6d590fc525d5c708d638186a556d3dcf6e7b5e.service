@@ -1,0 +1,8 @@
+[Unit]
+Description=Striatum liveness wake
+
+[Service]
+Type=oneshot
+KillMode=process
+ExecStart=:/home/halbritt/.local/bin/striatum -repo /home/halbritt/git/striatum-next -data-home /home/halbritt/.local/share -catalog /home/halbritt/git/striatum-next/catalog -backends /home/halbritt/git/striatum-next/backends -policy /home/halbritt/git/striatum-next/policy/driver.yaml -backlog /home/halbritt/git/striatum-next/policy/backlog.yaml -checks /home/halbritt/git/striatum-next/policy/checks/repository.json drive -trigger timer
+SuccessExitStatus=4 5

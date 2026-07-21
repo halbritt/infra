@@ -1,0 +1,10 @@
+[Unit]
+Description=Striatum liveness floor
+
+[Timer]
+OnActiveSec=900s
+OnUnitInactiveSec=900s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

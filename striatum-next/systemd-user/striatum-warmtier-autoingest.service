@@ -1,0 +1,31 @@
+[Unit]
+Description=striatum-warmtier unattended warm-tier ingest (readiness-gated, debt-ordered)
+Documentation=file:/home/halbritt/git/striatum-warmtier/docs/how-to/operator-runbook.md
+# Local-first: the local Postgres, Ollama embedder, and llama.cpp segmenter are
+# systemd-managed too, but they may be down/busy — the orchestrator probes them
+# itself and degrades gracefully, so this unit does not hard-require them.
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/halbritt/git/striatum-warmtier
+# The exhaust leg shells out to the `striatum` CLI (corpus export); systemd-user
+# units start with a minimal PATH, so put ~/.local/bin (where `striatum` installs)
+# ahead of the system dirs or the exhaust leg fails with FileNotFoundError.
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+# Engine config is HIPPO_*; defaults are loopback-only (no egress). Override per
+# host by adding lines here or a drop-in (systemctl --user edit).
+Environment=HIPPO_DATABASE_URL=postgresql:///hippo
+Environment=HIPPO_OLLAMA_BASE_URL=http://127.0.0.1:11434
+Environment=HIPPO_SEGMENTER_BASE_URL=http://127.0.0.1:8081
+# The run journal + quarantine manifest live under the state dir.
+Environment=STRIATUM_WARMTIER_STATE_DIR=%h/.local/state/striatum-warmtier/autoingest
+ExecStart=/home/halbritt/git/striatum-warmtier/.venv/bin/striatum-warmtier autoingest --trigger timer
+# Cheap, frequent, single-flighted via a Postgres advisory lock; a contended run
+# exits 0 ("another run holds the lock"), so overlapping starts are harmless.
+TimeoutStartSec=1800
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target

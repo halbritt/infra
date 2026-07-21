@@ -1,0 +1,7 @@
+[Unit]
+Description=Striatum liveness wake (striatum-wake-019f3d58)
+
+[Service]
+Type=oneshot
+ExecStart=/tmp/claude-1000/-home-halbritt-git-hippo/c0e99ee4-c9ba-4d8c-b3ad-48365d2eba39/scratchpad/striatum-head -repo /home/halbritt/git/hippo -data-home /home/halbritt/.local/share -catalog /home/halbritt/git/striatum-next/catalog -backends /home/halbritt/git/striatum-next/backends -policy /home/halbritt/git/striatum-next/policy/driver.yaml -backlog /home/halbritt/git/hippo/policy/backlog.yaml -checks /home/halbritt/git/hippo/policy/checks/repository.json -catalog-overlay /home/halbritt/git/striatum-instance/striatum-next/catalog drive -trigger timer
+SuccessExitStatus=4 5

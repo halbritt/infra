@@ -1,0 +1,10 @@
+[Unit]
+Description=Striatum liveness floor (striatum-wake-019f3d21)
+
+[Timer]
+OnActiveSec=900s
+OnUnitInactiveSec=900s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

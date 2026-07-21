@@ -1,0 +1,7 @@
+[Unit]
+Description=Striatum liveness wake
+
+[Service]
+Type=oneshot
+ExecStart=:/home/halbritt/.local/bin/striatum -repo /home/halbritt/git/praxis -data-home /home/halbritt/.local/share -catalog /home/halbritt/git/striatum-next/catalog -backends /home/halbritt/git/striatum-next/backends -policy /home/halbritt/git/striatum-next/policy/driver.yaml -backlog /home/halbritt/git/praxis/policy/backlog.yaml -checks /home/halbritt/git/praxis/policy/checks/repository.json drive -trigger timer
+SuccessExitStatus=4 5
