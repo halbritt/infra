@@ -55,6 +55,25 @@ drop-in also clears the `.deb`'s all-interfaces `ExecStart` and re-points it at 
 The peecee exporter is the one off-box piece — a Windows service (WinSW), not systemd; it gets the
 same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter-peecee/`).
 
+## Tailnet index (tailscale.harm.org)
+
+The three user-facing surfaces are linked from the tailnet landing page
+**`tailscale.harm.org`** (served on proximal by `~/git/tailscale-index/server.py` on
+`127.0.0.1:3912`, fronted by cloudflared). Unlike most cards there — which point at
+`tailscale serve` HTTPS URLs — these bind the tailnet IP directly, so the links are plain
+`http://` over the tailnet:
+
+| card | URL |
+|---|---|
+| Grafana — proximal dashboards | `http://proximal.tail0ecc2e.ts.net:3003/` |
+| Prometheus — proximal | `http://proximal.tail0ecc2e.ts.net:9091/` |
+| Alertmanager — proximal | `http://proximal.tail0ecc2e.ts.net:9093/` |
+
+The added cards are recorded in [`tailscale-index-card.patch`](tailscale-index-card.patch)
+(the index dir is not a git repo, so it's a provenance record of the applied edit, mirroring
+[`../caplab-dashboard/tailscale-index-card.patch`](../caplab-dashboard/tailscale-index-card.patch)).
+The server serves `site/` statically with `Cache-Control: no-cache`, so edits are live on save.
+
 ## Files → install locations
 
 | repo file | install path |
@@ -93,6 +112,7 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 | `grafana/dashboards/striatum-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/gpu-fleet-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `role.sql` | run once via `sudo -u postgres psql` |
+| `tailscale-index-card.patch` | record of the Grafana/Prometheus/Alertmanager cards on `~/git/tailscale-index/site/index.html` (not a git repo; see "Tailnet index" above) |
 
 The port-pin that makes `striatumd` scrapeable lives in the **striatum** subsystem, not here:
 `Environment=STRIATUM_DAEMON_MCP_HTTP_ADDR=127.0.0.1:9464` in

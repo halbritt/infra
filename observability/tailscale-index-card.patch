@@ -1,0 +1,52 @@
+# Cards added to the tailnet index (tailscale.harm.org) for the observability
+# surfaces: Grafana, Prometheus, Alertmanager. The index lives at
+# ~/git/tailscale-index/site/index.html (served by server.py on 127.0.0.1:3912,
+# fronted by cloudflared as tailscale.harm.org). That dir is NOT a git repo, so
+# this is a provenance record of the applied edit, not an auto-applied patch.
+# These three targets bind the tailnet IP directly (not tailscale-serve), so
+# their links are http:// (tailnet), unlike the https:// serve URLs on the other
+# cards. Applied 2026-07-21.
+--- a/site/index.html
++++ b/site/index.html
+@@ -212,6 +212,39 @@
+         <article class="service">
+           <div>
+             <h2>Harm Site Mirror</h2>
+             <a href="https://proximal.tail0ecc2e.ts.net:8890/">https://proximal.tail0ecc2e.ts.net:8890/</a>
+           </div>
+           <span class="tag">tailnet mirror</span>
+         </article>
++
++        <article class="service">
++          <div>
++            <h2>Grafana — proximal dashboards</h2>
++            <a href="http://proximal.tail0ecc2e.ts.net:3003/">http://proximal.tail0ecc2e.ts.net:3003/</a>
++          </div>
++          <div>
++            <span class="tag">metrics dashboards</span>
++            <span class="tag">tailnet only</span>
++          </div>
++        </article>
++
++        <article class="service">
++          <div>
++            <h2>Prometheus — proximal</h2>
++            <a href="http://proximal.tail0ecc2e.ts.net:9091/">http://proximal.tail0ecc2e.ts.net:9091/</a>
++          </div>
++          <div>
++            <span class="tag">metrics + alerts</span>
++            <span class="tag">tailnet only</span>
++          </div>
++        </article>
++
++        <article class="service">
++          <div>
++            <h2>Alertmanager — proximal</h2>
++            <a href="http://proximal.tail0ecc2e.ts.net:9093/">http://proximal.tail0ecc2e.ts.net:9093/</a>
++          </div>
++          <div>
++            <span class="tag">alert routing</span>
++            <span class="tag">tailnet only</span>
++          </div>
++        </article>
+       </section>

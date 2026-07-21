@@ -7,6 +7,16 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-21
 
+### Linked observability surfaces on the tailnet index
+Verified the [`observability`](observability/) recording still matches live (all 8 Prometheus
+targets `up` — gpu×2/gpu-fleet/node/postgresql/prometheus/striatumd/llama — 0 rule errors,
+`pg_up 1`) and added **Grafana / Prometheus / Alertmanager** cards to the tailnet landing page
+`tailscale.harm.org` (`~/git/tailscale-index/site/index.html`). These three bind the tailnet IP
+directly (not `tailscale serve`), so their links are plain `http://proximal.tail0ecc2e.ts.net:{3003,9091,9093}/`.
+The index dir is not a git repo, so the added cards are recorded as
+`observability/tailscale-index-card.patch` (mirroring the caplab-dashboard convention) and
+documented in the observability README's new "Tailnet index" section.
+
 ### wigolo synthesis switched to GLM 5.2 (OpenRouter)
 Benchmarked research-synthesis quality across models and rewired [`wigolo`](wigolo/) from
 the local 35B MoE to **GLM 5.2** (`z-ai/glm-5.2`) via OpenRouter, using the OpenAI-compatible
