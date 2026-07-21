@@ -110,3 +110,8 @@ gpu-fleet roadmap's "scheduled task (Windows)" item. (Not yet wired; the
 - `marker/` — marker-pdf GPU document conversion: `install-marker.ps1` (uv venv +
   CUDA torch) and `convert.ps1` (VRAM-freeing GPU runner). Proximal-side caller is
   `marker-convert/scripts/convert-peecee.sh` in `halbritt/skills`.
+- `health/` — `check-whea.sh`, a proximal-side cron probe (`*/30` in halbritt's
+  crontab) counting WHEA-Logger events since boot. Added after the 2026-07-20
+  bugcheck (0x1E, `nvlddmkm.sys`, NVIDIA driver 610.62) that followed a storm of
+  WHEA ID 17 corrected PCIe errors. Logs to `~/.local/state/peecee-whea/whea.log`
+  on proximal; a non-zero count writes an `ALERT` marker file next to it.
