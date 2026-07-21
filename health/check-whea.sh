@@ -36,8 +36,17 @@ fi
 
 echo "$TS $OUT" >> "$LOG"
 
+# A few corrected errors fire at every boot on root port 0:1D.4 (NVMe link) —
+# benign so far. Alert only when the count GROWS within the same boot, i.e.
+# errors are occurring at runtime like in the pre-BSOD storm of 2026-07-20.
 COUNT=${OUT##*whea_since_boot=}
-if [[ "$COUNT" =~ ^[0-9]+$ ]] && (( COUNT > 0 )); then
-    echo "$TS ALERT whea errors present: $OUT" >> "$LOG"
-    echo "$TS $OUT" > "$STATE_DIR/ALERT"
+BOOT=${OUT#boot=}; BOOT=${BOOT%% *}
+LAST_FILE="$STATE_DIR/last"
+if [[ "$COUNT" =~ ^[0-9]+$ ]]; then
+    read -r LAST_BOOT LAST_COUNT < "$LAST_FILE" 2>/dev/null || LAST_BOOT=""
+    if [[ "$BOOT" == "$LAST_BOOT" ]] && (( COUNT > LAST_COUNT )); then
+        echo "$TS ALERT whea count grew within boot ($LAST_COUNT -> $COUNT): $OUT" >> "$LOG"
+        echo "$TS $OUT" > "$STATE_DIR/ALERT"
+    fi
+    echo "$BOOT $COUNT" > "$LAST_FILE"
 fi
