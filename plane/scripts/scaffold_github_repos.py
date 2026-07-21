@@ -303,6 +303,26 @@ def agents_block(repo: dict, project: dict) -> str:
             "- Plane connector lab token pointer:\n"
             "  `/home/halbritt/.config/plane/repos/praxis-pxlab.env` (`0600`, outside git).\n"
         )
+
+    # Default usage standing. Repos whose own doctrine narrows Plane's standing
+    # override this; the generated block must never contradict the repository's
+    # governing ruling, because agents read this block first (top-down) and the
+    # ruling later.
+    usage_lines = (
+        "- GitHub Issues: deprecated; use Plane work items for new issue tracking, claims, reviews, and issue-state changes.\n"
+        "- Use Plane work items for multi-agent planning, claims, submitted artifacts, reviews, and acceptance decisions."
+    )
+    if full_name == "halbritt/striatum-next":
+        # Principal ruling 2026-07-12 ("Plane Is a Projection", in that repo's
+        # AGENTS.md) narrows Plane to two boundary write shapes. The generic
+        # planning/claims/acceptance standing above is wrong there.
+        usage_lines = (
+            "- GitHub Issues: deprecated. Do not open GitHub issues; Plane's standing in this repository is set by the ruling named below.\n"
+            "- **Plane is a projection, not an authority.** The `Plane Is a Projection` ruling (Principal, 2026-07-12) further down this file governs and narrows this block. Work is named by target states in `catalog/target-states/`, never by a Plane item; the ledger computes progress and satisfaction is graph-computed.\n"
+            "- **Writes happen only at boundaries**: one work item per defect dossier (opened at dossier-open, closed at dossier-retire), and retrospective-queue items for delegated decisions awaiting the Principal's individual review. No planning items, no claims, no submitted-artifact or review or acceptance records, no live status mirroring, no per-drive updates.\n"
+            "- A Plane item gates nothing and proves nothing. No lane, gate, drive, or scheduler reads Plane. A stale Plane item is a documentation defect, never semantic authority."
+        )
+
     return f"""{BEGIN}
 ## Plane Tracking
 
@@ -313,8 +333,7 @@ This repository is represented in the local/private Plane workspace `Proximal`.
 - Issue tracker: Plane (`Proximal` workspace), project `{project["name"]}` (`{project["identifier"]}`).
 - Plane URL: `https://proximal.tail0ecc2e.ts.net:10000/`
 - GitHub repo: `https://github.com/{full_name}`
-- GitHub Issues: deprecated; use Plane work items for new issue tracking, claims, reviews, and issue-state changes.
-- Use Plane work items for multi-agent planning, claims, submitted artifacts, reviews, and acceptance decisions.
+{usage_lines}
 - When updating Plane, include the repo, branch/worktree, `run_id`, `base_sha`, artifact links, verification evidence, and authority scope in the work item description or comments.
 - Do not commit Plane API tokens. Local tokens and MCP env files live outside git under `~/.config/plane/`.
 {END}"""
