@@ -96,6 +96,22 @@ The GPU is single-tenant: marker and a resident ollama model cannot both hold th
 proximal-interactive / peecee-batch split: heavy document jobs run here, chat stays
 on proximal.
 
+## GPU driver (rolled back 2026-07-20)
+
+- **Installed: GeForce 596.49** (WMI `32.0.15.9649`), silent clean install
+  (`nv-596.49.exe -s -clean -noreboot` over SSH) after the 610.62 (R610-branch)
+  driver bugchecked (0x1E in `nvlddmkm.sys`; R610 has widespread crash reports).
+  Stay off R610 until it matures; installer kept at `C:\Users\halbr\Downloads\`.
+- **NVIDIA App uninstalled** (driver-only box; removed via
+  `RunDll32 NVI2.DLL,UninstallPackage Display.NvApp -silent`).
+- **Power tweaks:** PCIe Link State Power Management = Off (AC+DC, active plan)
+  and Fast Startup disabled (`HiberbootEnabled=0`) — both documented nvlddmkm
+  triggers.
+- **Known-benign-ish residual:** a handful of WHEA ID 17 *corrected* PCIe errors
+  at each boot on PCH root port `0:1D.4`, whose child is a **Samsung NVMe SSD**
+  (`VEN_144D&DEV_A80A`) — not the GPU. Watched by `health/check-whea.sh`; if
+  counts grow between boots, suspect the SSD link (ASPM/seating), not the driver.
+
 ## Fleet integration (`halbritt/gpu-fleet`)
 
 peecee is a fleet node addressed by capability via the `gpu_slots` heartbeat table.
