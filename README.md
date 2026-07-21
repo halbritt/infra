@@ -37,7 +37,13 @@ Ollama runs as a **headless server**, not the desktop tray app. Swapped
 - **KV-cache quant (2026-06-22):** `OLLAMA_KV_CACHE_TYPE=q8_0` + `OLLAMA_FLASH_ATTENTION=1`
   (the quant silently no-ops without flash attn). Halves KV memory so a large model
   stays fully resident at long context.
-- **Intended resident model (2026-07-08): `qwen3-vl:8b`** — the fleet's first
+- **Intended resident model (2026-07-21): `qwen3.6:27b`** — swapped back in by
+  owner request (gpu-fleet migration `012_peecee_dense_27b_return.sql`), reusing
+  the tuned-resident config below (32768 ctx, `100% GPU`, keep-alive Forever,
+  verified post-swap via `ollama ps`: `17 GB / 100% GPU / 32768 / Forever`). The
+  VL capability is de-advertised until a future migration restores it. The
+  2026-07-08 entry below is now historical:
+- Historical (2026-07-08): `qwen3-vl:8b` — the fleet's first
   vision-language capability, swapped in from the dense `qwen3.6:27b` under the
   gpu-fleet contract `peecee-serves-qwen3-vl@1` (migration `011_peecee_qwen3_vl.sql`).
   The fit rule prefers Qwen3-VL-32B **iff** it stays 100% GPU-resident at the 32768
