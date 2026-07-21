@@ -23,10 +23,10 @@ observations**. Changes applied this session via `ALTER SYSTEM`
 
 | parameter | value | raw | source | rationale (inventory-derived; unverified) |
 |---|---|---|---|---|
-| `shared_buffers` | 32 GB | 4194304 × 8kB | configuration file | ≈ 26% of 125 GiB RAM and ≈ the whole ~40 GB working set; cache-hit ratios 97–100% across DBs. `postmaster` (restart) context. |
-| `effective_cache_size` | 96 GB | 12582912 × 8kB | configuration file | Planner hint ≈ 77% of RAM; consistent with large OS page cache (76 GiB buff/cache observed). |
+| `shared_buffers` | ~~32 GB~~ → 16 GB | 2097152 × 8kB | `ALTER SYSTEM` (auto.conf overrides the 32GB in postgresql.conf) | Right-sized 2026-07-21: pg_buffercache showed true hot set ≈ 11–12 GB (11 GB of the 32 GB pool empty, 10 GB cold striatum scan pages); host RAM now contested (llama-server etc., swap was 100% full). `reports/RIGHTSIZE_MEMORY_2026-07-21.md`. |
+| `effective_cache_size` | ~~96 GB~~ → 32 GB | 4194304 × 8kB | `ALTER SYSTEM` (overrides postgresql.conf) | Right-sized 2026-07-21: the 76 GiB OS page cache it assumed no longer exists (~15 GiB actual). ≈ shared_buffers + realistic OS cache. Same report. |
 | `work_mem` | 256 MB | 262144 kB | configuration file | Raised 64× over the 4 MB default. ⚠️ headroom: `max_connections(100) × 256 MB` = 25.6 GB per single sort/hash node; multi-node queries at peak concurrency are unmeasured (no `pg_stat_statements`, quiet-window sample). |
-| `maintenance_work_mem` | 2 GB | 2097152 kB | configuration file | Faster autovacuum/index builds; up to `autovacuum_max_workers(3) × 2 GB` = 6 GB concurrent. |
+| `maintenance_work_mem` | ~~2 GB~~ → 1 GB | 1048576 kB | `ALTER SYSTEM` (overrides postgresql.conf) | Halved 2026-07-21: PG17 TidStore vacuum rarely needs >1 GB; worst-case `autovacuum_max_workers(3) × 1 GB` = 3 GB. `reports/RIGHTSIZE_MEMORY_2026-07-21.md`. |
 | `wal_buffers` | 64 MB | 8192 × 8kB | configuration file | Explicitly set above the auto (`-1`) default. `postmaster` (restart) context. |
 
 ## Explicitly set but equal to PostgreSQL stock defaults (recorded for provenance)

@@ -32,6 +32,17 @@ ALTER SYSTEM SET log_temp_files = 0;                       -- catch work_mem spi
 -- Backups / PITR (pgBackRest -> nvr/pg-backups). See backups.md.
 ALTER SYSTEM SET archive_command = 'pgbackrest --stanza=proximal archive-push %p';  -- applied (reload)
 ALTER SYSTEM SET archive_mode = on;  -- APPLIED 2026-06-16 (restart); PITR live, check passed
+
+-- Memory right-sizing (2026-07-21, restart-class, APPLIED): the 32GB/96GB/2GB values in
+-- postgresql.conf date from when the box was otherwise idle. Host RAM is now contested
+-- (llama-server + fleet; swap was 100% full, 18 GiB available). pg_buffercache: true hot
+-- set ≈ 11–12 GB (engram 10 GB fully hot; striatum's hot set only 216 MB despite 10 GB
+-- resident; 11 GB of the pool empty). After: available 18→51 GiB, cluster healthy.
+-- work_mem deliberately untouched (verified non-lever 2026-06-17).
+-- Report + revert: reports/RIGHTSIZE_MEMORY_2026-07-21.md
+ALTER SYSTEM SET shared_buffers = '16GB';
+ALTER SYSTEM SET effective_cache_size = '32GB';
+ALTER SYSTEM SET maintenance_work_mem = '1GB';
 ```
 
 ## Database- and table-scoped settings (not `ALTER SYSTEM`) — applied 2026-06-17

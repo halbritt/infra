@@ -6,6 +6,17 @@ provenance repo. Newest first. Config changes record the live cluster (`proximal
 the 2026-06-16/17 pg_upgrade); see `reports/` and `inventory/` for the evidence behind each
 entry, and `git log` for granular history.
 
+## 2026-07-21
+
+### Memory GUCs right-sized for the contested-RAM era
+`shared_buffers 32GB → 16GB`, `effective_cache_size 96GB → 32GB`,
+`maintenance_work_mem 2GB → 1GB` (`ALTER SYSTEM` + restart). The June sizing assumed an
+otherwise-idle host; with llama-server and the rest of the fleet resident, the box sat at
+18 GiB available with swap 100% full while a third of the buffer pool was empty and another
+third held cold striatum scan pages (true hot set ≈ 11–12 GB per pg_buffercache). After:
+51 GiB available. `work_mem` untouched (verified non-lever). Evidence + revert:
+`reports/RIGHTSIZE_MEMORY_2026-07-21.md`, snapshot `inventory/2026-07-21/`.
+
 ## 2026-06-19
 
 ### Repo reorganized: `proximal-pg` → `proximal` (one system, one repo)
