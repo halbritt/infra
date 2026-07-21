@@ -43,7 +43,7 @@ COUNT=${OUT##*whea_since_boot=}
 BOOT=${OUT#boot=}; BOOT=${BOOT%% *}
 LAST_FILE="$STATE_DIR/last"
 if [[ "$COUNT" =~ ^[0-9]+$ ]]; then
-    read -r LAST_BOOT LAST_COUNT < "$LAST_FILE" 2>/dev/null || LAST_BOOT=""
+    { read -r LAST_BOOT LAST_COUNT < "$LAST_FILE"; } 2>/dev/null || LAST_BOOT=""
     if [[ "$BOOT" == "$LAST_BOOT" ]] && (( COUNT > LAST_COUNT )); then
         echo "$TS ALERT whea count grew within boot ($LAST_COUNT -> $COUNT): $OUT" >> "$LOG"
         echo "$TS $OUT" > "$STATE_DIR/ALERT"
