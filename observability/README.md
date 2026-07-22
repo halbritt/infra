@@ -59,15 +59,30 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 
 The three user-facing surfaces are linked from the tailnet landing page
 **`tailscale.harm.org`** (served on proximal by `~/git/tailscale-index/server.py` on
-`127.0.0.1:3912`, fronted by cloudflared). Unlike most cards there — which point at
-`tailscale serve` HTTPS URLs — these bind the tailnet IP directly, so the links are plain
-`http://` over the tailnet:
+`127.0.0.1:3912`, fronted by cloudflared).
 
-| card | URL |
-|---|---|
-| Grafana — proximal dashboards | `http://proximal.tail0ecc2e.ts.net:3003/` |
-| Prometheus — proximal | `http://proximal.tail0ecc2e.ts.net:9091/` |
-| Alertmanager — proximal | `http://proximal.tail0ecc2e.ts.net:9093/` |
+| card | URL | how |
+|---|---|---|
+| Grafana — proximal dashboards | `https://proximal.tail0ecc2e.ts.net:8853/` | tailscale-serve TLS → `:3003` |
+| Prometheus — proximal | `http://proximal.tail0ecc2e.ts.net:9091/` | tailnet-IP-direct (browser-broken, see below) |
+| Alertmanager — proximal | `http://proximal.tail0ecc2e.ts.net:9093/` | tailnet-IP-direct (browser-broken, see below) |
+
+**Grafana over the tailnet.** `*.ts.net` is HSTS-preloaded, so a browser forces HTTPS
+on the tailnet hostname; a service that binds the tailnet IP directly and speaks plain
+HTTP (Grafana's `:3003`) is then unreachable from a browser — the TLS handshake to a
+plain-HTTP port fails, which is exactly how the Grafana card read as "broken" (2026-07-22).
+`curl http://…:3003` still works, masking it. Fix: front it with `tailscale serve`, which
+terminates TLS with the tailnet cert:
+
+```bash
+sudo tailscale serve --bg --https=8853 http://100.85.100.81:3003   # persists across reboot
+```
+
+Grafana's `root_url` must then be the Serve URL (`grafana-server.env.overrides`), or the
+frontend bakes the `http://100.x:3003` `appUrl` into the page and makes blocked
+mixed-content calls. Prometheus and Alertmanager still bind the tailnet IP directly over
+HTTP and have the same browser breakage; front them the same way when browser access is
+wanted.
 
 The added cards are recorded in [`tailscale-index-card.patch`](tailscale-index-card.patch)
 (the index dir is not a git repo, so it's a provenance record of the applied edit, mirroring

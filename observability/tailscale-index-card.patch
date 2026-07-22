@@ -4,8 +4,19 @@
 # fronted by cloudflared as tailscale.harm.org). That dir is NOT a git repo, so
 # this is a provenance record of the applied edit, not an auto-applied patch.
 # These three targets bind the tailnet IP directly (not tailscale-serve), so
-# their links are http:// (tailnet), unlike the https:// serve URLs on the other
+# their links were http:// (tailnet), unlike the https:// serve URLs on the other
 # cards. Applied 2026-07-21.
+#
+# UPDATE 2026-07-22: *.ts.net is HSTS-preloaded, so browsers force HTTPS on the
+# tailnet hostname and a bare http://…:port target is unreachable (TLS handshake
+# to a plain-http port fails) — that is why the Grafana card read as "broken".
+# Fixed Grafana by fronting it with tailscale-serve TLS:
+#   sudo tailscale serve --bg --https=8853 http://100.85.100.81:3003
+# and repointing the card to https://proximal.tail0ecc2e.ts.net:8853/ (+ set
+# Grafana root_url to that Serve URL; see grafana-server.env.overrides). The
+# Prometheus (:9091) and Alertmanager (:9093) cards still bind the tailnet IP
+# directly over http and remain browser-unreachable for the same reason — front
+# them the same way when they're wanted from a browser.
 --- a/site/index.html
 +++ b/site/index.html
 @@ -212,6 +212,39 @@
@@ -20,7 +31,7 @@
 +        <article class="service">
 +          <div>
 +            <h2>Grafana — proximal dashboards</h2>
-+            <a href="http://proximal.tail0ecc2e.ts.net:3003/">http://proximal.tail0ecc2e.ts.net:3003/</a>
++            <a href="https://proximal.tail0ecc2e.ts.net:8853/">https://proximal.tail0ecc2e.ts.net:8853/</a>
 +          </div>
 +          <div>
 +            <span class="tag">metrics dashboards</span>
