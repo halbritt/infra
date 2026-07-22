@@ -49,6 +49,7 @@
         "x": 0,
         "y": 1
       },
+      "timeFrom": "24h",
       "targets": [
         {
           "datasource": {
@@ -57,7 +58,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'black_olive_tree_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'black_olive_tree_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true
         }
       ],
@@ -112,6 +113,7 @@
         "x": 4,
         "y": 1
       },
+      "timeFrom": "24h",
       "targets": [
         {
           "datasource": {
@@ -120,7 +122,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'ficus_audrey_top_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'ficus_audrey_top_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true
         }
       ],
@@ -175,6 +177,7 @@
         "x": 8,
         "y": 1
       },
+      "timeFrom": "24h",
       "targets": [
         {
           "datasource": {
@@ -183,7 +186,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true
         }
       ],
@@ -238,6 +241,7 @@
         "x": 12,
         "y": 1
       },
+      "timeFrom": "24h",
       "targets": [
         {
           "datasource": {
@@ -246,7 +250,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_soil_moisture_1') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_soil_moisture_1') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true
         }
       ],
@@ -301,6 +305,7 @@
         "x": 16,
         "y": 1
       },
+      "timeFrom": "24h",
       "targets": [
         {
           "datasource": {
@@ -309,7 +314,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true
         }
       ],
@@ -364,6 +369,7 @@
         "x": 20,
         "y": 1
       },
+      "timeFrom": "24h",
       "targets": [
         {
           "datasource": {
@@ -372,7 +378,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'monstera_adansonii_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'monstera_adansonii_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true
         }
       ],
@@ -427,6 +433,7 @@
         "x": 0,
         "y": 1
       },
+      "timeFrom": "24h",
       "targets": [
         {
           "datasource": {
@@ -435,7 +442,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true
         }
       ],
@@ -498,7 +505,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'black_olive_tree_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'black_olive_tree_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Black Olive Tree"
         },
@@ -509,7 +516,7 @@
           },
           "refId": "B",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'ficus_audrey_top_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'ficus_audrey_top_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Ficus Audrey (Top)"
         },
@@ -520,7 +527,7 @@
           },
           "refId": "C",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Dracaena Lisa"
         },
@@ -531,7 +538,7 @@
           },
           "refId": "D",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_soil_moisture_1') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_soil_moisture_1') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Ficus Audrey (Deep)"
         },
@@ -542,7 +549,7 @@
           },
           "refId": "E",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Kangaroo Paw Fern"
         },
@@ -553,7 +560,7 @@
           },
           "refId": "F",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'monstera_adansonii_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'monstera_adansonii_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Monstera adansonii"
         },
@@ -564,7 +571,7 @@
           },
           "refId": "G",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Palm"
         }
@@ -579,7 +586,7 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 6,
             "showPoints": "never",
-            "spanNulls": true
+            "spanNulls": false
           },
           "color": {
             "mode": "palette-classic"
@@ -638,7 +645,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Dracaena Lisa"
         },
@@ -649,7 +656,7 @@
           },
           "refId": "B",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'ficus_audrey_top_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'ficus_audrey_top_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Ficus Audrey"
         },
@@ -660,7 +667,7 @@
           },
           "refId": "C",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Kangaroo Paw Fern"
         },
@@ -671,7 +678,7 @@
           },
           "refId": "D",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'monstera_adansonii_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'monstera_adansonii_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Monstera adansonii"
         },
@@ -682,7 +689,7 @@
           },
           "refId": "E",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'palm_moisture_palm_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(previous)",
+          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'palm_moisture_palm_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Palm"
         }
@@ -695,7 +702,7 @@
             "lineInterpolation": "smooth",
             "fillOpacity": 8,
             "showPoints": "never",
-            "spanNulls": true
+            "spanNulls": false
           },
           "color": {
             "mode": "palette-classic"

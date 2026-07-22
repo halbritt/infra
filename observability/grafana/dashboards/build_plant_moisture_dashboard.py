@@ -5,9 +5,10 @@ InfluxDB add-on via the influx-ha datasource.
 Migration of the appliance's broken "Plant Moisture" Lovelace dashboard onto
 proximal Grafana (the recorder only keeps ~10 days; InfluxDB keeps full history).
 
-SCHEMA ASSUMPTION — the HA InfluxDB integration's default layout, NOT yet
-verified against this instance (needs the read credential first). All of it is
-isolated in SOIL_UNIT / RATE_UNIT / the entity_id tag values below. Verify with:
+SCHEMA — the HA InfluxDB integration's default layout, verified live against
+this instance 2026-07-22 (measurement "%" / "%/d", entity_id tags as below).
+All of it stays isolated in SOIL_UNIT / RATE_UNIT / the entity_id tables below.
+Re-verify after any HA-side rename with:
 
   influx -host 100.105.145.26 -port 8086 -username grafana_ro -password ... \
          -database homeassistant -execute \
@@ -52,8 +53,12 @@ def nid():
     _id[0] += 1
     return _id[0]
 
-def q(unit, entity_id, fn="mean", fill="previous"):
-    """One InfluxQL target selecting a single entity's series from a measurement."""
+def q(unit, entity_id, fn="mean", fill="none"):
+    """One InfluxQL target selecting a single entity's series from a measurement.
+
+    fill=none (not previous): a sensor that stops reporting must leave a real gap,
+    not carry its last value forward — otherwise a dead sensor reads as a live one.
+    """
     return {
         "datasource": DS,
         "refId": "A",
@@ -70,6 +75,9 @@ def gauge(name, unit, entity_id, x, y, w=4, h=6):
     return {
         "type": "gauge", "title": name, "datasource": DS, "id": nid(),
         "gridPos": {"h": h, "w": w, "x": x, "y": y},
+        # Gauge reflects only the last 24h so a sensor that has gone silent shows
+        # "No data" instead of a stale reading, regardless of the dashboard range.
+        "timeFrom": "24h",
         "targets": [q(unit, entity_id, fn="last")],
         "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
                     "showThresholdLabels": False, "showThresholdMarkers": True},
@@ -95,7 +103,7 @@ def rate_ts(x, y, w=24, h=9):
         "fieldConfig": {"defaults": {
             "unit": "none",
             "custom": {"drawStyle": "line", "lineInterpolation": "smooth",
-                       "fillOpacity": 8, "showPoints": "never", "spanNulls": True},
+                       "fillOpacity": 8, "showPoints": "never", "spanNulls": False},
             "color": {"mode": "palette-classic"},
         }, "overrides": []},
         "options": {"legend": {"displayMode": "table", "placement": "bottom",
@@ -119,7 +127,7 @@ def readings_table(x, y, w=24, h=8):
         "fieldConfig": {"defaults": {
             "unit": "percent", "min": 0, "max": 100,
             "custom": {"drawStyle": "line", "lineInterpolation": "smooth",
-                       "fillOpacity": 6, "showPoints": "never", "spanNulls": True},
+                       "fillOpacity": 6, "showPoints": "never", "spanNulls": False},
             "color": {"mode": "palette-classic"},
         }, "overrides": []},
         "options": {"legend": {"displayMode": "table", "placement": "bottom",
