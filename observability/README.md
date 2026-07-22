@@ -61,28 +61,30 @@ The three user-facing surfaces are linked from the tailnet landing page
 **`tailscale.harm.org`** (served on proximal by `~/git/tailscale-index/server.py` on
 `127.0.0.1:3912`, fronted by cloudflared).
 
-| card | URL | how |
+| card | serve URL | terminates to |
 |---|---|---|
-| Grafana — proximal dashboards | `https://proximal.tail0ecc2e.ts.net:8853/` | tailscale-serve TLS → `:3003` |
-| Prometheus — proximal | `http://proximal.tail0ecc2e.ts.net:9091/` | tailnet-IP-direct (browser-broken, see below) |
-| Alertmanager — proximal | `http://proximal.tail0ecc2e.ts.net:9093/` | tailnet-IP-direct (browser-broken, see below) |
+| Grafana — proximal dashboards | `https://proximal.tail0ecc2e.ts.net:8853/` | `:3003` |
+| Prometheus — proximal | `https://proximal.tail0ecc2e.ts.net:9491/` | `:9091` |
+| Alertmanager — proximal | `https://proximal.tail0ecc2e.ts.net:9493/` | `:9093` |
 
-**Grafana over the tailnet.** `*.ts.net` is HSTS-preloaded, so a browser forces HTTPS
-on the tailnet hostname; a service that binds the tailnet IP directly and speaks plain
-HTTP (Grafana's `:3003`) is then unreachable from a browser — the TLS handshake to a
-plain-HTTP port fails, which is exactly how the Grafana card read as "broken" (2026-07-22).
-`curl http://…:3003` still works, masking it. Fix: front it with `tailscale serve`, which
-terminates TLS with the tailnet cert:
+**Serving these over the tailnet.** `*.ts.net` is HSTS-preloaded, so a browser forces
+HTTPS on the tailnet hostname; a service that binds the tailnet IP directly and speaks
+plain HTTP (Grafana `:3003`, Prometheus `:9091`, Alertmanager `:9093`) is then
+unreachable from a browser — the TLS handshake to a plain-HTTP port fails, which is
+exactly how these cards read as "broken" (2026-07-22). `curl http://…:PORT` still works,
+masking it. Fix: front each with `tailscale serve`, which terminates TLS with the tailnet
+cert (all three persist across reboot):
 
 ```bash
-sudo tailscale serve --bg --https=8853 http://100.85.100.81:3003   # persists across reboot
+sudo tailscale serve --bg --https=8853 http://100.85.100.81:3003   # grafana
+sudo tailscale serve --bg --https=9491 http://100.85.100.81:9091   # prometheus
+sudo tailscale serve --bg --https=9493 http://100.85.100.81:9093   # alertmanager
 ```
 
-Grafana's `root_url` must then be the Serve URL (`grafana-server.env.overrides`), or the
-frontend bakes the `http://100.x:3003` `appUrl` into the page and makes blocked
-mixed-content calls. Prometheus and Alertmanager still bind the tailnet IP directly over
-HTTP and have the same browser breakage; front them the same way when browser access is
-wanted.
+Each service must also advertise the Serve URL as its external URL, or it bakes the
+browser-unreachable `http://100.x:PORT` into pages/redirects: Grafana `root_url`
+(`grafana-server.env.overrides`), Prometheus/Alertmanager `--web.external-url` (their
+`*.default` ARGS). The listen addresses stay on the tailnet IP; Serve proxies to them.
 
 The added cards are recorded in [`tailscale-index-card.patch`](tailscale-index-card.patch)
 (the index dir is not a git repo, so it's a provenance record of the applied edit, mirroring

@@ -2,4 +2,9 @@
 # Due to shell escaping, to pass backslashes for regexes, you need to double
 # them (\\d for \d). If running under systemd, you need to double them again
 # (\\\\d to mean \d), and escape newlines too.
-ARGS="--web.listen-address=100.85.100.81:9091"
+# --web.external-url is the tailscale-serve TLS front (:9491 -> this http :9091).
+# Browsers force HTTPS on *.ts.net (HSTS preload), so bare http://…:9091 is
+# unreachable from a browser; Serve terminates TLS. External-url must be the Serve
+# URL or Prometheus redirects (/ -> /graph, alert source links) point back at the
+# browser-unreachable http 100.x address. See observability README.
+ARGS="--web.listen-address=100.85.100.81:9091 --web.external-url=https://proximal.tail0ecc2e.ts.net:9491/"

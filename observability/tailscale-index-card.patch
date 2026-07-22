@@ -13,10 +13,14 @@
 # Fixed Grafana by fronting it with tailscale-serve TLS:
 #   sudo tailscale serve --bg --https=8853 http://100.85.100.81:3003
 # and repointing the card to https://proximal.tail0ecc2e.ts.net:8853/ (+ set
-# Grafana root_url to that Serve URL; see grafana-server.env.overrides). The
-# Prometheus (:9091) and Alertmanager (:9093) cards still bind the tailnet IP
-# directly over http and remain browser-unreachable for the same reason — front
-# them the same way when they're wanted from a browser.
+# Grafana root_url to that Serve URL; see grafana-server.env.overrides).
+#
+# UPDATE 2026-07-22 (same day): applied the same fix to the other two, so all
+# three observability cards are now https tailscale-serve URLs:
+#   sudo tailscale serve --bg --https=9491 http://100.85.100.81:9091  # prometheus
+#   sudo tailscale serve --bg --https=9493 http://100.85.100.81:9093  # alertmanager
+# with --web.external-url set to the Serve URL in each service's *.default ARGS.
+# Cards: Prometheus -> :9491, Alertmanager -> :9493.
 --- a/site/index.html
 +++ b/site/index.html
 @@ -212,6 +212,39 @@

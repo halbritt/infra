@@ -6,4 +6,4 @@
 # (empty) disables the HA gossip listener — this is a single Alertmanager, not a cluster, so
 # nothing should bind :9094. --web.external-url makes the "Silence"/source links in Slack
 # notifications resolve back to this box.
-ARGS="--config.file=/etc/prometheus/alertmanager.yml --storage.path=/var/lib/prometheus/alertmanager --web.listen-address=100.85.100.81:9093 --web.external-url=http://100.85.100.81:9093 --cluster.listen-address="
+ARGS="--config.file=/etc/prometheus/alertmanager.yml --storage.path=/var/lib/prometheus/alertmanager --web.listen-address=100.85.100.81:9093 --web.external-url=https://proximal.tail0ecc2e.ts.net:9493/ --cluster.listen-address="
