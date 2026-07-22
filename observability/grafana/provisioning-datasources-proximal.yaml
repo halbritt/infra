@@ -9,3 +9,22 @@ datasources:
     jsonData:
       timeInterval: 15s
       httpMethod: POST
+
+  # Home Assistant appliance's InfluxDB add-on (:8086, InfluxQL/v1, db "homeassistant").
+  # Empirically plain HTTP on :8086 despite the add-on's ssl:true (that covers the web UI,
+  # not the API port). Tailnet IP for durability, matching the Prometheus datasource above.
+  # Credential is a dedicated READ-ONLY Influx user, NOT the HA write user — created in the
+  # add-on's Chronograf UI. Values come from /etc/grafana/ha-influx.env (0600 root, NOT in
+  # git); see grafana/ha-influx.env.template and the README secret list.
+  - name: HA-InfluxDB
+    uid: influx-ha
+    type: influxdb
+    access: proxy
+    url: http://100.105.145.26:8086
+    database: homeassistant
+    user: ${INFLUX_HA_READ_USER}
+    jsonData:
+      dbName: homeassistant
+      httpMode: GET
+    secureJsonData:
+      password: ${INFLUX_HA_READ_PASSWORD}

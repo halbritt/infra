@@ -111,6 +111,8 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `grafana/dashboards/nvidia-gpu-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/striatum-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/gpu-fleet-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
+| `grafana/dashboards/plant-moisture-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal"); built by `build_plant_moisture_dashboard.py` |
+| `grafana/ha-influx.env.template` | `/etc/grafana/ha-influx.env` (0600 root, **add real read-only Influx creds**) |
 | `role.sql` | run once via `sudo -u postgres psql` |
 | `tailscale-index-card.patch` | record of the Grafana/Prometheus/Alertmanager cards on `~/git/tailscale-index/site/index.html` (not a git repo; see "Tailnet index" above) |
 
@@ -406,3 +408,9 @@ journalctl -u prometheus-alertmanager -n 20 | grep -i slack                     
 - **Grafana admin password** — generated at install, stored only in `/etc/grafana/admin.env`
   (0600 root), loaded via the `10-proximal.conf` drop-in. Retrieve with
   `sudo cat /etc/grafana/admin.env`. User `admin`.
+- **HA InfluxDB read creds** — a dedicated read-only Influx user for the `HA-InfluxDB`
+  datasource, only in `/etc/grafana/ha-influx.env` (0600 root). The repo has
+  `grafana/ha-influx.env.template`. Create the user in the appliance's InfluxDB add-on
+  (Chronograf UI), grant READ on `homeassistant` only, never reuse the HA write user.
+  Wire it in by adding `EnvironmentFile=-/etc/grafana/ha-influx.env` to the
+  `10-proximal.conf` drop-in.
