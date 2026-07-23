@@ -100,13 +100,16 @@ HUM_STEPS = [{"color": "orange", "value": None}, {"color": "green", "value": 30}
 panels = []
 y = 0
 panels.append(row("Now", y)); y += 1
-panels.append(stat("Indoor Temp", "°F", "gw1200b_indoor_temperature", 0, y, "fahrenheit", steps=TEMP_STEPS))
-panels.append(stat("Indoor Humidity", "%", "gw1200b_indoor_humidity", 4, y, "percent", steps=HUM_STEPS))
-panels.append(stat("Barometric", *PRESSURE[1:], x=8, y=y, unit="pressureinhg"))
-panels.append(stat("Light (LUMI)", "lx", "lumi_light_sensor", 12, y, "lux"))
-panels.append(stat("Dewpoint", "°F", "gw1200b_indoor_dewpoint", 16, y, "fahrenheit"))
-panels.append(stat("Outdoor Temp", "°F", "sonoff_snzb_02wd_temperature", 20, y, "fahrenheit"))
-y += 4
+# Row A — indoor vs outdoor pairs (SNZB-02WD in the Back Yard is the outdoor sensor)
+panels.append(stat("Indoor Temp", "°F", "gw1200b_indoor_temperature", 0, y, "fahrenheit", w=6, steps=TEMP_STEPS))
+panels.append(stat("Outdoor Temp", "°F", "sonoff_snzb_02wd_temperature", 6, y, "fahrenheit", w=6, steps=TEMP_STEPS))
+panels.append(stat("Indoor Humidity", "%", "gw1200b_indoor_humidity", 12, y, "percent", w=6, steps=HUM_STEPS))
+panels.append(stat("Outdoor Humidity", "%", "sonoff_snzb_02wd_humidity", 18, y, "percent", w=6, steps=HUM_STEPS))
+# Row B — the rest, full width
+panels.append(stat("Barometric", "inHg", "gw1200b_relative_pressure", 0, y + 4, "pressureinhg", w=8))
+panels.append(stat("Dewpoint (indoor)", "°F", "gw1200b_indoor_dewpoint", 8, y + 4, "fahrenheit", w=8))
+panels.append(stat("Light (LUMI)", "lx", "lumi_light_sensor", 16, y + 4, "lux", w=8))
+y += 8
 
 panels.append(row("Temperature", y)); y += 1
 panels.append(ts("Temperature (°F) — indoor rooms + outdoor reference", TEMPS, 0, y, unit="fahrenheit")); y += 8
