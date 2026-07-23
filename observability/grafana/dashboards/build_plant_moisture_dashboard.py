@@ -80,7 +80,9 @@ def gauge(name, unit, entity_id, x, y, w=4, h=6):
         # Gauge reflects only the last 24h so a sensor that has gone silent shows
         # "No data" instead of a stale reading, regardless of the dashboard range.
         "timeFrom": "24h",
-        "targets": [q(unit, entity_id, fn="last")],
+        # alias = plant name: without it the single InfluxQL series is named after
+        # the measurement ("%"), so the gauge caption reads "%" instead of the plant.
+        "targets": [{**q(unit, entity_id, fn="last"), "alias": name}],
         "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
                     "showThresholdLabels": False, "showThresholdMarkers": True},
         "fieldConfig": {"defaults": {

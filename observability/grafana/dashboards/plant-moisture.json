@@ -59,7 +59,8 @@
           "refId": "A",
           "resultFormat": "time_series",
           "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'ficus_audrey_top_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true
+          "rawQuery": true,
+          "alias": "Ficus Audrey (Top)"
         }
       ],
       "options": {
@@ -123,7 +124,8 @@
           "refId": "A",
           "resultFormat": "time_series",
           "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true
+          "rawQuery": true,
+          "alias": "Dracaena Lisa"
         }
       ],
       "options": {
@@ -187,7 +189,8 @@
           "refId": "A",
           "resultFormat": "time_series",
           "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_soil_moisture_1') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true
+          "rawQuery": true,
+          "alias": "Ficus Audrey (Deep)"
         }
       ],
       "options": {
@@ -251,7 +254,8 @@
           "refId": "A",
           "resultFormat": "time_series",
           "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true
+          "rawQuery": true,
+          "alias": "Kangaroo Paw Fern"
         }
       ],
       "options": {
@@ -315,7 +319,8 @@
           "refId": "A",
           "resultFormat": "time_series",
           "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'monstera_adansonii_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true
+          "rawQuery": true,
+          "alias": "Monstera adansonii"
         }
       ],
       "options": {
@@ -379,7 +384,8 @@
           "refId": "A",
           "resultFormat": "time_series",
           "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true
+          "rawQuery": true,
+          "alias": "Palm"
         }
       ],
       "options": {
