@@ -17,21 +17,27 @@ import json
 DS = {"type": "influxdb", "uid": "influx-ha"}
 
 # (label, measurement, entity_id)
+# "Weather (met.no)" lines come from template sensors mirroring weather.forecast_home
+# (the weather domain isn't written to InfluxDB, so those template sensors bridge it).
 TEMPS = [
     ("Indoor (Ecowitt)", "°F", "gw1200b_indoor_temperature"),
     ("Greenhouse",       "°F", "sonoff_snzb_02d_temperature"),
     ("Room (THS)",       "°F", "temperature_and_humidity_sensor_temperature"),
     ("AC (Midea)",       "°F", "midea_ac_temperature"),
     ("Dewpoint (indoor)","°F", "gw1200b_indoor_dewpoint"),
-    ("Outdoor",          "°F", "sonoff_snzb_02wd_temperature"),
+    ("Outdoor (sensor)", "°F", "sonoff_snzb_02wd_temperature"),
+    ("Weather (met.no)", "°F", "local_weather_temperature"),
 ]
 HUMS = [
     ("Indoor (Ecowitt)",   "%", "gw1200b_indoor_humidity"),
     ("Greenhouse",         "%", "sonoff_snzb_02d_humidity"),
     ("Room (THS)",         "%", "temperature_and_humidity_sensor_humidity"),
     ("Humidifier (Levoit)","%", "classic_300s_humidity"),
-    ("Outdoor",            "%", "sonoff_snzb_02wd_humidity"),
+    ("Outdoor (sensor)",   "%", "sonoff_snzb_02wd_humidity"),
+    ("Weather (met.no)",   "%", "local_weather_humidity"),
 ]
+WIND = ("Wind (met.no)", "mph", "local_weather_wind_speed")
+UV = ("UV index (met.no)", "UV index", "local_weather_uv_index")
 LIGHTS = [
     ("Light sensor (LUMI)", "lx", "lumi_light_sensor"),
     ("Hall night light",    "lx", "hall_night_light_illuminance"),
@@ -118,8 +124,14 @@ panels.append(row("Humidity", y)); y += 1
 panels.append(ts("Relative humidity (%)", HUMS, 0, y, unit="percent")); y += 8
 
 panels.append(row("Pressure & Light", y)); y += 1
-panels.append(ts("Barometric pressure (inHg)", [PRESSURE], 0, y, w=12, unit="pressureinhg"))
+panels.append(ts("Barometric pressure (inHg) — Ecowitt vs met.no",
+                 [PRESSURE, ("Weather (met.no)", "inHg", "local_weather_pressure")],
+                 0, y, w=12, unit="pressureinhg"))
 panels.append(ts("Illuminance (lux, log)", LIGHTS, 12, y, w=12, unit="lux", log=True)); y += 8
+
+panels.append(row("Local weather (met.no)", y)); y += 1
+panels.append(ts("Wind speed (mph)", [WIND], 0, y, w=12, unit="velocitymph"))
+panels.append(ts("UV index", [UV], 12, y, w=12, unit="short")); y += 8
 
 dashboard = {
     "uid": "indoor-environment",
