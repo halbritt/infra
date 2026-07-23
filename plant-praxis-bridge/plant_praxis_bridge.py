@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
-"""plant-praxis-bridge — file a Praxis reminder when a plant needs water.
+"""plant-praxis-bridge — file a Praxis reminder when a plant needs attention.
 
-Reads each plant's latest soil moisture from the HA appliance's InfluxDB add-on,
-compares against a per-plant rewater threshold (the point where its drying curve
-flattens; see the observability plant-moisture dashboard analysis, 2026-07-23),
-and creates a work item in the harm Plane `PRAXIS` project when a plant first
-crosses below. Praxis's standing Plane sync (ADR 0014) imports that item as a
-reminder. One alert per dry-down: re-arms only after the plant is watered
-(moisture rises back above threshold + hysteresis).
+Reads each plant's latest soil moisture from the HA appliance's InfluxDB add-on
+and files a work item in the harm Plane `PRAXIS` project — which Praxis imports
+as a reminder via its ADR-0014 standing sync — for either of two conditions:
 
-No Home Assistant credential or config change: detection is off InfluxDB, which
-proximal already reads. Runs as a systemd user timer (hourly).
+  1. THIRSTY  — moisture has dropped below the plant's per-plant rewater
+                threshold (the point where its drying curve flattens).
+  2. DARK     — the sensor has stopped reporting (no reading for STALE_HOURS).
+                A dark sensor is NOT skipped: it can mean a dead battery/sensor
+                OR an unmonitored plant quietly drying out, both of which need a
+                human to go look. (This is the whole point — a silent sensor
+                must never mean a silent dead plant.)
+
+Each condition alerts once and re-arms only when it clears (watered / sensor
+back). State is a small JSON file. No Home Assistant credential or config
+change: detection is off InfluxDB, which proximal already reads.
 
 Env (from the unit's EnvironmentFiles):
   INFLUXDB_URL, INFLUXDB_USER, INFLUXDB_PASSWORD   (~/.config/plant-praxis-bridge.env)
   PLANE_API_KEY, PLANE_INTERNAL_BASE_URL, PLANE_WORKSPACE_SLUG  (~/.config/plane/harm-mcp.env)
+  PLANT_PRAXIS_STALE_HOURS (optional, default 24), PLANT_PRAXIS_PROJECT_ID (optional)
 """
 import json, os, sys, time, urllib.parse, urllib.request, datetime as dt
 
@@ -26,7 +32,9 @@ PLANTS = [
     ("Palm",               "palm_moisture_soil_moisture",          30),
     ("Kangaroo Paw Fern",  "kangaroo_paw_fern_soil_moisture",      45),
 ]
-REARM_HYSTERESIS = 8          # re-arm once moisture climbs this far back above threshold
+REARM_HYSTERESIS = 8   # re-arm THIRSTY once moisture climbs this far back above threshold
+STALE_HOURS = float(os.environ.get("PLANT_PRAXIS_STALE_HOURS", "24"))  # DARK after this silence
+LOOKBACK_DAYS = 30     # query window; no point within it => treat as long-dark
 PROJECT_ID = os.environ.get("PLANT_PRAXIS_PROJECT_ID",
                             "978fcda1-c9c1-4437-b83a-5c3d6de0178e")  # harm/PRAXIS
 STATE_PATH = os.path.expanduser("~/.local/state/plant-praxis-bridge/state.json")
@@ -37,17 +45,20 @@ def log(msg):
 
 
 def influx_last(entity):
-    """Latest soil-moisture reading in the last 24h, or None if the sensor is silent."""
+    """Latest reading as (value, age_seconds), or None if silent for LOOKBACK_DAYS."""
     base = os.environ["INFLUXDB_URL"]
     q = (f'SELECT last("value") FROM "%" WHERE ("entity_id" = \'{entity}\') '
-         f'AND time > now()-24h')
+         f'AND time > now()-{LOOKBACK_DAYS}d')
     url = base + "/query?" + urllib.parse.urlencode({
         "u": os.environ["INFLUXDB_USER"], "p": os.environ["INFLUXDB_PASSWORD"],
-        "db": "homeassistant", "q": q})
+        "db": "homeassistant", "q": q, "epoch": "s"})
     with urllib.request.urlopen(url, timeout=20) as r:
         d = json.load(r)
     s = d["results"][0].get("series")
-    return float(s[0]["values"][0][1]) if s else None
+    if not s:
+        return None
+    ts, val = s[0]["values"][0]
+    return float(val), max(0.0, time.time() - int(ts))
 
 
 def create_plane_item(name, description_html):
@@ -59,6 +70,21 @@ def create_plane_item(name, description_html):
         "X-API-Key": os.environ["PLANE_API_KEY"], "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.load(r)
+
+
+def file_item(st, flag_key, dry_run, name, title, desc):
+    """File a Plane item for one alert condition, dedup via st[flag_key]."""
+    if st.get(flag_key):
+        return
+    if dry_run:
+        log(f"{name}: WOULD file [{flag_key}] — {title}"); return
+    try:
+        item = create_plane_item(title, desc)
+        log(f"{name}: filed [{flag_key}] {item.get('id','?')} (seq {item.get('sequence_id','?')})")
+        st[flag_key] = True
+        st[flag_key + "_on"] = dt.date.today().isoformat()
+    except Exception as e:
+        log(f"{name}: Plane create failed for [{flag_key}]: {e}")
 
 
 def load_state():
@@ -82,35 +108,47 @@ def main():
     state = load_state()
     today = dt.date.today().isoformat()
     for name, entity, threshold in PLANTS:
+        st = state.setdefault(entity, {})
         try:
-            val = influx_last(entity)
+            res = influx_last(entity)
         except Exception as e:
             log(f"{name}: InfluxDB read failed: {e}"); continue
-        if val is None:
-            log(f"{name}: no reading in last 24h — skipping"); continue
-        st = state.setdefault(entity, {"alerted": False})
+
+        # --- DARK: no data within LOOKBACK_DAYS, or last point older than STALE_HOURS
+        age_h = res[1] / 3600 if res else LOOKBACK_DAYS * 24
+        if res is None or age_h >= STALE_HOURS:
+            label = f">{LOOKBACK_DAYS}d" if res is None else f"{age_h:.0f}h"
+            st["dark"] = True
+            file_item(st, "dark_alerted", dry_run, name,
+                      f"\U0001f331 Check {name} — soil sensor dark ({label})",
+                      f"<p>{name}'s soil-moisture sensor has not reported for <b>{label}</b>. "
+                      f"That can mean a dead battery/sensor <i>or</i> an unmonitored plant "
+                      f"drying out — go check the plant and the sensor. "
+                      f"(plant-praxis-bridge, {today})</p>")
+            log(f"{name}: DARK ({label}), dark_alerted={st.get('dark_alerted')}")
+            continue
+
+        # --- sensor is live: clear a prior DARK alert
+        val = res[0]
         st["last_value"] = round(val, 1)
-        if val < threshold and not st["alerted"]:
-            title = f"\U0001f331 Water {name}"
-            desc = (f"<p>{name} soil moisture is <b>{val:.0f}%</b> — at/below its "
-                    f"{threshold}% rewater point (drying has flattened). Detected "
-                    f"{today} by plant-praxis-bridge from InfluxDB.</p>")
-            if dry_run:
-                log(f"{name}: {val:.0f}% < {threshold}% — WOULD file Plane item")
-            else:
-                try:
-                    item = create_plane_item(title, desc)
-                    log(f"{name}: {val:.0f}% < {threshold}% — filed {item.get('id','?')} "
-                        f"({item.get('sequence_id','?')})")
-                    st["alerted"] = True
-                    st["last_alert"] = today
-                except Exception as e:
-                    log(f"{name}: Plane create failed: {e}")
-        elif val >= threshold + REARM_HYSTERESIS and st["alerted"]:
+        st["last_age_h"] = round(age_h, 1)
+        st["dark"] = False
+        if st.get("dark_alerted"):
+            st["dark_alerted"] = False
+            log(f"{name}: sensor recovered ({val:.0f}%) — DARK re-armed")
+
+        # --- THIRSTY: below the rewater threshold
+        if val < threshold:
+            file_item(st, "alerted", dry_run, name,
+                      f"\U0001f331 Water {name}",
+                      f"<p>{name} soil moisture is <b>{val:.0f}%</b> — at/below its "
+                      f"{threshold}% rewater point (drying has flattened). "
+                      f"(plant-praxis-bridge, {today})</p>")
+        elif val >= threshold + REARM_HYSTERESIS and st.get("alerted"):
             st["alerted"] = False
-            log(f"{name}: {val:.0f}% back above {threshold}+{REARM_HYSTERESIS}% — re-armed")
+            log(f"{name}: {val:.0f}% back above {threshold}+{REARM_HYSTERESIS}% — THIRSTY re-armed")
         else:
-            log(f"{name}: {val:.0f}% (threshold {threshold}%, alerted={st['alerted']})")
+            log(f"{name}: {val:.0f}% (thr {threshold}%, thirsty_alerted={st.get('alerted', False)})")
     if not dry_run:
         save_state(state)
 
