@@ -129,6 +129,7 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `grafana/dashboards/striatum-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/gpu-fleet-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/plant-moisture.json` | `/var/lib/grafana/dashboards-homeassistant/` (provisioned, folder "Home Assistant" — appliance data, not proximal metrics); built by `build_plant_moisture_dashboard.py` |
+| `grafana/dashboards/indoor-environment.json` | `/var/lib/grafana/dashboards-homeassistant/` (folder "Home Assistant"); built by `build_indoor_environment_dashboard.py` — ambient temp/humidity/pressure/light |
 | `grafana/ha-influx.env.template` | `/etc/grafana/ha-influx.env` (0600 root, **add real read-only Influx creds**) |
 | `role.sql` | run once via `sudo -u postgres psql` |
 | `tailscale-index-card.patch` | record of the Grafana/Prometheus/Alertmanager cards on `~/git/tailscale-index/site/index.html` (not a git repo; see "Tailnet index" above) |

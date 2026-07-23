@@ -1,0 +1,786 @@
+{
+  "uid": "indoor-environment",
+  "title": "Indoor Environment \u2014 homeassistant (via InfluxDB)",
+  "tags": [
+    "environment",
+    "homeassistant",
+    "influxdb"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-2d",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Now",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Indoor Temp",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Indoor Temp",
+          "rawQuery": true,
+          "query": "SELECT last(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'gw1200b_indoor_temperature') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 64
+              },
+              {
+                "color": "orange",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Indoor Humidity",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Indoor Humidity",
+          "rawQuery": true,
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_indoor_humidity') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 30
+              },
+              {
+                "color": "blue",
+                "value": 65
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Barometric",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Barometric",
+          "rawQuery": true,
+          "query": "SELECT last(\"value\") FROM \"inHg\" WHERE (\"entity_id\" = 'gw1200b_relative_pressure') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressureinhg",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Light (LUMI)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Light (LUMI)",
+          "rawQuery": true,
+          "query": "SELECT last(\"value\") FROM \"lx\" WHERE (\"entity_id\" = 'lumi_light_sensor') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lux",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Dewpoint",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Dewpoint",
+          "rawQuery": true,
+          "query": "SELECT last(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'gw1200b_indoor_dewpoint') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Outdoor Temp",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Outdoor Temp",
+          "rawQuery": true,
+          "query": "SELECT last(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'sonoff_snzb_02wd_temperature') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Temperature",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 8,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Temperature (\u00b0F) \u2014 indoor rooms + outdoor reference",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Indoor (Ecowitt)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'gw1200b_indoor_temperature') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "B",
+          "resultFormat": "time_series",
+          "alias": "Greenhouse",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'sonoff_snzb_02d_temperature') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "C",
+          "resultFormat": "time_series",
+          "alias": "Room (THS)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'temperature_and_humidity_sensor_temperature') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "D",
+          "resultFormat": "time_series",
+          "alias": "AC (Midea)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'midea_ac_temperature') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "E",
+          "resultFormat": "time_series",
+          "alias": "Dewpoint (indoor)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'gw1200b_indoor_dewpoint') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "F",
+          "resultFormat": "time_series",
+          "alias": "Outdoor",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"\u00b0F\" WHERE (\"entity_id\" = 'sonoff_snzb_02wd_temperature') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Humidity",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 10,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Relative humidity (%)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Indoor (Ecowitt)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_indoor_humidity') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "B",
+          "resultFormat": "time_series",
+          "alias": "Greenhouse",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'sonoff_snzb_02d_humidity') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "C",
+          "resultFormat": "time_series",
+          "alias": "Room (THS)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'temperature_and_humidity_sensor_humidity') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "D",
+          "resultFormat": "time_series",
+          "alias": "Humidifier (Levoit)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'classic_300s_humidity') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "E",
+          "resultFormat": "time_series",
+          "alias": "Outdoor",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'sonoff_snzb_02wd_humidity') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Pressure & Light",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 12,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Barometric pressure (inHg)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Barometric (relative)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"inHg\" WHERE (\"entity_id\" = 'gw1200b_relative_pressure') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressureinhg",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Illuminance (lux, log)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "alias": "Light sensor (LUMI)",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"lx\" WHERE (\"entity_id\" = 'lumi_light_sensor') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "B",
+          "resultFormat": "time_series",
+          "alias": "Hall night light",
+          "rawQuery": true,
+          "query": "SELECT mean(\"value\") FROM \"lx\" WHERE (\"entity_id\" = 'hall_night_light_illuminance') AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lux",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false,
+            "scaleDistribution": {
+              "type": "log",
+              "log": 10
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    }
+  ]
+}
