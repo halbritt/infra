@@ -50,6 +50,7 @@
         "y": 1
       },
       "timeFrom": "24h",
+      "hideTimeOverride": true,
       "targets": [
         {
           "datasource": {
@@ -115,6 +116,7 @@
         "y": 1
       },
       "timeFrom": "24h",
+      "hideTimeOverride": true,
       "targets": [
         {
           "datasource": {
@@ -180,6 +182,7 @@
         "y": 1
       },
       "timeFrom": "24h",
+      "hideTimeOverride": true,
       "targets": [
         {
           "datasource": {
@@ -245,6 +248,7 @@
         "y": 1
       },
       "timeFrom": "24h",
+      "hideTimeOverride": true,
       "targets": [
         {
           "datasource": {
@@ -310,6 +314,7 @@
         "y": 1
       },
       "timeFrom": "24h",
+      "hideTimeOverride": true,
       "targets": [
         {
           "datasource": {
@@ -375,6 +380,7 @@
         "y": 1
       },
       "timeFrom": "24h",
+      "hideTimeOverride": true,
       "targets": [
         {
           "datasource": {

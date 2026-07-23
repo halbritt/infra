@@ -79,7 +79,10 @@ def gauge(name, unit, entity_id, x, y, w=4, h=6):
         "gridPos": {"h": h, "w": w, "x": x, "y": y},
         # Gauge reflects only the last 24h so a sensor that has gone silent shows
         # "No data" instead of a stale reading, regardless of the dashboard range.
+        # hideTimeOverride keeps the badge out of the header — without it the
+        # "Last 24 hours" indicator eats the whole title, truncating it to "P…".
         "timeFrom": "24h",
+        "hideTimeOverride": True,
         # alias = plant name: without it the single InfluxQL series is named after
         # the measurement ("%"), so the gauge caption reads "%" instead of the plant.
         "targets": [{**q(unit, entity_id, fn="last"), "alias": name}],
