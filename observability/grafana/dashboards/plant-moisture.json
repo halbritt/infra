@@ -1,5 +1,5 @@
 {
-  "uid": "plant-moisture-proximal",
+  "uid": "plant-moisture",
   "title": "Plant Moisture \u2014 homeassistant (via InfluxDB)",
   "tags": [
     "plants",

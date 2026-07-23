@@ -17,7 +17,9 @@ Re-verify after any HA-side rename with:
 If the measurement isn't "%" (some setups override_measurement per entity), or
 the entity_id tags carry a different form, adjust the two *_UNIT constants and
 the PLANTS / RATES tables and re-run. Regenerate:
-  python3 build_plant_moisture_dashboard.py > plant-moisture-proximal.json
+  python3 build_plant_moisture_dashboard.py > plant-moisture.json
+Installs to /var/lib/grafana/dashboards-homeassistant/ (the "Home Assistant"
+folder provider), NOT the proximal folder — this is appliance data.
 """
 import json
 
@@ -146,7 +148,7 @@ panels.append(row("Drying Rate", y)); y += 1
 panels.append(rate_ts(0, y)); y += 9
 
 dashboard = {
-    "uid": "plant-moisture-proximal",
+    "uid": "plant-moisture",
     "title": "Plant Moisture — homeassistant (via InfluxDB)",
     "tags": ["plants", "homeassistant", "influxdb"],
     "timezone": "browser",
