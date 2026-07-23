@@ -37,7 +37,7 @@
     },
     {
       "type": "gauge",
-      "title": "Black Olive Tree",
+      "title": "Ficus Audrey (Top)",
       "datasource": {
         "type": "influxdb",
         "uid": "influx-ha"
@@ -47,70 +47,6 @@
         "h": 6,
         "w": 4,
         "x": 0,
-        "y": 1
-      },
-      "timeFrom": "24h",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influx-ha"
-          },
-          "refId": "A",
-          "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'black_olive_tree_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 30
-              },
-              {
-                "color": "green",
-                "value": 50
-              }
-            ]
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "gauge",
-      "title": "Ficus Audrey (Top)",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influx-ha"
-      },
-      "id": 3,
-      "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 4,
         "y": 1
       },
       "timeFrom": "24h",
@@ -170,11 +106,11 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 4,
+      "id": 3,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 8,
+        "x": 4,
         "y": 1
       },
       "timeFrom": "24h",
@@ -234,11 +170,11 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 5,
+      "id": 4,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 12,
+        "x": 8,
         "y": 1
       },
       "timeFrom": "24h",
@@ -298,11 +234,11 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 6,
+      "id": 5,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 16,
+        "x": 12,
         "y": 1
       },
       "timeFrom": "24h",
@@ -362,11 +298,11 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 7,
+      "id": 6,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 20,
+        "x": 16,
         "y": 1
       },
       "timeFrom": "24h",
@@ -426,11 +362,11 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 8,
+      "id": 7,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 0,
+        "x": 20,
         "y": 1
       },
       "timeFrom": "24h",
@@ -490,7 +426,7 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 9,
+      "id": 8,
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -505,17 +441,6 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'black_olive_tree_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
-          "rawQuery": true,
-          "alias": "Black Olive Tree"
-        },
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influx-ha"
-          },
-          "refId": "B",
-          "resultFormat": "time_series",
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'ficus_audrey_top_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Ficus Audrey (Top)"
@@ -525,7 +450,7 @@
             "type": "influxdb",
             "uid": "influx-ha"
           },
-          "refId": "C",
+          "refId": "B",
           "resultFormat": "time_series",
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
@@ -536,7 +461,7 @@
             "type": "influxdb",
             "uid": "influx-ha"
           },
-          "refId": "D",
+          "refId": "C",
           "resultFormat": "time_series",
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'gw1200b_soil_moisture_1') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
@@ -547,7 +472,7 @@
             "type": "influxdb",
             "uid": "influx-ha"
           },
-          "refId": "E",
+          "refId": "D",
           "resultFormat": "time_series",
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
@@ -558,7 +483,7 @@
             "type": "influxdb",
             "uid": "influx-ha"
           },
-          "refId": "F",
+          "refId": "E",
           "resultFormat": "time_series",
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'monstera_adansonii_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
@@ -569,7 +494,7 @@
             "type": "influxdb",
             "uid": "influx-ha"
           },
-          "refId": "G",
+          "refId": "F",
           "resultFormat": "time_series",
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
@@ -620,7 +545,7 @@
         "x": 0,
         "y": 15
       },
-      "id": 10,
+      "id": 9,
       "panels": []
     },
     {
@@ -630,7 +555,7 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 11,
+      "id": 10,
       "gridPos": {
         "h": 9,
         "w": 24,

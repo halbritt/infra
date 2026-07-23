@@ -28,9 +28,9 @@ DS = {"type": "influxdb", "uid": "influx-ha"}
 SOIL_UNIT = "%"      # soil-moisture sensors report percent
 RATE_UNIT = "%/d"    # derivative "* Moisture Rate" sensors — VERIFY (may be "/d")
 
-# (display name, entity_id tag value) — soil-moisture gauges + entities panel
+# (display name, entity_id tag value) — soil-moisture gauges + entities panel.
+# Black Olive Tree removed 2026-07-23 (ZHA device retired; sensor dead since Jul 3).
 PLANTS = [
-    ("Black Olive Tree",   "black_olive_tree_soil_moisture"),
     ("Ficus Audrey (Top)", "ficus_audrey_top_soil_moisture"),
     ("Dracaena Lisa",      "dracaena_lisa_moisture_soil_moisture"),
     ("Ficus Audrey (Deep)","gw1200b_soil_moisture_1"),
