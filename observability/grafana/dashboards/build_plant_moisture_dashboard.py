@@ -152,6 +152,29 @@ panels.append(readings_table(0, y)); y += 8
 panels.append(row("Drying Rate", y)); y += 1
 panels.append(rate_ts(0, y)); y += 9
 
+# Watering annotations: mark soak dates on the time panels. A watering is a
+# sharp moisture rise; difference(max) over 6h buckets, filtered >15 pts, flags
+# it — and auto-updates as new waterings land. One layer per surface probe
+# (the deep Ficus probe lags the actual soak, so it's excluded).
+ANNOT = [
+    ("Dracaena Lisa",     "dracaena_lisa_moisture_soil_moisture", "#b48ead"),
+    ("Ficus Audrey",      "ficus_audrey_top_soil_moisture",       "#5db8a4"),
+    ("Monstera adansonii","monstera_adansonii_soil_moisture",     "#a3be8c"),
+    ("Palm",              "palm_moisture_soil_moisture",          "#ebcb8b"),
+    ("Kangaroo Paw Fern", "kangaroo_paw_fern_soil_moisture",      "#81a1c1"),
+]
+def annotation(name, entity_id, color):
+    return {
+        "datasource": DS, "enable": True, "hide": False, "iconColor": color,
+        "name": f"{name} watered",
+        "query": (
+            'SELECT "d" FROM (SELECT difference(max("value")) AS "d" '
+            f'FROM "%" WHERE ("entity_id" = \'{entity_id}\') AND $timeFilter '
+            'GROUP BY time(6h) fill(none)) WHERE "d" > 15'
+        ),
+        "textColumn": "", "titleColumn": "", "tagsColumn": "",
+    }
+
 dashboard = {
     "uid": "plant-moisture",
     "title": "Plant Moisture — homeassistant (via InfluxDB)",
@@ -162,7 +185,7 @@ dashboard = {
     "refresh": "5m",
     "time": {"from": "now-7d", "to": "now"},
     "templating": {"list": []},
-    "annotations": {"list": []},
+    "annotations": {"list": [annotation(n, e, c) for n, e, c in ANNOT]},
     "editable": True,
     "panels": panels,
 }

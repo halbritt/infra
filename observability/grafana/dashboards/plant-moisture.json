@@ -18,7 +18,78 @@
     "list": []
   },
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#b48ead",
+        "name": "Dracaena Lisa watered",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'dracaena_lisa_moisture_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "textColumn": "",
+        "titleColumn": "",
+        "tagsColumn": ""
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#5db8a4",
+        "name": "Ficus Audrey watered",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'ficus_audrey_top_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "textColumn": "",
+        "titleColumn": "",
+        "tagsColumn": ""
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#a3be8c",
+        "name": "Monstera adansonii watered",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'monstera_adansonii_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "textColumn": "",
+        "titleColumn": "",
+        "tagsColumn": ""
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#ebcb8b",
+        "name": "Palm watered",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "textColumn": "",
+        "titleColumn": "",
+        "tagsColumn": ""
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#81a1c1",
+        "name": "Kangaroo Paw Fern watered",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'kangaroo_paw_fern_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "textColumn": "",
+        "titleColumn": "",
+        "tagsColumn": ""
+      }
+    ]
   },
   "editable": true,
   "panels": [
