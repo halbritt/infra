@@ -30,12 +30,19 @@ Only `credentials-file` differs, and it has to: the `/etc` credential is
 
 The final catch-all rule must remain `http_status:404`.
 
+**`harm.org` and `www.harm.org` were removed 2026-07-25** — the site moved to
+Cloudflare Pages ([`halbritt/harm-org`](https://github.com/halbritt/harm-org));
+see [`../harm-enterprises`](../harm-enterprises/). They now resolve to
+`harm-org.pages.dev`, not this tunnel.
+
+⚠️ `*.harm.org` CNAMEs **to the tunnel**, not to the apex. It followed the apex
+until cutover; leaving it there would have dragged `plane.harm.org` — which has
+no explicit DNS record of its own — onto Pages. Do not point it back at `harm.org`.
+
 | public hostname | local service |
 |---|---|
 | `tailscale.harm.org` | `http://localhost:3912` |
 | `tokens.harm.org` | `http://localhost:3001` |
-| `harm.org` | `http://localhost:18888` ([`../harm-enterprises`](../harm-enterprises/)) |
-| `www.harm.org` | `http://localhost:18888` ([`../harm-enterprises`](../harm-enterprises/)) |
 | `dram.harm.org` | `http://localhost:3011` |
 | `plane.harm.org` | `http://localhost:8190` |
 
@@ -77,9 +84,8 @@ diff <(grep -Ev '^#|^credentials-file|^$' /home/halbritt/.cloudflared/config.yml
      <(grep -Ev '^#|^credentials-file|^$' /etc/cloudflared/config.yml)
 systemctl status cloudflared cloudflared-update.timer --no-pager
 curl -o /dev/null -sS -w 'plane_origin=%{http_code}\n' http://127.0.0.1:8190/api/instances/
-curl -I --max-time 10 http://127.0.0.1:18888/
-curl -I --max-time 15 https://harm.org/
-curl -I --max-time 15 https://www.harm.org/
+curl -I --max-time 15 https://harm.org/        # now Cloudflare Pages, not this tunnel
+curl -I --max-time 15 https://plane.harm.org/  # still this tunnel, via *.harm.org
 curl -o /dev/null -sS -w 'plane_public=%{http_code}\n' https://plane.harm.org/api/instances/
 curl -o /dev/null -sS -w 'plane_public_unauth=%{http_code}\n' https://plane.harm.org/api/users/me/
 ```
@@ -89,19 +95,31 @@ Expected checks:
 - local origin `/api/instances/`: `200`
 - public `/api/instances/`: `200`
 - public `/api/users/me/` without auth: `401`
-- root `harm.org` / `www.harm.org`: `200`
+- root `harm.org` / `www.harm.org`: `200` (served by Pages)
 - both `ingress validate` runs: `OK`
 - parity `diff`: no output
 
-Verified on 2026-07-25:
+Verified on 2026-07-25, after the harm.org cutover:
+
+- Both configs validated `OK`; parity `diff` empty; both matched this repo.
+- `harm.org` and `www.harm.org` route to Pages, not the tunnel:
+  `harm_org=200`, `www_harm_org=200`, and `cloudflared tunnel ingress rule
+  https://harm.org/` now falls through to the `http_status:404` catch-all.
+- Everything still on the tunnel survived the ingress removal and restart:
+  `plane_origin=200`, `plane_public=200`, `plane_unauth=401`, and
+  `tokens` / `dram` / `tailscale` each returned `200`.
+- The retired origin is gone: zero listeners on `127.0.0.1:18888`,
+  `harm-enterprises-site.service` inactive and disabled.
+- Tunnel `e6e104cb-…328c` held four edge connections (`2xlax`, `2xsjc`).
+
+Verified on 2026-07-25, earlier the same day (pre-cutover, config parity work):
 
 - Both configs validated `OK`, and the parity `diff` between
   `~/.cloudflared/config.yml` and `/etc/cloudflared/config.yml` was empty.
 - `cloudflared`, `cloudflared-update.timer`, and `harm-enterprises-site` were
-  active; the running unit was not restarted (this change does not touch it).
+  active; the running unit was not restarted (that change did not touch it).
 - `plane_origin=200`, `local_site=200`, `harm_org=200`, `www_harm_org=200`,
   `plane_public=200`, `plane_public_unauth=401`.
-- Tunnel `e6e104cb-…328c` held four edge connections (`2xlax`, `2xsjc`).
 
 Verified on 2026-06-29:
 

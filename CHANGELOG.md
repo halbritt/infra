@@ -7,6 +7,29 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-25
 
+### harm.org migrated off this host to Cloudflare Pages
+The site is now an Astro build with Sveltia CMS, hosted on Cloudflare Pages from
+[`halbritt/harm-org`](https://github.com/halbritt/harm-org) — a private repo whose
+`main` branch auto-deploys, so publishing in the CMS *is* the deploy. `proximal` no
+longer serves it. What changed here: the `harm.org` / `www.harm.org` ingress rules were
+removed from **both** cloudflared configs (parity rule below), and
+`harm-enterprises-site.service` was stopped and **disabled**. Nothing was deleted —
+content root, unit, and `serve.py` remain on disk, and
+[`harm-enterprises/README.md`](harm-enterprises/README.md) carries the rollback.
+
+⚠️ **DNS gotcha worth remembering:** `*.harm.org` used to CNAME to the apex, and
+`plane.harm.org` has **no explicit DNS record** — it resolved purely through that
+wildcard. Pointing `harm.org` at Pages would therefore have dragged Plane onto Pages
+and broken it. The wildcard was repointed at the tunnel *first*, then the apex moved.
+Leave `*.harm.org` on the tunnel.
+
+Verified after cutover: `harm_org=200` / `www_harm_org=200` served by Pages (Astro
+generator tag present, the old origin's `X-Robots-Tag: noindex` gone);
+`plane_public=200`, `plane_unauth=401`, `tokens`/`dram`/`tailscale` all `200`; zero
+listeners on `127.0.0.1:18888`. Also on the account: Worker `harm-org-cms-auth` on
+`auth.harm.org` (GitHub OAuth proxy for the CMS) and Pages project `harm-org`.
+Cloudflare API token + account id live in `~/.config/cloudflare/harm-org.env` (0600).
+
 ### cloudflared: stale user-scope config resynced, parity rule recorded
 A `harm.org` hosting walkthrough surfaced a latent footgun: `~/.cloudflared/config.yml`
 — left over from the original `cloudflared tunnel login` — still carried only the

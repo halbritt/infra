@@ -1,25 +1,48 @@
-# proximal/harm-enterprises - harm.org static site
+# proximal/harm-enterprises - harm.org static site (RETIRED)
 
-Desired-state and provenance for the static Harm Enterprises website served from
-host `proximal` at `https://harm.org` and `https://www.harm.org`.
+> ## ⚠️ Retired 2026-07-25 — this host no longer serves harm.org
+>
+> `harm.org` and `www.harm.org` migrated to **Cloudflare Pages**, built from
+> [`halbritt/harm-org`](https://github.com/halbritt/harm-org) (Astro + Sveltia
+> CMS). The tunnel ingress rules were removed and
+> `harm-enterprises-site.service` was stopped and **disabled**.
+>
+> Nothing was deleted. The content root, the unit file, and `serve.py` are all
+> still on disk, so this subsystem can be brought back — see
+> [Rollback](#rollback). The rest of this document describes the retired
+> arrangement and is kept for provenance.
 
-The public edge is the Cloudflare Tunnel captured in
-[`../cloudflared`](../cloudflared/). The local origin remains loopback-only on
-`127.0.0.1:18888`; Tailscale Serve also publishes the same origin on the tailnet
-at `https://proximal.tail0ecc2e.ts.net:8890/` for private verification.
+Desired-state and provenance for the static Harm Enterprises website formerly
+served from host `proximal` at `https://harm.org` and `https://www.harm.org`.
 
 ## At A Glance
 
 | | |
 |---|---|
-| public URLs | `https://harm.org`, `https://www.harm.org` |
-| Cloudflare origin | `http://localhost:18888` |
-| tailnet URL | `https://proximal.tail0ecc2e.ts.net:8890/` |
-| local origin | `http://127.0.0.1:18888` |
-| content root | `/home/halbritt/sites/harm-enterprises/public` |
-| server script | `/home/halbritt/sites/harm-enterprises/bin/serve.py` |
-| unit | `harm-enterprises-site.service` |
+| status | **retired 2026-07-25** — now on Cloudflare Pages |
+| replacement | [`halbritt/harm-org`](https://github.com/halbritt/harm-org) → `harm-org.pages.dev` |
+| former public URLs | `https://harm.org`, `https://www.harm.org` |
+| former Cloudflare origin | `http://localhost:18888` |
+| tailnet URL | `https://proximal.tail0ecc2e.ts.net:8890/` (Serve mapping may persist) |
+| local origin | `http://127.0.0.1:18888` (stopped) |
+| content root | `/home/halbritt/sites/harm-enterprises/public` (preserved) |
+| server script | `/home/halbritt/sites/harm-enterprises/bin/serve.py` (preserved) |
+| unit | `harm-enterprises-site.service` (installed, disabled) |
 | service user | `halbritt` |
+
+## Rollback
+
+```bash
+# 1. restore the two ingress rules in BOTH cloudflared configs (see ../cloudflared)
+# 2. bring the origin back
+sudo systemctl enable --now harm-enterprises-site.service
+# 3. repoint DNS from harm-org.pages.dev back to the tunnel
+#    harm.org / www.harm.org CNAME -> e6e104cb-75a2-4ccc-a46f-aca2c725328c.cfargotunnel.com
+```
+
+⚠️ Leave `*.harm.org` pointing at the tunnel. It used to CNAME to the apex; that
+was changed during cutover because `plane.harm.org` has no explicit DNS record
+and would otherwise have followed `harm.org` onto Pages and broken.
 
 ## Routing
 

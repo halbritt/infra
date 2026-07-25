@@ -11,10 +11,6 @@ ingress:
     service: http://localhost:3912
   - hostname: tokens.harm.org
     service: http://localhost:3001
-  - hostname: harm.org
-    service: http://localhost:18888
-  - hostname: www.harm.org
-    service: http://localhost:18888
   - hostname: dram.harm.org
     service: http://localhost:3011
   - hostname: plane.harm.org
