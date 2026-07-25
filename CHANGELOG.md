@@ -5,6 +5,24 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-25
+
+### cloudflared: stale user-scope config resynced, parity rule recorded
+A `harm.org` hosting walkthrough surfaced a latent footgun: `~/.cloudflared/config.yml`
+— left over from the original `cloudflared tunnel login` — still carried only the
+`tokens` and `dram` rules from June, missing `harm.org`, `www.harm.org`,
+`plane.harm.org`, and `tailscale.harm.org`. Live traffic was never at risk (the unit's
+`ExecStart` passes `--config /etc/cloudflared/config.yml` explicitly), but an ad-hoc
+`cloudflared tunnel run` as `halbritt` would have silently dropped the site and Plane to
+the catch-all `404`. Resynced the user-scope ingress to match `/etc` verbatim — only
+`credentials-file` differs, and must, since the `/etc` credential is `root:root 0400`
+while a user-scope run needs the `halbritt`-readable copy. Vendored it as
+[`cloudflared/config.user.yml`](cloudflared/config.user.yml) so the drift is now visible to
+the repo, and added a parity `diff` to the subsystem's Verify block. No restart — the
+running tunnel does not read this file, and was left untouched (up since 2026-07-24).
+Verified: both configs `validate OK`, parity diff empty, `harm.org`/`www.harm.org`/
+`plane` public `200`, `plane` unauth `401`.
+
 ## 2026-07-21
 
 ### striatum-next wake fleet: fragilities fixed, drop-ins consolidated
