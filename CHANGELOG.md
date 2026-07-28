@@ -37,7 +37,16 @@ Verified: `hermes -z` → `hermes-ok` on the local endpoint; tool-call test on l
 (`uname -r` → `6.8.0-124-generic`) and on GLM 5.2 (`hostname` → `glm-ok proximal`);
 `hermes doctor` clean on provider + `✓ OpenRouter API`, 16 toolsets, 70 bundled skills.
 
-⚠️ **Two upstream gotchas recorded as known-bad.** (1) `provider: "llamacpp"` is **rejected**
+⚠️⚠️ **Data-egress trap found while documenting the local-alternate path:** `--provider custom`
+with `model.base_url` unset does **not** error — it silently resolves through to **OpenRouter**
+(`explicit → $CUSTOM_BASE_URL → config → $OPENROUTER_BASE_URL → OPENROUTER_BASE_URL`) and bills
+for it, while reading to the operator as on-box and free. Caught by checking
+`journalctl -u llama-27b` instead of trusting the reply: the answer came back fine and the local
+server had served **zero** requests. Per-invocation local runs must set
+`CUSTOM_BASE_URL=http://localhost:8081/v1`; anything that genuinely must not leave the box
+should set `model.base_url` in config rather than rely on the flag.
+
+⚠️ **Two further upstream gotchas recorded as known-bad.** (1) `provider: "llamacpp"` is **rejected**
 even though `config.yaml`'s own template comment claims `ollama`/`vllm`/`llamacpp` alias to
 `custom` — doc/code drift; use `custom`. (2) `hermes config set` **reserializes the config
 from resolved values**, collapsing the shipped 1622-line / 85 KB annotated reference into a

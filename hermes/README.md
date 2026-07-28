@@ -59,7 +59,12 @@ hermes config set model.default qwen3.6-35b-a3b
 hermes config set model.api_key local-no-key     # llama-server ignores it; must be non-empty
 ```
 
-Per-invocation instead of permanently: `hermes --provider custom -m qwen3.6-35b-a3b`.
+Per-invocation instead of permanently — **the env var is required**, see the silent-fallback
+known-bad below:
+
+```bash
+CUSTOM_BASE_URL=http://localhost:8081/v1 hermes --provider custom -m qwen3.6-35b-a3b
+```
 
 ## Files → install paths
 
@@ -90,6 +95,16 @@ Credentials are **not** in either file. `OPENROUTER_API_KEY` is already exported
   claiming `"ollama"`, `"vllm"`, and `"llamacpp"` all alias to `custom`. The validator's
   provider list has no such aliases and `hermes doctor` errors with
   `model.provider 'llamacpp' is unknown`. Use `custom` + `base_url`. Upstream doc/code drift.
+- ⚠️⚠️ **`--provider custom` silently bills OpenRouter when `base_url` is unset.** It does
+  *not* error. The resolution order in `hermes_cli/runtime_provider.py` is
+  `explicit base_url → $CUSTOM_BASE_URL → config base_url → $OPENROUTER_BASE_URL →
+  OPENROUTER_BASE_URL`, so with our OpenRouter-default config the bare flag lands on
+  **OpenRouter** while reading, to the operator, as on-box and free. Caught here by testing
+  it: `hermes --provider custom -m qwen3.6-35b-a3b -z ...` returned a plausible answer while
+  `journalctl -u llama-27b` showed **zero** requests — the local server was never contacted.
+  Always pass `CUSTOM_BASE_URL=http://localhost:8081/v1` for a per-invocation local run, and
+  confirm with the journal rather than trusting the reply. **Anything that must not leave the
+  box should set `model.base_url` in config, not rely on the flag.**
 - ⚠️ **`hermes config set` destroys the annotated config template.** It reserializes
   `config.yaml` from resolved values, rewriting the shipped 1622-line / 85 KB commented
   reference into a 158-line / 5 KB bare YAML dump. Values survive; every inline comment
