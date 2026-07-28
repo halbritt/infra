@@ -35,6 +35,7 @@ Each top-level directory is one subsystem, self-contained with its own `README.m
 | [`plane-public/`](plane-public/) | public-intended Plane CE for `plane.harm.org` | separate Plane CE `v1.3.1` stack, loopback proxy ports, system PostgreSQL, host Redis, Garage S3, Docker-bridge state proxies |
 | [`caplab-runtime/`](caplab-runtime/) | standalone CAPLAB P4 host integration | fail-closed batch host bootstrap, expiring credentials, access disablement, and pre-effect empty rollback; no resident runtime |
 | [`wigolo/`](wigolo/) | local-first web-research layer (MCP) | keyless `wigolo` MCP server (Tavily replacement) with synthesis wired to llama.cpp `:8081`; pre-adoption security audit, install/config posture, opt-in-feature guardrails |
+| [`hermes/`](hermes/) | Hermes Agent CLI (agent harness) | `NousResearch/hermes-agent` `0.19.0` in a uv-managed private venv; wired to GLM 5.2 via OpenRouter with the local llama.cpp `:8081` path documented and verified as the on-box alternate; gateway/Portal/STT deliberately not enabled |
 | [`plant-praxis-bridge/`](plant-praxis-bridge/) | watering alerts → Praxis reminders | hourly user timer; reads plant soil moisture from the HA appliance's InfluxDB add-on, files a work item in the harm Plane `PRAXIS` project (→ Praxis via ADR-0014 sync) when a plant crosses its rewater threshold; no HA change, tokens stay on proximal |
 
 Agents using either Plane instance should load

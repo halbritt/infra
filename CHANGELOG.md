@@ -5,6 +5,52 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-28
+
+### Hermes Agent installed as a third local agent harness → `hermes/`
+[`NousResearch/hermes-agent`](https://github.com/NousResearch/hermes-agent) `0.19.0`
+(upstream `30526baa`), installed via the official `install.sh` after reading it rather than
+piping it blind. It lands in `~/.hermes/` (~2.0 GB) with a **uv-managed private Python 3.11
+venv** — the one agent tool here that doesn't follow the box's global-npm convention,
+because upstream ships it as a Python package with a bundled node/TUI side-car. Not under
+systemd: interactive CLI, nothing resident, nothing listening, and `~/.local/bin` was already
+on `PATH` so no shell rc was touched. Only system-level change was **ffmpeg** via apt
+(the installer's one `sudo` need; `uv`, node 24, and ripgrep were already present and reused).
+
+It was installed to make a real comparison possible: it had been floated as a candidate for a
+**pre-dispatch triage agent** that must run local, against `claw` and roll-our-own. What it
+brings that `opencode`/`openclaw` don't is the closed learning loop — autonomous skill
+creation, self-improving skills, FTS5 cross-session recall.
+
+**Wired to GLM 5.2 via OpenRouter** (`z-ai/glm-5.2`, 1M ctx, $0.769/M in / $2.42/M out),
+reusing the `OPENROUTER_API_KEY` already exported from `~/.profile` — the key is deliberately
+*not* copied into `~/.hermes/.env`, so rotation stays single-source. This re-applies a
+conclusion already benchmarked for [`wigolo/`](wigolo/README.md) on 2026-07-21: OpenRouter
+returns GLM's reasoning in a *separate* field, so `content` is always clean prose, whereas a
+local reasoning model's thinking tokens compete with the answer inside a fixed budget — which
+matters for a harness running up to 500 turns with compression at 50% of context.
+**The local path was verified working first and is documented as a first-class alternate**
+(`provider: custom` + `base_url http://localhost:8081/v1` + `qwen3.6-35b-a3b`), so a
+nothing-leaves-the-box configuration is proven rather than assumed.
+
+Verified: `hermes -z` → `hermes-ok` on the local endpoint; tool-call test on local
+(`uname -r` → `6.8.0-124-generic`) and on GLM 5.2 (`hostname` → `glm-ok proximal`);
+`hermes doctor` clean on provider + `✓ OpenRouter API`, 16 toolsets, 70 bundled skills.
+
+⚠️ **Two upstream gotchas recorded as known-bad.** (1) `provider: "llamacpp"` is **rejected**
+even though `config.yaml`'s own template comment claims `ollama`/`vllm`/`llamacpp` alias to
+`custom` — doc/code drift; use `custom`. (2) `hermes config set` **reserializes the config
+from resolved values**, collapsing the shipped 1622-line / 85 KB annotated reference into a
+158-line / 5 KB bare dump: values survive, all inline option documentation does not. The
+pristine template is kept on-box at `~/.hermes/config.yaml.orig`.
+
+Deliberately **not** enabled: the messaging **gateway** (would put an externally-reachable
+message path in front of an agent with `--yolo`-capable shell access, and Praxis already
+provides a reviewed Slack path), **Nous Portal** (second inference subscription, redundant
+with OpenRouter), and Hermes's **own Whisper** (`stt.local.model: base` would load a second
+STT model onto a 3090 already shared by `llama-27b` and `whisper-stt` — point it at the
+existing `:8910`/`:8082` path instead).
+
 ## 2026-07-25
 
 ### harm.org migrated off this host to Cloudflare Pages
