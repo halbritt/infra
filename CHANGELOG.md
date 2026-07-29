@@ -7,6 +7,21 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-29
 
+### Praxis SMS moved to the Quectel EC25; Android gateway deprecated → `cellular/`
+The EC25 line (510-520-4061) is now **Praxis's exclusive SMS carrier**. New
+`quectel-sms-gateway.service` (system unit, `User=halbritt` + dialout, loopback
+`:8852`): owns the single-consumer AT port, re-speaks the capcom6 local-mode HTTP
+contract (so praxis's carrier changed by env swap only — `PRAXIS_ANDROID_SMS_URL` →
+`127.0.0.1:8852`), sends SMS-SUBMIT PDUs in UCS2 with concat UDH (emoji + long praxis
+copy survive; verified 3-segment loopback with astral emoji), sweeps inbound in PDU
+mode (GSM7+UCS2 decode, concat reassembly), and POSTs the `sms:received` webhook to
+praxis's listener on `127.0.0.1:8850` — deleting from modem storage only after a
+successful idempotent dock. SMS bytes now leave the box only over the radio itself.
+Deprecated: the Moto G capcom6 gateway (unreachable/asleep at cutover; its webhook
+target — the tailscale-serve `:8851` front — is removed, so the stale registration is
+inert; unregister or uninstall when the phone wakes). Migration announced to the owner
+by SMS from the new line. Praxis-side docs updated (praxis `12ba7a3`, docs-only).
+
 ### Praxis: register-full black-hole + watchdog starvation fixed → `praxis/`
 Same-day follow-up to the entry below — both bugs it filed are now fixed and live
 (praxisd on `0e167b4`, 06:48Z). **PRAXIS-24:** a due ⏰ now pages the owner even at

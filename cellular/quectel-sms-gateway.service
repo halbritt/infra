@@ -1,0 +1,34 @@
+# Praxis's SMS carrier over the on-box Quectel EC25-AF (replaces the Android
+# capcom6 gateway — same HTTP contract, zero off-box hops; RFC 0019 v2 posture
+# strengthened: SMS bytes leave the box only over the cellular radio itself).
+#
+# Canonical copy: ~/git/proximal/cellular/quectel-sms-gateway.service
+# Installed at:   /etc/systemd/system/quectel-sms-gateway.service
+# Secrets:        /etc/default/quectel-sms-gateway (0600, OUTSIDE git) — the
+#                 same Basic-auth pair praxisd's carrier already presents
+#                 (PRAXIS_ANDROID_SMS_USER/PASSWORD in praxisd.env).
+#
+# System unit (not user-scope) so SupplementaryGroups can grant dialout —
+# halbritt is deliberately NOT in dialout; this unit is the modem's single
+# consumer (the AT port cannot be shared — see cellular/README.md). Stop it
+# before any hand AT session or QFirehose flash.
+
+[Unit]
+Description=Quectel EC25 SMS gateway for Praxis (capcom6-compatible, loopback-only)
+Documentation=file:///home/halbritt/git/proximal/cellular/README.md
+After=network.target
+
+[Service]
+User=halbritt
+SupplementaryGroups=dialout
+ExecStart=/usr/bin/python3 /home/halbritt/git/proximal/cellular/quectel-sms-gateway.py
+Environment=QSMS_AT_PORT=/dev/ttyUSB2
+Environment=QSMS_BIND=127.0.0.1:8852
+Environment=QSMS_WEBHOOK_URL=http://127.0.0.1:8850
+Environment=QSMS_POLL_SECONDS=30
+EnvironmentFile=/etc/default/quectel-sms-gateway
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

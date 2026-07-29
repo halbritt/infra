@@ -49,15 +49,20 @@ non-fatal — the handler then exits 78 and nothing can egress). The variable *n
   reply loops). Live value: `U0BC0EN59DF`.
 - `PRAXIS_SLACK_CHANNEL` — default post channel (`#praxis-chat`).
 - `PRAXIS_ANDROID_SMS_URL/USER/PASSWORD` + `PRAXIS_SMS_OWNER` — the live SMS carrier
-  (RFC 0019 v2): the Moto G `capcom6/android-sms-gateway` on the tailnet, owner-directed
-  both ways. Since PRAXIS-23 (2026-07-29, praxis `4125e1e`) this carrier is also the
-  **default ⏰ reminder outlet** — fired reminders page the owner's number regardless of
-  the connector the directive arrived on (acks/proposals stay origin-routed). Opt back
-  out with `PRAXIS_REMINDER_OUTLET=origin` (unset today — default `sms` applies). Boot
-  logs the selection: `journalctl --user -u praxisd | grep "reminder outlet"` →
-  `sms (owner number)`. `PRAXIS_FOLLOWTHROUGH_SMS=1` separately grants proactive
-  night-shift follow-through delivery to the same number. `PRAXIS_TWILIO_*` are the
-  retired RFC 0019 v1 placeholders.
+  (RFC 0019 v2). **Since 2026-07-29 the gateway is the on-box Quectel EC25** (line
+  510-520-4061): `PRAXIS_ANDROID_SMS_URL=http://127.0.0.1:8852` points at the
+  `quectel-sms-gateway` system service (see `cellular/`), which re-speaks the capcom6
+  local-mode contract — var names kept for history; the Moto G Android gateway is
+  deprecated. Owner-directed both ways; inbound docks via `praxis-sms.service`
+  (`127.0.0.1:8850`, now posted to locally — the tailscale-serve `:8851` front is
+  gone). Since PRAXIS-23 this carrier is also the **default ⏰ reminder outlet** —
+  fired reminders page the owner's number regardless of the connector the directive
+  arrived on (acks/proposals stay origin-routed); opt out with
+  `PRAXIS_REMINDER_OUTLET=origin`. Boot logs the selection: `journalctl --user -u
+  praxisd | grep "reminder outlet"` → `sms (owner number)`.
+  `PRAXIS_FOLLOWTHROUGH_SMS=1` separately grants proactive night-shift
+  follow-through delivery to the same number. `PRAXIS_TWILIO_*` are the retired
+  RFC 0019 v1 placeholders.
 - `PRAXIS_LOCAL_MODEL_ENABLED` — Tier-1 cognition switch (see 2026-06-24 lesson: it must
   live HERE to survive restarts, not in a shell).
 - `PRAXIS_STT_URL` — voice-path STT endpoint (M2): `http://127.0.0.1:8082/transcribe`,

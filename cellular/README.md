@@ -2,8 +2,9 @@
 
 LTE modem + cellular line on **proximal**: a **Quectel EC25-AF** (USB `2c7c:0125`,
 mini-PCIe module on a USB adapter) carrying a **RedPocket AT&T-network** SIM.
-Intended role: on-box SMS (and eventually voice) carrier — a local-first
-alternative/complement to the Android SMS gateway used by Praxis (RFC 0019).
+Role: **Praxis's live SMS carrier** (since 2026-07-29, via `quectel-sms-gateway`
+below — the Android gateway is deprecated); voice is a future maybe (see Open
+issue).
 
 Brought up and diagnosed 2026-07-28/29; full story in the
 [CHANGELOG](../CHANGELOG.md#2026-07-29). **Data + two-way SMS verified working.
@@ -108,5 +109,36 @@ AT+CMGL="ALL"
 AT+CMGD=1,4              # delete all
 ```
 
-No systemd units yet — nothing on the box consumes the modem automatically.
-When Praxis grows a connector for it, its unit + env contract belong here.
+## quectel-sms-gateway — Praxis's SMS carrier (live 2026-07-29)
+
+**This line IS Praxis's SMS channel now** — the Android (capcom6/Moto G)
+gateway is deprecated. The daemon [`quectel-sms-gateway.py`](quectel-sms-gateway.py)
+owns the AT port exclusively and re-speaks the capcom6 local-mode HTTP
+contract, so praxis's carrier code needed only an env swap
+(`PRAXIS_ANDROID_SMS_URL=http://127.0.0.1:8852` in `praxisd.env`; var names
+kept for history). SMS bytes leave the box only over the radio itself.
+
+| piece | where |
+|---|---|
+| daemon (canonical) | `cellular/quectel-sms-gateway.py` (run from the checkout) |
+| unit (canonical → installed) | `cellular/quectel-sms-gateway.service` → `/etc/systemd/system/` |
+| secrets | `/etc/default/quectel-sms-gateway` (0600, outside git) — the same Basic-auth pair praxisd presents (`PRAXIS_ANDROID_SMS_USER/PASSWORD`) |
+| HTTP | loopback `127.0.0.1:8852`: `POST /message` (capcom6 shape, Basic auth, 202-on-enqueue), `GET /health` |
+| inbound | PDU-mode `AT+CMGL` sweep every 30 s + immediate on `+CMTI`; GSM7+UCS2 decode, concat reassembly; POSTs the `sms:received` webhook to praxis's listener `127.0.0.1:8850`; deletes from modem storage only after a successful dock (praxis dedupes on messageId) |
+| outbound | SMS-SUBMIT PDUs, always UCS2 + concat UDH — praxis's ⏰/✅/💡 copy survives; verified 3-segment loopback with astral emoji |
+
+Ops: `sudo systemctl {status,restart} quectel-sms-gateway` ·
+`journalctl -u quectel-sms-gateway -f` · `curl -s localhost:8852/health`.
+Offline codec check: `python3 quectel-sms-gateway.py --selftest`.
+
+⚠️ **The daemon is the port's single consumer.** `sudo systemctl stop
+quectel-sms-gateway` before any hand AT session or a QFirehose flash, and
+start it again after. It re-arms `AT+CNMI` and re-opens through modem reboots
+on its own (guarding against the regular-file re-enum race).
+
+Known limits (documented, accepted): sends are ACKed 202 on enqueue and the
+queue is in-memory — a crash between ACK and radio submit loses that send
+after 5 retries (capcom6 had the same window on the phone). The Android-era
+webhook registration may still exist on the sleeping Moto G; its target
+(`tailscale serve :8851`) is gone, so it is inert — unregister or uninstall
+whenever the phone next wakes.
