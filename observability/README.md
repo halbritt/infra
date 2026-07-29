@@ -58,8 +58,10 @@ same `depend=Tailscale` + restart-on-failure self-heal (see `nvidia-gpu-exporter
 ## Tailnet index (tailscale.harm.org)
 
 The three user-facing surfaces are linked from the tailnet landing page
-**`tailscale.harm.org`** (served on proximal by `~/git/tailscale-index/server.py` on
-`127.0.0.1:3912`, fronted by cloudflared).
+**`tailscale.harm.org`**, which is its own subsystem as of 2026-07-29:
+[`../tailscale-index/`](../tailscale-index/). Edit the cards there — the page is
+now versioned and served straight from that checkout. The HSTS finding below is
+kept here because it is the reason these three cards changed shape.
 
 | card | serve URL | terminates to |
 |---|---|---|
@@ -132,7 +134,7 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `grafana/dashboards/indoor-environment.json` | `/var/lib/grafana/dashboards-homeassistant/` (folder "Home Assistant"); built by `build_indoor_environment_dashboard.py` — ambient temp/humidity/pressure/light |
 | `grafana/ha-influx.env.template` | `/etc/grafana/ha-influx.env` (0600 root, **add real read-only Influx creds**) |
 | `role.sql` | run once via `sudo -u postgres psql` |
-| `tailscale-index-card.patch` | record of the Grafana/Prometheus/Alertmanager cards on `~/git/tailscale-index/site/index.html` (not a git repo; see "Tailnet index" above) |
+| `tailscale-index-card.patch` | **superseded 2026-07-29** — historical record of the Grafana/Prometheus/Alertmanager cards, from when the index dir was not a git repo. The page is now versioned at [`../tailscale-index/`](../tailscale-index/); make index changes there as ordinary commits. |
 
 The port-pin that makes `striatumd` scrapeable lives in the **striatum** subsystem, not here:
 `Environment=STRIATUM_DAEMON_MCP_HTTP_ADDR=127.0.0.1:9464` in

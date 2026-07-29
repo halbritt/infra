@@ -1,3 +1,9 @@
+# SUPERSEDED 2026-07-29 — HISTORICAL RECORD ONLY, DO NOT APPLY.
+# The tailnet index is now a versioned subsystem at ../tailscale-index/, served
+# directly from that checkout. Edit ../tailscale-index/site/index.html and commit;
+# there is no longer any reason to record index edits as a detached patch. This
+# file is kept because it carries the HSTS rationale below, which is still true.
+#
 # Cards added to the tailnet index (tailscale.harm.org) for the observability
 # surfaces: Grafana, Prometheus, Alertmanager. The index lives at
 # ~/git/tailscale-index/site/index.html (served by server.py on 127.0.0.1:3912,

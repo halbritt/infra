@@ -5,6 +5,38 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-29
+
+### Tailnet landing page folded in → `tailscale-index/`, BinKeeper cards repaired
+`tailscale.harm.org` had been serving from `~/git/tailscale-index`, a directory that was
+**not a git repo** — no owner, no history, no link check. Consequence: all three BinKeeper
+cards pointed at `https://…:8765/bin-photo/…` and returned 404. BinKeeper had left Engram's
+port for its own service (`binkeeper.service`, `127.0.0.1:8766`) during the `BINK-11` /
+`BINK-13` authority cutover, and mounts its authoring app at **root**, not `/bin-photo/`.
+Repointed to `:8766/` (photograph + label), `:8766/register`, `:8766/bins/` — all `200` over
+tailnet HTTPS. The move was weeks old; it surfaced only when someone tried to photograph a bin.
+
+Fixed the class, not the instance. The page, `server.py`, the user unit, and a new
+`bin/check-links.sh` now live in [`tailscale-index/`](tailscale-index/). Deliberate deviation
+from **canonical-in-repo / installed-on-box**: `tailscale-index.service` was repointed
+(`WorkingDirectory` + `TAILSCALE_INDEX_SITE_DIR` + `ExecStart`) at the checkout, so the file
+the browser gets *is* the file in git — **one copy, no drift**. That split exists to give
+root-owned `/etc/…` files a versioned source; it buys nothing for halbritt-owned files under
+`~/git`, and a second copy is exactly the failure being fixed. `server.py` serves
+`Cache-Control: no-cache`, so an edit is live on the next request. Verified after cutover:
+unit active/enabled from the new path, origin on `127.0.0.1:3912`, `https://tailscale.harm.org/`
+`200` and byte-identical to `site/index.html`.
+
+The link sweep found **two more dead cards**, both serve-mapping-outlives-origin: Striatum Web
+UI `:9443` and Harm Site Mirror `:8890` (502 — `striatumd` retired 7/21, `harm-enterprises`
+stopped 7/25). Neither card was removed; deleting one is an owner call and both subsystems
+document a rollback. Recorded in the subsystem README's known-dead table.
+
+Supersedes `observability/tailscale-index-card.patch`, the workaround that recorded index
+edits as an unapplied `.patch` because there was nowhere to version the real page. Kept for
+history; the old `~/git/tailscale-index` is kept on disk with a MOVED banner and a rollback
+path. Nothing deleted.
+
 ## 2026-07-28
 
 ### Hermes Agent installed as a third local agent harness → `hermes/`

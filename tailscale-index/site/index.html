@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive, noimageindex, nosnippet" />
+    <title>Tailscale URLs</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fa;
+        --surface: #ffffff;
+        --ink: #17202a;
+        --muted: #5d6875;
+        --line: #d7dde5;
+        --accent: #196b69;
+        --accent-ink: #0e4644;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(100% - 32px, 960px);
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      header {
+        margin-bottom: 28px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 7vw, 3.25rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .service {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .service h2 {
+        margin: 0 0 4px;
+        font-size: 1.05rem;
+        letter-spacing: 0;
+      }
+
+      .service a {
+        color: var(--accent-ink);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        overflow-wrap: anywhere;
+      }
+
+      .tag {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        white-space: nowrap;
+      }
+
+      footer {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 680px) {
+        main {
+          width: min(100% - 24px, 960px);
+          padding: 32px 0;
+        }
+
+        .service {
+          grid-template-columns: 1fr;
+        }
+
+        .tag {
+          width: fit-content;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Tailscale URLs</h1>
+        <p>Public index. Links below are still tailnet-only unless a separate public route exists.</p>
+      </header>
+
+      <section class="grid" aria-label="Tailscale URL index">
+        <article class="service">
+          <div>
+            <h2>Plane / Proximal</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:10000/">https://proximal.tail0ecc2e.ts.net:10000/</a>
+          </div>
+          <span class="tag">project tracker</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Praxis Plane Connector Lab (PXLAB)</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:10000/proximal/projects/56cf339b-86b0-4c30-ac90-64c31dcc3960/issues">https://proximal.tail0ecc2e.ts.net:10000/proximal/projects/56cf339b-86b0-4c30-ac90-64c31dcc3960/issues</a>
+          </div>
+          <span class="tag">lab project</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Agent Capability Lab (CAPLAB)</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8784/">https://proximal.tail0ecc2e.ts.net:8784/</a>
+          </div>
+          <div>
+            <span class="tag">study results</span>
+            <span class="tag">tailnet only</span>
+          </div>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>OpenClaw Control</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net/">https://proximal.tail0ecc2e.ts.net/</a>
+          </div>
+          <span class="tag">agent gateway</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Striatum Web UI</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:9443/">https://proximal.tail0ecc2e.ts.net:9443/</a>
+          </div>
+          <span class="tag">workflow UI</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Engram Operator</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8765/">https://proximal.tail0ecc2e.ts.net:8765/</a>
+          </div>
+          <span class="tag">operator console</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>BinKeeper: Catalog</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8766/bins/">https://proximal.tail0ecc2e.ts.net:8766/bins/</a>
+          </div>
+          <span class="tag">browse bins + contents</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>BinKeeper: Photograph and Label</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8766/">https://proximal.tail0ecc2e.ts.net:8766/</a>
+          </div>
+          <span class="tag">local vision + reviewed print</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>BinKeeper: Register Labeled Bin</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8766/register">https://proximal.tail0ecc2e.ts.net:8766/register</a>
+          </div>
+          <span class="tag">scan label + record location</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Pastebin</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:18080/">https://proximal.tail0ecc2e.ts.net:18080/</a>
+          </div>
+          <span class="tag">local pastebin</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Markdown Browser</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8444/">https://proximal.tail0ecc2e.ts.net:8444/</a>
+          </div>
+          <span class="tag">md-serve</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Harm Site Mirror</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8890/">https://proximal.tail0ecc2e.ts.net:8890/</a>
+          </div>
+          <span class="tag">tailnet mirror</span>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Grafana — proximal dashboards</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:8853/">https://proximal.tail0ecc2e.ts.net:8853/</a>
+          </div>
+          <div>
+            <span class="tag">metrics dashboards</span>
+            <span class="tag">tailnet only</span>
+          </div>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Prometheus — proximal</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:9491/">https://proximal.tail0ecc2e.ts.net:9491/</a>
+          </div>
+          <div>
+            <span class="tag">metrics + alerts</span>
+            <span class="tag">tailnet only</span>
+          </div>
+        </article>
+
+        <article class="service">
+          <div>
+            <h2>Alertmanager — proximal</h2>
+            <a href="https://proximal.tail0ecc2e.ts.net:9493/">https://proximal.tail0ecc2e.ts.net:9493/</a>
+          </div>
+          <div>
+            <span class="tag">alert routing</span>
+            <span class="tag">tailnet only</span>
+          </div>
+        </article>
+      </section>
+
+      <footer>Last checked from proximal on 2026-07-29 at 01:45 UTC.</footer>
+    </main>
+  </body>
+</html>

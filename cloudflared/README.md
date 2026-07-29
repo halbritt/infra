@@ -41,7 +41,7 @@ no explicit DNS record of its own — onto Pages. Do not point it back at `harm.
 
 | public hostname | local service |
 |---|---|
-| `tailscale.harm.org` | `http://localhost:3912` |
+| `tailscale.harm.org` | `http://localhost:3912` ([`../tailscale-index`](../tailscale-index/)) |
 | `tokens.harm.org` | `http://localhost:3001` |
 | `dram.harm.org` | `http://localhost:3011` |
 | `plane.harm.org` | `http://localhost:8190` |
