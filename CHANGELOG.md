@@ -7,6 +7,20 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-29
 
+### Praxis: register-full black-hole + watchdog starvation fixed → `praxis/`
+Same-day follow-up to the entry below — both bugs it filed are now fixed and live
+(praxisd on `0e167b4`, 06:48Z). **PRAXIS-24:** a due ⏰ now pages the owner even at
+register cap — with an honest "stays parked" note — and the commitment takes a slot
+silently when one frees; at-most-once rides the delivery ledger's existing attempt rows
+(no new event kind — a new kind would crash a rolled-back release at boot).
+**PRAXIS-25:** the Android SMS gateway gets a 3 s transport timeout
+(`PRAXIS_ANDROID_SMS_TIMEOUT_SECONDS`) and the night-shift follow-through loop a 10 s
+shared egress budget (`PRAXIS_FOLLOWTHROUGH_EGRESS_BUDGET_SECONDS`) — worst-case
+blocking egress per tick is now well under the 30 s watchdog. Deploy lesson recorded:
+the `praxis-release-prev` rollback tag had leaked to origin, so the cutover's
+`git fetch --tags` failed with "would clobber existing tag" once the local tag moved —
+the remote copy is deleted; that tag is local operational state and must never be pushed.
+
 ### Praxis: SMS is now the default ⏰ reminder outlet → `praxis/`
 Owner directive: fired reminders now page the owner's SMS (the Android gateway carrier,
 RFC 0019 v2) regardless of which connector the directive arrived on; acks and proposals
