@@ -55,8 +55,12 @@ The link sweep found **two more dead cards**, both serve-mapping-outlives-origin
 UI `:9443` and Harm Site Mirror `:8890` (502 — `striatumd` retired 7/21, `harm-enterprises`
 stopped 7/25). Both **removed on the owner's call** later the same day, and recorded in the
 subsystem README's "Removed cards" table so either is restorable if its subsystem is rolled
-back. The two `tailscale serve` mappings were left alone — dropping them is a serve change,
-not an index change, so `:9443` and `:8890` still answer TLS and 502, just unadvertised.
+back. **The two serve mappings were then torn down** on the owner's call
+(`sudo tailscale serve --https=<port> off`), so the ports no longer answer at all rather than
+completing TLS and 502ing — `serve status` 22 → 20 mappings, both verified refusing
+connections. The exact restore commands were captured from the live config first and written
+into each subsystem's rollback path (`striatum/`, `harm-enterprises/`), since recreating a
+serve mapping is part of reviving those services.
 
 Also added a **BinKeeper: Sort a Stash** card (`:8766/stash`) — a live surface that had never
 been listed despite getting its own operator tab in BinKeeper `6ee3001`. The page is now 14

@@ -23,7 +23,7 @@ served from host `proximal` at `https://harm.org` and `https://www.harm.org`.
 | replacement | [`halbritt/harm-org`](https://github.com/halbritt/harm-org) → `harm-org.pages.dev` |
 | former public URLs | `https://harm.org`, `https://www.harm.org` |
 | former Cloudflare origin | `http://localhost:18888` |
-| tailnet URL | `https://proximal.tail0ecc2e.ts.net:8890/` (Serve mapping may persist) |
+| tailnet URL | ~~`https://proximal.tail0ecc2e.ts.net:8890/`~~ — Serve mapping **torn down 2026-07-29**; recreate on rollback |
 | local origin | `http://127.0.0.1:18888` (stopped) |
 | content root | `/home/halbritt/sites/harm-enterprises/public` (preserved) |
 | server script | `/home/halbritt/sites/harm-enterprises/bin/serve.py` (preserved) |
@@ -38,6 +38,8 @@ served from host `proximal` at `https://harm.org` and `https://www.harm.org`.
 sudo systemctl enable --now harm-enterprises-site.service
 # 3. repoint DNS from harm-org.pages.dev back to the tunnel
 #    harm.org / www.harm.org CNAME -> e6e104cb-75a2-4ccc-a46f-aca2c725328c.cfargotunnel.com
+# 4. recreate the tailnet mirror (torn down 2026-07-29)
+sudo tailscale serve --bg --https=8890 http://127.0.0.1:18888
 ```
 
 ⚠️ Leave `*.harm.org` pointing at the tunnel. It used to CNAME to the apex; that
@@ -49,7 +51,7 @@ and would otherwise have followed `harm.org` onto Pages and broken.
 | layer | route |
 |---|---|
 | Cloudflare Tunnel | `harm.org` / `www.harm.org` -> `http://localhost:18888` |
-| Tailscale Serve | `https://proximal.tail0ecc2e.ts.net:8890/` -> `http://127.0.0.1:18888` |
+| Tailscale Serve | ~~`https://proximal.tail0ecc2e.ts.net:8890/` -> `http://127.0.0.1:18888`~~ (torn down 2026-07-29) |
 | systemd origin | `harm-enterprises-site.service` runs `bin/serve.py` on `127.0.0.1:18888` |
 
 The server adds conservative headers:

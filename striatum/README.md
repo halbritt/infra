@@ -31,6 +31,18 @@
 > path is ever poked. If striatum-next grows an exhaust producer, wire it as a
 > new bridge rather than resurrecting this socket.
 >
+> **Tailnet serve mapping torn down 2026-07-29.** The `:9443` `tailscale serve`
+> mapping outlived the daemon by eight days, so the port completed TLS and then
+> 502'd — it was still advertised on the tailnet index until the index was
+> audited (see [`../tailscale-index/`](../tailscale-index/)). Removed with
+> `sudo tailscale serve --https=9443 off`. The revert procedures below still
+> name `:9443`; they remain correct, the mapping just has to be recreated as
+> part of any revival:
+>
+> ```bash
+> sudo tailscale serve --bg --https=9443 unix:/run/striatum/web-ui.sock
+> ```
+>
 > **Deliberately left in place** (reversible retirement, no data destroyed):
 > unit files on disk (only `wants/` symlinks removed), the binary + secrets, the
 > `striatum_daemon` database (29 GB, in the last pgBackRest backup), and the

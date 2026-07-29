@@ -111,10 +111,21 @@ card and re-sweep.
 | Striatum Web UI | `:9443/` | `striatumd` **retired 2026-07-21** — [`../striatum/README.md`](../striatum/README.md) |
 | Harm Site Mirror | `:8890/` | `harm-enterprises-site.service` **stopped and disabled 2026-07-25** when `harm.org` moved to Cloudflare Pages — [`../harm-enterprises/README.md`](../harm-enterprises/README.md) |
 
-⚠️ The two `tailscale serve` mappings themselves were **left in place** — removing
-them is a `tailscale serve` change, not an index change, and neither retirement
-record calls for it. So `:9443` and `:8890` still answer TLS and 502; they are
-simply no longer advertised here.
+**The two `tailscale serve` mappings were torn down later the same day**, on the
+owner's call, so the ports no longer answer at all (`serve status` 22 → 20
+mappings; both now refuse connections). Restore commands, captured from the live
+config before removal:
+
+```bash
+sudo tailscale serve --bg --https=9443 unix:/run/striatum/web-ui.sock   # striatum
+sudo tailscale serve --bg --https=8890 http://127.0.0.1:18888           # harm mirror
+```
+
+Each is also recorded in its own subsystem's rollback path
+([`../striatum/README.md`](../striatum/README.md),
+[`../harm-enterprises/README.md`](../harm-enterprises/README.md)) — a serve
+mapping is part of reviving those services, so it belongs in their revert
+procedure, not only here.
 
 ⚠️ **`*.ts.net` is HSTS-preloaded.** A card must use `https://`. A service that
 binds the tailnet IP and speaks plain HTTP is unreachable from a browser even
