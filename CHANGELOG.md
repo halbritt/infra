@@ -7,6 +7,21 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-29
 
+### Praxis: SMS is now the default ⏰ reminder outlet → `praxis/`
+Owner directive: fired reminders now page the owner's SMS (the Android gateway carrier,
+RFC 0019 v2) regardless of which connector the directive arrived on; acks and proposals
+stay origin-routed. Praxis PRAXIS-23, deployed as `de9352b` via the release pipeline —
+which took three attempts, all environmental: the preflight canary ran the *old* tree's
+script pre-cutover (its `:8848` EADDRINUSE fix had to be hand-bootstrapped into the live
+tree — a standing gotcha for any deploy-pipeline fix), and the live-smoke ⏰ fire gate
+cannot pass while the owner's active register is at cap (7/7 today), now degraded loudly
+instead of auto-rolling-back. Two praxis product bugs filed en route: **PRAXIS-24** (due
+reminders black-hole silently when the register is full — they will not fire until a slot
+frees) and **PRAXIS-25** (the 03:00Z watchdog double-SIGABRT + spurious auto-rollback of
+master: sequential 10 s carrier POSTs to the sleeping phone gateway starve the 30 s
+watchdog inside one tick). Also of note: praxisd had been silently running the rolled-back
+prior ref since 03:00Z; this deploy returned it to master.
+
 ### Quectel EC25-AF + RedPocket AT&T line brought up → `cellular/`
 A Quectel EC25-AF (USB `2c7c:0125`) with a freshly activated RedPocket AT&T-network SIM
 (line **510-520-4061**, IMEI `865493045248656`) was brought from "registration denied" to

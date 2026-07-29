@@ -48,7 +48,16 @@ non-fatal — the handler then exits 78 and nothing can egress). The variable *n
 - `PRAXIS_SLACK_BOT_USER` — the bot's own user id (`U…`), for the echo guard (prevents
   reply loops). Live value: `U0BC0EN59DF`.
 - `PRAXIS_SLACK_CHANNEL` — default post channel (`#praxis-chat`).
-- `PRAXIS_TWILIO_*` / `PRAXIS_SMS_OWNER` — SMS connector (RFC 0019), placeholders for now.
+- `PRAXIS_ANDROID_SMS_URL/USER/PASSWORD` + `PRAXIS_SMS_OWNER` — the live SMS carrier
+  (RFC 0019 v2): the Moto G `capcom6/android-sms-gateway` on the tailnet, owner-directed
+  both ways. Since PRAXIS-23 (2026-07-29, praxis `4125e1e`) this carrier is also the
+  **default ⏰ reminder outlet** — fired reminders page the owner's number regardless of
+  the connector the directive arrived on (acks/proposals stay origin-routed). Opt back
+  out with `PRAXIS_REMINDER_OUTLET=origin` (unset today — default `sms` applies). Boot
+  logs the selection: `journalctl --user -u praxisd | grep "reminder outlet"` →
+  `sms (owner number)`. `PRAXIS_FOLLOWTHROUGH_SMS=1` separately grants proactive
+  night-shift follow-through delivery to the same number. `PRAXIS_TWILIO_*` are the
+  retired RFC 0019 v1 placeholders.
 - `PRAXIS_LOCAL_MODEL_ENABLED` — Tier-1 cognition switch (see 2026-06-24 lesson: it must
   live HERE to survive restarts, not in a shell).
 - `PRAXIS_STT_URL` — voice-path STT endpoint (M2): `http://127.0.0.1:8082/transcribe`,
