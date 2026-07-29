@@ -39,6 +39,11 @@ PLANTS = [
     ("Kangaroo Paw Fern",  "kangaroo_paw_fern_soil_moisture"),
     ("Monstera adansonii", "monstera_adansonii_soil_moisture"),
     ("Palm",               "palm_moisture_soil_moisture"),
+    # Dracaena Michiko: ThirdReality 3RSM0347Z paired 2026-07-29; entity_id is the
+    # unnamed-device default (device renamed, entity_id kept). Its InfluxDB tag also
+    # carries orphaned pre-April data from a prior sensor that reused the default id —
+    # outside the dashboard window, so it doesn't show.
+    ("Dracaena Michiko",   "third_reality_inc_3rsm0347z_soil_moisture"),
 ]
 
 # (display name, entity_id tag value) — 24h drying-rate derivatives
@@ -146,8 +151,8 @@ panels = []
 y = 0
 panels.append(row("Soil Moisture — red <30% · yellow 30–50% · green >50%", y)); y += 1
 for i, (name, eid) in enumerate(PLANTS):
-    panels.append(gauge(name, SOIL_UNIT, eid, x=(i % 6) * 4, y=y))
-y += 6
+    panels.append(gauge(name, SOIL_UNIT, eid, x=(i % 6) * 4, y=y + (i // 6) * 6))
+y += 6 * ((len(PLANTS) + 5) // 6)   # wrap 6 gauges per row
 panels.append(readings_table(0, y)); y += 8
 panels.append(row("Drying Rate", y)); y += 1
 panels.append(rate_ts(0, y)); y += 9
@@ -162,6 +167,7 @@ ANNOT = [
     ("Monstera adansonii","monstera_adansonii_soil_moisture",     "#a3be8c"),
     ("Palm",              "palm_moisture_soil_moisture",          "#ebcb8b"),
     ("Kangaroo Paw Fern", "kangaroo_paw_fern_soil_moisture",      "#81a1c1"),
+    ("Dracaena Michiko",  "third_reality_inc_3rsm0347z_soil_moisture", "#d08770"),
 ]
 def annotation(name, entity_id, color):
     return {

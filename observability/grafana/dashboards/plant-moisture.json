@@ -88,6 +88,20 @@
         "textColumn": "",
         "titleColumn": "",
         "tagsColumn": ""
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#d08770",
+        "name": "Dracaena Michiko watered",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'third_reality_inc_3rsm0347z_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "textColumn": "",
+        "titleColumn": "",
+        "tagsColumn": ""
       }
     ]
   },
@@ -503,18 +517,84 @@
       }
     },
     {
-      "type": "timeseries",
-      "title": "Soil moisture \u2014 history",
+      "type": "gauge",
+      "title": "Dracaena Michiko",
       "datasource": {
         "type": "influxdb",
         "uid": "influx-ha"
       },
       "id": 8,
       "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 0,
+        "y": 7
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'third_reality_inc_3rsm0347z_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "rawQuery": true,
+          "alias": "Dracaena Michiko"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Soil moisture \u2014 history",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 9,
+      "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 13
       },
       "targets": [
         {
@@ -582,6 +662,17 @@
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'palm_moisture_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Palm"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "G",
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'third_reality_inc_3rsm0347z_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "rawQuery": true,
+          "alias": "Dracaena Michiko"
         }
       ],
       "fieldConfig": {
@@ -626,9 +717,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 21
       },
-      "id": 9,
+      "id": 10,
       "panels": []
     },
     {
@@ -638,12 +729,12 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 10,
+      "id": 11,
       "gridPos": {
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 22
       },
       "targets": [
         {
