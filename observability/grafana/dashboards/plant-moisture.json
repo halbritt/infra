@@ -98,7 +98,7 @@
         "hide": false,
         "iconColor": "#d08770",
         "name": "Dracaena Michiko watered",
-        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'third_reality_inc_3rsm0347z_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'dracaena_michiko_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
         "textColumn": "",
         "titleColumn": "",
         "tagsColumn": ""
@@ -540,7 +540,7 @@
           },
           "refId": "A",
           "resultFormat": "time_series",
-          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'third_reality_inc_3rsm0347z_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_michiko_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Dracaena Michiko"
         }
@@ -670,7 +670,7 @@
           },
           "refId": "G",
           "resultFormat": "time_series",
-          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'third_reality_inc_3rsm0347z_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_michiko_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Dracaena Michiko"
         }

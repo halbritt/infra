@@ -39,11 +39,10 @@ PLANTS = [
     ("Kangaroo Paw Fern",  "kangaroo_paw_fern_soil_moisture"),
     ("Monstera adansonii", "monstera_adansonii_soil_moisture"),
     ("Palm",               "palm_moisture_soil_moisture"),
-    # Dracaena Michiko: ThirdReality 3RSM0347Z paired 2026-07-29; entity_id is the
-    # unnamed-device default (device renamed, entity_id kept). Its InfluxDB tag also
-    # carries orphaned pre-April data from a prior sensor that reused the default id —
-    # outside the dashboard window, so it doesn't show.
-    ("Dracaena Michiko",   "third_reality_inc_3rsm0347z_soil_moisture"),
+    # Dracaena Michiko: ThirdReality 3RSM0347Z paired 2026-07-29; device + soil-moisture
+    # entity_id renamed off the ThirdReality default, so this clean tag starts at the
+    # rename (the ~90 min of pre-rename data stays under the old third_reality_inc_* tag).
+    ("Dracaena Michiko",   "dracaena_michiko_soil_moisture"),
 ]
 
 # (display name, entity_id tag value) — 24h drying-rate derivatives
@@ -167,7 +166,7 @@ ANNOT = [
     ("Monstera adansonii","monstera_adansonii_soil_moisture",     "#a3be8c"),
     ("Palm",              "palm_moisture_soil_moisture",          "#ebcb8b"),
     ("Kangaroo Paw Fern", "kangaroo_paw_fern_soil_moisture",      "#81a1c1"),
-    ("Dracaena Michiko",  "third_reality_inc_3rsm0347z_soil_moisture", "#d08770"),
+    ("Dracaena Michiko",  "dracaena_michiko_soil_moisture", "#d08770"),
 ]
 def annotation(name, entity_id, color):
     return {

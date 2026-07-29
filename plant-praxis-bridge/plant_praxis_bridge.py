@@ -33,8 +33,8 @@ PLANTS = [
     ("Kangaroo Paw Fern",  "kangaroo_paw_fern_soil_moisture",      45),
     # Provisional (paired 2026-07-29, no drying curve yet): 20 mirrors Dracaena
     # Lisa, same genus, which dries fully. Refine from its own curve after one
-    # dry-down. entity_id is the unnamed-device default (device renamed).
-    ("Dracaena Michiko",   "third_reality_inc_3rsm0347z_soil_moisture", 20),
+    # dry-down. entity_id renamed off the ThirdReality default 2026-07-29.
+    ("Dracaena Michiko",   "dracaena_michiko_soil_moisture", 20),
 ]
 REARM_HYSTERESIS = 8   # re-arm THIRSTY once moisture climbs this far back above threshold
 STALE_HOURS = float(os.environ.get("PLANT_PRAXIS_STALE_HOURS", "24"))  # DARK after this silence

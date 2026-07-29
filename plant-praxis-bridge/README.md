@@ -45,7 +45,7 @@ so it nudges with lead time. **Edit `PLANTS` in the script** to retune.
 | Monstera adansonii | `monstera_adansonii_soil_moisture` | 38 |
 | Palm | `palm_moisture_soil_moisture` | 30 |
 | Kangaroo Paw Fern | `kangaroo_paw_fern_soil_moisture` | 45 |
-| Dracaena Michiko | `third_reality_inc_3rsm0347z_soil_moisture` | 20 (provisional — paired 2026-07-29, mirrors Dracaena Lisa; retune after one dry-down) |
+| Dracaena Michiko | `dracaena_michiko_soil_moisture` | 20 (provisional — paired 2026-07-29, mirrors Dracaena Lisa; retune after one dry-down) |
 
 The `Plant needs water — per-plant rewater point` HA automation that held the
 same thresholds was **disabled 2026-07-23** (`initial_state: false` + turned
