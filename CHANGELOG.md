@@ -7,6 +7,30 @@ history. **Values and config, never credentials.**
 
 ## 2026-07-29
 
+### Quectel EC25-AF + RedPocket AT&T line brought up → `cellular/`
+A Quectel EC25-AF (USB `2c7c:0125`) with a freshly activated RedPocket AT&T-network SIM
+(line **510-520-4061**, IMEI `865493045248656`) was brought from "registration denied" to
+**working data + two-way SMS** over 2026-07-28/29. The root cause of the ~1.5 h attach
+failure was the **LTE attach APN**: the AT&T MBN profile defaults PDP context 1 to
+`broadband` (postpaid), which AT&T rejects for MVNO subscriptions —
+`AT+CGDCONT=1,"IPV4V6","RESELLER"` registered the modem within 20 s. Secondary fixes:
+cleared pre-activation FPLMN blacklist entries off the SIM (313-100, 312-680), enabled MBN
+AutoSel, force-enabled IMS. Data verified end-to-end from the modem's own stack (QPING 4/4,
+DNS); SMS verified both directions, with the documented caveat that inbound rides SMSC
+retries and can lag minutes.
+
+Two expensive red herrings are recorded in the subsystem README so they aren't re-chased:
+the Moto G used for a SIM test kept its **RCS registration** after the SIM came out, so
+inbound tests "showed delivered" while going to the phone over Wi-Fi; and RedPocket's
+"plan expires tomorrow, make a payment" texts turned out to be mid-activation automation
+noise (plan is annual, renews 2027-07-28). **Still open: voice.** IMS registration never
+completes (bearer + P-CSCF granted, SIP registration stalls) and AT&T has no CSFB, so
+calls fail instantly; prime suspect is the 2021-era `EC25AFFDR07A10M4G` firmware, with the
+discriminating phone-voice-test and the Quectel-forum firmware request as the two next
+moves. New subsystem dir [`cellular/`](cellular/) holds identifiers, desired NV state,
+bring-up gotchas (including the `/dev/ttyUSB2` re-enumeration race that can wedge the AT
+port), and a quick-reference for AT/QMI access.
+
 ### Tailnet landing page folded in → `tailscale-index/`, BinKeeper cards repaired
 `tailscale.harm.org` had been serving from `~/git/tailscale-index`, a directory that was
 **not a git repo** — no owner, no history, no link check. Consequence: all three BinKeeper
