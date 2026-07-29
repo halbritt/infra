@@ -76,7 +76,8 @@ tunnel.
 
 ## Cards on the index
 
-Sweep of 2026-07-29. Card names are the `<h2>` text.
+Sweep of 2026-07-29 01:57 UTC — 14 cards, all reachable
+(`check-links.sh` exit 0). Card names are the `<h2>` text.
 
 | card | target | status |
 |---|---|---|
@@ -84,29 +85,36 @@ Sweep of 2026-07-29. Card names are the `<h2>` text.
 | Praxis Plane Connector Lab (PXLAB) | `:10000/proximal/projects/…/issues` | 200 |
 | Agent Capability Lab (CAPLAB) | `:8784/` | 200 |
 | OpenClaw Control | `:443/` | 200 |
-| Striatum Web UI | `:9443/` | **502 — see below** |
 | Engram Operator | `:8765/` | 200 |
 | BinKeeper: Catalog | `:8766/bins/` | 200 |
 | BinKeeper: Photograph and Label | `:8766/` | 200 |
 | BinKeeper: Register Labeled Bin | `:8766/register` | 200 |
+| BinKeeper: Sort a Stash | `:8766/stash` | 200 |
 | Pastebin | `:18080/` | 200 |
 | Markdown Browser | `:8444/` | 200 |
-| Harm Site Mirror | `:8890/` | **502 — see below** |
 | Grafana — proximal dashboards | `:8853/` | 302 (login) |
 | Prometheus — proximal | `:9491/` | 302 |
 | Alertmanager — proximal | `:9493/` | 200 |
 
 All targets are `https://proximal.tail0ecc2e.ts.net`.
 
-### Known-dead cards (kept pending an owner decision)
+### Removed cards
 
-| card | why it 502s |
-|---|---|
-| Striatum Web UI `:9443` | `striatumd` was **retired 2026-07-21** ([`../striatum/README.md`](../striatum/README.md)). The `tailscale serve` mapping outlives the origin, so the port answers TLS and then 502s. |
-| Harm Site Mirror `:8890` | `harm-enterprises-site.service` was **stopped and disabled 2026-07-25** when `harm.org` moved to Cloudflare Pages ([`../harm-enterprises/README.md`](../harm-enterprises/README.md)). Same serve-outlives-origin shape. |
+Removed by owner decision on 2026-07-29. Both had been 502ing in the same shape:
+a `tailscale serve` mapping outliving a retired origin, so the port completes TLS
+and then fails. Recorded here rather than only in `git log` because each is
+restorable — if either subsystem is rolled back per its own README, re-add the
+card and re-sweep.
 
-Neither was removed from the page — deleting a card is an owner call, and both
-subsystems document a rollback path that would make the link live again.
+| card | target | why it died |
+|---|---|---|
+| Striatum Web UI | `:9443/` | `striatumd` **retired 2026-07-21** — [`../striatum/README.md`](../striatum/README.md) |
+| Harm Site Mirror | `:8890/` | `harm-enterprises-site.service` **stopped and disabled 2026-07-25** when `harm.org` moved to Cloudflare Pages — [`../harm-enterprises/README.md`](../harm-enterprises/README.md) |
+
+⚠️ The two `tailscale serve` mappings themselves were **left in place** — removing
+them is a `tailscale serve` change, not an index change, and neither retirement
+record calls for it. So `:9443` and `:8890` still answer TLS and 502; they are
+simply no longer advertised here.
 
 ⚠️ **`*.ts.net` is HSTS-preloaded.** A card must use `https://`. A service that
 binds the tailnet IP and speaks plain HTTP is unreachable from a browser even
@@ -131,11 +139,12 @@ cloudflared --config ../cloudflared/config.yml tunnel ingress validate
 ```
 
 Expected: local origin `200`, public `200`, ingress validation `OK`, and
-`check-links.sh` clean except the two known-dead cards above.
+`check-links.sh` exit `0`.
 
 Verified on 2026-07-29 after the fold: unit active and enabled from the new
 `WorkingDirectory`, origin on `127.0.0.1:3912`, `https://tailscale.harm.org/`
-`200` and byte-identical to `site/index.html`, 13/15 links reachable.
+`200` and byte-identical to `site/index.html`. After the card edits the same
+day, `check-links.sh` exits `0` — 14/14 reachable.
 
 ## History
 
@@ -162,9 +171,11 @@ the earlier workaround that recorded index edits as an unapplied `.patch` file
 because there was nowhere to version the real thing. That file is kept for
 history; new index changes are ordinary commits here.
 
-**Open question for the owner:** BinKeeper's stash surface (`:8766/stash`, live
-and returning 200) has never had a card, though it got its own operator tab in
-BinKeeper `6ee3001`. Add one?
+**2026-07-29, same day — card cleanup.** On the owner's call, dropped the two
+dead cards (see [Removed cards](#removed-cards)) and added **BinKeeper: Sort a
+Stash** (`:8766/stash`), a live surface that had never been listed despite
+getting its own operator tab in BinKeeper `6ee3001`. The page is now 14 cards,
+all reachable.
 
 ## Stop conditions
 
@@ -175,6 +186,6 @@ Stop and ask before:
 - rebinding the origin off `127.0.0.1` — the tunnel is the only intended path in
 - removing the `noindex` / referrer / nosniff headers in `server.py`
 - changing Cloudflare DNS or tunnel ingress (that is [`../cloudflared`](../cloudflared/)'s call)
-- deleting a card for a retired service — record it under
-  [Known-dead cards](#known-dead-cards-kept-pending-an-owner-decision) instead
+- deleting a card for a retired service — ask first, then record it under
+  [Removed cards](#removed-cards) so it stays restorable
 - putting anything on this page that is not a URL: it is world-readable

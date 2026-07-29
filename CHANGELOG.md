@@ -29,8 +29,14 @@ unit active/enabled from the new path, origin on `127.0.0.1:3912`, `https://tail
 
 The link sweep found **two more dead cards**, both serve-mapping-outlives-origin: Striatum Web
 UI `:9443` and Harm Site Mirror `:8890` (502 — `striatumd` retired 7/21, `harm-enterprises`
-stopped 7/25). Neither card was removed; deleting one is an owner call and both subsystems
-document a rollback. Recorded in the subsystem README's known-dead table.
+stopped 7/25). Both **removed on the owner's call** later the same day, and recorded in the
+subsystem README's "Removed cards" table so either is restorable if its subsystem is rolled
+back. The two `tailscale serve` mappings were left alone — dropping them is a serve change,
+not an index change, so `:9443` and `:8890` still answer TLS and 502, just unadvertised.
+
+Also added a **BinKeeper: Sort a Stash** card (`:8766/stash`) — a live surface that had never
+been listed despite getting its own operator tab in BinKeeper `6ee3001`. The page is now 14
+cards with `check-links.sh` exiting `0`, the first time it has been all-green.
 
 Supersedes `observability/tailscale-index-card.patch`, the workaround that recorded index
 edits as an unapplied `.patch` because there was nowhere to version the real page. Kept for
