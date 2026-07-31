@@ -1,0 +1,45 @@
+[Unit]
+Description=Praxis OnFailure self-heal — roll back to last-known-good release
+Documentation=file:///home/halbritt/git/praxis/docs/design/0012-release-and-compatibility-discipline.md
+
+# Local-first systemd *user* unit (sibling of praxisd.service / praxis-slack.service),
+# installed at ~/.config/systemd/user/praxis-rollback.service.
+#
+# Fired by praxisd.service's `OnFailure=praxis-rollback.service` whenever the
+# daemon enters `failed`. The handler first proves the guarded boot HALTed on a
+# bad release (Result=exit-code, ExecMainStatus=78). Only that signature may
+# check out the previous good ref. Watchdog/dependency/runtime failures keep the
+# current checkout and remain under praxisd's Restart=always policy.
+#
+# LOOP GUARD: the script stamps ~/.local/state/praxis/rollback-attempted with an
+# epoch timestamp and REFUSES a second auto-rollback inside a 15-min cooldown
+# (PRAXIS_ROLLBACK_COOLDOWN_SECONDS). If the prior ref ALSO fails, it logs loudly
+# (logger -t praxis-rollback + release-log.jsonl) and exits non-zero, leaving
+# praxisd FAILED for a human instead of ping-ponging. There is intentionally NO
+# OnFailure= on *this* unit, so a failed rollback does not chain into anything.
+#
+# INSTALL (operator, on the deployment box):
+#   cp praxis/praxisd.service praxis/praxis-rollback.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now praxisd.service
+# (praxis-rollback.service is pulled in on demand by OnFailure=; it is NOT enabled
+#  and has no [Install] section — it should never start except via that trigger.)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/halbritt/git/praxis
+# Run the versioned application-repo script. Keeping rollback behavior beside the
+# release code makes the handler update atomically with the Praxis checkout.
+ExecStart=/home/halbritt/git/praxis/deploy/praxis-rollback.sh
+# Belt-and-suspenders cooldown override (script default is 900s); refuse a second
+# auto-rollback within this window.
+Environment=PRAXIS_ROLLBACK_COOLDOWN_SECONDS=900
+# Same user state dir praxisd uses (~/.local/state/praxis): marker, RELEASE_STATE,
+# release-log.jsonl all live here. systemd creates/owns it.
+StateDirectory=praxis
+# Do NOT restart this handler on failure: a failed rollback must stay failed and
+# wait for a human. (No Restart=, no OnFailure= — chaining here would defeat the
+# loop guard.)
+
+# No [Install]: this unit is activated solely by praxisd's OnFailure=, never on
+# its own at boot. Leaving it un-enabled is deliberate.

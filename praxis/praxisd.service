@@ -7,6 +7,18 @@ Documentation=file:///home/halbritt/git/praxis/docs/design/0017-safe-boot-delate
 # ordering against it is not expressible from the user manager; the daemon's
 # fail-closed boot + Restart=always cover a not-yet-ready database.
 
+# Self-heal on a bad release: if the guarded boot HALTs (main() returns 78 on
+# BootFailure → this unit enters `failed`), systemd fires the OnFailure handler,
+# which rolls the working tree back to the last-known-good ref and starts praxisd
+# again. The handler has a loop guard (15-min cooldown marker) so a prior ref that
+# ALSO fails does not ping-pong forever — see deploy/praxis-rollback.{service,sh}.
+# Restart=always (transient crashes) and OnFailure= (bad cutover) are complementary:
+# Restart re-runs the *same* code; OnFailure changes the code first, then starts.
+OnFailure=praxis-rollback.service
+# This is an always-on local daemon. A transient watchdog/dependency crash must
+# never consume a finite start budget and latch the service off indefinitely.
+StartLimitIntervalSec=0
+
 [Service]
 Type=notify
 NotifyAccess=main
@@ -20,6 +32,9 @@ Environment=PYTHONPATH=/home/halbritt/git/praxis/src
 ExecStart=/usr/bin/python3 -m praxis
 Restart=always
 RestartSec=5
+# Exit 78 is the guarded-boot HALT contract. OnFailure owns that recovery:
+# automatic same-release restarts would race rollback and spin after loop refusal.
+RestartPreventExitStatus=78
 # Peer-auth socket DSN: no password, authenticated by the unit's OS user.
 Environment=PRAXIS_DB_DSN=postgresql://halbritt@/praxis?host=/var/run/postgresql
 Environment=PRAXIS_TICK_SECONDS=5
@@ -28,6 +43,7 @@ Environment=PRAXIS_TICK_SECONDS=5
 # proposal back out the *originating* connector (RFC 0020 follow-on, propose-only,
 # egress-gated). Leading '-' => a missing file is non-fatal: with no carrier the
 # proposal router is simply a no-op (the proposal still lands as an internal delta).
+# Secret stays 0600 OUTSIDE git (I4); only this *reference* is versioned.
 EnvironmentFile=-/home/halbritt/.config/praxis/praxisd.env
 # Flight recorder under the user state dir (~/.local/state/praxis), created by systemd.
 StateDirectory=praxis

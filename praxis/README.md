@@ -14,6 +14,7 @@ Postgres, tailnet-only trust surface.
 | unit (user) | what it is | bind / trust |
 |---|---|---|
 | `praxisd.service` | the daemon: SAFE→ARMED boot, ticks the loop, drains the `inbox` dock into captures, runs the wall/redaction gates | local; Postgres peer-auth `:5432` db `praxis`; tailnet-only UI/API (I5) |
+| `praxis-rollback.service` | on-demand guarded-boot recovery; rolls back only for `exit-code`/`78`, never for watchdog or runtime failure | no bind; local git checkout + append-only release audit |
 | `praxis-slack.service` | inbound Slack **transport** — Socket Mode (outbound WebSocket, *no public ingress*); captures into the shared `inbox`, posts an egress-gated ack back | outbound WSS to Slack; writes the same `praxis` DB |
 
 Run **exactly one** `praxis-slack` instance — Slack load-balances events across
@@ -24,6 +25,7 @@ connections, so a second listener would split the event stream.
 | repo (canonical) | installed copy (box) |
 |---|---|
 | `praxisd.service` | `~/.config/systemd/user/praxisd.service` |
+| `praxis-rollback.service` | `~/.config/systemd/user/praxis-rollback.service` |
 | `praxis-slack.service` | `~/.config/systemd/user/praxis-slack.service` |
 
 Canonical-in-repo, installed-on-box: edit here, then
@@ -154,7 +156,17 @@ psql "postgresql://halbritt@/praxis?host=/var/run/postgresql" \
   -c "select connector_id,count(*),max(received_at) from inbox group by 1;"
 ```
 
-Both units are `enabled` (`WantedBy=default.target`) with lingering on, so they start
-at boot. `praxisd` is `Restart=always` (Type=notify + 30s watchdog); `praxis-slack` is
-`Restart=on-failure` (a missing token is a deliberate fail-closed exit 78, not a crash
-to restart-spin).
+The daemon and Slack units are `enabled` (`WantedBy=default.target`) with
+lingering on, so they start at boot. `praxisd` is `Restart=always`
+(Type=notify + 30s watchdog); `praxis-slack` is `Restart=on-failure` (a missing
+token is a deliberate fail-closed exit 78, not a crash to restart-spin).
+
+`praxisd` has `StartLimitIntervalSec=0`: transient watchdog and dependency
+failures must remain eligible for `Restart=always`, not latch the daemon off.
+`OnFailure=praxis-rollback.service` is narrower than ordinary restart. Its
+versioned script in the Praxis application repo moves the checkout only when
+systemd reports the guarded boot signature `Result=exit-code` and
+`ExecMainStatus=78`; all runtime failures keep the current release. Status 78 is
+also in `RestartPreventExitStatus`, so only the rollback handler owns that
+recovery and its loop refusal can leave a repeatedly bad prior release stopped.
+The rollback unit is activated on demand and is not enabled.

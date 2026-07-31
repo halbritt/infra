@@ -5,6 +5,19 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-07-31
+
+### Praxis systemd recovery no longer latches or rolls back transient failures → `praxis/`
+The canonical and installed user units now disable the finite start-rate window
+for the always-on daemon. A watchdog or dependency crash remains under
+`Restart=always` instead of leaving Praxis failed after the default five-start
+budget. The desired-state set now also includes `praxis-rollback.service`.
+Its application-repo handler classifies the failed unit before acting: only the
+guarded boot contract (`Result=exit-code`, `ExecMainStatus=78`) can move the
+checkout; watchdog and ordinary runtime failures preserve the release. Status
+78 is excluded from ordinary restart so the rollback handler is its sole
+recovery owner and a loop-guard refusal cannot restart-spin.
+
 ## 2026-07-29
 
 ### Praxis SMS moved to the Quectel EC25; Android gateway deprecated → `cellular/`
