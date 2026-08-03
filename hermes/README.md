@@ -126,6 +126,9 @@ Credentials are **not** in either file. `OPENROUTER_API_KEY` is already exported
   a cron scheduler, as a resident user service. Not installed: it would put an
   externally-reachable message path in front of an agent with `--yolo`-capable shell access,
   and this box already has a reviewed Slack path via Praxis. Revisit deliberately, not by default.
+  Prepared-but-not-enabled: [`SLACK_ONBOARDING.md`](SLACK_ONBOARDING.md) captures exactly how the
+  box's existing Slack path (the `openclaw` app in the `gearheads` workspace) is wired, and the
+  runbook to connect Hermes as its own Slack app when that's wanted — no live state changed.
 - **Nous Portal** (`hermes setup --portal`) — a second inference subscription. OpenRouter
   already covers model access for this host.
 - **Its own STT** — `stt.local.model: base` would pull a second Whisper onto the 3090, which
