@@ -1,9 +1,7 @@
 # Joining Hermes to Slack — setup runbook
 
-Status: PREPARED, not yet connected. This is the new-Hermes-app path (option 1),
-chosen over reusing OpenClaw's tokens because that would disconnect the
-currently-running OpenClaw bot from Slack (Socket Mode = one connection per
-app token, and the app identity "openclaw" would be shared).
+Status: **LIVE as of 2026-08-03** (connected via the new "hermes" Slack app,
+Socket Mode). This doc records how it was wired and how to operate it.
 
 ## How the OpenClaw Slack connection works (the reference)
 
@@ -70,3 +68,23 @@ Hermes wires the resulting tokens and runs its gateway.
 - The manifest was generated with `hermes slack manifest --name "Hermes"`.
 - No live state has been changed during preparation: Hermes gateway is NOT yet
   installed/running, no tokens written, openclaw unaffected.
+
+## Live wiring (done 2026-08-03)
+
+- A dedicated "hermes" Slack app was created for the `gearheads` workspace
+  (user `hermes`, member id `U0BMCL982NP`, bot id `B0BND7XHWFJ`) — distinct
+  from the existing `openclaw` app, so no Socket Mode conflict (one connection
+  per app token, and the identities are separate bots).
+- Tokens stored in `~/.hermes/.env` (mode 0600): `SLACK_BOT_TOKEN` (xoxb), 
+  `SLACK_APP_TOKEN` (xapp). Secrets live only there, never committed.
+- Gateway installed as a user systemd service (linger enabled):
+  - `hermes gateway install` → `~/.config/systemd/user/hermes-gateway.service`
+  - `hermes gateway start` / `restart` / `status`
+- Reachability posture mirrors OpenClaw (open in a small personal workspace):
+  - `GATEWAY_ALLOW_ALL_USERS=true` in `~/.hermes/.env`
+  - `platforms.slack.dm_policy: open`, `platforms.slack.group_policy: open`
+    in `~/.hermes/config.yaml`
+  - Tighten later to `SLACK_ALLOWED_USERS=<your-member-id>` if wanted.
+- Verify: `hermes gateway status` → active; established outbound TLS to a
+  Slack endpoint from the gateway PID; no allowlist-denial warning in
+  `journalctl --user -u hermes-gateway`. In Slack, DM @Hermes or `/hermes`.
