@@ -1,7 +1,8 @@
 # Joining Hermes to Slack — setup runbook
 
-Status: **LIVE as of 2026-08-03** (connected via the new "hermes" Slack app,
-Socket Mode). This doc records how it was wired and how to operate it.
+Status: **LIVE + round-trip-verified 2026-08-04** (Agent-mode "hermes" Slack app,
+Socket Mode; the Agent replies to DMs). This doc records how it was wired, the
+two real root causes hit during bring-up, and how to operate it.
 
 ## How the OpenClaw Slack connection works (the reference)
 
@@ -88,3 +89,39 @@ Hermes wires the resulting tokens and runs its gateway.
 - Verify: `hermes gateway status` → active; established outbound TLS to a
   Slack endpoint from the gateway PID; no allowlist-denial warning in
   `journalctl --user -u hermes-gateway`. In Slack, DM @Hermes or `/hermes`.
+
+## Bring-up: the two real root causes (diagnosed 2026-08-04 with DEBUG logs)
+
+The Slack app was installed with only `chat:write` + `channels:history` — the
+DMs never reached the box (silent). Chasing it with `-vv` DEBUG proved it and
+surfaced a SECOND, hidden failure. Both fixed. Keep these in mind:
+
+1. **The installed app must carry the FULL manifest scopes + event
+   subscriptions, and run in Agent (assistant) mode.** A minimal app (or one
+   created from a stale/reduced manifest) looks connected (Socket Mode works
+   via the xapp token) but silently drops DMs — Hermes only gets them when the
+   app subscribes to `message.im` / `assistant_thread_*` and holds the read
+   scopes. Symptom in the gateway: `channel_directory: Slack team <T> lacks
+   channels:read` and zero `[Slack] event received` DEBUG lines. Fix:
+   regenerate with `hermes slack manifest --name "Hermes"` (Agent mode by
+   default), paste it at Features → App Manifest, Save, **Reinstall**. This
+   grants all scopes (`channels:read`, `im:*`, `groups:*`, `mpim:*`,
+   `assistant:write`, …) and subscribes the events in one step.
+
+2. **The gateway needs `OPENROUTER_API_KEY` in `~/.hermes/.env` — NOT just in
+   `~/.profile`.** The box exports the key from `~/.profile` (that's how the
+   interactive CLI gets it), but the systemd user service never sources a shell
+   profile. So a message that *did* arrive failed the LLM call with
+   `OpenRouter credential pool has no usable entries (credentials may be
+   exhausted)` → the bot replied "Sorry, I encountered an unexpected error."
+   Fix: add `OPENROUTER_API_KEY=` to `~/.hermes/.env` (the gateway loads it via
+   `load_hermes_dotenv()`), then `systemctl --user restart hermes-gateway`.
+
+   ⚠️ `/proc/<pid>/environ` will NOT show a `.env`-loaded key after start —
+   dotenv writes to `os.environ` post-exec; that check is misleading. Test with
+   a real DM instead.
+
+Verified round-trip (2026-08-04): DM → `assistant_thread` event → Slack-origin
+session (`platform=slack`) → `run_agent` via openrouter/deepseek-v4-flash-0731
+→ `[Slack] Sending response` → reply landed in Slack thread. Working at default
+logging (DEBUG `-vv` reverted).

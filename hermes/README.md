@@ -11,9 +11,9 @@ gateway. Installed on `proximal` **2026-07-28** as a third local agent harness a
   (Python 3.11.15, deps hash-verified against the repo's `uv.lock`). Not npm-global — this
   is the one agent tool on the box that does *not* follow the global-npm convention,
   because upstream ships it as a Python package with a bundled node/TUI side-car.
-- **Not under systemd.** It's an interactive CLI; nothing resident, nothing listening.
-  `hermes gateway install` would add a user service (messaging + cron) — deliberately
-  not done, see **Deliberately not enabled** below.
+- **Gateway service (user systemd via `hermes gateway install`).** Added 2026-08-04
+  to connect Slack (the box's second Slack bot, Agent-mode "hermes" app). Interactive
+  CLI sessions run independently of it. See **Gateway: Slack enabled** below.
 - **Data dir:** `~/.hermes/` (~2.0 GB — code, venv, node deps, Chromium, 70 bundled skills,
   sessions, memories).
 
@@ -120,15 +120,19 @@ Credentials are **not** in either file. `OPENROUTER_API_KEY` is already exported
   Both are upstream-bundled noise, not local misconfiguration — this box's web-research
   path is [`wigolo/`](../wigolo/README.md), not Hermes's `web` toolset.
 
-## Deliberately not enabled
+## Gateway: Slack enabled (2026-08-04); other messaging platforms not
 
-- **Gateway** (`hermes gateway install`) — Telegram/Discord/Slack/WhatsApp/Signal bridge plus
-  a cron scheduler, as a resident user service. Not installed: it would put an
-  externally-reachable message path in front of an agent with `--yolo`-capable shell access,
-  and this box already has a reviewed Slack path via Praxis. Revisit deliberately, not by default.
-  Prepared-but-not-enabled: [`SLACK_ONBOARDING.md`](SLACK_ONBOARDING.md) captures exactly how the
-  box's existing Slack path (the `openclaw` app in the `gearheads` workspace) is wired, and the
-  runbook to connect Hermes as its own Slack app when that's wanted — no live state changed.
+- **Slack** (`hermes gateway install`) — **LIVE** as the box's second Slack bot,
+  connecting Hermes as its own **Agent-mode** app in the `gearheads` workspace
+  (separate from the `openclaw` bot and the Praxis path). This *was* deliberately
+  unenabled (an externally-reachable path in front of a `--yolo`-capable agent),
+  and was revisited deliberately: a dedicated "hermes" app with open DM/group
+  policy in the small personal workspace, `GATEWAY_ALLOW_ALL_USERS=true`.
+  Full wiring, the two bring-up root causes (app must carry full scopes in Agent
+  mode; `OPENROUTER_API_KEY` must live in `~/.hermes/.env` for the systemd
+  gateway, not just `~/.profile`), and operation: [`SLACK_ONBOARDING.md`](SLACK_ONBOARDING.md).
+- **Other gateway platforms** (Telegram/Discord/WhatsApp/Signal) — not enabled,
+  same rationale as before: stands down by default unless deliberately revisited.
 - **Nous Portal** (`hermes setup --portal`) — a second inference subscription. OpenRouter
   already covers model access for this host.
 - **Its own STT** — `stt.local.model: base` would pull a second Whisper onto the 3090, which

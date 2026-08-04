@@ -5,6 +5,35 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`postgres/CHANGELOG.md`](postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-08-04
+
+### Hermes connects to Slack as its own Agent-mode bot → `hermes/`
+Hermes joined Slack for the first time, as a dedicated **"hermes" app** in the
+`gearheads` workspace (truckchat.slack.com, member `U0BMCL982NP`, bot
+`B0BND7XHWFJ`) — separate from the `openclaw` app, so no Socket Mode conflict.
+The Hermes messaging gateway was installed as a user systemd service
+(`hermes gateway install`, linger on, `GATEWAY_ALLOW_ALL_USERS=true` + open
+DM/group policy mirroring OpenClaw).
+
+Running with DEBUG logs surfaced **two independent root causes** that both had
+to be fixed before a DM round-tripped:
+1. **The Slack app must carry the full manifest scopes + event subscriptions,
+   in Agent mode.** The app was initially installed with only
+   `chat:write`+`channels:history`, so DMs silently never reached the box
+   (Socket Mode connected fine via the xapp token, but no `message.im` events).
+   Fixed by reapplying `hermes slack manifest --name "Hermes"` (Agent mode by
+   default) at Features → App Manifest and reinstalling.
+2. **The gateway needs `OPENROUTER_API_KEY` in `~/.hermes/.env`, not just
+   `~/.profile`.** systemd never sources a shell profile, so the LLM call failed
+   with "OpenRouter credential pool has no usable entries" and the bot replied
+   "Sorry, I encountered an unexpected error." Fixed by adding the key to
+   `~/.hermes/.env` and restarting the gateway.
+
+Verified round-trip: DM → `assistant_thread` event → Slack-origin session
+(`platform=slack`) → `run_agent` via openrouter/deepseek-v4-flash-0731 →
+reply posted to the Slack thread. DEBUG `-vv` reverted to default logging.
+Full runbook + both root causes: `hermes/SLACK_ONBOARDING.md`.
+
 ## 2026-07-31
 
 ### Praxis systemd recovery no longer latches or rolls back transient failures → `praxis/`
