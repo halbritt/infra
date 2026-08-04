@@ -7,6 +7,17 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-04
 
+### Root-FS pressure relieved; unused models archived to `/nvr/models-archive/` → `llama/`
+A filesystem-full alert fired on root (`/` at 89%, 1.6T/1.8T). Cleaned up ~220G of
+re-downloadable caches (`~/.cache/huggingface`, `uv`, `go-build`, pypoetry, pip, playwright),
+and moved **all unused model quants + the raw bf16 build source (~305G)** from `~/models/` to
+the spinning disk at **`/nvr/models-archive/`** (8.8T free). Root dropped to ~60% (712G free).
+
+Only the two files actually in service remain in `~/models/`: the served `APEX-I-Compact.gguf`
+and the `Striatum-FT/` symlink → the loaded LoRA adapter. Archive location and the restore path
+documented in [`llama/README.md`](llama/README.md). Service verified: `llama-27b` active, `/health`
+ok. (See `git log` for the move itself; the `~/.cache` clear was ephemeral cache, not versioned.)
+
 ### Hermes connects to Slack as its own Agent-mode bot → `hermes/`
 Hermes joined Slack for the first time, as a dedicated **"hermes" app** in the
 `gearheads` workspace (truckchat.slack.com, member `U0BMCL982NP`, bot

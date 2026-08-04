@@ -46,11 +46,20 @@ passing the old `qwen3.6-27b` name keep working.
 sudo rm -r /etc/systemd/system/llama-27b.service.d && sudo systemctl daemon-reload && sudo systemctl restart llama-27b
 ```
 
-Other models on disk (`~/models/`, swap via the unit's `-m` flag): Qwen3.6-27B Q5_K_M,
-Qwen3.6-35B-A3B (MoE) IQ4_XS / APEX, Qwen3 0.6B / 1.7B (draft models) — all mainline-loadable.
-⚠️ `Qwen3.6-27B-MTP-IQ4_KS.gguf` is an **ik_llama.cpp quant** (ggml types #144/#152) — mainline
-llama-server cannot load it; it belongs to the `ik-llama-server` user unit / `~/git/ik_llama.cpp`
-build. Never point this unit at it.
+Other model/quants are **archived on the spinning disk** at `/nvr/models-archive/` (moved 2026-08-04 to relieve root-FS pressure — root was 89%, now ~60%). The only model files that live in `~/models/` are the ones actually in service:
+
+- `~/models/Qwen3.6-35B-A3B-APEX-I-Compact.gguf` — **the live model** (served by the override).
+- `~/models/Qwen3.6-35B-A3B-Striatum-FT/` — **symlink only** to the live LoRA adapter
+  (`adapter-f32.gguf`), whose real file lives under the runpod-jobrunner artifacts.
+  Do not delete the symlink or its target while the unit loads it.
+
+Archived on `/nvr/models-archive/` (re-locatable / re-downloadable; swap back into `~/models/`
+and point the unit's `-m` flag at them to use): Qwen3.6-27B Q5_K_M, Qwen3.6-27B IQ4_XS,
+Qwen3.6-27B MTP Q4_K_M, Qwen3.6-35B-A3B (MoE) IQ4_XS, the raw bf16 build source (`hf/`), the
+gemma-4 models, and the Qwen3 0.6B/1.7B draft quants — all mainline-loadable once restored.
+⚠️ `Qwen3.6-27B-MTP-IQ4_KS.gguf` (also archived) is an **ik_llama.cpp quant** (ggml types
+#144/#152) — mainline llama-server cannot load it; it belongs to the `ik-llama-server` user unit
+/ `~/git/ik_llama.cpp` build. Never point this unit at it.
 
 ## Files → install locations
 
