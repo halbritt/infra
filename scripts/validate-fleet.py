@@ -142,6 +142,8 @@ class Validation:
 
             if not (directory / "AGENTS.md").is_file():
                 self.error(f"hosts/{name}: AGENTS.md is missing")
+            if (directory / "source-import").exists():
+                self.error(f"hosts/{name}/source-import: temporary import directory must be normalized")
             config = resolved.get("config")
             if config is not None and config.is_dir():
                 for subsystem in sorted(path for path in config.iterdir() if path.is_dir()):

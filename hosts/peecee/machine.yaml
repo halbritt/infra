@@ -2,11 +2,12 @@
   "schema_version": 1,
   "name": "peecee",
   "hostname": "peecee",
-  "status": "documented",
+  "status": "active",
   "platform": {
     "os": "windows",
     "edition": "Windows 11 Pro",
-    "architecture": "x86_64"
+    "architecture": "x86_64",
+    "build": "26200"
   },
   "hardware": {
     "gpu": [
@@ -14,12 +15,24 @@
     ]
   },
   "network": {
+    "lan_address": "192.168.1.118",
     "tailnet_address": "100.113.63.58"
   },
   "roles": [
     "server",
     "windows"
   ],
+  "responsibilities": [
+    "gpu-inference",
+    "gpu-document-conversion",
+    "monitoring-target"
+  ],
+  "provenance": {
+    "source_repository": "https://github.com/halbritt/peecee",
+    "source_branch": "main",
+    "source_tip": "8bc7435470026341bf547de3da5bd0f654db464b",
+    "subtree_import_commit": "aef5ed4d85c7249d76ce833108299b2a9ed2071e"
+  },
   "paths": {
     "config": "config",
     "notes": "notes.md",

@@ -50,6 +50,23 @@ Imported historical commits retain their original repository-root paths; the
 new host notes must therefore record the subtree commit and source tip for
 pre-import archaeology.
 
+### When a partial host record already exists
+
+Do not delete or overwrite an existing `hosts/<name>/` partition to make the
+normal prefix available. Import into a temporary child that does not exist:
+
+```sh
+git subtree add \
+  --prefix="hosts/${machine}/source-import" \
+  "${source_repo}" "${source_branch}"
+```
+
+In the separate normalization commit, move the imported subsystems into
+`hosts/<name>/config/`, reconcile imported root documentation with the existing
+manifest and notes, and remove the empty `source-import/` directory. Preserve
+both versions where they carry distinct evidence. The temporary prefix must not
+remain in the accepted layout.
+
 Immediately follow the subtree commit with a separate normalization commit:
 
 1. Add `machine.yaml`, `AGENTS.md`, `notes.md`, and `CHANGELOG.md` at the host
@@ -133,7 +150,8 @@ For the next machine, perform these actions in order:
 3. Run the current-tree and full-history secret scans; rotate and sanitize first
    if either scan finds a real credential.
 4. From a clean fleet checkout, run the unsquashed `git subtree add` command
-   above into `hosts/<name>/config`.
+   above into `hosts/<name>/config`, or use the temporary child procedure when
+   a partial host partition already exists.
 5. Add the host manifest and notes, then normalize paths in a second commit.
 6. Reinstall and verify checkout-bound services on that machine.
 7. Run the imported repository's checks plus `scripts/validate-fleet.py`.

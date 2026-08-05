@@ -27,9 +27,10 @@ credentials.
 └── scripts/               # lightweight repository validation
 ```
 
-The original machine is [`hosts/proximal/`](hosts/proximal/). Existing
-cross-host evidence also established a second, partial host record for
-[`hosts/peecee/`](hosts/peecee/). The `proximal` subsystem index remains at
+The original machine is [`hosts/proximal/`](hosts/proximal/). The standalone
+`peecee` repository and its 15-commit history were imported into
+[`hosts/peecee/`](hosts/peecee/) after an initial partial record was reconciled.
+The `proximal` subsystem index remains at
 [`hosts/proximal/config/README.md`](hosts/proximal/config/README.md).
 
 ## Layering and ownership
@@ -106,6 +107,14 @@ For a subsystem-wide investigation that spans the migration, name both paths:
 
 ```sh
 git log --all --full-history -- postgres hosts/proximal/config/postgres
+```
+
+Imported repositories retain their original commits and original historical
+paths. For peecee, use its recorded source tip for pre-import archaeology:
+
+```sh
+git log 8bc7435470026341bf547de3da5bd0f654db464b -- health/check-whea.sh
+git log --follow -- hosts/peecee/config/health/check-whea.sh
 ```
 
 Use [`hosts/<name>/CHANGELOG.md`](hosts/proximal/CHANGELOG.md) for meaningful
