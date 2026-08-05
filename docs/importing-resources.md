@@ -10,7 +10,8 @@ history, path, verification, and cleanup rules.
 Read [`CONTEXT.md`](../CONTEXT.md) before choosing a prefix:
 
 - `devices/<name>/` for an appliance such as a printer, router, switch, or Home
-  Assistant Yellow;
+  Assistant Yellow; use a differentiating stable name such as
+  `home-assistant-yellow`, not the generic product name alone;
 - `services/<name>/` for desired state managed independently of one host;
 - `providers/<name>/` for an external provider control plane such as Runpod,
   Google Cloud, or OpenRouter.
@@ -55,9 +56,10 @@ live, and the repository registry has been updated.
 
 ## Exact Home Assistant import sequence
 
-The current Home Assistant source is `/home/halbritt/git/homeassistant` on
-`master`. It describes a Home Assistant Yellow appliance, so its initial target
-is `devices/homeassistant/`.
+The Home Assistant source was `/home/halbritt/git/homeassistant` on `master`.
+It describes a Home Assistant Yellow appliance, so its target is
+`devices/home-assistant-yellow/`. The observed hostname `homeassistant` remains
+a network fact until a separate live rename is verified.
 
 1. Confirm the source is clean and synchronized and record its exact tip.
 2. Scan the current tree and reachable history for Home Assistant access tokens,
@@ -65,7 +67,7 @@ is `devices/homeassistant/`.
    and environment files. Record only paths, commit IDs, and secret classes.
 3. Rotate and sanitize before import if the scan finds a real credential.
 4. Run the unsquashed subtree command above with `category=devices`,
-   `name=homeassistant`, `source_repo=/home/halbritt/git/homeassistant`, and
+   `name=home-assistant-yellow`, `source_repo=/home/halbritt/git/homeassistant`, and
    `source_branch=master`.
 5. In a second commit, add resource notes and normalize references to
    `hosts/proximal/` and other infrastructure paths. Keep appliance-specific

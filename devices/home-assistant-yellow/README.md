@@ -1,20 +1,33 @@
-# homeassistant
+# Home Assistant Yellow
 
-Durable, inspectable, cross-agent **provenance and desired-state for the host
-`homeassistant`** — the Home Assistant OS appliance on the home LAN
-(`192.168.1.64` / tailnet `100.105.145.26`). One repo per system, one directory
-per subsystem. The broader infrastructure authority is
-[`infra`](https://github.com/halbritt/infra), where this repository can be
-imported with its history after a dedicated secret audit.
+Durable, inspectable, cross-agent provenance and desired state for the device
+`home-assistant-yellow`, a Home Assistant OS appliance on the home LAN
+(`192.168.1.64` / tailnet `100.105.145.26`). The observed hostname is still the
+generic `homeassistant`; a live rename is pending a consumer audit. See
+[`device.yaml`](device.yaml) for identity and [`notes.md`](notes.md) for the
+migration boundary.
 
 This is operational state, not a codebase. Its job is to remember — across runs
 and across agents — what this appliance looks like, how it is reached, what
 config it should run, and what was already tried and rejected.
 
-## The box
+## Identity
+
+`home-assistant-yellow` is the stable resource name because it distinguishes
+this appliance from future Home Assistant installations. `homeassistant` is an
+observed network hostname, not the repository identity. Do not silently treat a
+future appliance as a replacement for this Yellow or reuse this directory for
+it.
+
+The eight commits from the former standalone repository
+`github.com/halbritt/homeassistant` remain in this repository's history. New
+desired-state changes belong here.
+
+## The appliance
 
 | fact | value |
 |---|---|
+| Resource name | `home-assistant-yellow` |
 | Hardware | **Home Assistant Yellow** (CM4 carrier, board `yellow`; MAC `2c:cf:67:fb:66:0d` — the RPi Trading OUI is the CM4's, which is why it first scanned as a bare Pi) |
 | OS | Home Assistant OS (HAOS) — appliance, not a general Linux host |
 | LAN | `192.168.1.64` (`enp3s0` ARP on proximal) |
@@ -97,7 +110,7 @@ or keys. Tokens live only in `0600` files on proximal or in the HA keyring.
 
 ## Conventions
 
-- **One repo per host, one directory per subsystem.**
+- **One infrastructure repository, one directory per managed resource.**
 - **Canonical-in-repo, installed-on-box.** Each subsystem README maps repo
   files → their install path on the appliance.
-- **Commit and push often.** `origin` = `github.com/halbritt/homeassistant`.
+- **Commit and push often.** `origin` = `github.com/halbritt/infra`.

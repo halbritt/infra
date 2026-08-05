@@ -20,6 +20,7 @@ class Validation:
     def __init__(self) -> None:
         self.errors: list[str] = []
         self.host_count = 0
+        self.device_count = 0
         self.role_count = 0
         self.shared_reference_count = 0
 
@@ -153,6 +154,45 @@ class Validation:
                         )
         return known_hosts
 
+    def validate_devices(self) -> None:
+        devices_root = ROOT / "devices"
+        if not devices_root.is_dir():
+            self.error("devices/: directory is missing")
+            return
+
+        for directory in sorted(path for path in devices_root.iterdir() if path.is_dir()):
+            name = directory.name
+            self.device_count += 1
+            if not NAME.fullmatch(name):
+                self.error(f"devices/{name}: device directory is not DNS-safe kebab-case")
+            manifest_path = directory / "device.yaml"
+            if not manifest_path.is_file():
+                self.error(f"devices/{name}: device.yaml is missing")
+                continue
+            manifest = self.load_manifest(manifest_path)
+            if manifest is None:
+                continue
+            if manifest.get("schema_version") != 1:
+                self.error(f"devices/{name}/device.yaml: schema_version must be 1")
+            if manifest.get("name") != name:
+                self.error(f"devices/{name}/device.yaml: name must match the directory")
+            if manifest.get("resource_type") != "device":
+                self.error(f"devices/{name}/device.yaml: resource_type must be device")
+            paths = manifest.get("paths")
+            if not isinstance(paths, dict):
+                self.error(f"devices/{name}/device.yaml: paths must be a mapping")
+                continue
+            for field in ("notes", "changelog"):
+                relative = self.safe_relative(manifest_path, paths.get(field), f"paths.{field}")
+                if relative is not None and not (directory / relative).exists():
+                    self.error(
+                        f"devices/{name}/device.yaml: paths.{field} does not exist: {relative}"
+                    )
+            if not (directory / "README.md").is_file():
+                self.error(f"devices/{name}: README.md is missing")
+            if (directory / "source-import").exists():
+                self.error(f"devices/{name}/source-import: temporary import directory must be normalized")
+
     def validate_secret_paths(self) -> None:
         secrets = ROOT / "secrets"
         if not (secrets / "README.md").is_file():
@@ -252,7 +292,8 @@ class Validation:
             return 1
         print(
             "infrastructure validation passed: "
-            f"{self.host_count} host(s), {self.role_count} role(s), "
+            f"{self.host_count} host(s), {self.device_count} device(s), "
+            f"{self.role_count} role(s), "
             f"{self.shared_reference_count} shared reference(s)"
         )
         return 0
@@ -262,6 +303,7 @@ def main() -> int:
     validation = Validation()
     known_roles = validation.validate_roles()
     validation.validate_hosts(known_roles)
+    validation.validate_devices()
     validation.validate_secret_paths()
     validation.validate_symlinks()
     validation.validate_markdown_links()

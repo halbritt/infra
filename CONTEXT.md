@@ -20,6 +20,16 @@ A managed appliance whose primary lifecycle and configuration are exposed
 through a device control plane rather than a general-purpose host interface.
 _Avoid_: Host
 
+**Resource name**:
+A stable, repository-wide identity that distinguishes one managed resource from
+possible siblings without depending on its current address or network hostname.
+_Avoid_: Hostname, display name
+
+**Observed hostname**:
+The network hostname currently reported by a resource. It can differ from the
+resource name while a rename is pending or when the resource has no hostname.
+_Avoid_: Resource name
+
 **Service**:
 An operational system whose desired state is managed independently of any one
 host, even when a host currently runs it.

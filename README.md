@@ -33,6 +33,8 @@ credentials.
 The original machine is [`hosts/proximal/`](hosts/proximal/). The standalone
 `peecee` repository and its 15-commit history were imported into
 [`hosts/peecee/`](hosts/peecee/) after an initial partial record was reconciled.
+The Home Assistant source repository and its eight commits were imported as the
+[`home-assistant-yellow`](devices/home-assistant-yellow/) appliance.
 The `proximal` subsystem index remains at
 [`hosts/proximal/config/README.md`](hosts/proximal/config/README.md).
 
@@ -154,13 +156,14 @@ implementation evidence.
 Run the lightweight validator from the repository root:
 
 ```sh
+python3 -m unittest discover -s tests -p 'test_*.py'
 scripts/validate-infra.py
 ```
 
-It checks manifest structure, host and role names, role references, shared-file
-references, required host paths, self-contained subsystem documentation, broken
-repository-local Markdown links, broken symlinks, and stale references to the
-old single-host checkout paths.
+It checks host and device manifests, resource and role names, role references,
+shared-file references, required resource paths, self-contained subsystem
+documentation, broken repository-local Markdown links, broken symlinks, and
+stale references to old checkout paths.
 
 ## Secrets
 

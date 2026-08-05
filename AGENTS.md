@@ -48,7 +48,10 @@ operational action.
 
 - Every `hosts/<name>/machine.yaml` declares a unique host name and existing
   roles.
-- Every host has `config/`, `notes.md`, and a host changelog.
+- Every `devices/<name>/device.yaml` declares the matching stable resource name
+  and records current network identity separately.
+- Every host has `config/`, `notes.md`, and a host changelog. Every device has
+  `README.md`, `notes.md`, and a device changelog.
 - Each immediate directory under a host's `config/` is a self-contained
   subsystem with a `README.md` or `AGENTS.md`.
 - A role may reference only files below `shared/`.
@@ -57,7 +60,12 @@ operational action.
 - Do not add compatibility symlinks at the repository root for old subsystem
   paths. Update canonical scripts, units, and documentation to infrastructure paths.
 
-Run `scripts/validate-infra.py` before committing.
+Run the validator tests and repository validation before committing:
+
+```sh
+python3 -m unittest discover -s tests -p 'test_*.py'
+scripts/validate-infra.py
+```
 
 <!-- BEGIN PROXIMAL PLANE TRACKING -->
 ## Plane Tracking

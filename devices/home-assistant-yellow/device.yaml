@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "name": "home-assistant-yellow",
+  "resource_type": "device",
+  "status": "active",
+  "device_class": "appliance",
+  "manufacturer": "Nabu Casa",
+  "model": "Home Assistant Yellow",
+  "platform": {
+    "os": "Home Assistant OS",
+    "architecture": "aarch64"
+  },
+  "identity": {
+    "observed_hostname": "homeassistant",
+    "desired_hostname": "home-assistant-yellow",
+    "hostname_migration": "pending-consumer-audit"
+  },
+  "network": {
+    "lan_address": "192.168.1.64",
+    "tailnet_address": "100.105.145.26"
+  },
+  "responsibilities": [
+    "home-automation",
+    "matter-controller",
+    "thread-border-router",
+    "telemetry-source"
+  ],
+  "provenance": {
+    "source_repository": "https://github.com/halbritt/homeassistant",
+    "source_branch": "master",
+    "source_tip": "1733c24e99a4762b3a08bdec5680a8e67d229c0d",
+    "subtree_import_commit": "b48b4d08f444354259a60ce38ef62220522e7783"
+  },
+  "paths": {
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  }
+}
