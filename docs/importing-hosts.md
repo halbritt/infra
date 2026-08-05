@@ -31,7 +31,7 @@ that remains the machine's home.
 ## Recommended import: `git subtree`
 
 `git subtree` is available with Git on this host and does not require the source
-tree to collide with the fleet root. Omit `--squash`; squashing would discard the
+tree to collide with the infrastructure root. Omit `--squash`; squashing would discard the
 individual source commits that this migration is intended to preserve.
 
 ```sh
@@ -45,7 +45,7 @@ git subtree add \
 ```
 
 Run this before creating `hosts/<name>/config`. The subtree commit connects the
-source history to the fleet history and places its current tree below the host.
+source history to the infrastructure history and places its current tree below the host.
 Imported historical commits retain their original repository-root paths; the
 new host notes must therefore record the subtree commit and source tip for
 pre-import archaeology.
@@ -149,7 +149,7 @@ For the next machine, perform these actions in order:
 2. Choose the stable hostname used for `hosts/<name>/`.
 3. Run the current-tree and full-history secret scans; rotate and sanitize first
    if either scan finds a real credential.
-4. From a clean fleet checkout, run the unsquashed `git subtree add` command
+4. From a clean infrastructure checkout, run the unsquashed `git subtree add` command
    above into `hosts/<name>/config`, or use the temporary child procedure when
    a partial host partition already exists.
 5. Add the host manifest and notes, then normalize paths in a second commit.

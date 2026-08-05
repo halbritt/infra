@@ -21,7 +21,7 @@ guidance remains in [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md).
 - Most canonical files are installed to `/etc`, `~/.config`, or another runtime
   location. The subsystem README records the exact mapping.
 - `config/tailscale-index/` is intentionally served directly from this checkout.
-  Its unit therefore contains the full fleet-layout path and must be reinstalled
+  Its unit therefore contains the full infrastructure-layout path and must be reinstalled
   if the checkout moves.
 - The SMS gateway and plant-to-Praxis bridge also execute their Python entry
   points directly from this checkout. Their installed units must track path

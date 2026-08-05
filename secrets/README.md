@@ -1,6 +1,6 @@
 # Secret storage policy
 
-This directory documents secret handling for the fleet. It contains no secret
+This directory documents secret handling for the infrastructure repository. It contains no secret
 values today.
 
 ## What belongs outside plaintext Git
@@ -24,7 +24,7 @@ The `proximal` host currently references these secret classes outside Git:
 - the SMS gateway's HTTP authentication values.
 
 Those files remain at their documented external paths until a separate,
-service-by-service migration is tested. This fleet-layout change does not read,
+service-by-service migration is tested. This repository-layout change does not read,
 copy, rotate, or relocate their values.
 
 The repository also contains sensitive metadata that is not an authentication
@@ -47,7 +47,7 @@ secrets/
 ```
 
 Use one encrypted document per independently rotated or deployed secret set.
-Do not create a single fleet-wide blob. Name only real hosts and services; do not
+Do not create a single infrastructure-wide blob. Name only real hosts and services; do not
 invent entries for machines that have not been imported.
 
 An age public recipient may be committed in a future `.sops.yaml`. The matching
@@ -57,7 +57,7 @@ keys that could be mistaken for a deployable policy.
 
 Only SOPS-encrypted files with a `.sops.yaml`, `.sops.json`, or `.sops.env`
 suffix may be committed below `secrets/`. Plaintext files are ignored and the
-fleet validator rejects unexpected files in this directory.
+infrastructure validator rejects unexpected files in this directory.
 
 ## Migrate one secret set
 
@@ -81,7 +81,7 @@ fleet validator rejects unexpected files in this directory.
    paste, shell history, or agent transcript. Encryption does not revoke an
    already exposed credential.
 
-Never decrypt all fleet secrets as a validation step. Validate file structure
+Never decrypt all infrastructure secrets as a validation step. Validate file structure
 without decryption, then test the smallest affected secret set with the least
 privileged identity.
 

@@ -114,7 +114,7 @@ git log -- hosts/<machine-name>
 ```
 
 The current repository spent its first 165 commits in a single-host layout. The
-fleet migration preserves those commits, but a directory path filter cannot
+host-layout migration preserves those commits, but a directory path filter cannot
 infer a pre-migration directory name. Follow an individual moved file across the
 migration when older history is needed:
 
@@ -138,7 +138,7 @@ git log --follow -- hosts/peecee/config/health/check-whea.sh
 ```
 
 The first command reaches the original source commits. The second reports the
-normalized fleet path from the reconciliation commit onward; `--follow` cannot
+normalized infrastructure path from the reconciliation commit onward; `--follow` cannot
 infer a source repository's old root path across a subtree merge.
 
 Use [`hosts/<name>/CHANGELOG.md`](hosts/proximal/CHANGELOG.md) for meaningful

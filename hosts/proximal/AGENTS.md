@@ -12,7 +12,7 @@ audit every change.
 
 ## How this repo is organized
 
-The fleet repo uses one directory per host and this host uses **one directory per
+The infrastructure repo uses one directory per host and this host uses **one directory per
 subsystem** below `config/`. Each subsystem is self-contained
 and has its own `AGENTS.md` / `README.md` — read that before working in it. Don't
 spread one subsystem's state across the tree, and don't put system-wide concerns
@@ -24,7 +24,7 @@ inside a single service's directory.
   Create `config/<subsystem>/` with its own README; mirror the conventions below.
 
 Machine metadata and declared roles live in [`machine.yaml`](machine.yaml).
-Machine-wide notes and exceptions live in [`notes.md`](notes.md). Fleet-wide
+Machine-wide notes and exceptions live in [`notes.md`](notes.md). Repository-wide
 structure and import rules live at the repository root.
 
 Live box facts (hardware, ports, the local LLM service, restart commands) are in

@@ -8,11 +8,13 @@ squashing on 2026-08-05. Source `main` was clean and synchronized at
 of subtree import commit `aef5ed4d85c7249d76ce833108299b2a9ed2071e`.
 
 The import first landed at `hosts/peecee/source-import/` to avoid overwriting the
-partial fleet record, then a separate normalization moved its three subsystems
+partial host record, then a separate normalization moved its three subsystems
 under `config/`. The temporary directory is not part of the final layout. The
-standalone checkout was not modified and remains available for historical
-comparison. This fleet partition is canonical for future peecee desired-state
-changes; archiving or deleting the old repository remains an owner decision.
+standalone checkout remained unchanged during import. After its source tip and
+clean state were reverified, `/home/halbritt/git/peecee` was moved to the desktop
+trash on 2026-08-05. The checkout is recoverable from trash; the standalone
+GitHub repository remains intact. This host partition is canonical for future
+peecee desired-state changes.
 
 A path-only heuristic scan of the source's current tree and reachable history
 found no credential-like match or sensitive filename. No dedicated secret

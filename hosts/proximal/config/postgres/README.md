@@ -2,7 +2,7 @@
 
 Durable provenance and desired-state for the PostgreSQL instance on **proximal**
 (`localhost:5432`). The Postgres subsystem of the
-[`proximal`](../README.md) host partition of the fleet repo — one directory per
+[`proximal`](../README.md) host partition of the infrastructure repo — one directory per
 host and one directory per subsystem.
 
 This is operational state for the reusable tuning instrument at

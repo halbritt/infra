@@ -12,7 +12,7 @@ success so this observation task does not become an actuator.
 
 ## Canonical and live paths
 
-The script executes directly from the fleet checkout; there is no installed
+The script executes directly from the infrastructure checkout; there is no installed
 copy:
 
 ```cron

@@ -2,8 +2,8 @@
 
 Durable, inspectable, cross-agent **provenance and desired-state for the host
 `proximal`** — the workstation + home-lab node (`192.168.1.92` / tailnet
-`100.85.100.81`). This is the host-specific `config/` partition of the fleet
-repository: one directory per subsystem.
+`100.85.100.81`). This is the host-specific `config/` partition of the
+infrastructure repository: one directory per subsystem.
 
 This is operational state, not a codebase. Its job is to remember — across runs and
 across agents (claude, codex, gemini, opencode-local) — what each service on this box
@@ -68,7 +68,7 @@ root-only files on the box (e.g. `/etc/default/*` at `0600`). The root
 
 ## Conventions
 
-- **One fleet repo, one directory per host, one directory per subsystem.**
+- **One infrastructure repo, one directory per host, one directory per subsystem.**
   Host-wide concerns get their own directory here; per-instance state nests under
   the relevant subsystem.
 - **Canonical-in-repo, installed-on-box.** The repo holds the source of truth; the box

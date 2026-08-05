@@ -6,4 +6,4 @@ or restart procedure, and a verification command.
 
 No Linux configuration has been promoted to `shared/` yet. The current user PATH
 and service-manager exceptions are evidence-backed `proximal` overrides, not a
-fleet default.
+infrastructure default.

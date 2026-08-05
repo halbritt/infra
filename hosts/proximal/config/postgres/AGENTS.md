@@ -51,7 +51,7 @@ primary, `wal_level`) and **reliability blockers outrank performance wins**.
   to a measurement or a report under `reports/`.
 - Snapshots in `inventory/` are read-only captures — they are evidence, not
   working files.
-- One fleet repo, one directory per host, one directory per subsystem; this is
+- One infrastructure repo, one directory per host, one directory per subsystem; this is
   the `postgres/` subsystem of `proximal`. If a host ever runs more than one cluster,
   nest the per-instance files under `instances/<port-or-name>/`. System-wide
   concerns (Prometheus/Grafana/exporters, etc.) live in sibling top-level

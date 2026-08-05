@@ -55,7 +55,7 @@ operational action.
 - Host overrides remain under the host. Do not modify a shared file to encode a
   single machine's hardware, identity, address, port collision, or exception.
 - Do not add compatibility symlinks at the repository root for old subsystem
-  paths. Update canonical scripts, units, and documentation to the fleet paths.
+  paths. Update canonical scripts, units, and documentation to infrastructure paths.
 
 Run `scripts/validate-infra.py` before committing.
 

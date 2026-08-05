@@ -18,7 +18,7 @@ model caches, and SSH credentials do not belong in this repository.
 
 ## Install or refresh
 
-From the fleet repository root:
+From the infrastructure repository root:
 
 ```bash
 ssh peecee 'powershell -NoProfile -Command "New-Item -ItemType Directory -Force marker | Out-Null"'

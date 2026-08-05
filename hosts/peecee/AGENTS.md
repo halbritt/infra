@@ -2,7 +2,7 @@
 
 This partition is the canonical desired-state and operational record for the
 Windows GPU node `peecee`. Read [`README.md`](README.md), [`notes.md`](notes.md),
-and the target subsystem README before changing it. The fleet-level
+and the target subsystem README before changing it. The repository-level
 [`AGENTS.md`](../../AGENTS.md) governs Git, secrets, installation, and worktree
 practice.
 
@@ -32,7 +32,7 @@ practice.
 - Do not treat a successful scrape or SSH probe from `proximal` as authority to
   mutate the Windows host.
 - Windows Scheduled Tasks and services are the platform-specific exception to
-  the fleet repository's systemd convention.
+  the infrastructure repository's systemd convention.
 - Keep tokens, private keys, remote-access credentials, generated service
   credentials, and model-store contents outside Git.
 - Record live verification dates separately from historical deployment facts.
