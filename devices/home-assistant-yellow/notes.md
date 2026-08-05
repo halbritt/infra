@@ -45,3 +45,31 @@ After renaming, verify the HA UI, Observer, ha-mcp, InfluxDB consumers, Tailscal
 reachability, Thread/Matter control, and a backup. Keep the previous name as a
 temporary alias only when an actual consumer requires it; do not create an
 unbounded compatibility alias by default.
+
+The 2026-08-05 audit confirmed that Home Assistant Cloud is connected and that
+the fixed-address consumers above do not depend on `homeassistant`. The
+authenticated ha-mcp surface can read HAOS health and add-on state, but it does
+not expose the Supervisor host-options operation. Network SSH is also disabled.
+The live rename therefore remains an operator action through the HA UI's web
+terminal or another authenticated Supervisor client; do not substitute a
+`configuration.yaml` edit because that is a different setting.
+
+The desired operation is:
+
+```sh
+ha host info
+ha host options --hostname home-assistant-yellow
+ha host info
+```
+
+The underlying Supervisor API contract is `GET /host/info` followed by
+`POST /host/options` with a `hostname` field. See the official
+[Supervisor API endpoint reference](https://developers.home-assistant.io/docs/api/supervisor/endpoints/).
+Do not copy a Supervisor token into this repository to automate the call.
+
+After the command, confirm both `home-assistant-yellow.local` and the Tailnet
+node identity, then run the verification list above. Only then change
+`identity.observed_hostname` to `home-assistant-yellow` and
+`identity.hostname_migration` to `complete` in `device.yaml`. If Tailscale keeps
+its old node name, record that as a distinct observed alias instead of claiming
+the host rename failed.
