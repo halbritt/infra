@@ -11,7 +11,7 @@ Read [`CONTEXT.md`](../CONTEXT.md) before choosing a prefix:
 
 - `devices/<name>/` for an appliance such as a printer, router, switch, or Home
   Assistant Yellow; use a differentiating stable name such as
-  `home-assistant-yellow`, not the generic product name alone;
+  `home-assistant-fernside`, not the generic product name alone;
 - `services/<name>/` for desired state managed independently of one host;
 - `providers/<name>/` for an external provider control plane such as Runpod,
   Google Cloud, or OpenRouter.
@@ -57,9 +57,11 @@ live, and the repository registry has been updated.
 ## Exact Home Assistant import sequence
 
 The Home Assistant source was `/home/halbritt/git/homeassistant` on `master`.
-It describes a Home Assistant Yellow appliance, so its target is
-`devices/home-assistant-yellow/`. The observed hostname `homeassistant` remains
-a network fact until a separate live rename is verified.
+It describes a Yellow appliance. The managed installation is at Fernside. It
+was imported at `devices/home-assistant-yellow/` and then renamed to
+`devices/home-assistant-fernside/` in a separate commit so the history records
+both decisions. The observed hostname `homeassistant` remains a network fact
+until a separate live rename is verified.
 
 1. Confirm the source is clean and synchronized and record its exact tip.
 2. Scan the current tree and reachable history for Home Assistant access tokens,
@@ -67,8 +69,9 @@ a network fact until a separate live rename is verified.
    and environment files. Record only paths, commit IDs, and secret classes.
 3. Rotate and sanitize before import if the scan finds a real credential.
 4. Run the unsquashed subtree command above with `category=devices`,
-   `name=home-assistant-yellow`, `source_repo=/home/halbritt/git/homeassistant`, and
-   `source_branch=master`.
+   `name=home-assistant-yellow`, `source_repo=/home/halbritt/git/homeassistant`,
+   and `source_branch=master`; after the import checkpoint, rename the target to
+   `devices/home-assistant-fernside/` with `git mv`.
 5. In a second commit, add resource notes and normalize references to
    `hosts/proximal/` and other infrastructure paths. Keep appliance-specific
    state under the device; extract service-level Home Assistant configuration

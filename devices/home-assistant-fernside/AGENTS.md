@@ -1,11 +1,12 @@
-# Home Assistant Yellow instructions
+# Home Assistant Fernside instructions
 
 This directory is the canonical desired-state and operational record for the
-Home Assistant Yellow appliance named `home-assistant-yellow`. Read
+Home Assistant installation named `home-assistant-fernside`, currently running
+on a Yellow appliance. Read
 [`device.yaml`](device.yaml), [`README.md`](README.md), [`notes.md`](notes.md),
 and the relevant subsystem documentation before changing it.
 
-- Treat `home-assistant-yellow` as the stable resource name and `homeassistant`
+- Treat `home-assistant-fernside` as the stable resource name and `homeassistant`
   as the currently observed hostname. A repository rename is not proof of a live
   network rename.
 - Inventory and read-only probes do not authorize automation, integration,

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "name": "home-assistant-yellow",
+  "name": "home-assistant-fernside",
   "resource_type": "device",
   "status": "active",
   "device_class": "appliance",
@@ -12,8 +12,8 @@
   },
   "identity": {
     "observed_hostname": "homeassistant",
-    "desired_hostname": "home-assistant-yellow",
-    "hostname_migration": "pending-consumer-audit"
+    "desired_hostname": "home-assistant-fernside",
+    "hostname_migration": "pending-authenticated-change"
   },
   "network": {
     "lan_address": "192.168.1.64",

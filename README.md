@@ -34,7 +34,7 @@ The original machine is [`hosts/proximal/`](hosts/proximal/). The standalone
 `peecee` repository and its 15-commit history were imported into
 [`hosts/peecee/`](hosts/peecee/) after an initial partial record was reconciled.
 The Home Assistant source repository and its eight commits were imported as the
-[`home-assistant-yellow`](devices/home-assistant-yellow/) appliance.
+[`home-assistant-fernside`](devices/home-assistant-fernside/) installation.
 The `proximal` subsystem index remains at
 [`hosts/proximal/config/README.md`](hosts/proximal/config/README.md).
 

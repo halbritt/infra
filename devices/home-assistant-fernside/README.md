@@ -1,9 +1,10 @@
-# Home Assistant Yellow
+# Home Assistant at Fernside
 
 Durable, inspectable, cross-agent provenance and desired state for the device
-`home-assistant-yellow`, a Home Assistant OS appliance on the home LAN
-(`192.168.1.64` / tailnet `100.105.145.26`). The observed hostname is still the
-generic `homeassistant`; a live rename is pending a consumer audit. See
+`home-assistant-fernside`, a Home Assistant OS installation at Fernside on the
+home LAN (`192.168.1.64` / tailnet `100.105.145.26`). The observed hostname is
+still the generic `homeassistant`; a live rename is pending an authenticated
+host-options change. See
 [`device.yaml`](device.yaml) for identity and [`notes.md`](notes.md) for the
 migration boundary.
 
@@ -13,11 +14,11 @@ config it should run, and what was already tried and rejected.
 
 ## Identity
 
-`home-assistant-yellow` is the stable resource name because it distinguishes
-this appliance from future Home Assistant installations. `homeassistant` is an
-observed network hostname, not the repository identity. Do not silently treat a
-future appliance as a replacement for this Yellow or reuse this directory for
-it.
+`home-assistant-fernside` is the stable resource name because it identifies the
+installation by site and distinguishes it from future Home Assistant
+installations. `homeassistant` is an observed network hostname, not the
+repository identity. Home Assistant Yellow remains the current hardware model;
+a hardware replacement at Fernside does not silently create a new installation.
 
 The eight commits from the former standalone repository
 `github.com/halbritt/homeassistant` remain in this repository's history. New
@@ -27,7 +28,7 @@ desired-state changes belong here.
 
 | fact | value |
 |---|---|
-| Resource name | `home-assistant-yellow` |
+| Resource name | `home-assistant-fernside` |
 | Hardware | **Home Assistant Yellow** (CM4 carrier, board `yellow`; MAC `2c:cf:67:fb:66:0d` — the RPi Trading OUI is the CM4's, which is why it first scanned as a bare Pi) |
 | OS | Home Assistant OS (HAOS) — appliance, not a general Linux host |
 | LAN | `192.168.1.64` (`enp3s0` ARP on proximal) |

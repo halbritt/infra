@@ -1,6 +1,13 @@
-# Home Assistant Yellow changelog
+# Home Assistant at Fernside changelog
 
 ## 2026-08-05
+
+### Renamed the installation for its site
+
+Renamed the resource from `home-assistant-yellow` to
+`home-assistant-fernside`. Fernside identifies the Home Assistant installation;
+Yellow remains its current hardware model. Updated the desired hostname but did
+not change the live appliance, which still reports `homeassistant`.
 
 ### Imported and assigned a stable resource name
 

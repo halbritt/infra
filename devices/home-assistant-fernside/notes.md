@@ -1,4 +1,4 @@
-# Home Assistant Yellow notes
+# Home Assistant at Fernside notes
 
 ## Repository import
 
@@ -18,11 +18,21 @@ were verified, `/home/halbritt/git/homeassistant` was moved to the desktop trash
 on 2026-08-05. It is recoverable from trash. The standalone GitHub repository
 was not deleted.
 
+The resource directory was later renamed from `home-assistant-yellow` to
+`home-assistant-fernside`. For file history across that rename, use:
+
+```sh
+git log --follow -- devices/home-assistant-fernside/README.md
+```
+
+Use `git log -- devices/home-assistant-yellow` when inspecting the original
+subtree path as a whole.
+
 ## Identity decision
 
-The stable resource name is `home-assistant-yellow`, not `homeassistant`.
-Hardware class is the differentiator because another Home Assistant instance
-could run on different hardware or in a VM. The appliance currently reports
+The stable resource name is `home-assistant-fernside`, not `homeassistant`.
+The site identifies this Home Assistant installation; Yellow is the current
+hardware model and can change independently. The appliance currently reports
 `homeassistant` through both mDNS and Tailscale; those remain observed aliases
 until the live rename is completed.
 
@@ -58,7 +68,7 @@ The desired operation is:
 
 ```sh
 ha host info
-ha host options --hostname home-assistant-yellow
+ha host options --hostname home-assistant-fernside
 ha host info
 ```
 
@@ -67,9 +77,9 @@ The underlying Supervisor API contract is `GET /host/info` followed by
 [Supervisor API endpoint reference](https://developers.home-assistant.io/docs/api/supervisor/endpoints/).
 Do not copy a Supervisor token into this repository to automate the call.
 
-After the command, confirm both `home-assistant-yellow.local` and the Tailnet
+After the command, confirm both `home-assistant-fernside.local` and the Tailnet
 node identity, then run the verification list above. Only then change
-`identity.observed_hostname` to `home-assistant-yellow` and
+`identity.observed_hostname` to `home-assistant-fernside` and
 `identity.hostname_migration` to `complete` in `device.yaml`. If Tailscale keeps
 its old node name, record that as a distinct observed alias instead of claiming
 the host rename failed.

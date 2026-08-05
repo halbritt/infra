@@ -19,7 +19,7 @@ class InfrastructureValidationTests(unittest.TestCase):
         (root / "hosts").mkdir()
         (root / "secrets").mkdir()
         (root / "secrets" / "README.md").write_text("# Secrets\n", encoding="utf-8")
-        device = root / "devices" / "home-assistant-yellow"
+        device = root / "devices" / "home-assistant-fernside"
         device.mkdir(parents=True)
         (device / "README.md").write_text("# Home Assistant Yellow\n", encoding="utf-8")
         return device
@@ -38,7 +38,7 @@ class InfrastructureValidationTests(unittest.TestCase):
             json.dumps(
                 {
                     "schema_version": 1,
-                    "name": "home-assistant-yellow",
+                    "name": "home-assistant-fernside",
                     "resource_type": "device",
                     "paths": {
                         "notes": "notes.md",
@@ -59,7 +59,7 @@ class InfrastructureValidationTests(unittest.TestCase):
             completed = self.run_validator(root)
 
             self.assertNotEqual(completed.returncode, 0)
-            self.assertIn("devices/home-assistant-yellow: device.yaml is missing", completed.stderr)
+            self.assertIn("devices/home-assistant-fernside: device.yaml is missing", completed.stderr)
 
     def test_device_manifest_name_must_match_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
