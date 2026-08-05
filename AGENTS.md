@@ -1,45 +1,59 @@
-# proximal — AGENTS.md
+# proximal fleet repository — AGENTS.md
 
-You are maintaining the durable, inspectable, cross-agent **provenance and
-desired-state for the host `proximal`** (the workstation + home-lab node). This repo
-is operational state, not a codebase: its job is to remember — across runs and across
-agents (claude, codex, gemini, opencode-local) — what each service on this box looks
-like, what config it should run, and what was already tried and rejected.
+This repository is the durable, cross-agent provenance and desired state for a
+fleet of machines. It is operational state, not an application codebase. Preserve
+the evidence that explains what each host runs, why it runs it, how it is
+installed, and what was tried and rejected.
 
-It exists because per-agent memory is opaque and single-agent; a git repo is the
-opposite — any agent in the fleet can clone, read, diff, and append, and a human can
-audit every change.
+## Scope and routing
 
-## How this repo is organized
+- Work on one machine under `hosts/<machine>/`.
+- Read that host's `AGENTS.md`, `machine.yaml`, and `notes.md` before changing it.
+- Read a subsystem's `README.md` or `AGENTS.md` before changing files below it.
+- Put reusable configuration under `shared/` only when its bytes and meaning are
+  genuinely reusable across hosts.
+- Put reusable machine-type or responsibility contracts under `roles/`. Roles
+  declare shared inputs; host-specific overrides stay with the host.
+- Do not create or keep one Git branch per machine. Use short-lived task branches
+  only when the work itself needs a branch.
 
-One repo per host, **one directory per subsystem**. Each subsystem is self-contained
-and has its own `AGENTS.md` / `README.md` — read that before working in it. Don't
-spread one subsystem's state across the tree, and don't put system-wide concerns
-inside a single service's directory.
+The current host record is [`hosts/proximal/`](hosts/proximal/). Live facts for
+that box are also in `~/CLAUDE.md`; live state must be rechecked before an
+operational action.
 
-- **PostgreSQL work** (tuning, GUCs, repack, inventory) → [`postgres/AGENTS.md`](postgres/AGENTS.md).
-- **Monitoring / metrics / dashboards** → [`observability/README.md`](observability/README.md).
-- New subsystem worth versioning (e.g. `llama/`, `ollama/`, `garage/`, `whisper/`)?
-  Create a top-level directory for it with its own README; mirror the conventions below.
+## Conventions
 
-Live box facts (hardware, ports, the local LLM service, restart commands) are in
-`~/CLAUDE.md` — read it for environment, not for desired-state.
-
-## Conventions (must follow)
-
-- **Values and config, never credentials.** Commit settings, unit files, dashboards,
-  rationale. Never commit passwords, `.pgpass`, `pg_hba.conf`, secret-bearing DSNs,
-  `*.env`, or keys. Secrets live only in root-only `/etc/…` files (`0600`) on the box.
-  The root `.gitignore` catches the obvious cases; you enforce the rest.
-- **Canonical-in-repo, installed-on-box.** The repo holds the source of truth; the box
-  runs installed copies. When you change config, edit the repo copy, re-install on the
-  box, and document the file→install-path mapping in the subsystem README.
-- **Every change carries a rationale** tied to a measurement, report, or incident —
-  the history is the point.
-- **Long-running infra is under systemd.** Check `systemctl` before assuming a service
-  is down; capture unit files / drop-ins as the desired-state for that subsystem.
+- **Values and config, never plaintext credentials.** Never commit passwords,
+  tokens, private keys, secret-bearing DSNs, `.pgpass`, `pg_hba.conf`, decrypted
+  SOPS files, or generated credential bundles. Read `secrets/README.md`.
+- **Canonical-in-repo, installed-on-box.** Edit the canonical file, install it at
+  the path documented by the host subsystem, reload or restart as required, and
+  verify the live result.
+- **Preserve provenance.** Every operational change carries a rationale tied to
+  a measurement, report, incident, or explicit decision. Do not rewrite old
+  evidence to make the present state look cleaner.
+- **Preserve imports.** Bring another machine repository in with its useful Git
+  history. Scan for secrets before merging and normalize paths in a separate,
+  reviewable commit.
+- **System services stay managed.** Check the target host's service manager before
+  assuming a long-running service is down.
 - **Commit and push often.** Never end a turn with a dirty tree or unpushed commits
   (`origin` = `github.com/halbritt/proximal`).
+
+## Structural rules
+
+- Every `hosts/<name>/machine.yaml` declares a unique host name and existing
+  roles.
+- Every host has `config/`, `notes.md`, and a host changelog.
+- Each immediate directory under a host's `config/` is a self-contained
+  subsystem with a `README.md` or `AGENTS.md`.
+- A role may reference only files below `shared/`.
+- Host overrides remain under the host. Do not modify a shared file to encode a
+  single machine's hardware, identity, address, port collision, or exception.
+- Do not add compatibility symlinks at the repository root for old subsystem
+  paths. Update canonical scripts, units, and documentation to the fleet paths.
+
+Run `scripts/validate-fleet.py` before committing.
 
 <!-- BEGIN PROXIMAL PLANE TRACKING -->
 ## Plane Tracking
@@ -50,32 +64,22 @@ This repository is represented in the local/private Plane workspace `Proximal`.
 - Issue tracker: Plane (`Proximal` workspace), project `Proximal` (`PROXIMAL`).
 - Plane URL: `https://proximal.tail0ecc2e.ts.net:10000/`
 - GitHub repo: `https://github.com/halbritt/proximal`
-- GitHub Issues: deprecated; use Plane work items for new issue tracking, claims, reviews, and issue-state changes.
-- Use Plane work items for multi-agent planning, claims, submitted artifacts, reviews, and acceptance decisions.
-- When updating Plane, include the repo, branch/worktree, `run_id`, `base_sha`, artifact links, verification evidence, and authority scope in the work item description or comments.
-- Do not commit Plane API tokens. Local tokens and MCP env files live outside git under `~/.config/plane/`.
+- GitHub Issues: deprecated; use Plane work items for new issue tracking, claims,
+  reviews, and issue-state changes.
+- When updating Plane, include the repo, branch/worktree, `run_id`, `base_sha`,
+  artifact links, verification evidence, and authority scope.
+- Do not commit Plane API tokens. Local tokens and MCP environment files live
+  outside Git under `~/.config/plane/`.
 <!-- END PROXIMAL PLANE TRACKING -->
 
+## Branch and worktree hygiene
 
-## Branch hygiene
+Do not leave unmerged work lying around. If a task uses a branch, merge its
+authorized work into the intended target before reporting completion. If merge
+authority is absent, report that blocker. Remove merged task branches and their
+worktrees.
 
-Do not leave unmerged code lying around. If a task uses a branch, merge its authorized work into the intended target branch before reporting completion. If merge authority is absent, report that as a blocker instead of treating the branch as finished. Clean up branches and associated worktrees after merge.
-
-## Parallel work: one worktree per branch
-
-When more than one agent works this repo at once, do not share a working
-directory — give each unit of work its own git worktree. A branch can be
-checked out in only one worktree at a time, so concurrent edits to shared
-files (Makefile, configs, generated/golden files) become impossible.
-
-- One worktree per branch, one agent per worktree; name the dir after the branch.
-- Siblings, not nested: create worktrees OUTSIDE this checkout
-  (`../proximal-wt/<branch>`), never inside it — recursive globs, file-count/hash
-  gates, and IDE indexers must not scan across worktrees.
-- Lifecycle: `git worktree add ../proximal-wt/<branch> -b <branch>` /
-  `git worktree list` / `git worktree remove <path>` after merge /
-  `git worktree prune`. Agents with worktree isolation get this for free.
-- Shared object store and build caches are fine; worktrees do NOT isolate
-  ports, databases, or local services — coordinate those separately.
-- Regenerate, don't merge, generated artifacts (golden files, compiled
-  indexes): merge the source change, then regenerate once on the merged tree.
+Concurrent agents use one sibling worktree per branch under
+`../proximal-wt/<branch>`. Worktrees isolate files, not ports, databases, service
+managers, or remote machines; coordinate those separately. Regenerate generated
+artifacts once on the merged tree rather than merging competing generated copies.

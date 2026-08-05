@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "name": "server",
+  "description": "Long-running network, storage, database, and observability responsibilities.",
+  "shared": []
+}

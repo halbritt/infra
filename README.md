@@ -1,71 +1,148 @@
-# proximal
+# proximal fleet state
 
-Durable, inspectable, cross-agent **provenance and desired-state for the host
-`proximal`** — the workstation + home-lab node (`192.168.1.92` / tailnet
-`100.85.100.81`). One repo per system, one directory per subsystem.
+Durable, inspectable provenance and desired state for the machines operated by
+Halbritt. This repository began as the record for the host `proximal`; it now
+uses a fleet layout so additional machine repositories can be imported without
+flattening their identities or assigning a permanent Git branch to each host.
 
-This is operational state, not a codebase. Its job is to remember — across runs and
-across agents (claude, codex, gemini, opencode-local) — what each service on this box
-looks like, what config it should run, and what was already tried and rejected. Live
-box facts (hardware, ports, the LLM service) live in `~/CLAUDE.md`; this repo is the
-versioned, auditable record of how the system is *configured and maintained*.
+The repository records configuration, installation mappings, measurements,
+incidents, rejected approaches, and host exceptions. It does not store live
+credentials.
 
-## Subsystems
+## Layout
 
-Each top-level directory is one subsystem, self-contained with its own `README.md` /
-`AGENTS.md`. Canonical config copies live here; the box runs installed copies (under
-`/etc/…`, systemd units, etc.) — edit here, then re-install.
+```text
+.
+├── hosts/                 # one stable directory per physical or virtual machine
+│   └── <machine>/
+│       ├── machine.yaml   # identity, platform, hardware summary, and roles
+│       ├── AGENTS.md      # host-specific operating boundaries
+│       ├── CHANGELOG.md   # host-specific operational history
+│       ├── notes.md       # machine-wide notes and exceptions
+│       └── config/        # self-contained host subsystem directories
+├── roles/                 # reusable responsibility and machine-type bundles
+├── shared/                # configuration proven reusable across hosts
+├── secrets/               # policy only, or SOPS-encrypted files in the future
+├── docs/                  # fleet procedures, including history-preserving imports
+└── scripts/               # lightweight repository validation
+```
 
-| dir | subsystem | what it tracks |
-|---|---|---|
-| [`postgres/`](postgres/) | PostgreSQL 17 (`:5432`) | GUC baseline/desired/known-bad, inventory snapshots, tuning reports, pg-repack maintenance, vendored best-practices skill |
-| [`observability/`](observability/) | Prometheus + Grafana + exporters | node_exporter (host) + postgres_exporter (PG) + nvidia_gpu_exporter (RTX 3090) → Prometheus → Grafana dashboards; all systemd, tailnet-bound |
-| [`cloudflared/`](cloudflared/) | Cloudflare Tunnel edge for `harm.org` | public hostname ingress to selected loopback services, including `plane.harm.org` -> Plane on `127.0.0.1:8190`; tunnel credentials stay root-only under `/etc/cloudflared` |
-| [`harm-enterprises/`](harm-enterprises/) | `harm.org` static site | `harm-enterprises-site.service` serving `/home/halbritt/sites/harm-enterprises/public` on `127.0.0.1:18888`; Cloudflare routes `harm.org` / `www.harm.org`; **retired 2026-07-25**, and the `:8890` Tailscale Serve mirror was torn down 2026-07-29 |
-| [`llama/`](llama/) | llama.cpp inference (`:8081`) | `llama-27b.service` + the live 35B-APEX drop-in override, revert-to-27B path; the box's primary LLM endpoint |
-| [`ollama/`](ollama/) | Ollama inference (`:11434`) | systemd unit + tuning drop-in, model inventory; secondary to the llama.cpp server (`:8081`) |
-| [`whisper/`](whisper/) | STT (`:8910` + shim `:8082`) | `whisper-stt.service` (whisper.cpp, GPU) + `praxis-stt-shim.service` and the shim script — Praxis's live loopback-only STT path |
-| [`garage/`](garage/) | Garage S3 (`:3900-3904`) | `garage.service` + secret-free `garage.toml`, LUKS-backed storage chain (crypttab/fstab), token files referenced never stored |
-| [`wezterm/`](wezterm/) | Headless WezTerm SSH multiplexer | pinned user-local mux binaries and server config, plus the matching cross-platform client profile for native persistent tabs |
-| [`cellular/`](cellular/) | Quectel EC25-AF LTE modem + RedPocket AT&T line (510-520-4061) | attach-APN `RESELLER` fix + persistent NV state, ttyUSB/QMI access map, SMS verified two-way, voice blocked on IMS (firmware suspect), bring-up gotchas (RCS hijack, ttyUSB2 re-enum race) |
-| [`cooling/`](cooling/) | Corsair Commander PRO fan/pump control | channel map (**fan4 = Alphacool loop pump — never throttle**; fan1–3 case fans), all-channels-100% policy, `corsair-cpro` hwmon + setconf tool pointers |
-| [`striatum/`](striatum/) | `striatumd` workflow daemon — **RETIRED 2026-07-21** | system unit (`User=halbritt`), `/run/striatum` runtime layout, shell/tailscale/warmtier glue; kept as historical record + DB-reclaim path |
-| [`striatum-next/`](striatum-next/) | striatum-next wake fleet (live) | user-scope `striatum-wake-*` liveness-floor timers for 7 graphs + `striatum-warmtier-autoingest`, verbatim unit/drop-in mirror; known fragilities ledger |
-| [`praxis/`](praxis/) | `praxisd` executive-function daemon + connectors | systemd user units (`praxisd` + `praxis-slack` Socket Mode listener), peer-auth `praxis` DB, secret var-names (values in `~/.config/praxis/praxisd.env`, uncommitted), the said/inferred wall rationale |
-| [`plane/`](plane/) | local/private Plane CE pilot | Docker Compose Plane CE `v1.3.1`, loopback-only proxy ports, Tailscale Serve `:10000`, systemd wrapper, MCP wrapper and non-secret API config posture |
-| [`plane-public/`](plane-public/) | public-intended Plane CE for `plane.harm.org` | separate Plane CE `v1.3.1` stack, loopback proxy ports, system PostgreSQL, host Redis, Garage S3, Docker-bridge state proxies |
-| [`caplab-runtime/`](caplab-runtime/) | standalone CAPLAB P4 host integration | fail-closed batch host bootstrap, expiring credentials, access disablement, and pre-effect empty rollback; no resident runtime |
-| [`caplab-dashboard/`](caplab-dashboard/) | CAPLAB study-results dashboard | tailnet-only, read-only inspection surface for a historical Study 001 aggregate; exact committed app bytes from `books` in immutable releases, loopback `:3021` + Tailscale Serve HTTPS `:8784`; no mutation endpoint | 
-| [`caplab-p6/`](caplab-p6/) | CAPLAB P6 admission host surface | pinned CAPLAB source (`137d0724`) + forward migration 0003 into `caplab` PG, expiring writer/verifier Garage keys; independent PASS 2026-07-17, all roles now `NOLOGIN` / access revoked |
-| [`caplab-p7/`](caplab-p7/) | CAPLAB P7 recomputation host surface | pinned read-only Study 001 recompute commit (`bf6de2b`), temporary `caplab_reader` expiring read-only access, expiry backstop timer; no live execution without separate CAPLAB authority |
-| [`wigolo/`](wigolo/) | local-first web-research layer (MCP) | keyless `wigolo` MCP server (Tavily replacement) with synthesis wired to llama.cpp `:8081`; pre-adoption security audit, install/config posture, opt-in-feature guardrails |
-| [`hermes/`](hermes/) | Hermes Agent CLI (agent harness) | `NousResearch/hermes-agent` `0.19.0` in a uv-managed private venv; wired to GLM 5.2 via OpenRouter with the local llama.cpp `:8081` path documented and verified as the on-box alternate; gateway/Portal/STT deliberately not enabled |
-| [`tailscale-index/`](tailscale-index/) | `tailscale.harm.org` landing page | the hand-maintained index of tailnet service URLs, its user unit, and a link sweep; served **directly from the checkout** (no installed copy) on `127.0.0.1:3912`, fronted by the tunnel |
-| [`plant-praxis-bridge/`](plant-praxis-bridge/) | watering alerts → Praxis reminders | hourly user timer; reads plant soil moisture from the HA appliance's InfluxDB add-on, files a work item in the harm Plane `PRAXIS` project (→ Praxis via ADR-0014 sync) when a plant crosses its rewater threshold; no HA change, tokens stay on proximal |
-| [`intero/`](intero/) | intero blind-spot ledger timers | two `--user` timers — daily `ledger.py` (blind-spot ranking) + weekly `--drift` read — printing per-repo `.intero.json` status; Layer 0 of the `showerthoughts` coordination spine; stateless, zero-GPU, never gates anything |
-| [`systemd-user/`](systemd-user/) | systemd user manager config (`user@1000`) | env for every `--user` unit: PATH fix (`~/.local/bin` + `~/.npm-global/bin`, the stale-root-claude fix) + the striatum-next wake-unit `KillMode` drop-in (pattern superseded 2026-07-21, kept for record) |
-| [`vitae-elicitation/`](vitae-elicitation/) | Vitae RFC 0007 elicitation interview | tailnet-only web interview mining the Principal's episodic memory into the `vitae` graph; defined in `~/git/vitae`, enacted here as a user unit on loopback `:8909` + Tailscale Serve; loopback-only bind enforced |
+The original machine is [`hosts/proximal/`](hosts/proximal/). Existing
+cross-host evidence also established a second, partial host record for
+[`hosts/peecee/`](hosts/peecee/). The `proximal` subsystem index remains at
+[`hosts/proximal/config/README.md`](hosts/proximal/config/README.md).
 
-Agents using either Plane instance should load
-[`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md) before reading or writing Plane data.
+## Layering and ownership
 
-Add a directory when a subsystem's config is worth versioning; don't pre-create empty ones.
+The three configuration layers answer different questions:
 
-## The one rule
+1. `shared/` owns a configuration fragment only after at least two hosts can use
+   the same bytes and meaning.
+2. `roles/` declares a reusable responsibility, its invariants, and the shared
+   files it consumes. A role does not contain a disguised copy of one host.
+3. `hosts/<name>/` owns machine identity, hardware facts, installed service
+   topology, operational evidence, and overrides. Host configuration wins when
+   a role or shared default cannot represent a real machine constraint.
 
-**Values and config, never credentials.** Commit settings, GUC values, unit files,
-dashboards, and rationale. Never commit passwords, `.pgpass`, `pg_hba.conf`,
-secret-bearing DSNs/connection strings, `*.env`, or keys. Secrets live only in
-root-only files on the box (e.g. `/etc/default/*` at `0600`). The root
-[`.gitignore`](.gitignore) catches the obvious cases; you enforce the rest.
+Keep a subsystem self-contained under `hosts/<name>/config/<subsystem>/` unless
+there is evidence that a file is genuinely shared. Do not deduplicate similar
+files merely because their names match.
 
-## Conventions
+## Naming conventions
 
-- **One repo per host, one directory per subsystem.** System-wide concerns get their
-  own top-level dir; per-instance state nests under the relevant subsystem.
-- **Canonical-in-repo, installed-on-box.** The repo holds the source of truth; the box
-  holds running copies. Each subsystem's README maps repo files → install paths.
-- **Commit and push often.** This repo's value is its history — never end a turn with a
-  dirty tree or unpushed commits (`origin` = `github.com/halbritt/proximal`).
+- Host directories use the stable lowercase hostname: `proximal`, `peecee`, or
+  another DNS-safe name matching `[a-z0-9][a-z0-9-]*`.
+- Subsystem directories use lowercase kebab-case and describe one operational
+  responsibility.
+- Role names use lowercase kebab-case and describe a capability or machine type,
+  such as `developer`, `linux`, or `server`.
+- Shared paths name the tool or concern, not the first machine that used them.
+- A machine rename is a deliberate migration. Do not rename a host directory
+  because hardware, an IP address, or an operator changes.
 
-Start at the subsystem you're working on. For agents, read [`AGENTS.md`](AGENTS.md).
+## Add a machine
+
+For a machine with no repository to import:
+
+1. Choose its stable hostname and create `hosts/<name>/config/`.
+2. Copy the manifest shape from
+   [`hosts/proximal/machine.yaml`](hosts/proximal/machine.yaml). The manifests
+   use JSON-compatible YAML so the standard-library validator needs no YAML
+   dependency.
+3. Add `hosts/<name>/AGENTS.md`, `notes.md`, and `CHANGELOG.md`.
+4. Add only roles that apply to the machine. Add a new role when it defines a
+   reusable responsibility, not just to label one service.
+5. Put each machine-specific subsystem under `config/<subsystem>/` with a
+   `README.md` or `AGENTS.md` that maps canonical files to installed paths.
+6. Put secret values in the machine's external secret store or in an approved
+   SOPS/age workflow. See [`secrets/README.md`](secrets/README.md).
+7. Run `scripts/validate-fleet.py`, inspect the diff, commit, and push.
+
+When a machine already has a Git repository, use the history-preserving process
+in [`docs/importing-hosts.md`](docs/importing-hosts.md). Import one repository at
+a time. Do not create a permanent branch per machine.
+
+## History and changelogs
+
+Git remains the provenance ledger. To see changes that touched one host after it
+joined this layout:
+
+```sh
+git log -- hosts/proximal
+git log -- hosts/<machine-name>
+```
+
+The current repository spent its first 165 commits in a single-host layout. The
+fleet migration preserves those commits, but a directory path filter cannot
+infer a pre-migration directory name. Follow an individual moved file across the
+migration when older history is needed:
+
+```sh
+git log --follow -- hosts/proximal/CHANGELOG.md
+git log --follow -- hosts/proximal/config/postgres/desired.md
+```
+
+For a subsystem-wide investigation that spans the migration, name both paths:
+
+```sh
+git log --all --full-history -- postgres hosts/proximal/config/postgres
+```
+
+Use [`hosts/<name>/CHANGELOG.md`](hosts/proximal/CHANGELOG.md) for meaningful
+machine-level operational changes. Use subsystem history and reports for dense
+implementation evidence.
+
+## Validation
+
+Run the lightweight validator from the repository root:
+
+```sh
+scripts/validate-fleet.py
+```
+
+It checks manifest structure, host and role names, role references, shared-file
+references, required host paths, self-contained subsystem documentation, broken
+repository-local Markdown links, broken symlinks, and stale references to the
+old single-host checkout paths.
+
+## Secrets
+
+Commit values and configuration, never plaintext credentials. The repository
+may name a secret, record its owner and install path, and contain a template with
+an empty or unmistakably fake value. It must not contain passwords, API tokens,
+private keys, webhook URLs, secret-bearing DSNs, recovery codes, or decrypted
+SOPS output.
+
+Read [`secrets/README.md`](secrets/README.md) before importing another machine.
+Import history can contain a secret even when the source tree is currently
+clean; scan both the current tree and reachable history before merging it.
+
+## Operating convention
+
+Canonical files live in this repository; installed copies run on each machine.
+After changing operational configuration, install it on the target host, verify
+the live result, and record the rationale. Long-running services belong under
+the host's service manager. Never end a turn with uncommitted or unpushed work.
+
+Agents must read [`AGENTS.md`](AGENTS.md), then the target host and subsystem
+instructions before acting.

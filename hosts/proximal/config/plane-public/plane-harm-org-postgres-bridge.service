@@ -1,0 +1,19 @@
+[Unit]
+Description=Plane harm.org Docker bridge to loopback PostgreSQL
+Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/plane-public/README.md
+Requires=postgresql.service docker.service
+After=postgresql.service docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/socat TCP-LISTEN:15432,bind=172.17.0.1,reuseaddr,fork TCP:127.0.0.1:5432
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

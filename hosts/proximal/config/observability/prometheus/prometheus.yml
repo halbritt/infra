@@ -1,0 +1,90 @@
+# proximal observability — Prometheus scrape config.
+# Listen address is set via ARGS in /etc/default/prometheus (tailnet 100.85.100.81:9091;
+# default :9090 is taken by cockpit.socket). All targets bind the tailnet IP.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: proximal
+
+# Alertmanager (prometheus-alertmanager.service) on the tailnet IP :9093. Routes the rules
+# below to Slack #proximal-alerts — see observability/alertmanager/. After changing this,
+# promtool check config && sudo systemctl reload prometheus, then confirm at
+# :9091/api/v1/alertmanagers (activeAlertmanagers should list 100.85.100.81:9093).
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['100.85.100.81:9093']
+
+# Rule files. The striatum pair is vendored verbatim from the striatum repo
+# (go/pkg/metrics/rules/) — recording rules pre-aggregate the counters/histograms the alerts and
+# dashboard read; alerting rules map each striatumd failure class to a signal. The node/gpu/
+# postgres/infra files are proximal-AUTHORED (not vendored) against this host's own exporters —
+# every series verified live. All route to Slack #proximal-alerts via the Alertmanager above.
+# Refresh the striatum copies from the striatum checkout (see README "striatumd exporter").
+rule_files:
+  # striatum-recording/-alerting rule files removed 2026-07-21 — striatum retired
+  # (see ../../striatum/README.md); restore from git history if it ever returns.
+  - /etc/prometheus/rules/node-alerting.rules.yml
+  - /etc/prometheus/rules/gpu-alerting.rules.yml
+  - /etc/prometheus/rules/postgres-alerting.rules.yml
+  - /etc/prometheus/rules/infra-alerting.rules.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['100.85.100.81:9091']
+
+  - job_name: postgresql
+    static_configs:
+      - targets: ['100.85.100.81:9187']
+        labels:
+          instance: proximal
+          cluster: '17/main'
+
+  - job_name: node
+    static_configs:
+      - targets: ['100.85.100.81:9100']
+        labels:
+          instance: proximal
+
+  - job_name: gpu
+    static_configs:
+      - targets: ['100.85.100.81:9835']
+        labels:
+          instance: proximal
+          gpu: 'rtx-3090'
+      # peecee — Windows 11 workstation, RTX 3090 Ti, nvidia_gpu_exporter as a
+      # WinSW service bound to its tailnet IP (desired state lives under
+      # hosts/peecee/config/nvidia-gpu-exporter/).
+      - targets: ['100.113.63.58:9835']
+        labels:
+          instance: peecee
+          gpu: 'rtx-3090-ti'
+
+  # Second postgres_exporter instance, dedicated to the gpu_fleet database (fleet
+  # registry/lease state — see exporter/queries-gpu-fleet.yaml). Separate instance because
+  # custom queries cannot be scoped per-database and gpu_slots lives in gpu_fleet, not
+  # striatum_daemon. Emits ONLY pg_gpu_fleet_* namespaces (--disable-default-metrics).
+  # Alerts: rules/infra-alerting.rules.yml (gpu_fleet_alerts group).
+  - job_name: gpu-fleet
+    static_configs:
+      - targets: ['100.85.100.81:9188']
+        labels:
+          instance: proximal
+          cluster: '17/main'
+
+  # (striatumd scrape job removed 2026-07-21 — striatum retired, daemon stopped;
+  # the infra up==0 alert would page on the dead target. Restore from git history
+  # if it ever returns.)
+
+  # llama-server (llama-27b.service) — the box's primary inference endpoint. /metrics is
+  # enabled via --metrics in the unit's drop-in override (see llama/llama-27b.service.d/)
+  # and multiplexed onto the API port :8081. The server binds 0.0.0.0, but scrape via
+  # loopback per the striatumd precedent — no reason to route the scrape over the tailnet.
+  # Series are llamacpp:* (colon-namespaced, tokenless). Alerts: rules/infra-alerting.rules.yml.
+  - job_name: llama
+    static_configs:
+      - targets: ['127.0.0.1:8081']
+        labels:
+          instance: proximal

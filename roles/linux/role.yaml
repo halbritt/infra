@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "name": "linux",
+  "description": "Linux host conventions and service-manager responsibilities.",
+  "shared": []
+}

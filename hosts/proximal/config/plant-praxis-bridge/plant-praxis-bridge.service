@@ -1,0 +1,14 @@
+[Unit]
+Description=plant-praxis-bridge — file a Praxis reminder when a plant needs water
+Documentation=https://github.com/halbritt/proximal/tree/master/hosts/proximal/config/plant-praxis-bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# InfluxDB read creds (proximal-local) + the harm Plane API key (already on box).
+# Leading '-' on the plane env: missing file => no PLANE_API_KEY => create fails
+# loudly rather than the unit refusing to start.
+EnvironmentFile=%h/.config/plant-praxis-bridge.env
+EnvironmentFile=-%h/.config/plane/harm-mcp.env
+ExecStart=/usr/bin/python3 %h/git/proximal/hosts/proximal/config/plant-praxis-bridge/plant_praxis_bridge.py

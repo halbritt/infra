@@ -13,3 +13,12 @@ __pycache__/
 id_rsa*
 *.pem
 *.key
+
+# Policy and SOPS ciphertext are the only tracked content below secrets/.
+secrets/**
+!secrets/
+!secrets/README.md
+!secrets/**/
+!secrets/**/*.sops.yaml
+!secrets/**/*.sops.json
+!secrets/**/*.sops.env

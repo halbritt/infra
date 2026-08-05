@@ -1,0 +1,70 @@
+# nvidia_gpu_exporter on **peecee** (Windows 11)
+
+A second GPU scrape target for the proximal Prometheus: the **peecee** workstation
+(Windows 11 Pro, **RTX 3090 Ti**, tailnet `100.113.63.58`). Same exporter as proximal —
+[`utkuozdemir/nvidia_gpu_exporter`](https://github.com/utkuozdemir/nvidia_gpu_exporter) v1.4.1,
+which shells out to `nvidia-smi`, so it works on consumer GeForce and is cross-platform.
+peecee runs the **native Windows x86_64 build**; proximal runs the Linux `.deb`.
+
+The exporter service is canonical under the `peecee` host. It feeds
+**proximal's** observability stack; the consuming scrape job remains in
+[`hosts/proximal/config/observability/prometheus/prometheus.yml`](../../../proximal/config/observability/prometheus/prometheus.yml)
+as job `gpu`, instance `peecee`.
+
+## What's deployed on peecee
+
+| item | value |
+|---|---|
+| exporter exe | `C:\Program Files\nvidia_gpu_exporter\nvidia_gpu_exporter.exe` (v1.4.1, `windows_x86_64`) |
+| service wrapper | `nvidia_gpu_exporter-svc.exe` = [WinSW](https://github.com/winsw/winsw) v2.12.0 (`WinSW-x64.exe`, .NET 4.8) |
+| service config | `nvidia_gpu_exporter-svc.xml` (canonical copy here) |
+| Windows service | `nvidia_gpu_exporter`, StartType **Automatic**, `depend=Tailscale`, restart-on-failure 5s |
+| bind | `--web.listen-address=100.113.63.58:9835` (tailnet IP only — off the `192.168.1.x` LAN) |
+| firewall | inbound allow TCP 9835, source scoped to tailnet `100.64.0.0/10` |
+| logs | `C:\ProgramData\nvidia_gpu_exporter\logs\` (WinSW `.out/.err/.wrapper` logs, roll-by-size) |
+
+Why a service wrapper: the exporter is a plain console binary (no SCM support), and Windows has no
+package/unit equivalent of proximal's `.deb`. WinSW turns it into a real Automatic service with
+SCM recovery actions — the closest analog to the Linux drop-in's `Restart=on-failure` /
+`RestartSec=5`. `depend=Tailscale` + restart-on-failure self-heal the same tailnet bind race the
+Linux units handle (the `100.x` IP may not exist yet at boot).
+
+## Install / re-install (run from an elevated PowerShell on peecee)
+
+```powershell
+$dir = 'C:\Program Files\nvidia_gpu_exporter'; New-Item -ItemType Directory -Force $dir | Out-Null
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# 1. exporter (native Windows build)
+$z = "$env:TEMP\nvge.zip"
+Invoke-WebRequest -UseBasicParsing -OutFile $z `
+  'https://github.com/utkuozdemir/nvidia_gpu_exporter/releases/download/v1.4.1/nvidia_gpu_exporter_1.4.1_windows_x86_64.zip'
+Expand-Archive $z "$env:TEMP\nvge" -Force
+Copy-Item "$env:TEMP\nvge\nvidia_gpu_exporter.exe" "$dir\nvidia_gpu_exporter.exe" -Force
+# 2. WinSW service wrapper + config (nvidia_gpu_exporter-svc.xml from this dir)
+Invoke-WebRequest -UseBasicParsing -OutFile "$dir\nvidia_gpu_exporter-svc.exe" `
+  'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe'
+# copy nvidia_gpu_exporter-svc.xml next to the exe, then:
+& "$dir\nvidia_gpu_exporter-svc.exe" install
+# 3. firewall (tailnet sources only) + start
+New-NetFirewallRule -DisplayName 'nvidia_gpu_exporter (Prometheus, tailnet)' -Direction Inbound `
+  -Action Allow -Protocol TCP -LocalPort 9835 -RemoteAddress '100.64.0.0/10' -Profile Any | Out-Null
+& "$dir\nvidia_gpu_exporter-svc.exe" start
+```
+
+## Verify
+
+```bash
+# from proximal, over the tailnet:
+curl -s http://100.113.63.58:9835/metrics | grep '^nvidia_smi_gpu_info'   # RTX 3090 Ti line, value 1
+curl -s http://100.85.100.81:9091/api/v1/targets | \
+  jq -r '.data.activeTargets[] | select(.labels.job=="gpu") | "\(.labels.instance) \(.health)"'  # peecee up
+```
+
+```powershell
+# on peecee:
+Get-Service nvidia_gpu_exporter         # Running / Automatic
+Get-Content C:\ProgramData\nvidia_gpu_exporter\logs\nvidia_gpu_exporter-svc.wrapper.log -Tail 20
+```
+
+Stood up 2026-06-20. The exporter emits the same `nvidia_smi_*` metric names as proximal, so the
+existing `nvidia-gpu-proximal` Grafana dashboard (job `gpu`) picks up `instance="peecee"` for free.

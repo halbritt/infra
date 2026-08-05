@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "name": "windows",
+  "description": "Windows host conventions and Service Control Manager responsibilities.",
+  "shared": []
+}

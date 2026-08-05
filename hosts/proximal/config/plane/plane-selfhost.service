@@ -1,0 +1,24 @@
+[Unit]
+Description=Plane CE local private pilot (Docker Compose)
+Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/plane/README.md
+Requires=docker.service
+After=docker.service network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=halbritt
+Group=halbritt
+SupplementaryGroups=docker
+WorkingDirectory=/home/halbritt/services/plane-selfhost
+Environment=HOME=/home/halbritt
+ExecStartPre=/usr/bin/docker compose -f plane-app/docker-compose.yaml --env-file=plane-app/plane.env config --quiet
+ExecStart=/usr/bin/docker compose -f plane-app/docker-compose.yaml --env-file=plane-app/plane.env up -d --remove-orphans
+ExecReload=/usr/bin/docker compose -f plane-app/docker-compose.yaml --env-file=plane-app/plane.env up -d --force-recreate --pull never --remove-orphans
+ExecStop=/usr/bin/docker compose -f plane-app/docker-compose.yaml --env-file=plane-app/plane.env stop
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

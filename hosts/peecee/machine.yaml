@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "name": "peecee",
+  "hostname": "peecee",
+  "status": "documented",
+  "platform": {
+    "os": "windows",
+    "edition": "Windows 11 Pro",
+    "architecture": "x86_64"
+  },
+  "hardware": {
+    "gpu": [
+      "NVIDIA GeForce RTX 3090 Ti"
+    ]
+  },
+  "network": {
+    "tailnet_address": "100.113.63.58"
+  },
+  "roles": [
+    "server",
+    "windows"
+  ],
+  "paths": {
+    "config": "config",
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  }
+}

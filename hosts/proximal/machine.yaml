@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "name": "proximal",
+  "hostname": "proximal",
+  "status": "active",
+  "platform": {
+    "os": "linux",
+    "distribution": "ubuntu",
+    "release": "24.04",
+    "architecture": "x86_64"
+  },
+  "hardware": {
+    "cpu": "Intel Core i5-11400F",
+    "logical_cpus": 12,
+    "memory_gib": 125,
+    "gpu": [
+      "NVIDIA GeForce RTX 3090 24 GiB"
+    ]
+  },
+  "network": {
+    "lan_address": "192.168.1.92",
+    "tailnet_address": "100.85.100.81"
+  },
+  "roles": [
+    "developer",
+    "linux",
+    "server"
+  ],
+  "paths": {
+    "config": "config",
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  }
+}

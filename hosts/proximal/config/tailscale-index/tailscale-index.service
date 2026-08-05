@@ -1,0 +1,18 @@
+[Unit]
+Description=Public index of tailnet URLs
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/halbritt/git/proximal/hosts/proximal/config/tailscale-index
+Environment="TAILSCALE_INDEX_HOST=127.0.0.1"
+Environment="TAILSCALE_INDEX_PORT=3912"
+Environment="TAILSCALE_INDEX_SITE_DIR=/home/halbritt/git/proximal/hosts/proximal/config/tailscale-index/site"
+ExecStart=/usr/bin/python3 /home/halbritt/git/proximal/hosts/proximal/config/tailscale-index/server.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
