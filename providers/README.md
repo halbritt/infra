@@ -6,4 +6,6 @@ Use one stable, lowercase kebab-case directory per provider.
 
 Provider credentials remain outside plaintext Git or in an approved SOPS/age
 workflow. A long-lived provisioned machine may also have a record under
-`hosts/` when host-level desired state and history matter.
+`hosts/` when host-level desired state and history matter. Follow
+[`docs/importing-resources.md`](../docs/importing-resources.md) when a provider
+already has a repository.

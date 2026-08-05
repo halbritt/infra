@@ -103,6 +103,10 @@ When a machine already has a Git repository, use the history-preserving process
 in [`docs/importing-hosts.md`](docs/importing-hosts.md). Import one repository at
 a time. Do not create a permanent branch per machine.
 
+For an appliance, service, or provider repository, use
+[`docs/importing-resources.md`](docs/importing-resources.md). Select the resource
+category from [`CONTEXT.md`](CONTEXT.md) before importing it.
+
 ## History and changelogs
 
 Git remains the provenance ledger. To see changes that touched one host after it
