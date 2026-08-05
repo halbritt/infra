@@ -111,7 +111,7 @@ the home-dir config/checkout all require the owner UID.
 **Edit here, then re-install.** After editing `striatumd.service`:
 
 ```bash
-sudo install -m 0644 ~/git/proximal/hosts/proximal/config/striatum/striatumd.service /etc/systemd/system/striatumd.service
+sudo install -m 0644 ~/git/infra/hosts/proximal/config/striatum/striatumd.service /etc/systemd/system/striatumd.service
 sudo systemctl daemon-reload
 sudo systemctl restart striatumd        # KillMode=process: leaves live lane helpers running
 systemctl status striatumd
@@ -138,9 +138,9 @@ if the operator's own `~/.claude/.credentials.json` is itself stale (no interact
 or daemon refresh for hours) the lane inherits that staleness, no worse than today.
 
 ```bash
-sudo install -m 0755 ~/git/proximal/hosts/proximal/config/striatum/striatum-lane-cred-resync.sh /usr/local/bin/striatum-lane-cred-resync.sh
-sudo install -m 0644 ~/git/proximal/hosts/proximal/config/striatum/striatum-lane-cred-resync.service /etc/systemd/system/
-sudo install -m 0644 ~/git/proximal/hosts/proximal/config/striatum/striatum-lane-cred-resync.timer   /etc/systemd/system/
+sudo install -m 0755 ~/git/infra/hosts/proximal/config/striatum/striatum-lane-cred-resync.sh /usr/local/bin/striatum-lane-cred-resync.sh
+sudo install -m 0644 ~/git/infra/hosts/proximal/config/striatum/striatum-lane-cred-resync.service /etc/systemd/system/
+sudo install -m 0644 ~/git/infra/hosts/proximal/config/striatum/striatum-lane-cred-resync.timer   /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now striatum-lane-cred-resync.timer
 systemctl list-timers striatum-lane-cred-resync.timer    # confirm NEXT is scheduled
@@ -167,7 +167,7 @@ registrations mint new wake units: **install the drop-in for each new
 ```bash
 for u in $(ls ~/.config/systemd/user/ | grep -oE '^striatum-wake-[0-9a-f]{8}\.service$'); do
   mkdir -p ~/.config/systemd/user/$u.d
-  install -m 0644 ~/git/proximal/hosts/proximal/config/striatum/striatum-wake.service.d-openrouter-env.conf ~/.config/systemd/user/$u.d/openrouter-env.conf
+  install -m 0644 ~/git/infra/hosts/proximal/config/striatum/striatum-wake.service.d-openrouter-env.conf ~/.config/systemd/user/$u.d/openrouter-env.conf
 done
 systemctl --user daemon-reload
 systemctl --user show striatum-wake-<repoid> -p EnvironmentFiles   # expect openrouter.env
@@ -223,9 +223,9 @@ lands**. The first run took the box from 240 → 74 worktrees (74 = main + 73 di
 daemon retains) and restored a clean `git gc`.
 
 ```bash
-sudo install -m 0755 ~/git/proximal/hosts/proximal/config/striatum/striatum-worktree-gc.sh /usr/local/bin/striatum-worktree-gc.sh
-sudo install -m 0644 ~/git/proximal/hosts/proximal/config/striatum/striatum-worktree-gc.service /etc/systemd/system/
-sudo install -m 0644 ~/git/proximal/hosts/proximal/config/striatum/striatum-worktree-gc.timer   /etc/systemd/system/
+sudo install -m 0755 ~/git/infra/hosts/proximal/config/striatum/striatum-worktree-gc.sh /usr/local/bin/striatum-worktree-gc.sh
+sudo install -m 0644 ~/git/infra/hosts/proximal/config/striatum/striatum-worktree-gc.service /etc/systemd/system/
+sudo install -m 0644 ~/git/infra/hosts/proximal/config/striatum/striatum-worktree-gc.timer   /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now striatum-worktree-gc.timer
 systemctl list-timers striatum-worktree-gc.timer    # confirm NEXT is scheduled
@@ -409,8 +409,8 @@ The pre-migration user unit + drop-ins are preserved verbatim in
 sudo systemctl disable --now striatumd
 sudo rm /etc/systemd/system/striatumd.service /etc/profile.d/striatum.sh
 sudo systemctl daemon-reload
-cp -r ~/git/proximal/hosts/proximal/config/striatum/migration/user-unit-pre-migration/striatumd.service \
-      ~/git/proximal/hosts/proximal/config/striatum/migration/user-unit-pre-migration/striatumd.service.d \
+cp -r ~/git/infra/hosts/proximal/config/striatum/migration/user-unit-pre-migration/striatumd.service \
+      ~/git/infra/hosts/proximal/config/striatum/migration/user-unit-pre-migration/striatumd.service.d \
       ~/.config/systemd/user/
 systemctl --user daemon-reload && systemctl --user enable --now striatumd
 # re-point tailscale serve back at /run/user/1000/striatum/web-ui.sock

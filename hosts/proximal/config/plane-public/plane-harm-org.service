@@ -1,6 +1,6 @@
 [Unit]
 Description=Plane CE public-intended plane.harm.org instance (Docker Compose)
-Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/plane-public/README.md
+Documentation=file:/home/halbritt/git/infra/hosts/proximal/config/plane-public/README.md
 Requires=docker.service plane-harm-org-postgres-bridge.service plane-harm-org-redis-bridge.service plane-harm-org-garage-bridge.service
 After=docker.service network-online.target plane-harm-org-postgres-bridge.service plane-harm-org-redis-bridge.service plane-harm-org-garage-bridge.service
 Wants=network-online.target

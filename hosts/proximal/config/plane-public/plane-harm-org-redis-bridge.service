@@ -1,6 +1,6 @@
 [Unit]
 Description=Plane harm.org Docker bridge to loopback Redis
-Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/plane-public/README.md
+Documentation=file:/home/halbritt/git/infra/hosts/proximal/config/plane-public/README.md
 Requires=redis-server.service docker.service
 After=redis-server.service docker.service network-online.target
 Wants=network-online.target

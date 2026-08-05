@@ -3,7 +3,7 @@
 > **STATUS: COMPLETED (2026-06-18).** This stack is built, running under systemd, and committed.
 > Historical record of the original task — see [`README.md`](README.md) for current state.
 > Paths below predate the repo reorg: this repo is now `proximal` (origin
-> `github.com/halbritt/proximal`) and these files live in `observability/`, not
+> `github.com/halbritt/infra`) and these files live in `hosts/proximal/config/observability/`, not
 > `maintenance/observability/`.
 
 **One task:** build a from-scratch observability stack on host **proximal** to monitor the

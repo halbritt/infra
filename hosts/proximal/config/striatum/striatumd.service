@@ -1,7 +1,7 @@
 [Unit]
 Description=Striatum local workflow daemon (Go)
 Documentation=https://github.com/halbritt/striatum
-Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/striatum/README.md
+Documentation=file:/home/halbritt/git/infra/hosts/proximal/config/striatum/README.md
 # Needs the network up (tailnet web UI) and Postgres reachable: the daemon opens
 # both a password DSN over loopback TCP (127.0.0.1:5432, from daemon.toml) and an
 # owner PEER connection over the local socket (/var/run/postgresql) as `halbritt`.

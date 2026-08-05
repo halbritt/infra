@@ -42,7 +42,7 @@ No SSH keys, agent sockets, host keys, or credentials belong in this repo.
 ## Install or reconcile the host
 
 ```bash
-cd ~/git/proximal
+cd ~/git/infra
 ./hosts/proximal/config/wezterm/install-user.sh
 readlink -f ~/.local/bin/wezterm
 wezterm -V

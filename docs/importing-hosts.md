@@ -1,6 +1,6 @@
 # Import another machine repository
 
-This procedure brings an existing single-machine repository into the fleet while
+This procedure brings an existing single-machine repository into the infrastructure repository while
 preserving useful provenance and avoiding a permanent branch per machine.
 
 ## Before the import
@@ -24,7 +24,7 @@ preserving useful provenance and avoiding a permanent branch per machine.
 - [ ] Record the source URL, source branch, source tip, scan tool and version,
   scan result, and import method in the new host's `notes.md`.
 
-Work from a clean, up-to-date fleet checkout. A short-lived import task branch is
+Work from a clean, up-to-date infrastructure checkout. A short-lived import task branch is
 reasonable for review, but it must be merged and removed. Do not create a branch
 that remains the machine's home.
 
@@ -83,7 +83,7 @@ Immediately follow the subtree commit with a separate normalization commit:
 6. Reinstall any live unit that executes from the checkout, reload the service
    manager, and verify that service before continuing.
 7. Run the source repository's original checks from the new paths, then run
-   `scripts/validate-fleet.py`.
+   `scripts/validate-infra.py`.
 
 To inspect the original source history after a subtree import, start from the
 recorded source tip and use its original paths:
@@ -117,7 +117,7 @@ git remote remove "import-${machine}"
 ```
 
 Run secret scanning before `filter-repo`, not after. The staging clone must be
-outside the fleet repository. Record the old source tip and the rewritten import
+outside the infrastructure repository. Record the old source tip and the rewritten import
 tip so future maintainers can correlate the two histories.
 
 ## Post-import acceptance checklist
@@ -136,7 +136,7 @@ tip so future maintainers can correlate the two histories.
 - [ ] Repository-local Markdown links resolve.
 - [ ] Original tests and checks pass from the new path, or pre-existing failures
   are recorded separately from migration regressions.
-- [ ] `scripts/validate-fleet.py` passes.
+- [ ] `scripts/validate-infra.py` passes.
 - [ ] `git log -- hosts/<name>` shows the import and subsequent host changes.
 - [ ] The import task branch, temporary remote, and temporary checkout are
   removed after merge; the target branch is pushed.
@@ -154,6 +154,6 @@ For the next machine, perform these actions in order:
    a partial host partition already exists.
 5. Add the host manifest and notes, then normalize paths in a second commit.
 6. Reinstall and verify checkout-bound services on that machine.
-7. Run the imported repository's checks plus `scripts/validate-fleet.py`.
+7. Run the imported repository's checks plus `scripts/validate-infra.py`.
 8. Review the host-scoped diff and history, merge the short-lived task branch if
    one was used, remove temporary import state, and push.

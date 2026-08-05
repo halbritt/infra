@@ -2,7 +2,7 @@
 # capcom6 gateway — same HTTP contract, zero off-box hops; RFC 0019 v2 posture
 # strengthened: SMS bytes leave the box only over the cellular radio itself).
 #
-# Canonical copy: ~/git/proximal/hosts/proximal/config/cellular/quectel-sms-gateway.service
+# Canonical copy: ~/git/infra/hosts/proximal/config/cellular/quectel-sms-gateway.service
 # Installed at:   /etc/systemd/system/quectel-sms-gateway.service
 # Secrets:        /etc/default/quectel-sms-gateway (0600, OUTSIDE git) — the
 #                 same Basic-auth pair praxisd's carrier already presents
@@ -15,13 +15,13 @@
 
 [Unit]
 Description=Quectel EC25 SMS gateway for Praxis (capcom6-compatible, loopback-only)
-Documentation=file:///home/halbritt/git/proximal/hosts/proximal/config/cellular/README.md
+Documentation=file:///home/halbritt/git/infra/hosts/proximal/config/cellular/README.md
 After=network.target
 
 [Service]
 User=halbritt
 SupplementaryGroups=dialout
-ExecStart=/usr/bin/python3 /home/halbritt/git/proximal/hosts/proximal/config/cellular/quectel-sms-gateway.py
+ExecStart=/usr/bin/python3 /home/halbritt/git/infra/hosts/proximal/config/cellular/quectel-sms-gateway.py
 Environment=QSMS_AT_PORT=/dev/ttyUSB2
 Environment=QSMS_BIND=127.0.0.1:8852
 Environment=QSMS_WEBHOOK_URL=http://127.0.0.1:8850

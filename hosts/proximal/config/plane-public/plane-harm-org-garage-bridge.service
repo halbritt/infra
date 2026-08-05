@@ -1,6 +1,6 @@
 [Unit]
 Description=Plane harm.org Docker bridge to loopback Garage S3
-Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/plane-public/README.md
+Documentation=file:/home/halbritt/git/infra/hosts/proximal/config/plane-public/README.md
 Requires=garage.service docker.service
 After=garage.service docker.service network-online.target
 Wants=network-online.target

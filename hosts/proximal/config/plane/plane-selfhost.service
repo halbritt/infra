@@ -1,6 +1,6 @@
 [Unit]
 Description=Plane CE local private pilot (Docker Compose)
-Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/plane/README.md
+Documentation=file:/home/halbritt/git/infra/hosts/proximal/config/plane/README.md
 Requires=docker.service
 After=docker.service network-online.target tailscaled.service
 Wants=network-online.target

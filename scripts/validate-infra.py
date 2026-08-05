@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the lightweight fleet repository contracts without third-party packages."""
+"""Validate lightweight infrastructure repository contracts without dependencies."""
 
 from __future__ import annotations
 
@@ -211,16 +211,16 @@ class Validation:
                 if not resolved.exists():
                     self.error(f"{path.relative_to(ROOT)}: broken Markdown link: {target}")
 
-    def validate_legacy_paths(self) -> None:
+    def validate_obsolete_paths(self) -> None:
         config = ROOT / "hosts/proximal/config"
         if not config.is_dir():
             return
         subsystem_names = sorted(path.name for path in config.iterdir() if path.is_dir())
-        old_prefixes = (
-            "/home/halbritt/git/" + "proximal/",
-            "%h/git/" + "proximal/",
-            "~/git/" + "proximal/",
-            "github.com/halbritt/" + "proximal/tree/master/",
+        old_single_host_prefixes = (
+            "/home/halbritt/git/infra/",
+            "%h/git/infra/",
+            "~/git/infra/",
+            "github.com/halbritt/infra/tree/master/",
         )
         for path in ROOT.rglob("*"):
             if not path.is_file() or any(part in IGNORED_PARTS for part in path.parts):
@@ -229,7 +229,16 @@ class Validation:
                 text = path.read_text(encoding="utf-8")
             except (OSError, UnicodeError):
                 continue
-            for prefix in old_prefixes:
+            obsolete_repository_roots = (
+                "/home/halbritt/git/" + "proximal/",
+                "%h/git/" + "proximal/",
+                "~/git/" + "proximal/",
+                "github.com/halbritt/" + "proximal/tree/master/",
+            )
+            for obsolete in obsolete_repository_roots:
+                if obsolete in text:
+                    self.error(f"{path.relative_to(ROOT)}: stale repository path: {obsolete}")
+            for prefix in old_single_host_prefixes:
                 for subsystem in subsystem_names:
                     legacy = prefix + subsystem
                     if legacy in text:
@@ -239,10 +248,10 @@ class Validation:
         if self.errors:
             for error in sorted(set(self.errors)):
                 print(f"ERROR: {error}", file=sys.stderr)
-            print(f"fleet validation failed: {len(set(self.errors))} error(s)", file=sys.stderr)
+            print(f"infrastructure validation failed: {len(set(self.errors))} error(s)", file=sys.stderr)
             return 1
         print(
-            "fleet validation passed: "
+            "infrastructure validation passed: "
             f"{self.host_count} host(s), {self.role_count} role(s), "
             f"{self.shared_reference_count} shared reference(s)"
         )
@@ -256,7 +265,7 @@ def main() -> int:
     validation.validate_secret_paths()
     validation.validate_symlinks()
     validation.validate_markdown_links()
-    validation.validate_legacy_paths()
+    validation.validate_obsolete_paths()
     return validation.finish()
 
 

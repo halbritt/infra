@@ -16,7 +16,7 @@ The script executes directly from the fleet checkout; there is no installed
 copy:
 
 ```cron
-*/30 * * * * /home/halbritt/git/proximal/hosts/peecee/config/health/check-whea.sh
+*/30 * * * * /home/halbritt/git/infra/hosts/peecee/config/health/check-whea.sh
 ```
 
 Required runtime tools on proximal are Bash, `timeout`, `ssh`, `iconv`, and

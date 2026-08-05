@@ -55,7 +55,7 @@ pre-create empty ones. Command examples that begin with `subsystem/path` assume
 this directory as the working directory:
 
 ```sh
-cd ~/git/proximal/hosts/proximal/config
+cd ~/git/infra/hosts/proximal/config
 ```
 
 ## The one rule
@@ -74,7 +74,7 @@ root-only files on the box (e.g. `/etc/default/*` at `0600`). The root
 - **Canonical-in-repo, installed-on-box.** The repo holds the source of truth; the box
   holds running copies. Each subsystem's README maps repo files → install paths.
 - **Commit and push often.** This repo's value is its history — never end a turn with a
-  dirty tree or unpushed commits (`origin` = `github.com/halbritt/proximal`).
+  dirty tree or unpushed commits (`origin` = `github.com/halbritt/infra`).
 
 Start at the subsystem you're working on. For agents, read
 [`../AGENTS.md`](../AGENTS.md) and any nested subsystem instructions.

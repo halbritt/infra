@@ -1,9 +1,9 @@
-# proximal fleet state
+# Halbritt infrastructure state
 
-Durable, inspectable provenance and desired state for the machines operated by
-Halbritt. This repository began as the record for the host `proximal`; it now
-uses a fleet layout so additional machine repositories can be imported without
-flattening their identities or assigning a permanent Git branch to each host.
+Durable, inspectable provenance and desired state for infrastructure operated by
+Halbritt. The repository is named `infra`; `proximal` is one host within it.
+It covers managed hosts, appliances, services, and external providers without
+flattening their identities or assigning a permanent Git branch to each one.
 
 The repository records configuration, installation mappings, measurements,
 incidents, rejected approaches, and host exceptions. It does not store live
@@ -22,8 +22,11 @@ credentials.
 │       └── config/        # self-contained host subsystem directories
 ├── roles/                 # reusable responsibility and machine-type bundles
 ├── shared/                # configuration proven reusable across hosts
+├── devices/               # managed appliances such as printers and network gear
+├── services/              # systems whose desired state spans or sits above a host
+├── providers/             # external infrastructure providers and their resources
 ├── secrets/               # policy only, or SOPS-encrypted files in the future
-├── docs/                  # fleet procedures, including history-preserving imports
+├── docs/                  # infrastructure procedures and accepted decisions
 └── scripts/               # lightweight repository validation
 ```
 
@@ -33,7 +36,24 @@ The original machine is [`hosts/proximal/`](hosts/proximal/). The standalone
 The `proximal` subsystem index remains at
 [`hosts/proximal/config/README.md`](hosts/proximal/config/README.md).
 
-## Layering and ownership
+## Resource boundaries
+
+- `hosts/` contains general-purpose machines or operating-system instances,
+  whether local, remote, physical, virtual, or ephemeral.
+- `devices/` contains managed appliances whose primary interface is a device
+  control plane, such as a printer, router, switch, or sensor hub.
+- `services/` contains service-level desired state that is not owned by one host.
+  A future Home Assistant import belongs here when its configuration is managed
+  as a service; the machine that runs it remains under `hosts/`.
+- `providers/` contains provider-level policy and resource declarations. Runpod
+  account policy or reusable resource definitions belong here; a provisioned
+  long-lived node may also have a host record when host-level state matters.
+
+Do not create an empty resource record from an example alone. Add a directory
+when real configuration or operational evidence is available, and keep secret
+provider credentials outside plaintext Git.
+
+## Host layering and ownership
 
 The three configuration layers answer different questions:
 
@@ -77,7 +97,7 @@ For a machine with no repository to import:
    `README.md` or `AGENTS.md` that maps canonical files to installed paths.
 6. Put secret values in the machine's external secret store or in an approved
    SOPS/age workflow. See [`secrets/README.md`](secrets/README.md).
-7. Run `scripts/validate-fleet.py`, inspect the diff, commit, and push.
+7. Run `scripts/validate-infra.py`, inspect the diff, commit, and push.
 
 When a machine already has a Git repository, use the history-preserving process
 in [`docs/importing-hosts.md`](docs/importing-hosts.md). Import one repository at
@@ -130,7 +150,7 @@ implementation evidence.
 Run the lightweight validator from the repository root:
 
 ```sh
-scripts/validate-fleet.py
+scripts/validate-infra.py
 ```
 
 It checks manifest structure, host and role names, role references, shared-file
@@ -157,5 +177,7 @@ After changing operational configuration, install it on the target host, verify
 the live result, and record the rationale. Long-running services belong under
 the host's service manager. Never end a turn with uncommitted or unpushed work.
 
-Agents must read [`AGENTS.md`](AGENTS.md), then the target host and subsystem
-instructions before acting.
+Agents must read [`AGENTS.md`](AGENTS.md), then the target resource and subsystem
+instructions before acting. Canonical domain terms are in
+[`CONTEXT.md`](CONTEXT.md); the repository-scope decision is recorded in
+[`ADR 0001`](docs/adr/0001-infrastructure-scope-and-identity.md).

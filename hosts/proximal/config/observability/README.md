@@ -296,7 +296,7 @@ test in the striatum repo (`TestPrometheusRulesReferenceRegisteredMetrics`) asse
 they reference is one the exporter actually emits, so keep the bodies byte-identical to the source.
 **Refresh** when the striatum copies change:
 ```bash
-SRC=~/git/striatum/go/pkg/metrics/rules; DST=~/git/proximal/hosts/proximal/config/observability/prometheus/rules
+SRC=~/git/striatum/go/pkg/metrics/rules; DST=~/git/infra/hosts/proximal/config/observability/prometheus/rules
 # (re-run the header+cat from the repo, then) sudo cp $DST/*.rules.yml /etc/prometheus/rules/
 promtool check rules /etc/prometheus/rules/striatum-*.rules.yml && sudo systemctl reload prometheus
 ```

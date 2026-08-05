@@ -1,6 +1,6 @@
 [Unit]
 Description=Run plant-praxis-bridge hourly
-Documentation=https://github.com/halbritt/proximal/tree/master/hosts/proximal/config/plant-praxis-bridge
+Documentation=https://github.com/halbritt/infra/tree/master/hosts/proximal/config/plant-praxis-bridge
 
 [Timer]
 OnBootSec=10min

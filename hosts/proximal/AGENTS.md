@@ -44,7 +44,7 @@ Live box facts (hardware, ports, the local LLM service, restart commands) are in
 - **Long-running infra is under systemd.** Check `systemctl` before assuming a service
   is down; capture unit files / drop-ins as the desired-state for that subsystem.
 - **Commit and push often.** Never end a turn with a dirty tree or unpushed commits
-  (`origin` = `github.com/halbritt/proximal`).
+  (`origin` = `github.com/halbritt/infra`).
 
 <!-- BEGIN PROXIMAL PLANE TRACKING -->
 ## Plane Tracking
@@ -54,7 +54,7 @@ This repository is represented in the local/private Plane workspace `Proximal`.
 - Plane project: `Proximal` (`PROXIMAL`)
 - Issue tracker: Plane (`Proximal` workspace), project `Proximal` (`PROXIMAL`).
 - Plane URL: `https://proximal.tail0ecc2e.ts.net:10000/`
-- GitHub repo: `https://github.com/halbritt/proximal`
+- GitHub repo: `https://github.com/halbritt/infra`
 - GitHub Issues: deprecated; use Plane work items for new issue tracking, claims, reviews, and issue-state changes.
 - Use Plane work items for multi-agent planning, claims, submitted artifacts, reviews, and acceptance decisions.
 - When updating Plane, include the repo, branch/worktree, `run_id`, `base_sha`, artifact links, verification evidence, and authority scope in the work item description or comments.
@@ -75,9 +75,9 @@ files (Makefile, configs, generated/golden files) become impossible.
 
 - One worktree per branch, one agent per worktree; name the dir after the branch.
 - Siblings, not nested: create worktrees OUTSIDE this checkout
-  (`../proximal-wt/<branch>`), never inside it — recursive globs, file-count/hash
+  (`../infra-wt/<branch>`), never inside it — recursive globs, file-count/hash
   gates, and IDE indexers must not scan across worktrees.
-- Lifecycle: `git worktree add ../proximal-wt/<branch> -b <branch>` /
+- Lifecycle: `git worktree add ../infra-wt/<branch> -b <branch>` /
   `git worktree list` / `git worktree remove <path>` after merge /
   `git worktree prune`. Agents with worktree isolation get this for free.
 - Shared object store and build caches are fine; worktrees do NOT isolate

@@ -1,9 +1,9 @@
-# proximal fleet repository — AGENTS.md
+# infra repository — AGENTS.md
 
 This repository is the durable, cross-agent provenance and desired state for a
-fleet of machines. It is operational state, not an application codebase. Preserve
-the evidence that explains what each host runs, why it runs it, how it is
-installed, and what was tried and rejected.
+set of managed infrastructure resources. It is operational state, not an
+application codebase. Preserve the evidence that explains what each resource
+runs, why it runs it, how it is installed, and what was tried and rejected.
 
 ## Scope and routing
 
@@ -16,6 +16,10 @@ installed, and what was tried and rejected.
   declare shared inputs; host-specific overrides stay with the host.
 - Do not create or keep one Git branch per machine. Use short-lived task branches
   only when the work itself needs a branch.
+- Put managed appliances such as printers and network gear under `devices/`.
+- Put service-level desired state that is not owned by one host under `services/`.
+- Put external-provider policy and resource declarations under `providers/`.
+- Read [`CONTEXT.md`](CONTEXT.md) before introducing a new resource category.
 
 The current host record is [`hosts/proximal/`](hosts/proximal/). Live facts for
 that box are also in `~/CLAUDE.md`; live state must be rechecked before an
@@ -32,13 +36,13 @@ operational action.
 - **Preserve provenance.** Every operational change carries a rationale tied to
   a measurement, report, incident, or explicit decision. Do not rewrite old
   evidence to make the present state look cleaner.
-- **Preserve imports.** Bring another machine repository in with its useful Git
+- **Preserve imports.** Bring another resource repository in with its useful Git
   history. Scan for secrets before merging and normalize paths in a separate,
   reviewable commit.
 - **System services stay managed.** Check the target host's service manager before
   assuming a long-running service is down.
 - **Commit and push often.** Never end a turn with a dirty tree or unpushed commits
-  (`origin` = `github.com/halbritt/proximal`).
+  (`origin` = `github.com/halbritt/infra`).
 
 ## Structural rules
 
@@ -53,17 +57,17 @@ operational action.
 - Do not add compatibility symlinks at the repository root for old subsystem
   paths. Update canonical scripts, units, and documentation to the fleet paths.
 
-Run `scripts/validate-fleet.py` before committing.
+Run `scripts/validate-infra.py` before committing.
 
 <!-- BEGIN PROXIMAL PLANE TRACKING -->
 ## Plane Tracking
 
 This repository is represented in the local/private Plane workspace `Proximal`.
 
-- Plane project: `Proximal` (`PROXIMAL`)
-- Issue tracker: Plane (`Proximal` workspace), project `Proximal` (`PROXIMAL`).
+- Plane project: `Infra` (legacy identifier `PROXIMAL`)
+- Issue tracker: Plane (`Proximal` workspace), project `Infra` (`PROXIMAL`).
 - Plane URL: `https://proximal.tail0ecc2e.ts.net:10000/`
-- GitHub repo: `https://github.com/halbritt/proximal`
+- GitHub repo: `https://github.com/halbritt/infra`
 - GitHub Issues: deprecated; use Plane work items for new issue tracking, claims,
   reviews, and issue-state changes.
 - When updating Plane, include the repo, branch/worktree, `run_id`, `base_sha`,
@@ -80,6 +84,6 @@ authority is absent, report that blocker. Remove merged task branches and their
 worktrees.
 
 Concurrent agents use one sibling worktree per branch under
-`../proximal-wt/<branch>`. Worktrees isolate files, not ports, databases, service
+`../infra-wt/<branch>`. Worktrees isolate files, not ports, databases, service
 managers, or remote machines; coordinate those separately. Regenerate generated
 artifacts once on the merged tree rather than merging competing generated copies.

@@ -58,7 +58,7 @@ it.
 
 | repo (canonical) | installed copy (box) |
 |---|---|
-| `plant_praxis_bridge.py` | run in place from `~/git/proximal/hosts/proximal/config/plant-praxis-bridge/` |
+| `plant_praxis_bridge.py` | run in place from `~/git/infra/hosts/proximal/config/plant-praxis-bridge/` |
 | `plant-praxis-bridge.service` | `~/.config/systemd/user/plant-praxis-bridge.service` |
 | `plant-praxis-bridge.timer` | `~/.config/systemd/user/plant-praxis-bridge.timer` |
 | `plant-praxis-bridge.env.template` | `~/.config/plant-praxis-bridge.env` (`0600`, **add real InfluxDB creds**) |

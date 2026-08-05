@@ -1,7 +1,7 @@
 [Unit]
 Description=Resync striatum-lane Claude OAuth credential from the operator (rotating-token survival)
 Documentation=https://github.com/halbritt/striatum/issues/583
-Documentation=file:/home/halbritt/git/proximal/hosts/proximal/config/striatum/README.md
+Documentation=file:/home/halbritt/git/infra/hosts/proximal/config/striatum/README.md
 # Ordering-after striatumd is cosmetic (the resync is independent of the daemon),
 # but it keeps journal timelines readable.
 After=striatumd.service
