@@ -117,6 +117,10 @@ git log 8bc7435470026341bf547de3da5bd0f654db464b -- health/check-whea.sh
 git log --follow -- hosts/peecee/config/health/check-whea.sh
 ```
 
+The first command reaches the original source commits. The second reports the
+normalized fleet path from the reconciliation commit onward; `--follow` cannot
+infer a source repository's old root path across a subtree merge.
+
 Use [`hosts/<name>/CHANGELOG.md`](hosts/proximal/CHANGELOG.md) for meaningful
 machine-level operational changes. Use subsystem history and reports for dense
 implementation evidence.
