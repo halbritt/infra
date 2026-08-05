@@ -13,6 +13,11 @@ redacted content-pattern scan of every reachable source commit found no likely
 credential. The scan did not print candidate values. This is bounded evidence,
 not proof that the history is secret-free.
 
+After the imported tip, current tree, and absence of checkout-bound consumers
+were verified, `/home/halbritt/git/homeassistant` was moved to the desktop trash
+on 2026-08-05. It is recoverable from trash. The standalone GitHub repository
+was not deleted.
+
 ## Identity decision
 
 The stable resource name is `home-assistant-yellow`, not `homeassistant`.
