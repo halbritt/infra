@@ -2,11 +2,10 @@
 
 Durable, inspectable, cross-agent provenance and desired state for the device
 `home-assistant-fernside`, a Home Assistant OS installation at Fernside on the
-home LAN (`192.168.1.64` / tailnet `100.105.145.26`). The observed hostname is
-still the generic `homeassistant`; a live rename is pending an authenticated
-host-options change. See
+home LAN (`192.168.1.64` / tailnet `100.105.145.26`). Its live mDNS and
+Tailscale hostname is `home-assistant-fernside`. See
 [`device.yaml`](device.yaml) for identity and [`notes.md`](notes.md) for the
-migration boundary.
+migration and verification record.
 
 This is operational state, not a codebase. Its job is to remember — across runs
 and across agents — what this appliance looks like, how it is reached, what
@@ -16,9 +15,10 @@ config it should run, and what was already tried and rejected.
 
 `home-assistant-fernside` is the stable resource name because it identifies the
 installation by site and distinguishes it from future Home Assistant
-installations. `homeassistant` is an observed network hostname, not the
-repository identity. Home Assistant Yellow remains the current hardware model;
-a hardware replacement at Fernside does not silently create a new installation.
+installations. The former generic hostname `homeassistant` is historical
+identity evidence, not a current alias. Home Assistant Yellow remains the
+current hardware model; a hardware replacement at Fernside does not silently
+create a new installation.
 
 The eight commits from the former standalone repository
 `github.com/halbritt/homeassistant` remain in this repository's history. New
@@ -32,23 +32,25 @@ desired-state changes belong here.
 | Hardware | **Home Assistant Yellow** (CM4 carrier, board `yellow`; MAC `2c:cf:67:fb:66:0d` — the RPi Trading OUI is the CM4's, which is why it first scanned as a bare Pi) |
 | OS | Home Assistant OS (HAOS) — appliance, not a general Linux host |
 | LAN | `192.168.1.64` (`enp3s0` ARP on proximal) |
-| Tailscale | `100.105.145.26` · hostname `homeassistant` · offers exit node |
+| Tailscale | `100.105.145.26` · hostname `home-assistant-fernside` · offers exit node |
 | Versions | see [`inventory.md`](inventory.md) — HAOS/Supervisor/core/add-ons, captured 2026-07-22 |
 
-Verified 2026-07-22 from `proximal` via ha-mcp.
+Identity, Core, HAOS, and add-on state were reverified 2026-08-06. The inventory
+remains a point-in-time 2026-07-22 snapshot; see the changelog for newer version
+observations.
 
-## Access posture (as-found, 2026-07-21)
+## Access posture
 
 - **`:8123`** — Home Assistant web UI + REST API. API answers `401` without a
   token (healthy; auth required).
 - **`:4357`** — HAOS observer. Reports: Supervisor **Connected**, Support
   **Supported**, Health **Healthy**.
 - **`:9583`** — **[ha-mcp](https://github.com/homeassistant-ai/ha-mcp)** add-on
-  (v7.14.1 as of 2026-07-21), the agent interface of record — see below.
-- **No SSH from the network**: ports 22, 2222, and 22222 (HAOS developer SSH)
-  all closed. The Terminal & SSH add-on *is* installed and running, but with no
-  exposed port — it's an ingress web terminal inside the HA UI only. Host
-  administration happens through the HA UI / Supervisor, not a network shell.
+  (v8.1.1 as of 2026-08-06), the agent interface of record — see below.
+- **`:22`** — Terminal & SSH add-on access, enabled 2026-08-06 with one
+  authorized public key, no password, and TCP forwarding disabled. This is an
+  add-on shell with Supervisor CLI access, not HAOS developer SSH. Keep the
+  private key outside Git.
 - **Native MCP Server integration: not enabled** (`/mcp_server/sse` → `404`) —
   and not wanted: ha-mcp supersedes it.
 

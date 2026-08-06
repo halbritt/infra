@@ -11,9 +11,9 @@
     "architecture": "aarch64"
   },
   "identity": {
-    "observed_hostname": "homeassistant",
+    "observed_hostname": "home-assistant-fernside",
     "desired_hostname": "home-assistant-fernside",
-    "hostname_migration": "pending-authenticated-change"
+    "hostname_migration": "complete"
   },
   "network": {
     "lan_address": "192.168.1.64",

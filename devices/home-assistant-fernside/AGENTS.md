@@ -6,9 +6,10 @@ on a Yellow appliance. Read
 [`device.yaml`](device.yaml), [`README.md`](README.md), [`notes.md`](notes.md),
 and the relevant subsystem documentation before changing it.
 
-- Treat `home-assistant-fernside` as the stable resource name and `homeassistant`
-  as the currently observed hostname. A repository rename is not proof of a live
-  network rename.
+- Treat `home-assistant-fernside` as both the stable resource name and the
+  currently observed hostname. The live hostname migration completed on
+  2026-08-06; `homeassistant` is historical identity evidence, not a current
+  alias.
 - Inventory and read-only probes do not authorize automation, integration,
   add-on, device-control, or network mutations.
 - Preserve HAOS, Supervisor, add-on, Thread, Matter, Zigbee, and Tailscale
