@@ -77,8 +77,8 @@ The Supervisor accepted the change, mDNS resolved
 new name. Tailscale retained the old identity until the HAOS update reboot, then
 reported `home-assistant-fernside.tail0ecc2e.ts.net` online at
 `100.105.145.26`. The LAN and Tailnet Home Assistant UI endpoints and HAOS
-Observer all returned HTTP 200 after startup. The fixed-address InfluxDB and
-ha-mcp paths remained reachable.
+Observer all returned HTTP 200 after startup. The fixed-address InfluxDB path
+and the ha-mcp listener remained reachable.
 
 ## 2026-08-06 update maintenance
 
@@ -108,6 +108,13 @@ reboot. After reboot, HAOS reported slot B booted and good, with 18.1 retained
 as the good inactive slot. Core and Supervisor were healthy and supported,
 every installed add-on was started and current, and `ha available-updates`
 returned an empty list.
+
+The ha-mcp add-on was started and its port was reachable on both LAN and
+tailnet. The active Claude configuration did not list the intended user-scope
+registration; it retained only a legacy project-local entry under the former
+`~/git/ha-mcp` checkout. Restoring that client registration requires reading the
+private URL from secure add-on configuration and is a separate credential-aware
+operation.
 
 The post-reboot Core log still contained an ESPHome reconnect warning for the
 separate device `fernside` at `192.168.1.66`, plus shutdown-time cancellation

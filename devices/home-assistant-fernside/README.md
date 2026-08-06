@@ -54,7 +54,7 @@ observations.
 - **Native MCP Server integration: not enabled** (`/mcp_server/sse` → `404`) —
   and not wanted: ha-mcp supersedes it.
 
-### Agent access (the plan of record)
+### Agent access
 
 The **ha-mcp add-on** (streamable-HTTP MCP, ~89 tools: device control, state
 queries, automation management, and more) runs on the appliance at
@@ -63,19 +63,22 @@ as the credential — **the full URL is a secret; never commit it**. It lives
 only in the add-on config on the appliance and in `~/.claude*/.claude.json` on
 proximal.
 
-Registered on proximal at **user scope** (2026-07-21) so every Claude Code
-session sees it, via the tailnet IP (survives mDNS flakiness):
+The desired registration on proximal is **user scope** so every Claude Code
+session sees it, using the tailnet IP so mDNS is not a dependency:
 
 ```bash
 claude mcp add --transport http --scope user ha-mcp \
   "http://100.105.145.26:9583/private_<SECRET>"
 ```
 
-History: originally registered 
-project-local to `~/git/ha-mcp` (a clone of the upstream repo), which made it
-invisible to sessions launched anywhere else — that's the trap the user-scope
-registration fixes. Rotate the secret from the add-on's configuration page if
-the URL ever leaks.
+The 2026-08-06 check found the add-on listener reachable on both LAN and
+tailnet, but the active Claude configuration did not list a user-scope `ha-mcp`
+server. A legacy project-local registration remains under the former
+`~/git/ha-mcp` checkout, so sessions launched elsewhere cannot use it. Restore
+the user-scope registration with the private URL read directly from the add-on
+configuration, then verify it with `claude mcp list`; do not copy the URL into a
+shell transcript or this repository. Rotate the secret from the add-on's
+configuration page if the URL ever leaks.
 
 ## Data out to proximal Grafana
 

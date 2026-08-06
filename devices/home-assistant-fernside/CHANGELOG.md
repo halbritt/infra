@@ -7,8 +7,9 @@
 Changed the Supervisor host hostname from `homeassistant` to
 `home-assistant-fernside` through an authenticated Terminal & SSH add-on shell.
 Verified the new mDNS name, key-only SSH, LAN and Tailnet UI, Observer,
-fixed-address InfluxDB and ha-mcp consumers, and the post-reboot Tailscale node
-identity. No checked consumer required a compatibility alias.
+fixed-address InfluxDB and ha-mcp listener reachability, and the post-reboot
+Tailscale node identity. No checked hostname consumer required a compatibility
+alias.
 
 ### Installed all available updates
 
@@ -22,6 +23,11 @@ the UI, and every installed add-on recovered. Supervisor reported no remaining
 updates. The Midea OTA completed despite a client timeout and a transient ZHA
 unknown-event warning; the update entity confirmed the new firmware with no
 operation in progress.
+
+The ha-mcp add-on recovered and its listener was reachable, but the active
+Claude configuration lacked the intended user-scope registration and retained
+only a legacy project-local entry. This client-side drift remains a separate,
+credential-aware follow-up.
 
 ## 2026-08-05
 
