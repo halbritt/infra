@@ -7,6 +7,20 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-06
 
+### wigolo synthesis switched to native gemini-3.6-flash (free tier)
+
+Acting on the re-benchmark below: rewired the [`wigolo`](config/wigolo/) MCP
+registration from GLM 5.2/OpenRouter to the native `gemini` provider with
+`gemini-3.6-flash` — the round's best reports at both depths, leak-free, and
+free-tier cost. The blocking caveat dissolved on inspection: ai-newsroom no
+longer calls Gemini (its "gemini" grep hits are topic keywords and subreddit
+names in `newsroom/sources/`), so the `GEMINI_API_KEY` in
+`~/.config/ai-newsroom/env` is a leftover and wigolo is now effectively its
+only consumer. Deliberately staying on the free tier — wigolo is low-volume;
+watch billing to confirm it never charges. Canonical block updated in
+[`config/wigolo/mcp-config.json`](config/wigolo/mcp-config.json); GLM 5.2
+rollback block preserved in git history (`d3167f0`).
+
 ### wigolo synthesis re-benchmark: GLM 5.2 holds; DeepSeek V4 Flash unfit; Gemini leak gone
 
 Re-ran the [`wigolo`](config/wigolo/) synthesis-model benchmark (8 headless

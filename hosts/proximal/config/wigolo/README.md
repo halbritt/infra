@@ -23,7 +23,7 @@ Full shareable audit: <https://gist.github.com/halbritt/74225e8f58787bf81ae4eac1
 key store; unwired telemetry; single-registry deps; redirect-aware SSRF guard. Only real
 supply-chain weakness is the opt-in SearXNG backend — avoided, see guardrails.)
 
-## Synthesis model — GLM 5.2 via OpenRouter (chosen 2026-07-21)
+## Synthesis model — native gemini-3.6-flash (chosen 2026-08-06; GLM 5.2 via OpenRouter 2026-07-21 → 2026-08-06)
 
 `research`/`agent` synthesize a cited report from fetched pages. wigolo's synthesis path is:
 **(1)** MCP host sampling (host LLM writes it) → **(2)** the configured `WIGOLO_LLM_PROVIDER`
@@ -38,7 +38,7 @@ current model is a *reasoning* model, so this mismatch bites:
 |---|---|---|
 | **GLM 5.2** (`z-ai/glm-5.2`, OpenRouter) | OpenRouter returns reasoning in a *separate* field, so wigolo's `content` is always clean prose — full, accurate, well-cited report at `comprehensive`; terse-but-correct at `standard` | ✅ **chosen** |
 | Local 35B MoE (`:8081`) | reasoning tokens starve the content budget → **collapses to the tier-3 template** on large source sets; fine only at `quick` depth | ⚠️ fallback |
-| Gemini 3.x flash (`@google/genai`) | thinking scratchpad **leaks into the report**; Gemini 2.5 gated for our key | ❌ rejected |
+| Gemini 3.x flash (`@google/genai`) | thinking scratchpad **leaks into the report**; Gemini 2.5 gated for our key | ❌ rejected *(superseded 2026-08-06 — leak gone on 3.6, see re-benchmark below)* |
 | Qwen 27B (`qwen3.6:27b`, peecee ollama `:11434`) | thinking model @ ~70 tok/s over tailnet → exceeds wigolo's **hardcoded 60s synthesis timeout** at both standard and comprehensive → **template fallback every call** | ❌ rejected |
 
 ### Re-benchmark 2026-08-06 (GLM 5.2 vs DeepSeek V4 Flash vs gemini-3.6-flash)
@@ -55,48 +55,53 @@ synthesis provenance read from the `local synthesis ok` log line, not guessed fr
 
 Per-synthesis cost math (~10k tok in / ≤2k out): DeepSeek ≈ $0.001, GLM ≈ $0.01,
 gemini-3.6-flash via OpenRouter ≈ $0.03, native gemini on the ai-newsroom key ≈ free tier.
-**Wiring unchanged (GLM 5.2)** — DeepSeek's 1/10 price cannot be banked here because wigolo's
-`reportChars/3` cap + 60s timeout break it at the default depth; if the goal is spending less
-on synthesis, the native-Gemini path is the candidate, at the price of coupling wigolo to the
-ai-newsroom key's rate limits. Caveat: single-question round; source sets varied slightly
-between runs (9–25 sources), which explains some per-run quality variance.
+**Outcome: rewired to native gemini-3.6-flash on 2026-08-06** (Principal call). The
+key-sharing caveat turned out moot — ai-newsroom no longer calls Gemini (its "gemini" grep
+hits are topic keywords and subreddit names in the scrapers), so wigolo is effectively the
+key's only consumer. Running on the free tier deliberately; wigolo is low-volume — watch
+for any charge appearing. DeepSeek's 1/10 price could not be banked here because wigolo's
+`reportChars/3` cap + 60s timeout break it at the default depth. Caveat: single-question
+round; source sets varied slightly between runs (9–25 sources), which explains some
+per-run quality variance.
 
 **Operational guidance:** pick `depth` by the **question**, not by the model — `quick`/`standard`
 for most, `comprehensive` only when you genuinely want broad multi-source coverage. Do NOT
-reach for `comprehensive` just to get a fuller write-up: that only works around GLM's reasoning
-eating the `reportChars/3` synthesis budget (standard ≈1334 tok → terse-but-correct report,
-comprehensive ≈2000 tok → fuller), which wrongly couples research breadth to synthesis tokens.
+reach for `comprehensive` just to get a fuller write-up — that was a GLM-era workaround that
+wrongly coupled research breadth to synthesis tokens; native gemini-3.6-flash wrote full
+reports at both depths in the 2026-08-06 round.
 
 Crucially, **when wigolo is driven through a capable host (Claude Code), the host writes the
 final answer from the returned `evidence`/`sources`/`brief`/`citations` — no token cap — so a
-terse GLM `report` field is a non-issue there.** The wired GLM `report` matters mainly for the
-**headless / non-Claude path** (opencode, cron agents) that has no host model to synthesize;
-even there, terse-but-correct at `standard` is usually fine.
+terse wired-model `report` field is a non-issue there.** The wired model's `report` matters mainly for the
+**headless / non-Claude path** (opencode, cron agents) that has no host model to synthesize.
 
-Cost ~1–2¢ per research call. Fetched pages are public web content, so nothing private leaves
-the box; only that content + the question reach OpenRouter. To stay fully keyless/on-box, drop
-to core `search`/`fetch` (no LLM).
+Cost: Gemini **free tier**, deliberately — wigolo is low-volume; check AI Studio / Cloud
+billing occasionally to confirm it never racks up a charge. Fetched pages are public web
+content, so nothing private leaves the box; only that content + the question reach the
+Gemini API. To stay fully keyless/on-box, drop to core `search`/`fetch` (no LLM).
 
 ## Configuration (how it's wired)
 
-Registered as a Claude Code MCP server at **user scope** (all projects). Uses the `openai`
-provider pointed at OpenRouter — the OpenAI Node SDK reads `OPENAI_BASE_URL` from env, and
-wigolo's `openai` adapter has no base-URL override, so this env is the redirect:
+Registered as a Claude Code MCP server at **user scope** (all projects). Uses the native
+`gemini` provider (`@google/genai`) — no base-URL redirect needed:
 
 ```bash
 claude mcp add wigolo -s user \
-  -e WIGOLO_LLM_PROVIDER=openai \
-  -e OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
-  -e WIGOLO_LLM_MODEL=z-ai/glm-5.2 \
-  -e OPENAI_API_KEY=<OpenRouter key> \
+  -e WIGOLO_LLM_PROVIDER=gemini \
+  -e GEMINI_API_KEY=<Gemini key> \
+  -e WIGOLO_LLM_MODEL=gemini-3.6-flash \
   -- /home/halbritt/.npm-global/bin/wigolo
 ```
 
-- **The key** is the OpenRouter key from `~/.config/striatum/openrouter.env` (var
-  `OPENROUTER_API_KEY`, shared with striatum's judgment lanes). It is passed into the MCP env
-  block, which lands **plaintext in the user-local `~/.claude-harm/.claude.json`** (not in git).
-  wigolo's encrypted keystore would be cleaner but is only settable via its interactive
-  wizard (`wigolo config`), not headless — revisit if you'd rather not have it in `.claude.json`.
+- **The key** is `GEMINI_API_KEY` from `~/.config/ai-newsroom/env` — a leftover there
+  (ai-newsroom no longer calls Gemini; its "gemini" references are topic keywords), so wigolo
+  is effectively its only consumer. It is passed into the MCP env block, which lands
+  **plaintext in the user-local `~/.claude-harm/.claude.json`** (not in git). wigolo's
+  encrypted keystore would be cleaner but is only settable via its interactive wizard
+  (`wigolo config`), not headless — revisit if you'd rather not have it in `.claude.json`.
+- Rollback to GLM 5.2 via OpenRouter: previous block in git history (`d3167f0` and earlier)
+  — `WIGOLO_LLM_PROVIDER=openai` + `OPENAI_BASE_URL=https://openrouter.ai/api/v1` +
+  `WIGOLO_LLM_MODEL=z-ai/glm-5.2` + `OPENAI_API_KEY` from `~/.config/striatum/openrouter.env`.
 - Canonical block for other MCP clients (opencode/codex/etc.): [`mcp-config.json`](mcp-config.json).
 
 ## Reproduce the setup

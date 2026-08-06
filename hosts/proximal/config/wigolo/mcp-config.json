@@ -1,14 +1,13 @@
 {
-  "//": "Canonical wigolo MCP registration for any client on proximal. Synthesis is wired to GLM 5.2 via OpenRouter through the OpenAI-compatible path: WIGOLO_LLM_PROVIDER=openai + OPENAI_BASE_URL redirects the OpenAI SDK to OpenRouter. Prefer research depth:'comprehensive' with GLM 5.2 (reasoning model needs the larger token budget). Replace <OpenRouter key> with OPENROUTER_API_KEY from ~/.config/striatum/openrouter.env. To run fully keyless/on-box, drop the four env vars (host or core-only synthesis).",
+  "//": "Canonical wigolo MCP registration for any client on proximal. Synthesis is wired to native gemini-3.6-flash (@google/genai path) as of 2026-08-06 — free tier, low volume; watch for charges. Replace <Gemini key> with GEMINI_API_KEY from ~/.config/ai-newsroom/env (leftover there; wigolo is its only consumer). Previous GLM 5.2/OpenRouter block: see git history or CHANGELOG 2026-07-21. To run fully keyless/on-box, drop the three env vars (host or core-only synthesis).",
   "mcpServers": {
     "wigolo": {
       "command": "/home/halbritt/.npm-global/bin/wigolo",
       "args": [],
       "env": {
-        "WIGOLO_LLM_PROVIDER": "openai",
-        "OPENAI_BASE_URL": "https://openrouter.ai/api/v1",
-        "WIGOLO_LLM_MODEL": "z-ai/glm-5.2",
-        "OPENAI_API_KEY": "<OpenRouter key — OPENROUTER_API_KEY from ~/.config/striatum/openrouter.env>"
+        "WIGOLO_LLM_PROVIDER": "gemini",
+        "GEMINI_API_KEY": "<Gemini key — GEMINI_API_KEY from ~/.config/ai-newsroom/env>",
+        "WIGOLO_LLM_MODEL": "gemini-3.6-flash"
       }
     }
   }
