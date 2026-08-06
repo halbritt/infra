@@ -7,6 +7,26 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-06
 
+### wigolo synthesis re-benchmark: GLM 5.2 holds; DeepSeek V4 Flash unfit; Gemini leak gone
+
+Re-ran the [`wigolo`](config/wigolo/) synthesis-model benchmark (8 headless
+`research --json` runs, standard + comprehensive) against two challengers:
+`deepseek/deepseek-v4-flash-0731` (~1/10 GLM 5.2's OpenRouter price) and
+`gemini-3.6-flash` (both via OpenRouter and via the native gemini provider on
+the ai-newsroom `GEMINI_API_KEY`).
+
+Findings: DeepSeek is disqualified structurally — at the default `standard`
+depth its reasoning starves wigolo's `reportChars/3` output cap to
+`empty content in response` (template fallback), and at `comprehensive` its
+51.7s synthesis rides within 14% of the hardcoded 60s timeout. Native
+gemini-3.6-flash produced the best reports of the round and the July
+thinking-leak did **not** reproduce, making it a viable challenger at
+free-tier cost, but it would couple wigolo to the ai-newsroom key's rate
+limits. Gemini via OpenRouter is 3× GLM's cost and wrote the weakest reports.
+GLM 5.2 stayed solid at `standard` but truncated mid-sentence at
+`comprehensive` this round. **Wiring unchanged: GLM 5.2 via OpenRouter.**
+Full table in [`config/wigolo/README.md`](config/wigolo/README.md).
+
 ### Removed the idle local Qwen sentiment fallback
 
 Traced the resident Ollama `qwen3:14b` runner to the

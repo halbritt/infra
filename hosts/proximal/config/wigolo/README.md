@@ -41,6 +41,26 @@ current model is a *reasoning* model, so this mismatch bites:
 | Gemini 3.x flash (`@google/genai`) | thinking scratchpad **leaks into the report**; Gemini 2.5 gated for our key | ❌ rejected |
 | Qwen 27B (`qwen3.6:27b`, peecee ollama `:11434`) | thinking model @ ~70 tok/s over tailnet → exceeds wigolo's **hardcoded 60s synthesis timeout** at both standard and comprehensive → **template fallback every call** | ❌ rejected |
 
+### Re-benchmark 2026-08-06 (GLM 5.2 vs DeepSeek V4 Flash vs gemini-3.6-flash)
+
+Same harness (headless `wigolo research --json`, one question, `standard` + `comprehensive`),
+synthesis provenance read from the `local synthesis ok` log line, not guessed from output:
+
+| Model | Behavior in wigolo | Verdict |
+|---|---|---|
+| **GLM 5.2** (incumbent) | `standard`: full, accurate, dense report in ~15s. `comprehensive`: **truncated mid-sentence this round** (reasoning ate the 2000-tok output cap — the July "comprehensive = fuller" behavior did not repeat) | ✅ still the safe wired default |
+| DeepSeek V4 Flash (`deepseek/deepseek-v4-flash-0731`, OpenRouter, ~1/10 GLM price) | `standard` (the default depth): **`empty content in response` → template fallback** — reasoning starves the 1333-tok cap, same mode as the local 35B. `comprehensive`: genuinely good report, but synthesis ran **51.7s against the hardcoded 60s timeout** | ❌ structurally unfit for wigolo's caps; great model elsewhere |
+| gemini-3.6-flash **native** (`WIGOLO_LLM_PROVIDER=gemini`, ai-newsroom `GEMINI_API_KEY`) | Best-quality reports of the round at both depths, 12–15s, quantitative and complete; **the July thinking-leak did NOT reproduce on 3.6** (only a trailing-citation truncation at `standard`) | ✅ viable challenger; caveat: key + free-tier rate limits shared with ai-newsroom |
+| gemini-3.6-flash via OpenRouter | Clean and fast (8–10s) but the weakest reports of the round; $1.50/$7.50 per M tokens ≈ **3× GLM cost** per synthesis | ❌ dominated by the native path |
+
+Per-synthesis cost math (~10k tok in / ≤2k out): DeepSeek ≈ $0.001, GLM ≈ $0.01,
+gemini-3.6-flash via OpenRouter ≈ $0.03, native gemini on the ai-newsroom key ≈ free tier.
+**Wiring unchanged (GLM 5.2)** — DeepSeek's 1/10 price cannot be banked here because wigolo's
+`reportChars/3` cap + 60s timeout break it at the default depth; if the goal is spending less
+on synthesis, the native-Gemini path is the candidate, at the price of coupling wigolo to the
+ai-newsroom key's rate limits. Caveat: single-question round; source sets varied slightly
+between runs (9–25 sources), which explains some per-run quality variance.
+
 **Operational guidance:** pick `depth` by the **question**, not by the model — `quick`/`standard`
 for most, `comprehensive` only when you genuinely want broad multi-source coverage. Do NOT
 reach for `comprehensive` just to get a fuller write-up: that only works around GLM's reasoning
