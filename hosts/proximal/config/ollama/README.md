@@ -32,12 +32,22 @@ Stock unit + a tuning **drop-in** (`/etc/systemd/system/ollama.service.d/overrid
 > Note `KEEP_ALIVE=-1` + a 24 GiB card shared with the llama.cpp server (~23 GiB pinned): a
 > loaded Ollama model stays resident until the service restarts or another model is pulled in.
 
+Production callers must therefore request only models whose indefinite
+residency is intentional. `memory-price-tracker-ingest.service` uses peecee
+Ollama as its primary sentiment endpoint and the already-resident proximal
+llama.cpp server as fallback. It does not use proximal `qwen3:14b`; its
+canonical drop-in lives in the memory-price-tracker repository under
+`systemd/memory-price-tracker-ingest.service.d/`.
+
 ## Models on disk
 
 | name | size |
 |---|---|
 | `qwen3:14b` | 9.3 GB |
 | `nomic-embed-text:latest` | 274 MB |
+
+`qwen3:14b` remains available on disk but is not intended to stay resident.
+`nomic-embed-text:latest` is the intended resident Ollama workload.
 
 ## Files → install locations
 

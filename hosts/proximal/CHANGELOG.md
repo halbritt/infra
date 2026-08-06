@@ -5,6 +5,28 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-08-06
+
+### Removed the idle local Qwen sentiment fallback
+
+Traced the resident Ollama `qwen3:14b` runner to the
+`memory-price-tracker-ingest.service` fallback chain. It had no active caller
+and no generation request after the August 2 fallback run, but
+`OLLAMA_KEEP_ALIVE=-1` retained it at about 2,990 MiB of GPU memory.
+
+The canonical production chain is now peecee `qwen3.6:27b`, then proximal's
+already-resident llama.cpp server, then the tracker's deterministic degraded
+mode. The optional local Ollama fallback remains supported by application code
+but is no longer configured in production. OpenRouter was not added: the
+tracker has no current integration, and this change requires no credential.
+
+Installed the versioned production drop-in, restarted only the ingest watcher,
+and confirmed its effective environment no longer contains
+`OLLAMA_FALLBACK_HOST` or `OLLAMA_FALLBACK_MODEL`. After `ollama stop
+qwen3:14b`, Ollama reported only `nomic-embed-text:latest` resident and GPU free
+memory increased from 1,463 MiB to 4,458 MiB. The ingest watcher returned to
+active/running state with its 86,400-second schedule.
+
 ## 2026-08-05
 
 ### Host state moved into the fleet layout
