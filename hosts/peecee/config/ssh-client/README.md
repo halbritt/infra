@@ -28,4 +28,3 @@ ssh -o BatchMode=yes -o ConnectTimeout=10 peecee hostname
 
 The expanded hostname must be `100.113.63.58`, and the remote hostname must be
 `PEECEE`.
-
