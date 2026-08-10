@@ -48,3 +48,10 @@ A BatchMode SSH probe changed no Windows state and observed:
 
 Runtime observations can drift. They do not supersede GPU-fleet placement or
 authorize a model change.
+
+## Proximal SSH route repair — 2026-08-10
+
+The proximal-side `peecee` OpenSSH alias was pinned to Tailscale address
+`100.113.63.58` after LAN name resolution returned a stale address. The
+canonical client configuration now lives under `config/ssh-client/`; the
+private key remains outside Git at `~/.ssh/id_ed25519`.

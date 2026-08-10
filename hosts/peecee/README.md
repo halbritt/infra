@@ -140,6 +140,9 @@ Do not install fleet database credentials or self-heartbeat code on peecee.
 
 - [`config/ollama/`](config/ollama/) — Ollama headless-server desired state and
   install/rollback scripts.
+- [`config/ssh-client/`](config/ssh-client/) — proximal-side OpenSSH route for
+  the `peecee` alias, pinned to the host's Tailscale address so stale LAN DNS
+  cannot redirect fleet and maintenance traffic.
 - [`config/marker/`](config/marker/) — Marker GPU document conversion: `install-marker.ps1` (uv venv +
   CUDA torch) and `convert.ps1` (VRAM-freeing GPU runner). Proximal-side caller is
   `marker-convert/scripts/convert-peecee.sh` in `halbritt/skillpack`.

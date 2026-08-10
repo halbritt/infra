@@ -1,0 +1,7 @@
+Host peecee
+	HostName 100.113.63.58
+	User halbr
+	IdentityFile ~/.ssh/id_ed25519
+	IdentitiesOnly yes
+	ServerAliveInterval 30
+	ServerAliveCountMax 3
