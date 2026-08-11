@@ -3,6 +3,26 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-08-11
+
+### GPU exporter made independent of Tailscale service restarts
+
+A Tailscale 1.102.2 MSI update on 2026-08-08 cleanly stopped the
+`nvidia_gpu_exporter` service because it declared `depend=Tailscale`. Clean SCM
+stops do not activate WinSW failure recovery, and the updater did not restart
+the dependent service, leaving Prometheus blind until the exporter was restored
+on 2026-08-10 local time.
+
+Removed the hard service dependency and made delayed automatic startup explicit.
+The existing 5-second restart-on-failure action, tailnet-only listener, and
+tailnet-scoped firewall remain unchanged. This preserves boot-race recovery while
+allowing Tailscale upgrades and restarts without stopping the exporter.
+
+Reinstalled the live WinSW service definition and verified delayed automatic
+startup, no Tailscale dependency, and the 5-second recovery action. A controlled
+exporter child-process termination restarted it with a new PID; its metrics and
+the Prometheus `gpu/peecee` target returned healthy.
+
 ## 2026-08-05
 
 ### Standalone peecee repository imported with history

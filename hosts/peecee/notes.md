@@ -49,6 +49,40 @@ A BatchMode SSH probe changed no Windows state and observed:
 Runtime observations can drift. They do not supersede GPU-fleet placement or
 authorize a model change.
 
+## GPU exporter recovery incident — 2026-08-08 to 2026-08-11
+
+Windows Application events and the WinSW wrapper log showed this sequence on
+2026-08-08 at 03:25 local time:
+
+- Windows Installer began the Tailscale 1.102.2 MSI transaction;
+- SCM cleanly stopped the dependent `nvidia_gpu_exporter` service;
+- the exporter child exited with code 0, so failure recovery did not run; and
+- Tailscale completed successfully, but the exporter remained stopped.
+
+The service was manually restored on 2026-08-10 at 19:25 local time. Prometheus
+then returned `up{job="gpu",instance="peecee"}=1` and cleared `TargetDown`.
+
+On 2026-08-11 the WinSW desired state was changed to delayed automatic startup
+without an SCM dependency on Tailscale. The exporter remains bound only to
+`100.113.63.58:9835`, keeps its tailnet-scoped firewall, and retains its 5-second
+restart-on-failure action. This specifically prevents a future Tailscale update
+from cleanly stopping the exporter while preserving startup recovery if its bind
+races the tailnet address.
+
+Live verification at 2026-08-11 02:34 UTC showed:
+
+- `sc.exe qc` reports `AUTO_START (DELAYED)` and no dependencies;
+- `sc.exe qfailure` reports restart after 5000 ms;
+- the installed XML SHA-256 matches the canonical file;
+- the listener and firewall remain scoped to the tailnet;
+- a controlled child-process termination recovered from PID 3056 to PID 8716;
+- the RTX 3090 Ti metrics endpoint responded; and
+- Prometheus reported the `gpu/peecee` target `up` with no scrape error.
+
+No reboot or Tailscale restart was performed during this change. Boot persistence
+is established by the SCM configuration; a post-reboot observation remains a
+separate verification event.
+
 ## Proximal SSH route repair — 2026-08-10
 
 The proximal-side `peecee` OpenSSH alias was pinned to Tailscale address

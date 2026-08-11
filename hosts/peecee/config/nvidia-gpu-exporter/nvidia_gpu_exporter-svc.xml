@@ -5,8 +5,9 @@
   <executable>%BASE%\nvidia_gpu_exporter.exe</executable>
   <arguments>--web.listen-address=100.113.63.58:9835</arguments>
   <startmode>Automatic</startmode>
-  <delayedAutoStart>false</delayedAutoStart>
-  <depend>Tailscale</depend>
+  <!-- Keep this independent of the Tailscale Windows service. Tailscale MSI
+       upgrades stop SCM dependents cleanly and do not restart them afterward. -->
+  <delayedAutoStart>true</delayedAutoStart>
   <onfailure action="restart" delay="5 sec"/>
   <resetfailure>1 hour</resetfailure>
   <logpath>C:\ProgramData\nvidia_gpu_exporter\logs</logpath>
