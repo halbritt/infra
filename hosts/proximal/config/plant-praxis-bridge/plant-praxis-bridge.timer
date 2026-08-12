@@ -3,8 +3,16 @@ Description=Run plant-praxis-bridge hourly
 Documentation=https://github.com/halbritt/infra/tree/master/hosts/proximal/config/plant-praxis-bridge
 
 [Timer]
-OnBootSec=10min
-OnUnitActiveSec=1h
+# Wall-clock, NOT monotonic. The previous OnBootSec=10min + OnUnitActiveSec=1h
+# pair silently stopped this timer at the 2026-08-07 18:52 reboot: in a user
+# manager both trigger points evaluated as already-past, so the unit went
+# straight to SubState=elapsed, and OnUnitActiveSec= had no in-session
+# activation to count from, leaving NextElapseUSecMonotonic=infinity. The unit
+# stayed enabled+active with no next elapse and ran zero times for 5 days.
+# OnCalendar= re-arms from wall clock every hour regardless of reboots, and it
+# is also the only trigger type Persistent= applies to — so a missed run during
+# downtime is now actually caught up on the next start.
+OnCalendar=hourly
 # Spread off the top of the hour so it doesn't stampede other timers.
 RandomizedDelaySec=5min
 Persistent=true

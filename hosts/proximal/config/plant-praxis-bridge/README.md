@@ -66,6 +66,24 @@ it.
 Install: `cp *.service *.timer ~/.config/systemd/user/ && systemctl --user
 daemon-reload && systemctl --user enable --now plant-praxis-bridge.timer`.
 
+### The timer must stay wall-clock — do not go back to monotonic
+
+The schedule is `OnCalendar=hourly` + `Persistent=true`. It was originally
+`OnBootSec=10min` + `OnUnitActiveSec=1h`, and that pair **silently killed the
+alerts for 5 days** across the 2026-08-07 reboot: both trigger points evaluated
+as already-past, the unit parked in `SubState=elapsed` with
+`NextElapseUSecMonotonic=infinity`, and it kept reporting `enabled`/`active` the
+whole time. `Persistent=` does not rescue that — it only applies to
+`OnCalendar=`. See the 2026-08-12 entry in the host
+[CHANGELOG](../../CHANGELOG.md).
+
+A green `is-enabled`/`is-active` says nothing here. The real check is that
+`NEXT` is a populated future timestamp:
+
+```bash
+systemctl --user list-timers plant-praxis-bridge.timer   # NEXT must not be '-'
+```
+
 ## Secrets — by name only, never value
 
 No credentials in this repo. Two env files, both `0600`, outside git:

@@ -5,6 +5,36 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-08-12
+
+### plant-praxis-bridge timer went silent at the 2026-08-07 reboot — moved to OnCalendar
+
+Watering alerts stopped for 5 days. The
+[`plant-praxis-bridge`](config/plant-praxis-bridge/) timer last triggered
+`2026-08-07 18:05:02`, ~48min before the `18:52:50` reboot, and never fired
+again — while still reporting `enabled` and `active`, which is why nothing
+looked wrong.
+
+Cause: the unit had only monotonic triggers, `OnBootSec=10min` +
+`OnUnitActiveSec=1h`. After the reboot both evaluated as already-past
+(`next_elapse=0`), so the timer went straight to `SubState=elapsed`, and
+`OnUnitActiveSec=` had no in-session service activation to count forward from —
+leaving `NextElapseUSecMonotonic=infinity`, i.e. enabled, active, and never
+going to run again. `Persistent=true` was already set but is a no-op here: it
+only applies to `OnCalendar=` triggers.
+
+Fix: `OnCalendar=hourly` (keeping `RandomizedDelaySec=5min` and
+`Persistent=true`). Wall-clock re-arming is reboot-proof, and `Persistent=` now
+actually catches up a run missed during downtime. Verified: timer re-armed to a
+real `NEXT`, and the catch-up run filed the alert that had been stuck behind the
+outage — `PRAXIS-17`, Ficus Audrey soil sensor dark 134h (silent since
+`2026-08-07 02:14Z`, a separate battery/sensor fault to chase).
+
+Not a Grafana fault: the `plant-moisture` dashboard has no alert rules and never
+did — it is visualization only, and its "red <30%" panel title is a gauge
+display threshold, not an alert. Praxis remains the sole watering-alert channel
+per the 2026-07-23 decision.
+
 ## 2026-08-06
 
 ### wigolo synthesis switched to native gemini-3.6-flash (free tier)
