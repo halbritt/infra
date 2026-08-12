@@ -32,8 +32,32 @@ outage — `PRAXIS-17`, Ficus Audrey soil sensor dark 134h (silent since
 
 Not a Grafana fault: the `plant-moisture` dashboard has no alert rules and never
 did — it is visualization only, and its "red <30%" panel title is a gauge
-display threshold, not an alert. Praxis remains the sole watering-alert channel
-per the 2026-07-23 decision.
+display threshold, not an alert.
+
+### HA watering automation re-enabled as a redundant channel
+
+Reversed the 2026-07-23 "Praxis is the sole watering channel" decision: a
+channel that can go silent for 5 days without anyone noticing has not earned
+sole custody. `automation.plant_drying_rate_has_slowed` on the appliance is back
+on, with the previously-missing Dracaena Michiko trigger added and
+`initial_state` corrected to `true`. Duplicate alerts are deliberate; retire the
+HA side again only once the bridge has demonstrably survived a reboot. Details
+in the [appliance CHANGELOG](../../devices/home-assistant-fernside/CHANGELOG.md);
+the two-channel threshold-sync contract is documented in
+[`config/plant-praxis-bridge/`](config/plant-praxis-bridge/).
+
+Note the coverage asymmetry: the HA side sees THIRSTY only. Staleness (DARK)
+detection exists solely in the bridge, because a dead sensor never crosses a
+numeric threshold.
+
+### plant-praxis-bridge: an already-alerted dry plant logged nothing
+
+Found while diagnosing the above. `file_item()` returns early once the dedup
+flag is set, and the THIRSTY branch had no log call of its own — so a plant that
+was dry *and* already alerted produced no output at all. Dracaena Lisa sat at
+~2% for 9 days and was absent from every single run's logs; the driest plant on
+the box was the least visible one. The THIRSTY branch now logs its state every
+run, including how long it has been dry and the value it re-arms above.
 
 ## 2026-08-06
 

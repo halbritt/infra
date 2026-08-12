@@ -148,6 +148,13 @@ def main():
                       f"<p>{name} soil moisture is <b>{val:.0f}%</b> — at/below its "
                       f"{threshold}% rewater point (drying has flattened). "
                       f"(plant-praxis-bridge, {today})</p>")
+            # Log every run while dry, not just the run that files the item.
+            # file_item() returns silently once st['alerted'] is set, so without
+            # this a plant that is thirsty and already-alerted vanished from the
+            # logs entirely — the driest plant was the least visible one.
+            log(f"{name}: {val:.0f}% BELOW {threshold}% — still dry "
+                f"(since {st.get('alerted_on', '?')}, re-arms above "
+                f"{threshold + REARM_HYSTERESIS}%)")
         elif val >= threshold + REARM_HYSTERESIS and st.get("alerted"):
             st["alerted"] = False
             log(f"{name}: {val:.0f}% back above {threshold}+{REARM_HYSTERESIS}% — THIRSTY re-armed")

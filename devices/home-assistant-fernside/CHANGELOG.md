@@ -1,5 +1,35 @@
 # Home Assistant at Fernside changelog
 
+## 2026-08-12
+
+### Re-enabled the plant watering automation as a redundant channel
+
+Turned `automation.plant_drying_rate_has_slowed` ("Plant needs water — per-plant
+rewater point") back on, reversing the 2026-07-23 decision that made Praxis the
+sole watering channel. Cause: the proximal `plant-praxis-bridge` stopped firing
+for 5 days across the 2026-08-07 reboot and nothing surfaced the outage, so
+Praxis is not yet trusted as a single path. Duplicate alerts with Praxis are
+expected and deliberate; retire this again only once the bridge has proven it
+survives reboots.
+
+Two changes beyond flipping it on:
+
+- Added the missing **Dracaena Michiko** trigger (`below: 20`, `for: 06:00:00`).
+  That plant was paired 2026-07-29, six days *after* this automation was
+  disabled, so it had never been represented here — re-enabling as-is would have
+  silently left one plant uncovered on this channel.
+- Set `initial_state: true` (was `false`). Left at `false` the automation would
+  have switched itself back off at the next HA restart, which is precisely the
+  silent-failure shape being guarded against.
+
+Verified: state `on`, six `numeric_state` triggers, action `notify.notify`
+fanning out to `notify.dont_panic` and `notify.moto_g_power_5g_2024`.
+
+Known gap: this channel covers THIRSTY only. A dark sensor never crosses a
+numeric threshold, so staleness detection remains exclusive to the bridge's DARK
+check. `sensor.ficus_audrey_top_soil_moisture` reads `unavailable` right now
+(silent since 2026-08-07 02:14Z) — a battery/sensor fault to chase separately.
+
 ## 2026-08-06
 
 ### Completed the live hostname migration

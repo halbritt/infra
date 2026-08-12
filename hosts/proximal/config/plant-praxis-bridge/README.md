@@ -47,12 +47,35 @@ so it nudges with lead time. **Edit `PLANTS` in the script** to retune.
 | Kangaroo Paw Fern | `kangaroo_paw_fern_soil_moisture` | 45 |
 | Dracaena Michiko | `dracaena_michiko_soil_moisture` | 20 (provisional — paired 2026-07-29, mirrors Dracaena Lisa; retune after one dry-down) |
 
-The `Plant needs water — per-plant rewater point` HA automation that held the
-same thresholds was **disabled 2026-07-23** (`initial_state: false` + turned
-off) so Praxis is the sole watering-alert channel — this bridge is now the live
-authority. The disabled automation is kept in HA only as the in-HA record of
-the thresholds; if you retune here, mirror it there only if you ever re-enable
-it.
+### Two live channels (2026-08-12) — keep the thresholds in sync
+
+The `Plant needs water — per-plant rewater point` HA automation
+(`automation.plant_drying_rate_has_slowed`) was disabled 2026-07-23 to make
+Praxis the sole watering channel. It was **re-enabled 2026-08-12** as a
+redundant second channel after this bridge went silent for 5 days across the
+2026-08-07 reboot without anything surfacing the outage — Praxis is not yet
+proven robust enough to be the only path. **Duplicate alerts are expected and
+deliberate.**
+
+So the thresholds above now live in two places and must be changed together:
+
+| channel | where | covers |
+|---|---|---|
+| Praxis (this bridge) | `PLANTS` in `plant_praxis_bridge.py` | THIRSTY + DARK |
+| HA push (phones) | the automation's `numeric_state` triggers | THIRSTY only |
+
+Two asymmetries to keep in mind:
+
+- **Only this bridge detects DARK.** A dead sensor never crosses a numeric
+  threshold, so the HA automation cannot see a plant going unmonitored — that
+  is exactly how Ficus Audrey went unnoticed from 2026-08-07 to 2026-08-12.
+- **The HA side has no re-arm hysteresis.** It re-fires on each fresh threshold
+  crossing after `for: 06:00:00`, where this bridge alerts once and re-arms only
+  above `threshold + 8%`.
+
+Retire the HA channel again only once this bridge has demonstrably survived a
+reboot; if you do, set `initial_state: false` **and** turn it off, since
+`initial_state` alone only takes effect at HA restart.
 
 ## Repo file → install path
 
