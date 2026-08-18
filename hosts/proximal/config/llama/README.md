@@ -1,24 +1,26 @@
 # proximal/llama — llama.cpp inference service (`llama-27b.service`)
 
 Desired-state + provenance for the **primary local LLM endpoint** on host **proximal**.
-The `llama/` subsystem of the [`proximal`](../README.md) whole-system repo. Captured 2026-07-20.
+The `llama/` subsystem of the [`proximal`](../README.md) whole-system repo. Captured 2026-07-20;
+current serving constraints updated 2026-08-18.
 
 This is the box's main inference service: mainline `llama.cpp` `llama-server`, OpenAI-compatible
 at **`:8081`**. The unit name `llama-27b` is historical — since 2026-06 a drop-in override
 served **Qwen3.6-35B-A3B (APEX MoE, ~3B active)**; as of **2026-08-14** the override serves
 **Qwen3.8-27B (dense, Q5_K_M)** after a clean before/after eval (see "Why Qwen3.8-27B"). The
-RTX 3090 (24 GiB) is ~fully pinned by this service (shares the card only with the small
-whisper.cpp model, see [`../whisper/`](../whisper/)).
+RTX 3090 (24 GiB) is ~fully pinned by this service. Full-speed serving requires unloading
+whisper.cpp and Ollama GPU residents first; see "Strict GPU residency" below.
 
 ## At a glance
 
 | | |
 |---|---|
-| build | mainline llama.cpp `9586 (76da2450a)` — `~/git/llama.cpp/build/bin/llama-server` |
+| build | mainline llama.cpp `10210 (000547513)` — `~/git/llama.cpp/build/bin/llama-server` |
 | unit | `llama-27b.service` (system, `User=halbritt`, `Restart=on-failure`) + drop-in override |
 | endpoint | `http://0.0.0.0:8081/v1` (OpenAI-compatible) — reachable on LAN/tailnet, **no API key** |
 | model (live) | `~/models/qwen3.8-27b/Qwen3.8-27B-Q5_K_M.gguf` (~19.3 GiB), alias `qwen3.8-27b` |
-| context | 196608 tokens · `-np 1` (one full-context slot) · flash-attn · q8_0 KV cache |
+| context | 65536 tokens · `-np 1` (one full-context slot) · flash-attn · q8_0 KV cache |
+| GPU residency | `-ngl all -ngld all --fit off` · main and MTP draft layers must fit or startup fails |
 | sampler | `temp 0.6 / top-p 0.95 / top-k 20 / min-p 0.0` · `--jinja` |
 | speculative | `--spec-type draft-mtp` (3.8-27B carries `qwen35.nextn_predict_layers` MTP tensors) |
 
@@ -34,7 +36,8 @@ loaded model), so callers still passing old names (`qwen3.6-27b`, `qwen3.6-35b-a
   196608 ctx **with MTP speculative decoding** (`--spec-type draft-mtp`, draft acceptance
   ~0.8–1.0 — the IQ4_XS file carries the MTP `nextn` tensors on blk.64), alias `qwen3.6-27b`.
 - **`override.conf`** (the live config): empties `ExecStart=` and replaces it with the
-  **Qwen3.8-27B dense (Q5_K_M)** at 196608 ctx with MTP draft. Swapped in 2026-08-14 from the
+  **Qwen3.8-27B dense (Q5_K_M)** at 65536 ctx with MTP draft and strict all-layer GPU
+  placement. Swapped in 2026-08-14 from the
   prior **Qwen3.6-35B-A3B APEX MoE + Striatum-FT LoRA** config (which ran 262144 ctx, no MTP
   draft). See "Why Qwen3.8-27B" below for the decision.
 
@@ -68,9 +71,27 @@ corpus at `~/git/qwen-eval/corpus/wikitext-2-test.txt` (built from `Salesforce/w
 MoE the box had been serving — the 35B was a MoE-throughput choice for the long-context backfill,
 not a quality ceiling, and the 27B dense wins on quality per the eval.
 
-The **context dropped 262144 → 196608** because a dense 27B + q8_0 KV cache at 262k would exceed
-the 24 GiB card (measured 22.4 GiB at 196k with MTP active). If a workload needs the full 262k
-single-slot context again, revert to the 35B MoE or drop `-ctk/-ctv` to a lower quant.
+The model transition initially dropped context from 262144 to 196608 because a dense 27B + q8_0
+KV cache at 262k would exceed the 24 GiB card. The 2026-08-18 serving incident showed that
+196608 with automatic fitting was not a safe operational setting: the observed chair workload
+decoded at 8.317 tokens/s (a later long run averaged about 7.6), processed its prompt at 13.870
+tokens/s, held about 21.1 GiB on the GPU, mapped another 6.57 GiB on the host, and had about
+4.9 GiB swapped.
+
+### Strict GPU residency (2026-08-18)
+
+After unloading whisper.cpp and Ollama GPU residents and reducing context to 65536, the same
+service reached 63.957 generation tokens/s and 181.646 prompt tokens/s. A second launch with the
+exact durable flags now in `override.conf` — `-c 65536 -ngl all -ngld all --fit off` — reached
+64.181 generation tokens/s and 137.200 prompt tokens/s, accepted 35 of 42 MTP draft tokens, and
+used 22.676 GiB of GPU memory.
+
+The all-layer flags cover both the main model and its embedded MTP draft. `--fit off` is a
+fail-closed resource policy: if another process has consumed the required VRAM, llama-server
+must fail to load rather than silently shrink or move work to CPU. Keep whisper.cpp and Ollama
+GPU models unloaded while this service is active. If a workload needs more than 65536 tokens,
+select a smaller model/KV quant or explicitly re-benchmark a larger context; do not re-enable
+automatic fitting as an implicit fallback.
 
 ## Files → install locations
 

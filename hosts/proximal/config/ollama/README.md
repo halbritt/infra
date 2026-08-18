@@ -4,9 +4,9 @@ Desired-state + provenance for the **Ollama** service on host **proximal**. The 
 subsystem of the [`proximal`](../README.md) whole-system repo. Captured 2026-06-19.
 
 Ollama is the **secondary** local inference endpoint on this box. The primary is mainline
-`llama.cpp` (`llama-27b.service`, OpenAI-compatible at `:8081`, serving Qwen3.6-35B-A3B — see
-`~/CLAUDE.md`). Both share the single **RTX 3090 (24 GiB)**, so Ollama is used for the few
-models below, not as a general always-loaded server.
+`llama.cpp` (`llama-27b.service`, OpenAI-compatible at `:8081`, serving Qwen3.8-27B — see
+[`../llama/`](../llama/)). Both time-share the single **RTX 3090 (24 GiB)**, so Ollama is used
+for the few models below, not as a general always-loaded server.
 
 ## At a glance
 
@@ -24,13 +24,16 @@ Stock unit + a tuning **drop-in** (`/etc/systemd/system/ollama.service.d/overrid
 
 | env | value | why |
 |---|---|---|
-| `OLLAMA_KV_CACHE_TYPE` | `q8_0` | quantized KV cache — less VRAM, room to coexist with llama.cpp |
+| `OLLAMA_KV_CACHE_TYPE` | `q8_0` | quantized KV cache — reduces Ollama's own VRAM demand |
 | `OLLAMA_CONTEXT_LENGTH` | `32768` | default context window |
 | `OLLAMA_FLASH_ATTENTION` | `1` | flash attention on |
 | `OLLAMA_KEEP_ALIVE` | `-1` | keep a loaded model resident (no unload timeout) once requested |
 
-> Note `KEEP_ALIVE=-1` + a 24 GiB card shared with the llama.cpp server (~23 GiB pinned): a
-> loaded Ollama model stays resident until the service restarts or another model is pulled in.
+> Note `KEEP_ALIVE=-1` + a 24 GiB card time-shared with the llama.cpp server: a loaded Ollama
+> model stays resident until explicitly stopped or the service restarts. Before starting the
+> strict-GPU Qwen3.8 workload, use `ollama ps` and `ollama stop <model>` to unload every Ollama
+> GPU resident. llama-server now uses `--fit off`, so contention becomes a visible load failure
+> instead of a silent CPU-placement fallback.
 
 Production callers must therefore request only models whose indefinite
 residency is intentional. `memory-price-tracker-ingest.service` uses peecee

@@ -27,9 +27,12 @@ Praxis consumes it via `PRAXIS_STT_URL=http://127.0.0.1:8082/transcribe`.
 | ports | `127.0.0.1:8910` (whisper-server) · `127.0.0.1:8082` (shim) — loopback only |
 | shim env | `WHISPER_SERVER=http://127.0.0.1:8910` · `PRAXIS_STT_SHIM_PORT=8082` (set in the unit) |
 
-⚠️ **Shares the RTX 3090 with `llama-27b`** (see [`../llama/`](../llama/), ~23 GiB pinned) —
-`small.en` leaves ~2.4 GiB free; a larger whisper model risks starving the LLM. To swap models,
-change the unit's `-m` flag; other sizes need a
+⚠️ **Time-shares the RTX 3090 with `llama-27b`** (see [`../llama/`](../llama/)). The
+LLM's current strict-GPU configuration uses 22.676 GiB in its measured chair workload and must
+run without a resident whisper model for its verified full-speed profile. Stop `whisper-stt`
+before starting that workload; the separate CPU-only Praxis shim can remain active. The fleet
+lease protects fleet-routed requests, but a caller using `:8081` directly bypasses that routing
+guard. To swap whisper models, change the unit's `-m` flag; other sizes need a
 `~/git/whisper.cpp/models/download-ggml-model.sh <name>` first.
 
 ## Files → install locations

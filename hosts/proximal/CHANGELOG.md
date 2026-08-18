@@ -5,6 +5,27 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-08-18
+
+### Qwen3.8 serving now fails closed instead of spilling onto CPU
+
+The Council chair workload exposed a severe throughput failure in the primary
+[`llama-27b`](config/llama/) endpoint. With 196608 context and llama.cpp's default automatic
+fitting, generation measured 8.317 tokens/s (about 7.6 tokens/s over a later long run), prompt
+processing measured 13.870 tokens/s, and the process combined about 21.1 GiB of GPU residency
+with another 6.57 GiB mapped on the host and about 4.9 GiB swapped.
+
+After unloading the competing whisper.cpp and Ollama GPU residents and reducing context to
+65536, generation reached 63.957 tokens/s. A confirming launch with the exact intended flags,
+`-c 65536 -ngl all -ngld all --fit off`, reached 64.181 generation tokens/s and 137.200 prompt
+tokens/s, accepted 35/42 MTP draft tokens, and used 22.676 GiB of GPU memory.
+
+The canonical Qwen3.8 drop-in now records that exact configuration. Both the main-model and MTP
+draft layers are pinned to the RTX 3090, and automatic fitting is disabled. GPU contention will
+therefore surface as a load failure instead of silently degrading into CPU offload. The service
+remains single-slot (`-np 1`); callers needing more than 65536 context must choose a smaller
+model/KV representation or explicitly benchmark another configuration.
+
 ## 2026-08-12
 
 ### plant-praxis-bridge timer went silent at the 2026-08-07 reboot — moved to OnCalendar
