@@ -5,6 +5,18 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-08-20
+
+### llama: Q5_K_M → UD-Q4_K_M, context 65536 → 131072
+
+The Council `qwen-chair` turn on the long `quartermaster` topic renders ~85k tokens of input
+and failed every dispatch against the 65536 slot. The [`llama-27b`](config/llama/) override now
+serves `Qwen3.8-27B-UD-Q4_K_M.gguf` (~15.3 GiB) at 131072 context — the smaller quant pays for
+the doubled q8_0 KV within the fail-closed `--fit off` residency policy (~21.6 GiB of 24 GiB
+resident, MTP draft retained). Validated by a successful ~90k-token chair turn the same day;
+long-context throughput not yet re-benchmarked. Prior config saved on-box as
+`override.pre-q4km-ctx-20260820`.
+
 ## 2026-08-18
 
 ### Qwen3.8 serving now fails closed instead of spilling onto CPU

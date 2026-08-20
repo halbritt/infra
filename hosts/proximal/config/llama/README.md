@@ -18,8 +18,8 @@ whisper.cpp and Ollama GPU residents first; see "Strict GPU residency" below.
 | build | mainline llama.cpp `10210 (000547513)` — `~/git/llama.cpp/build/bin/llama-server` |
 | unit | `llama-27b.service` (system, `User=halbritt`, `Restart=on-failure`) + drop-in override |
 | endpoint | `http://0.0.0.0:8081/v1` (OpenAI-compatible) — reachable on LAN/tailnet, **no API key** |
-| model (live) | `~/models/qwen3.8-27b/Qwen3.8-27B-Q5_K_M.gguf` (~19.3 GiB), alias `qwen3.8-27b` |
-| context | 65536 tokens · `-np 1` (one full-context slot) · flash-attn · q8_0 KV cache |
+| model (live) | `~/models/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_M.gguf` (~15.3 GiB, unsloth UD), alias `qwen3.8-27b` |
+| context | 131072 tokens · `-np 1` (one full-context slot) · flash-attn · q8_0 KV cache |
 | GPU residency | `-ngl all -ngld all --fit off` · main and MTP draft layers must fit or startup fails |
 | sampler | `temp 0.6 / top-p 0.95 / top-k 20 / min-p 0.0` · `--jinja` |
 | speculative | `--spec-type draft-mtp` (3.8-27B carries `qwen35.nextn_predict_layers` MTP tensors) |
@@ -35,9 +35,10 @@ loaded model), so callers still passing old names (`qwen3.6-27b`, `qwen3.6-35b-a
 - **`llama-27b.service`** (stock): Qwen3.6-27B dense (`Qwen3.6-27B-IQ4_XS.gguf`, ~15.7 GiB) at
   196608 ctx **with MTP speculative decoding** (`--spec-type draft-mtp`, draft acceptance
   ~0.8–1.0 — the IQ4_XS file carries the MTP `nextn` tensors on blk.64), alias `qwen3.6-27b`.
-- **`override.conf`** (the live config): empties `ExecStart=` and replaces it with the
-  **Qwen3.8-27B dense (Q5_K_M)** at 65536 ctx with MTP draft and strict all-layer GPU
-  placement. Swapped in 2026-08-14 from the
+- **`override.conf`** (the live config): empties `ExecStart=` and replaces it with
+  **Qwen3.8-27B dense (UD-Q4_K_M)** at 131072 ctx with MTP draft and strict all-layer GPU
+  placement (Q5_K_M at 65536 from 2026-08-14 to 2026-08-20; prior config saved on-box as
+  `override.pre-q4km-ctx-20260820`). Originally swapped in 2026-08-14 from the
   prior **Qwen3.6-35B-A3B APEX MoE + Striatum-FT LoRA** config (which ran 262144 ctx, no MTP
   draft). See "Why Qwen3.8-27B" below for the decision.
 
@@ -89,9 +90,22 @@ used 22.676 GiB of GPU memory.
 The all-layer flags cover both the main model and its embedded MTP draft. `--fit off` is a
 fail-closed resource policy: if another process has consumed the required VRAM, llama-server
 must fail to load rather than silently shrink or move work to CPU. Keep whisper.cpp and Ollama
-GPU models unloaded while this service is active. If a workload needs more than 65536 tokens,
+GPU models unloaded while this service is active. If a workload needs more than 131072 tokens,
 select a smaller model/KV quant or explicitly re-benchmark a larger context; do not re-enable
 automatic fitting as an implicit fallback.
+
+### Q4_K_M at 131072 (2026-08-20)
+
+The Council `qwen-chair` turn on the long `quartermaster` topic measured ~85k tokens of
+rendered input and could not fit the 65536 slot (`provider_http_error` on every chair
+dispatch). Swapped the weights Q5_K_M (~19.3 GiB) → unsloth **UD-Q4_K_M** (~15.3 GiB) and
+doubled context to **131072**, keeping q8_0 KV, `--fit off`, and all-layer residency. Loads
+resident at ~21.6 GiB of 24 GiB (≈3 GiB headroom); the UD quant retains the
+`qwen35.nextn_predict_layers` MTP tensors and the draft context initializes. Validated the
+same day by a successful ~90k-token chair turn on `quartermaster`. Throughput at long
+context is not yet benchmarked to the 2026-08-18 standard; generation smoke-tested only.
+No Qwen3.8 MoE exists as of 2026-08-20 (the 3.8 generation is dense 27B + closed Max; the
+MoE line remains Qwen3.6-35B-A3B, still on disk).
 
 ## Files → install locations
 
