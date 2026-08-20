@@ -28,6 +28,13 @@ import json, os, sys, time, urllib.parse, urllib.request, datetime as dt
 PLANTS = [
     ("Dracaena Lisa",      "dracaena_lisa_moisture_soil_moisture", 20),
     ("Ficus Audrey",       "ficus_audrey_top_soil_moisture",       40),
+    # Deep probe (Ecowitt GW1200B, entity gw1200b_soil_moisture_1), added
+    # 2026-08-20. Sits alongside the ThirdReality "top" probe above — the top
+    # probe under-reports after watering (reads ~23% while deep reads 37-40%),
+    # so the deep probe is the better root-zone signal. Threshold PROVISIONAL:
+    # observed dry point ~25% before the 2026-08 watering (30d range 25-52%);
+    # refine from its own drying curve after one dry-down.
+    ("Ficus Audrey Deep",  "gw1200b_soil_moisture_1",              30),
     ("Monstera adansonii", "monstera_adansonii_soil_moisture",     38),
     ("Palm",               "palm_moisture_soil_moisture",          30),
     ("Kangaroo Paw Fern",  "kangaroo_paw_fern_soil_moisture",      45),
