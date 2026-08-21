@@ -7,6 +7,13 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-21
 
+### llama: MTP draft-depth sweep — depth 2 confirmed
+
+`--spec-draft-n-max` 1/2/3 on the live XL config: depth 3 helps only predictable output
+(code 81 tok/s) and costs ~10% on prose (acceptance 0.43); depth 1 is safe but slower on
+code. Depth 2 kept. Acceptance is content-dependent (0.43–0.94). Table in
+[`config/llama/`](config/llama/).
+
 ### llama: UD-Q4_K_M → UD-Q4_K_XL, long-context throughput benchmarked
 
 Same 131072 context, richer dynamic quant (~16.4 GiB). A/B through the live server:

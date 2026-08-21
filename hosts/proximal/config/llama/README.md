@@ -125,6 +125,21 @@ on the GPU will make the next llama restart fail closed. The 2026-08-18 numbers 
 137–181 pp on Q5@65536) were measured from server-log slot timings under different
 conditions; the pp figures are not comparable to this table's response-timings method.
 
+### MTP draft-depth sweep (2026-08-21)
+
+`--spec-draft-n-max` swept 1/2/3 on the live XL config, one prose and one code probe each:
+
+| depth | prose tg (acceptance) | code tg (acceptance) |
+|---|---|---|
+| 1 | 55.2 tok/s (0.70) | 62.8 tok/s (0.94) |
+| **2 (kept)** | 56.9 tok/s (0.56) | 75.8 tok/s (0.93) |
+| 3 | 51.2 tok/s (0.43) | 81.0 tok/s (0.89) |
+
+Depth 3 wins only on highly predictable output; on prose its acceptance collapses and
+generation drops ~10%. Depth 2 stays the balanced default (confirmed 58.8 tok/s prose on
+re-test). Acceptance is strongly content-dependent (0.43–0.94), so single-figure acceptance
+numbers in older entries are not comparable across workloads.
+
 ## Files → install locations
 
 | repo file | install path |
