@@ -41,8 +41,7 @@ so it nudges with lead time. **Edit `PLANTS` in the script** to retune.
 | plant | entity_id | below % |
 |---|---|---|
 | Dracaena Lisa | `dracaena_lisa_moisture_soil_moisture` | 20 |
-| Ficus Audrey (top) | `ficus_audrey_top_soil_moisture` | 40 |
-| Ficus Audrey (deep) | `gw1200b_soil_moisture_1` | 30 (provisional — added 2026-08-20, no drying curve yet; deep Ecowitt probe alongside the ThirdReality top probe) |
+| Ficus Audrey (deep) | `gw1200b_soil_moisture_1` | 30 (provisional — added 2026-08-20, no drying curve yet; deep Ecowitt probe) |
 | Monstera adansonii | `monstera_adansonii_soil_moisture` | 38 |
 | Palm | `palm_moisture_soil_moisture` | 30 |
 | Kangaroo Paw Fern | `kangaroo_paw_fern_soil_moisture` | 45 |
@@ -70,9 +69,13 @@ Two asymmetries to keep in mind:
 - **Only this bridge detects DARK.** A dead sensor never crosses a numeric
   threshold, so the HA automation cannot see a plant going unmonitored — that
   is exactly how Ficus Audrey went unnoticed from 2026-08-07 to 2026-08-12.
-- **Ficus Audrey's deep probe (`gw1200b_soil_moisture_1`) is bridge-only.**
-  Added 2026-08-20; the HA automation's `numeric_state` triggers still watch
-  only the top probe, so the deep probe is not duplicated on the HA side.
+- **Ficus Audrey's top probe was dropped from the bridge (2026-08-20).** It
+  reads a stuck ~23% regardless of watering while the deep probe confirms the
+  plant is fine (37%), so it only filed false THIRSTY alerts. The bridge now
+  watches only the deep probe (`gw1200b_soil_moisture_1`). ⚠️ The HA automation's
+  `numeric_state` triggers still watch the stuck top probe, so the HA push
+  channel may keep firing false "water Ficus" alerts — retire it if that
+  bothers you.
 - **The HA side has no re-arm hysteresis.** It re-fires on each fresh threshold
   crossing after `for: 06:00:00`, where this bridge alerts once and re-arms only
   above `threshold + 8%`.

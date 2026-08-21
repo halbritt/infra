@@ -27,7 +27,10 @@ import json, os, sys, time, urllib.parse, urllib.request, datetime as dt
 # (display name, InfluxDB entity_id tag, rewater threshold %)
 PLANTS = [
     ("Dracaena Lisa",      "dracaena_lisa_moisture_soil_moisture", 20),
-    ("Ficus Audrey",       "ficus_audrey_top_soil_moisture",       40),
+    # Ficus Audrey top probe (ficus_audrey_top_soil_moisture) removed
+    # 2026-08-20 — stuck at ~23% regardless of watering (deep probe confirms
+    # plant is fine at 37%). The deep Ecowitt probe (below) is the trusted
+    # root-zone signal.
     # Deep probe (Ecowitt GW1200B, entity gw1200b_soil_moisture_1), added
     # 2026-08-20. Sits alongside the ThirdReality "top" probe above — the top
     # probe under-reports after watering (reads ~23% while deep reads 37-40%),
