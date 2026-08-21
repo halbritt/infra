@@ -7,6 +7,16 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-21
 
+### Postmortem: OOM — runaway `rg` store-greps from agent harnesses
+
+Four OOM kills in ~24h, every victim a single `rg` ballooning to ~84 GB anon-RSS.
+Root-caused to two independent full-store greps: (a) striatum-next lanes re-grepping
+the content-addressed store despite correct input materialization (no hash→blob
+affordance; empty `cas/`), and (b) CAPLAB's codex eval, whose `REVIEW_PROMPT_V1_CHANGESET`
+passes the change-set `base` as only a bare hash, obliging the model to grep for it.
+Full analysis: [`postmortems/2026-08-21-oom-rg-store-grep.md`](postmortems/2026-08-21-oom-rg-store-grep.md).
+Plane tracking: `PROXIMAL-7`.
+
 ### llama: MTP draft-depth sweep — depth 2 confirmed
 
 `--spec-draft-n-max` 1/2/3 on the live XL config: depth 3 helps only predictable output
