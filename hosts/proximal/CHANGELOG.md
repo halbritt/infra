@@ -5,6 +5,16 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-08-21
+
+### llama: UD-Q4_K_M → UD-Q4_K_XL, long-context throughput benchmarked
+
+Same 131072 context, richer dynamic quant (~16.4 GiB). A/B through the live server:
+prompt processing 1167 vs 1145 tok/s @ 27.3k tokens, generation 57.6 vs 58.1 tok/s,
+MTP acceptance 0.57 both — a wash; the XL buys quant quality for ~1.1 GiB of headroom
+(22.6 GiB used, 1.46 GiB free after inference). Closes the 2026-08-20 unbenchmarked
+caveat. Details in [`config/llama/`](config/llama/).
+
 ## 2026-08-20
 
 ### llama: Q5_K_M → UD-Q4_K_M, context 65536 → 131072

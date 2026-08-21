@@ -18,7 +18,7 @@ whisper.cpp and Ollama GPU residents first; see "Strict GPU residency" below.
 | build | mainline llama.cpp `10210 (000547513)` — `~/git/llama.cpp/build/bin/llama-server` |
 | unit | `llama-27b.service` (system, `User=halbritt`, `Restart=on-failure`) + drop-in override |
 | endpoint | `http://0.0.0.0:8081/v1` (OpenAI-compatible) — reachable on LAN/tailnet, **no API key** |
-| model (live) | `~/models/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_M.gguf` (~15.3 GiB, unsloth UD), alias `qwen3.8-27b` |
+| model (live) | `~/models/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf` (~16.4 GiB, unsloth UD), alias `qwen3.8-27b` |
 | context | 131072 tokens · `-np 1` (one full-context slot) · flash-attn · q8_0 KV cache |
 | GPU residency | `-ngl all -ngld all --fit off` · main and MTP draft layers must fit or startup fails |
 | sampler | `temp 0.6 / top-p 0.95 / top-k 20 / min-p 0.0` · `--jinja` |
@@ -36,7 +36,7 @@ loaded model), so callers still passing old names (`qwen3.6-27b`, `qwen3.6-35b-a
   196608 ctx **with MTP speculative decoding** (`--spec-type draft-mtp`, draft acceptance
   ~0.8–1.0 — the IQ4_XS file carries the MTP `nextn` tensors on blk.64), alias `qwen3.6-27b`.
 - **`override.conf`** (the live config): empties `ExecStart=` and replaces it with
-  **Qwen3.8-27B dense (UD-Q4_K_M)** at 131072 ctx with MTP draft and strict all-layer GPU
+  **Qwen3.8-27B dense (UD-Q4_K_XL)** at 131072 ctx with MTP draft and strict all-layer GPU
   placement (Q5_K_M at 65536 from 2026-08-14 to 2026-08-20; prior config saved on-box as
   `override.pre-q4km-ctx-20260820`). Originally swapped in 2026-08-14 from the
   prior **Qwen3.6-35B-A3B APEX MoE + Striatum-FT LoRA** config (which ran 262144 ctx, no MTP
@@ -102,10 +102,28 @@ dispatch). Swapped the weights Q5_K_M (~19.3 GiB) → unsloth **UD-Q4_K_M** (~15
 doubled context to **131072**, keeping q8_0 KV, `--fit off`, and all-layer residency. Loads
 resident at ~21.6 GiB of 24 GiB (≈3 GiB headroom); the UD quant retains the
 `qwen35.nextn_predict_layers` MTP tensors and the draft context initializes. Validated the
-same day by a successful ~90k-token chair turn on `quartermaster`. Throughput at long
-context is not yet benchmarked to the 2026-08-18 standard; generation smoke-tested only.
+same day by a successful ~90k-token chair turn on `quartermaster`.
 No Qwen3.8 MoE exists as of 2026-08-20 (the 3.8 generation is dense 27B + closed Max; the
 MoE line remains Qwen3.6-35B-A3B, still on disk).
+
+### UD-Q4_K_XL and the long-context benchmark (2026-08-21)
+
+Swapped UD-Q4_K_M → **UD-Q4_K_XL** (~16.4 GiB, unsloth's recommended dynamic 4-bit) at the
+same 131072 ctx. A/B through the live server (real serving config, MTP on, thinking
+suppressed, identical probes; `timings` from the completion response):
+
+| metric | UD-Q4_K_M | UD-Q4_K_XL |
+|---|---|---|
+| prompt processing @ 27,338 tok | 1144.6 tok/s | 1167.2 tok/s |
+| generation (≈550 tok essay) | 58.1 tok/s | 57.6 tok/s |
+| MTP draft acceptance | 0.57 | 0.57 |
+| VRAM used / free after inference | 21.6 GiB / ~2.5 GiB | 22.6 GiB / **1.46 GiB** |
+
+Throughput is a wash; the XL costs ~1.1 GiB of headroom purely for quant quality. whisper
+`small.en` (~0.95 GiB) still fits beside it, with almost nothing to spare — anything larger
+on the GPU will make the next llama restart fail closed. The 2026-08-18 numbers (64 tg /
+137–181 pp on Q5@65536) were measured from server-log slot timings under different
+conditions; the pp figures are not comparable to this table's response-timings method.
 
 ## Files → install locations
 
