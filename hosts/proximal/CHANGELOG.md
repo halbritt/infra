@@ -973,3 +973,11 @@ The repo became the per-host provenance for the **whole** system: PostgreSQL dem
 `postgres/` subsystem, observability promoted from `maintenance/observability/` to a top-level
 `observability/` sibling, new whole-system `README.md` + `AGENTS.md`. GitHub repo renamed
 (old name redirects). Full detail in [`postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md).
+
+## 2026-08-22
+
+### Added `caplab-leaderboard` (`:18082`)
+Tailnet-only static leaderboard for the CAPLAB advisory campaign:
+`caplab-leaderboard.service` (user unit, loopback `:18082`, serving
+`~/git/caplab/docs/leaderboard/`) fronted by Tailscale Serve HTTPS `:18082`.
+See [`config/caplab-leaderboard/`](config/caplab-leaderboard/README.md).
