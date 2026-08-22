@@ -121,6 +121,32 @@ the common factor is the full-store scan scope, not the file.
   *capability gap* (no hash→blob primitive), not a data-integrity bug.
 - No credentials, secrets, or committed state were affected.
 
+## Mitigations applied (and their known gaps)
+
+**`rg` `--max-filesize=100M` via `RIPGREP_CONFIG_PATH`.** Applied 2026-08-21
+(`~/conf/ripgreprc`, exported in `~/.bashrc` + `~/.profile`). Verified against
+system `rg` 14.1.0 — `rg --debug` confirms the config is loaded and a 157 MB
+file is skipped. This is a **partial mitigation only**:
+
+- **claude-code is unaffected** — it uses a *built-in ripgrep* and has
+  *removed support for custom ripgrep configuration* (its own changelog:
+  "Use built-in ripgrep by default … Removed support for custom ripgrep
+  configuration"), so it never reads `RIPGREP_CONFIG_PATH`.
+- **codex is unaffected** — it ships a bundled `rg`
+  (`…/@openai/codex-linux-x64/vendor/…/codex-path/rg`), prepends that `codex-path`
+  to the sandbox `PATH` (so the sandbox `rg` resolves to the bundled musl binary,
+  not `/usr/bin/rg`), and runs with a clean environment that does **not** carry
+  `RIPGREP_CONFIG_PATH` (verified against the live process environ).
+- **The cap can mask the search target** — the blobs the agent greps for are the
+  largest on disk (1.3 GB snapshot, 1.1 GB transcript); at `100M` those are
+  skipped *silently*, so the agent gets "no match" instead of a resolved hash.
+  That changes the failure mode (no giant read) but does not make the flawed
+  lookup succeed, and may drive retries.
+
+Net: the cap is worth keeping for interactive/system `rg` use, but it does **not**
+reach either OOMing backend (claude-code *or* codex), and it does not replace the
+two durable fixes below.
+
 ## Follow-ups (durable fixes)
 
 1. **CAPLAB:** materialize the `base` blob into the eval sandbox ahead of

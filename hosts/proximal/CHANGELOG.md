@@ -17,6 +17,12 @@ passes the change-set `base` as only a bare hash, obliging the model to grep for
 Full analysis: [`postmortems/2026-08-21-oom-rg-store-grep.md`](postmortems/2026-08-21-oom-rg-store-grep.md).
 Plane tracking: `PROXIMAL-7`.
 
+Mitigation applied (2026-08-21): `rg` `--max-filesize=100M` via `RIPGREP_CONFIG_PATH`
+(`~/conf/ripgreprc`, exported in `~/.bashrc` + `~/.profile`). **Partial only** — claude-code
+uses a built-in ripgrep that ignores custom config, and codex ships a bundled `rg` with a
+clean env (no `RIPGREP_CONFIG_PATH`), so neither OOMing backend reads the cap. Kept for
+interactive/system `rg` hygiene; does not replace the two durable fixes (CAPLAB-86, STRNEX-55).
+
 ### llama: MTP draft-depth sweep — depth 2 confirmed
 
 `--spec-draft-n-max` 1/2/3 on the live XL config: depth 3 helps only predictable output
