@@ -1,6 +1,7 @@
 # Postmortem — proximal OOM: runaway `rg` store-greps from agent harnesses
 
 **Date:** 2026-08-21
+**Updated:** 2026-08-23 (store composition, opencode backend, 2026-08-22 recurrence)
 **Author:** hermes (Hermes Agent), at Principal request
 **Severity:** host-wide memory exhaustion → repeated OOM kills (self-healing, no permanent damage)
 **Status:** root-caused; two durable fixes outstanding (see [Plane `PROXIMAL-7`](#references) and "Follow-ups")
@@ -14,12 +15,12 @@ was a single process: `rg` (ripgrep), ballooning to **~84 GB anonymous RSS**
 (`total-vm` 178–228 GB) before the kernel culled it. The `rg` processes were
 spawned by two independent agent harnesses — **striatum-next execution backends**
 and **CAPLAB's codex eval** — both grepping the entire content-addressed stores
-on the box (`~/.local/share/striatum`, 316 GB → growing, plus `~/.cache`, 45 GB)
+on the box (`~/.local/share/striatum`, 349 GB → growing, plus `~/.cache`, 69 GB)
 to *locate a blob by content hash*. 16 GB of swap saturated fully; free RAM
 bottomed near 900 MB. The kills landed correctly on the disposable `rg` processes
 (never on `llama-server`, postgres, or other residents), so nothing of value was
-lost — but the failure was recurrent and will return until the two durables are
-fixed.
+lost — but the failure was recurrent (it repeated 2026-08-22, see Timeline) and
+will return until the two durables are fixed.
 
 ## What was observed
 
@@ -31,6 +32,18 @@ fixed.
   (`anon-rss 84 902 432 KB`, `total-vm 228 724 528 KB`).
 - Two further `rg` kills in the preceding 24h (pids 3914666, 3916533) — same
   signature. **4 total, all `rg`.**
+
+### Recurrence (2026-08-22, ~21:18–21:20 UTC) — same signature, two more kills
+
+- `21:18:10` — `opencode` invokes the OOM killer; kills `rg` pid 2480293
+  (`anon-rss 80 738 876 KB`, `total-vm 102 860 812 KB`).
+- `21:20:06` — `celery` (plane worker, in a docker scope) invokes the OOM killer;
+  kills `rg` pid 2483129 (`anon-rss 77 559 392 KB`, `total-vm 103 047 376 KB`).
+
+The `opencode` invoker is a striatum-next review backend firing the same
+store-grep (see "Mitigations" — opencode is a third backend that evades the
+`rg` cap). `celery` was a co-resident that happened to request memory with swap
+already exhausted; the victim was again the disposable `rg`.
 
 The "invoker" (`driver.test`, postgres) is just whoever asked for memory when
 swap was exhausted; the *victim* — and the actual memory hog — was always `rg`.
@@ -49,8 +62,9 @@ swap was exhausted; the *victim* — and the actual memory hog — was always `r
 
 ### Cause A — striatum-next lanes re-grep the store (materialization is *fine*)
 
-The striatum driver was actively compiling. Its `codex`/`claude-code` execution
-backends run an agent runtime inside a lane, and that agent shells out, e.g.:
+The striatum driver was actively compiling. Its execution backends
+(`codex`/`claude-code`, and `opencode` — the latter fired the 2026-08-22 kills)
+run an agent runtime inside a lane, and that agent shells out, e.g.:
 
 ```
 codex-linux-sandbox --sandbox-policy-cwd <workspace> --apply-seccomp-then-exec \
@@ -105,6 +119,32 @@ pathology) while scanning the whole tree. Candidate large blobs on disk:
 sqlite state files under the harness config. Exact trigger per-kill not isolated;
 the common factor is the full-store scan scope, not the file.
 
+## What the "361 GB store" actually is (measured 2026-08-23)
+
+The two grep roots are the striatum-next runtime directory plus the user cache —
+not a single store, and only a sliver of it is content-addressed:
+
+- `~/.local/share/striatum` — **349 GB** (was ~316 GB at incident time; grows with
+  every dispatch)
+  - `exchange/` **182 GB** — the compilation exchange. One exchange
+    (`019f22ef-…`) holds 178 GB alone, of which `dispatch/` = **163 GB** (sealed
+    dispatch manifests + per-lane inputs/artifacts/transcripts), `spool/` = 14 GB,
+    `workspaces/` = 458 MB, and `cas/` = **4 KB (empty)** — the content-addressed
+    store that should resolve hash→blob was never populated.
+  - `harness-config/` **152 GB** — one HOME directory per backend agent runtime:
+    `agy/` 144 GB (of which `.cache/go-build` = **137 GB**), `codex/` 4.5 GB,
+    `claude-harm/` 1.2 GB, `claude-code/` 965 MB, `codex-harm/` 916 MB,
+    `glm-zai/` 233 MB.
+  - `graphs/` 12 GB, `fixtures/` 3.8 GB, `deploy-backups/` 1.4 GB.
+- `~/.cache` — **69 GB** (was ~45 GB): `go-build/` = **65 GB**, `ms-playwright/`
+  1.9 GB, `uv/` 875 MB, the rest < 300 MB each.
+
+**~202 GB of the grep target is Go build cache** (137 GB in `agy`'s harness HOME
+plus 65 GB in `~/.cache`) — compiled object files and cached test results that
+can never contain a content hash, yet `rg -l --hidden` plows through all of it on
+every hash lookup. Roughly half the bytes the OOM-ing scan reads are noise. The
+directory that *would* make the lookup O(1) — `cas/` — is empty.
+
 ## Impact
 
 - Recurrent, temporary host memory exhaustion and swap thrash.
@@ -137,6 +177,13 @@ file is skipped. This is a **partial mitigation only**:
   to the sandbox `PATH` (so the sandbox `rg` resolves to the bundled musl binary,
   not `/usr/bin/rg`), and runs with a clean environment that does **not** carry
   `RIPGREP_CONFIG_PATH` (verified against the live process environ).
+- **opencode is unaffected** — it bundles no ripgrep, so it shells out to the
+  system `rg` on `PATH`, but its review lanes are launched with a *clean
+  environment* that does not carry `RIPGREP_CONFIG_PATH` (verified against
+  `/proc/<pid>/environ` of live opencode lanes on 2026-08-23). It was the invoker
+  of the 2026-08-22 21:18 kill. Same net effect as claude-code/codex — the cap
+  never reaches it — for a third, different reason (clean env, not a bundled
+  binary).
 - **The cap can mask the search target** — the blobs the agent greps for are the
   largest on disk (1.3 GB snapshot, 1.1 GB transcript); at `100M` those are
   skipped *silently*, so the agent gets "no match" instead of a resolved hash.
@@ -163,6 +210,8 @@ Either is owned by its respective repo; infra's role here is the incident record
 ## References
 
 - Kernel log: `journalctl -k --since '24 hours ago' | grep 'Out of memory'`.
+- Store composition (2026-08-23): `du -sh ~/.local/share/striatum/{exchange,harness-config,graphs,fixtures,deploy-backups}` +
+  `du -sh ~/.local/share/striatum/harness-config/*/` and `~/.cache/*`.
 - striatum exchange: `~/.local/share/striatum/exchange/019f22ef-…/` (`dispatch/`,
   `workspaces/`, empty `cas/`).
 - CAPLAB change-set review contract: `~/git/caplab/src/caplab/advisory/calibrate.py`
