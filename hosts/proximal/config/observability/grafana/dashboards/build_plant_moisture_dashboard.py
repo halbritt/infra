@@ -43,6 +43,8 @@ PLANTS = [
     # entity_id renamed off the ThirdReality default, so this clean tag starts at the
     # rename (the ~90 min of pre-rename data stays under the old third_reality_inc_* tag).
     ("Dracaena Michiko",   "dracaena_michiko_soil_moisture"),
+    # Areca Palm: ThirdReality 3RSM0347Z added 2026-08-27; renamed off the default.
+    ("Areca Palm",         "areca_palm_soil_moisture"),
 ]
 
 # (display name, entity_id tag value) — 24h drying-rate derivatives
@@ -167,6 +169,7 @@ ANNOT = [
     ("Palm",              "palm_moisture_soil_moisture",          "#ebcb8b"),
     ("Kangaroo Paw Fern", "kangaroo_paw_fern_soil_moisture",      "#81a1c1"),
     ("Dracaena Michiko",  "dracaena_michiko_soil_moisture", "#d08770"),
+    ("Areca Palm",        "areca_palm_soil_moisture",       "#88c0d0"),
 ]
 def annotation(name, entity_id, color):
     return {

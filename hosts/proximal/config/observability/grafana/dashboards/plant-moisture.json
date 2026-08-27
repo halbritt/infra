@@ -102,6 +102,20 @@
         "textColumn": "",
         "titleColumn": "",
         "tagsColumn": ""
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#88c0d0",
+        "name": "Areca Palm watered",
+        "query": "SELECT \"d\" FROM (SELECT difference(max(\"value\")) AS \"d\" FROM \"%\" WHERE (\"entity_id\" = 'areca_palm_soil_moisture') AND $timeFilter GROUP BY time(6h) fill(none)) WHERE \"d\" > 15",
+        "textColumn": "",
+        "titleColumn": "",
+        "tagsColumn": ""
       }
     ]
   },
@@ -583,13 +597,79 @@
       }
     },
     {
+      "type": "gauge",
+      "title": "Areca Palm",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-ha"
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 7
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "A",
+          "resultFormat": "time_series",
+          "query": "SELECT last(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'areca_palm_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "rawQuery": true,
+          "alias": "Areca Palm"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
       "type": "timeseries",
       "title": "Soil moisture \u2014 history",
       "datasource": {
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 9,
+      "id": 10,
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -673,6 +753,17 @@
           "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'dracaena_michiko_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Dracaena Michiko"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "H",
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"%\" WHERE (\"entity_id\" = 'areca_palm_soil_moisture') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "rawQuery": true,
+          "alias": "Areca Palm"
         }
       ],
       "fieldConfig": {
@@ -719,7 +810,7 @@
         "x": 0,
         "y": 21
       },
-      "id": 10,
+      "id": 11,
       "panels": []
     },
     {
@@ -729,7 +820,7 @@
         "type": "influxdb",
         "uid": "influx-ha"
       },
-      "id": 11,
+      "id": 12,
       "gridPos": {
         "h": 9,
         "w": 24,
