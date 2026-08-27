@@ -882,6 +882,28 @@
           "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'palm_moisture_palm_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
           "rawQuery": true,
           "alias": "Palm"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "F",
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'dracaena_michiko_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "rawQuery": true,
+          "alias": "Dracaena Michiko"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-ha"
+          },
+          "refId": "G",
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"%/d\" WHERE (\"entity_id\" = 'areca_palm_moisture_rate') AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "rawQuery": true,
+          "alias": "Areca Palm"
         }
       ],
       "fieldConfig": {

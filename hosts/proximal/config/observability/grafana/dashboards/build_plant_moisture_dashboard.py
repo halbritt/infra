@@ -54,6 +54,8 @@ RATES = [
     ("Kangaroo Paw Fern", "kangaroo_paw_fern_moisture_rate"),
     ("Monstera adansonii","monstera_adansonii_moisture_rate"),
     ("Palm",              "palm_moisture_palm_moisture_rate"),
+    ("Dracaena Michiko",  "dracaena_michiko_moisture_rate"),
+    ("Areca Palm",        "areca_palm_moisture_rate"),
 ]
 
 _id = [0]
