@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "name": "omezizy-d450",
+  "resource_type": "device",
+  "status": "active",
+  "device_class": "printer",
+  "manufacturer": "QIN",
+  "brand": "Omezizy",
+  "model": "D450",
+  "print_technology": "direct-thermal",
+  "media": "4x6 label, 203 dpi (8 dots/mm)",
+  "attachment": {
+    "host": "proximal",
+    "bus": "usb",
+    "usb_id": "2e3c:5756",
+    "ieee1284_id": "MFG: ;CMD:XPP,XL;MDL:D450;CLS:PRINTER;DES:D450;",
+    "device_node": "/dev/usb/lp2 (usblp; number varies — auto-detect by MDL:D450)"
+  },
+  "command_set": "XPP,XL (TSPL dialect, not ZPL)",
+  "cups_queue": {
+    "name": "OmezizyD450",
+    "kind": "raw",
+    "uri": "usb:///D450?serial=Q356E5BJ6710015"
+  },
+  "provenance": {
+    "vendor_driver": "Aimo/QIN Label Printer Driver 2.4.0.002",
+    "vendor_driver_url": "https://oss.qu-in.ltd/Labelife/Label_Printer_Driver_Linux.zip"
+  },
+  "paths": {
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  }
+}
