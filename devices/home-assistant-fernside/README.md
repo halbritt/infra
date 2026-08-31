@@ -102,11 +102,13 @@ add-on's Chronograf UI) — never the HA write user.
 
 ## Subsystems
 
-None versioned yet — [`inventory.md`](inventory.md) holds the whole-host
-snapshot (versions, add-ons, integrations, entity summary). Add a
-directory when a subsystem's config is worth versioning (e.g. `config/` for
-YAML packages, `addons/` for add-on settings, `automations/`); don't pre-create
-empty ones.
+- [`config/home-assistant-core/`](config/home-assistant-core/) — canonical
+  non-secret Core configuration, including Recorder retention and commit
+  policy. The appliance's `/config/secrets.yaml` remains outside Git.
+
+[`inventory.md`](inventory.md) holds the whole-device snapshot (versions,
+add-ons, integrations, entity summary). Add another directory only when its
+real configuration is worth versioning; do not pre-create empty subsystems.
 
 ## The one rule
 

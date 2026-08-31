@@ -1,0 +1,21 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# Keep native History and event rows for one month while reducing SQLite write
+# amplification on the appliance. Long-term statistics have their own lifecycle.
+recorder:
+  purge_keep_days: 30
+  commit_interval: 30
+
+# NOAA Tides
+sensor:
+  - platform: noaa_tides
+    station_id: 9414290

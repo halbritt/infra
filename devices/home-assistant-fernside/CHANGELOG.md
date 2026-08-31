@@ -1,5 +1,21 @@
 # Home Assistant at Fernside changelog
 
+## 2026-08-31
+
+### Extended Recorder history and reduced SQLite commit frequency
+
+Added explicit Recorder policy to the canonical Core configuration:
+`purge_keep_days: 30` retains raw states and events for 30 days, and
+`commit_interval: 30` replaces the five-second default to reduce routine disk
+writes. Recorder remains the source for native Home Assistant History,
+Activity, dashboard history cards, events, and long-term statistics; the
+separate VictoriaMetrics migration does not replace it.
+
+A full local appliance backup was created before installation. The rollback is
+the pre-change `/config/configuration.yaml` plus that backup; configuration
+validation and post-restart Recorder/History checks are required before this
+change is considered operationally complete.
+
 ## 2026-08-12
 
 ### Re-enabled the plant watering automation as a redundant channel
