@@ -1,0 +1,4 @@
+# /etc/default/vmalert — arguments for vmalert.service.
+# vmalert evaluates the existing Prometheus-format rules, persists rule state in
+# VictoriaMetrics, and sends notifications to the existing Alertmanager.
+ARGS="-rule=/etc/victoria-metrics/rules/*.yml -datasource.url=http://100.85.100.81:9091 -remoteWrite.url=http://100.85.100.81:9091 -remoteRead.url=http://100.85.100.81:9091 -notifier.url=http://100.85.100.81:9093 -evaluationInterval=15s -external.label=monitor=proximal -httpListenAddr=127.0.0.1:8880 -external.url=https://proximal.tail0ecc2e.ts.net:9480 -configCheckInterval=1m -loggerFormat=json"

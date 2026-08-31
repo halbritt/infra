@@ -1,0 +1,63 @@
+# VictoriaMetrics scrape configuration for proximal. Keep scrape_configs in sync with the
+# Prometheus rollback configuration at ../prometheus/prometheus.yml. VictoriaMetrics rejects
+# Prometheus's evaluation_interval, alerting, and rule_files fields in strict mode; vmalert owns
+# rule evaluation and Alertmanager delivery through its separate systemd unit.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Keep the historical job label so existing selectors and imported series remain continuous.
+  # The target now exposes VictoriaMetrics's own /metrics endpoint.
+  - job_name: prometheus
+    static_configs:
+      - targets: ['100.85.100.81:9091']
+
+  - job_name: postgresql
+    static_configs:
+      - targets: ['100.85.100.81:9187']
+        labels:
+          instance: proximal
+          cluster: '17/main'
+
+  - job_name: node
+    static_configs:
+      - targets: ['100.85.100.81:9100']
+        labels:
+          instance: proximal
+
+  - job_name: gpu
+    static_configs:
+      - targets: ['100.85.100.81:9835']
+        labels:
+          instance: proximal
+          gpu: 'rtx-3090'
+      # peecee — Windows 11 workstation, RTX 3090 Ti, nvidia_gpu_exporter as a
+      # WinSW service bound to its tailnet IP (desired state lives under
+      # hosts/peecee/config/nvidia-gpu-exporter/).
+      - targets: ['100.113.63.58:9835']
+        labels:
+          instance: peecee
+          gpu: 'rtx-3090-ti'
+      # enceladus — Windows 11 workstation, RTX 3060 12 GiB,
+      # nvidia_gpu_exporter as a WinSW service bound to its Tailscale address.
+      # Host-owned desired state: hosts/enceladus/config/nvidia-gpu-exporter/.
+      - targets: ['100.123.179.99:9835']
+        labels:
+          instance: enceladus
+          gpu: 'rtx-3060-12gb'
+
+  # Second postgres_exporter instance, dedicated to the gpu_fleet database. It emits only
+  # pg_gpu_fleet_* namespaces; see exporter/queries-gpu-fleet.yaml.
+  - job_name: gpu-fleet
+    static_configs:
+      - targets: ['100.85.100.81:9188']
+        labels:
+          instance: proximal
+          cluster: '17/main'
+
+  # llama.cpp exposes /metrics on the same loopback endpoint as its API.
+  - job_name: llama
+    static_configs:
+      - targets: ['127.0.0.1:8081']
+        labels:
+          instance: proximal

@@ -1,24 +1,22 @@
-# proximal/observability — Prometheus + Grafana + exporters
+# proximal/observability — VictoriaMetrics + Grafana + exporters
 
-System-wide monitoring for host **proximal**: a `node_exporter` (whole-host metrics), a
-`postgres_exporter` (PostgreSQL 17.10 cluster), an `nvidia_gpu_exporter` (RTX 3090), and the
-`striatumd` RFC 0137 exporter (the local workflow daemon's lifecycle/liveness internals) feeding
-Prometheus → Grafana. The observability subsystem of the [`proximal`](../README.md) whole-system
-repo, stood up 2026-06-18 (GPU exporter added 2026-06-19). A second GPU target — the **peecee**
-Windows 11 workstation (RTX 3090 Ti, the same `nvidia_gpu_exporter` as a WinSW service over the
-tailnet) — was added 2026-06-20; its host-owned desired state is at
-[`hosts/peecee/config/nvidia-gpu-exporter/`](../../../peecee/config/nvidia-gpu-exporter/).
-The **striatumd** exporter was wired in 2026-06-20 (scrape job + committed rules + dashboard);
-see ["striatumd exporter (RFC 0137)"](#striatumd-exporter-rfc-0137) below.
-This dir holds the **canonical** copies; the box runs installed copies at the paths below.
-Edit here, then re-install. **No secrets are committed** (see "Secrets" at the bottom).
+System-wide monitoring for host **proximal**. VictoriaMetrics scrapes the existing node,
+PostgreSQL, gpu-fleet, llama.cpp, and GPU exporters; Grafana queries its Prometheus-compatible API.
+`vmalert` evaluates the existing Prometheus-format rules and sends notifications to the existing
+Alertmanager. Prometheus 2.45.3 was replaced on 2026-08-31. Its package, configuration, and
+`/var/lib/prometheus/metrics2` remain on the box as the rollback path.
+
+The GPU job covers proximal, **peecee**, and **enceladus** over the tailnet. The peecee exporter
+desired state lives under [`hosts/peecee/`](../../../peecee/). Enceladus is still a live scrape
+source, but its referenced host-owned exporter directory is absent from this checkout; retain that
+provenance gap until its desired state is recovered. This directory holds the canonical copies;
+install them at the paths below after editing. No credentials are committed.
 
 ```
-  PostgreSQL 17/main ──(scram, 127.0.0.1:5432)──> postgres_exporter ─┐
-  node_exporter (host) ───────────────────────────────────────────────┤ scrape
-  nvidia_gpu_exporter (RTX 3090, via nvidia-smi) ─────────────────────┤
-                                                                       ▼
-                                              Prometheus ──query──> Grafana (dashboards)
+exporters ──scrape──> VictoriaMetrics ──Prometheus API──> Grafana
+                          ▲     │
+                          │     └──query──> vmalert ──notify──> Alertmanager ──> Slack
+                          └────────remote write alert state
 ```
 
 ## Topology & ports
@@ -31,35 +29,27 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 |-------------------|---------------------------------|-----------------------|---------------|
 | postgres_exporter   | `prometheus-postgres-exporter`  | `100.85.100.81:9187`  | 9187 free |
 | postgres_exporter (gpu-fleet) | `prometheus-postgres-exporter-gpufleet` | `100.85.100.81:9188` | second instance, DSN → db `gpu_fleet` (custom queries can't be scoped per-DB); emits only `pg_gpu_fleet_*` (PROXIMAL-5) |
-| node_exporter       | `prometheus-node-exporter`      | `100.85.100.81:9100`  | dep of `prometheus`; rebound off `*` |
+| node_exporter       | `prometheus-node-exporter`      | `100.85.100.81:9100`  | Debian exporter package; rebound off `*` |
 | nvidia_gpu_exporter | `nvidia_gpu_exporter`           | `100.85.100.81:9835`  | 9835 free (project default) |
 | nvidia_gpu_exporter (peecee) | `nvidia_gpu_exporter` (WinSW, on **peecee**) | `100.113.63.58:9835` | RTX 3090 Ti; Windows host, scraped over tailnet |
-| Prometheus          | `prometheus`                    | `100.85.100.81:9091`  | 9090 = `cockpit.socket` |
+| nvidia_gpu_exporter (enceladus) | `nvidia_gpu_exporter` (WinSW, on **enceladus**) | `100.123.179.99:9835` | RTX 3060 12 GiB; Windows host, scraped over tailnet |
+| VictoriaMetrics     | `victoriametrics`               | `100.85.100.81:9091`  | preserves the former Prometheus API port; 9090 is `cockpit.socket` |
+| vmalert             | `vmalert`                       | `127.0.0.1:8880`      | loopback origin; Tailscale Serve exposes HTTPS `:9480` |
 | Grafana             | `grafana-server`                | `100.85.100.81:3003`  | 3000/3001/3002 taken (open-webui, token-dashboard) |
 | Alertmanager        | `prometheus-alertmanager`       | `100.85.100.81:9093`  | 9093 free; HA cluster listener (:9094) disabled (single node) |
-| striatumd exporter  | `striatumd` (RFC 0137 `/metrics`) | **`127.0.0.1:9464`** | loopback-only + tokenless (RFC 0137 §4); 9464 = prometheus-community default, free here |
 | llama-server /metrics | `llama-27b` (llama.cpp `--metrics`) | **`127.0.0.1:8081`** (scrape) | multiplexed on the API port; server binds 0.0.0.0 but is scraped via loopback — see [`../llama/`](../llama/) |
 
-> The striatumd exporter is the one **loopback-bound** target: `/metrics` is multiplexed onto the
-> daemon's MCP/HTTP listener, which is loopback + tokenless by RFC 0137 §4. Prometheus runs on this
-> host, so it scrapes `127.0.0.1:9464` directly. Do **not** rebind it to the tailnet — front it with
-> `tailscale serve` + a scoped bearer if remote scrape is ever needed (mirrors the RFC 0085 web-ui).
-> The llama-server target follows the same precedent: its `/metrics` (enabled 2026-07-20 via
-> `--metrics` in the drop-in, PROXIMAL-4) shares the OpenAI-compatible API port `:8081`, and
-> Prometheus scrapes it over loopback even though the server itself binds 0.0.0.0.
-
-The six **proximal** units are `systemctl enable`d (the five exporters/servers above plus
-`prometheus-alertmanager`). Each has a `*.service.d/` drop-in that orders it
-`After=tailscaled.service` + `network-online.target` and sets `Restart=on-failure` /
-`RestartSec=5`, so a bind that races tailscale at boot self-heals. (`nvidia_gpu_exporter`'s
-drop-in also clears the `.deb`'s all-interfaces `ExecStart` and re-points it at the tailnet IP.)
-The peecee exporter is the one off-box piece — a Windows service (WinSW), not systemd; it gets the
-same `depend=Tailscale` + restart-on-failure self-heal (see the
-[`peecee` exporter record](../../../peecee/config/nvidia-gpu-exporter/)).
+VictoriaMetrics and the tailnet-bound exporters start after `tailscaled.service` and
+`network-online.target`, then retry after five seconds if the address is not ready. `vmalert`
+starts after VictoriaMetrics and Alertmanager. The two off-box exporters are Windows services,
+not systemd units. VictoriaMetrics cache memory is capped at 2 GiB instead of using its default
+60% of this 125 GiB shared host; the pre-cutover Prometheus TSDB was only 683 MiB. Repeated scrape
+errors from one target are logged at most every five minutes; the current error remains visible on
+the targets page and in the `TargetDown` alert.
 
 ## Tailnet index (tailscale.harm.org)
 
-The three user-facing surfaces are linked from the tailnet landing page
+The four user-facing surfaces are linked from the tailnet landing page
 **`tailscale.harm.org`**, which is its own subsystem as of 2026-07-29:
 [`../tailscale-index/`](../tailscale-index/). Edit the cards there — the page is
 now versioned and served straight from that checkout. The HSTS finding below is
@@ -68,27 +58,27 @@ kept here because it is the reason these three cards changed shape.
 | card | serve URL | terminates to |
 |---|---|---|
 | Grafana — proximal dashboards | `https://proximal.tail0ecc2e.ts.net:8853/` | `:3003` |
-| Prometheus — proximal | `https://proximal.tail0ecc2e.ts.net:9491/` | `:9091` |
+| VictoriaMetrics — proximal | `https://proximal.tail0ecc2e.ts.net:9491/` | `:9091` |
+| vmalert — proximal | `https://proximal.tail0ecc2e.ts.net:9480/` | `127.0.0.1:8880` |
 | Alertmanager — proximal | `https://proximal.tail0ecc2e.ts.net:9493/` | `:9093` |
 
 **Serving these over the tailnet.** `*.ts.net` is HSTS-preloaded, so a browser forces
 HTTPS on the tailnet hostname; a service that binds the tailnet IP directly and speaks
-plain HTTP (Grafana `:3003`, Prometheus `:9091`, Alertmanager `:9093`) is then
+plain HTTP (Grafana `:3003`, VictoriaMetrics `:9091`, Alertmanager `:9093`) is then
 unreachable from a browser — the TLS handshake to a plain-HTTP port fails, which is
 exactly how these cards read as "broken" (2026-07-22). `curl http://…:PORT` still works,
 masking it. Fix: front each with `tailscale serve`, which terminates TLS with the tailnet
-cert (all three persist across reboot):
+cert (all four persist across reboot):
 
 ```bash
 sudo tailscale serve --bg --https=8853 http://100.85.100.81:3003   # grafana
-sudo tailscale serve --bg --https=9491 http://100.85.100.81:9091   # prometheus
+sudo tailscale serve --bg --https=9491 http://100.85.100.81:9091   # VictoriaMetrics
+sudo tailscale serve --bg --https=9480 http://127.0.0.1:8880        # vmalert
 sudo tailscale serve --bg --https=9493 http://100.85.100.81:9093   # alertmanager
 ```
 
-Each service must also advertise the Serve URL as its external URL, or it bakes the
-browser-unreachable `http://100.x:PORT` into pages/redirects: Grafana `root_url`
-(`grafana-server.env.overrides`), Prometheus/Alertmanager `--web.external-url` (their
-`*.default` ARGS). The listen addresses stay on the tailnet IP; Serve proxies to them.
+Grafana, vmalert, and Alertmanager advertise their Serve URLs so generated links remain usable.
+VictoriaMetrics needs no external-URL flag for the root proxy used here.
 
 The added cards are recorded in [`tailscale-index-card.patch`](tailscale-index-card.patch)
 (the index dir is not a git repo, so it's a provenance record of the applied edit, mirroring
@@ -109,15 +99,15 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `node-exporter/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus-node-exporter.service.d/` |
 | `nvidia-gpu-exporter/10-tailnet-bind.conf` | `/etc/systemd/system/nvidia_gpu_exporter.service.d/` (binary+unit from the `.deb`) |
 | [`hosts/peecee/config/nvidia-gpu-exporter/nvidia_gpu_exporter-svc.xml`](../../../peecee/config/nvidia-gpu-exporter/nvidia_gpu_exporter-svc.xml) | `C:\Program Files\nvidia_gpu_exporter\` on **peecee** (WinSW service config) |
-| `prometheus/prometheus.yml` | `/etc/prometheus/prometheus.yml` |
-| `prometheus/prometheus.default` | `/etc/default/prometheus` |
-| `prometheus/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus.service.d/` |
-| `prometheus/rules/striatum-recording.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
-| `prometheus/rules/striatum-alerting.rules.yml` | `/etc/prometheus/rules/` (vendored from striatum repo) |
-| `prometheus/rules/node-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
-| `prometheus/rules/gpu-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
-| `prometheus/rules/postgres-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
-| `prometheus/rules/infra-alerting.rules.yml` | `/etc/prometheus/rules/` (proximal-authored) |
+| `victoriametrics/promscrape.yml` | `/etc/victoria-metrics/promscrape.yml` |
+| `victoriametrics/victoriametrics.default` | `/etc/default/victoriametrics` |
+| `victoriametrics/victoriametrics.service` | `/etc/systemd/system/victoriametrics.service` |
+| `victoriametrics/vmalert.default` | `/etc/default/vmalert` |
+| `victoriametrics/vmalert.service` | `/etc/systemd/system/vmalert.service` |
+| `prometheus/rules/*.yml` | `/etc/victoria-metrics/rules/` (Prometheus-format rules evaluated by vmalert) |
+| `prometheus/prometheus.yml` | `/etc/prometheus/prometheus.yml` (disabled rollback service) |
+| `prometheus/prometheus.default` | `/etc/default/prometheus` (disabled rollback service) |
+| `prometheus/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus.service.d/` (disabled rollback service) |
 | `alertmanager/alertmanager.yml` | `/etc/prometheus/alertmanager.yml` |
 | `alertmanager/prometheus-alertmanager.default` | `/etc/default/prometheus-alertmanager` |
 | `alertmanager/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus-alertmanager.service.d/` |
@@ -142,11 +132,12 @@ The port-pin that makes `striatumd` scrapeable lives in the **striatum** subsyst
 `Environment=STRIATUM_DAEMON_MCP_HTTP_ADDR=127.0.0.1:9464` in
 [`../striatum/striatumd.service`](../striatum/striatumd.service).
 
-## Install from scratch (the order 2026-06-18 used)
+## Install from scratch
 
 ```bash
-# 1. packages
-sudo apt-get install -y prometheus prometheus-postgres-exporter          # universe
+# 1. distribution packages (Prometheus itself is not required)
+sudo apt-get install -y prometheus-alertmanager prometheus-postgres-exporter \
+  prometheus-node-exporter
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://apt.grafana.com/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
 echo 'deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main' \
@@ -164,11 +155,55 @@ curl -fsSL -o /tmp/nvidia-gpu-exporter.deb \
   "https://github.com/utkuozdemir/nvidia_gpu_exporter/releases/download/v${V}/nvidia-gpu-exporter_${V}_linux_amd64.deb"
 sudo dpkg -i /tmp/nvidia-gpu-exporter.deb   # creates the nvidia_gpu_exporter user + unit, binds :9835 on *
 
-# 4. drop the config files into the paths above (incl. the GPU drop-in to rebind to tailnet), then:
+# 4. VictoriaMetrics v1.150.0 binaries, pinned to the verified upstream release checksums
+VM_STAGE=$(mktemp -d /tmp/victoriametrics-install.XXXXXX)
+curl -fL -o "$VM_STAGE/victoria-metrics.tar.gz" \
+  https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.150.0/victoria-metrics-linux-amd64-v1.150.0.tar.gz
+curl -fL -o "$VM_STAGE/vmutils.tar.gz" \
+  https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.150.0/vmutils-linux-amd64-v1.150.0.tar.gz
+printf '%s  %s\n' 22bfe77be3de1ad03f214a005129312536d77ed4e293b66c186df417ee40a61d \
+  "$VM_STAGE/victoria-metrics.tar.gz" | sha256sum -c -
+printf '%s  %s\n' dbfb3a747d40de62142bcd6ec615377b27c346cced03763eba3cf6a8ba946bb7 \
+  "$VM_STAGE/vmutils.tar.gz" | sha256sum -c -
+tar -xzf "$VM_STAGE/victoria-metrics.tar.gz" -C "$VM_STAGE"
+tar -xzf "$VM_STAGE/vmutils.tar.gz" -C "$VM_STAGE"
+sudo install -m 0755 "$VM_STAGE/victoria-metrics-prod" /usr/local/bin/
+sudo install -m 0755 "$VM_STAGE/vmalert-prod" /usr/local/bin/
+rm -r -- "$VM_STAGE"
+
+# 5. create the service account, install the files from the table above, then enable the units
+sudo useradd --system --user-group --home-dir /var/lib/victoria-metrics \
+  --shell /usr/sbin/nologin victoriametrics
 sudo systemctl daemon-reload
 sudo systemctl enable --now prometheus-postgres-exporter prometheus-node-exporter \
-  nvidia_gpu_exporter prometheus grafana-server
+  nvidia_gpu_exporter prometheus-alertmanager victoriametrics vmalert grafana-server
 ```
+
+`victoria-metrics-prod` and `vmalert-prod` must have the binary SHA-256 values
+`8aaafea8ea32ed04eea3064386110c6978d5db66e462406e6c9eb3b89c496d20` and
+`f00e5b78f414d58310ac194c885005811ee3787a913bc7578f44c907014c9b6b` respectively.
+
+## Prometheus data migration and rollback
+
+The 2026-08-31 cutover imported Prometheus's immutable snapshot blocks with upstream `vmctl`
+before enabling `vmalert`. Importing first matters: an empty replacement can make counter
+functions such as `increase(node_vmstat_oom_kill[15m])` treat the first observed counter value as
+an increase. Historical samples provide the preceding value and avoid that cold-start alert.
+
+Prometheus remains installed but disabled. Its 15-day TSDB stays at
+`/var/lib/prometheus/metrics2`; VictoriaMetrics stores its imported and new data under
+`/var/lib/victoria-metrics/data`. Roll back the metrics endpoint without deleting either store:
+
+```bash
+sudo systemctl disable --now vmalert victoriametrics
+sudo tailscale serve --https=9480 off
+sudo systemctl enable --now prometheus
+curl -fsS http://100.85.100.81:9091/-/healthy
+```
+
+The Grafana datasource keeps UID `prometheus-proximal`, so dashboards continue to resolve if the
+endpoint returns to Prometheus. Do not purge Prometheus or delete either data directory until the
+VictoriaMetrics retention window has passed and the owner accepts removal.
 
 ## Verify
 
@@ -177,10 +212,10 @@ curl -s http://100.85.100.81:9187/metrics | grep '^pg_up'                     # 
 curl -s http://100.85.100.81:9187/metrics | grep '^pg_scrape_collector_success' # all 1
 curl -s http://100.85.100.81:9835/metrics | grep '^nvidia_smi_gpu_info'        # RTX 3090 line, value 1
 curl -s http://100.113.63.58:9835/metrics | grep '^nvidia_smi_gpu_info'        # peecee RTX 3090 Ti, value 1
-curl -s http://127.0.0.1:9464/metrics | grep -c '^# HELP striatum_'            # 15 striatumd families
 curl -s http://127.0.0.1:8081/metrics | grep -c '^llamacpp:'                   # 11 llama-server series
-curl -s http://100.85.100.81:9091/api/v1/targets | jq '.data.activeTargets[].health' # all "up" (gpu×2/node/postgresql/prometheus/striatumd/llama)
-curl -s http://100.85.100.81:9091/api/v1/rules | jq '[.data.groups[].rules[]|select(.health!="ok")]|length' # 0 rule errors
+curl -s http://100.85.100.81:9091/api/v1/targets | jq '[.data.activeTargets[]|{job:.labels.job,instance:.labels.instance,health}]'
+curl -s http://127.0.0.1:8880/api/v1/rules | jq '[.data.groups[].rules[]|select(.health!="ok")]|length' # 0 rule errors
+curl -s http://127.0.0.1:8880/metrics | grep '^vmalert_remotewrite_errors_total 0$'
 curl -s http://100.85.100.81:3003/api/health                                  # database ok
 ```
 
@@ -268,9 +303,11 @@ pick fails) and `GpuFleetHeartbeatStale` (`…slot_heartbeat_age_seconds > 90` f
 — 2× the live TTL, i.e. a dead/wedged heartbeat writer or a decommissioned row needing DELETE).
 Exporter-down blindness is covered by the generic `TargetDown`.
 
-## striatumd exporter (RFC 0137)
+## Retired striatumd exporter (RFC 0137, historical)
 
-The `striatumd` workflow daemon exports its lifecycle/liveness internals as 15 Prometheus
+The material in this section records the former integration. `striatumd` was retired and its
+scrape job and rule files were removed on 2026-07-21; none of the commands below describe current
+desired state. The `striatumd` workflow daemon exported its lifecycle/liveness internals as 15 Prometheus
 families (RFC 0137, implemented D247). Wired into this stack 2026-06-20. Unlike the other
 exporters this one is **loopback-only**: `/metrics` is multiplexed onto the daemon's MCP/HTTP
 listener (loopback + tokenless by RFC 0137 §4), so Prometheus — running on this same host —
@@ -335,28 +372,28 @@ curl -s http://100.85.100.81:9091/api/v1/rules | jq '.data.groups|map(.rules|len
 
 ## Alerting rules (what fires)
 
-Two provenances under `prometheus/rules/`, both referenced from `rule_files:` and installed to
-`/etc/prometheus/rules/`:
-
-- **Vendored** — `striatum-{recording,alerting}.rules.yml`, byte-identical from the striatum repo
-  (see "striatumd exporter" above; a guardrail test there pins them).
-- **proximal-authored** — `node/gpu/postgres/infra-alerting.rules.yml`, written here against this
-  host's own exporters (2026-06-21). Every series was verified live before authoring, and every
-  label-matching expr (`group_left`, `and`, `scalar`) was checked to produce a non-empty result so
-  a rule can't silently never-fire. Thresholds sit clear of current readings (nothing false-fires
-  on install). All use the house `page`/`warning` severities, so they route through Alertmanager
-  to `#proximal-alerts` automatically.
+The current `node/gpu/postgres/infra-alerting.rules.yml` files are authored here, installed under
+`/etc/victoria-metrics/rules/`, and evaluated by `vmalert`. They use the house `page`/`warning`
+severities and route through Alertmanager to `#proximal-alerts`.
 
 | file | alerts | notable design choices |
 |---|---|---|
 | `node-alerting` | filesystem low/critical space, low inodes, read-only fs, memory low, OOM kills, high load | pseudo-fs excluded; read-only fs excluded from space alerts (it's its own alert); load normalized by core count via `group_left` |
-| `gpu-alerting` | high/critical temp, HW thermal throttling | **no VRAM alert** — the LLM pins ~22.8 GiB by design, so VRAM-full would fire forever; temp + the driver's thermal-slowdown flag are the real hardware-risk signals. Fires per-GPU (proximal 3090 + peecee 3090 Ti) |
+| `gpu-alerting` | high/critical temp, HW thermal throttling | **no VRAM alert** — the LLM pins ~22.8 GiB by design, so VRAM-full would fire forever; temp + the driver's thermal-slowdown flag are the real hardware-risk signals. Fires per-GPU (proximal 3090, peecee 3090 Ti, and enceladus 3060) |
 | `postgres-alerting` | pg down, connections >80/90%, deadlocks, long-running txn, XID wraparound warn/crit | wraparound metric is **XID age** (not seconds) → thresholds 1.5e9/1.9e9 of the 2³¹ limit; long-txn "oldest" is a Unix **timestamp** → age is `time() - it`, guarded by `count>0` |
 | `infra-alerting` | `TargetDown` (any `up==0` for 10m); `LlamaServerDown` (`up{job="llama"}==0` for 1m, `page`); `LlamaSlotSaturated` (`llamacpp:requests_deferred>0` for 5m) | `TargetDown` covers every job uniformly; the off-box peecee GPU target can flap when that host sleeps — silence there, don't loosen the rule. llama gets its own fast down-alert (1m — primary inference endpoint; a normal restart stays pending) and a queue-pressure alert: **no KV-cache-usage series exists** in this llama.cpp build (upstream removed `kv_cache_usage_ratio`), so deferred requests behind the single `-np 1` slot are the pressure signal. Down-alert fire-tested 2026-07-20 (90s deliberate stop, fired at 75s, reached Alertmanager). Also hosts `gpu_fleet_alerts`: `GpuFleetZeroRoutableSlots` (`==0` for 3m, `page`) + `GpuFleetHeartbeatStale` (`>90s` for 1m) — see "gpu-fleet exporter" above |
 
-Refresh/verify after editing: `promtool check rules prometheus/rules/*.yml`, `sudo cp` to
-`/etc/prometheus/rules/`, `sudo systemctl reload prometheus`, then
-`curl -s :9091/api/v1/rules | jq '[.data.groups[].rules[]|select(.health!="ok")]|length'` → 0.
+Refresh/verify after editing with the installed `vmalert-prod` binary, then reload `vmalert`:
+
+```bash
+vmalert-prod -rule='prometheus/rules/*.yml' -dryRun \
+  -datasource.url=http://100.85.100.81:9091
+sudo install -o root -g victoriametrics -m 0640 \
+  prometheus/rules/*.yml /etc/victoria-metrics/rules/
+sudo systemctl reload vmalert
+curl -s http://127.0.0.1:8880/api/v1/rules \
+  | jq '[.data.groups[].rules[]|select(.health!="ok")]|length'
+```
 
 ## Alertmanager — alert routing
 
@@ -370,16 +407,16 @@ traffic never mix tokens.
 `/etc/default/prometheus-alertmanager`; the HA gossip listener `:9094` is **disabled** —
 `--cluster.listen-address=` empty — because this is a single Alertmanager, not a cluster). The
 `10-tailnet-bind.conf` drop-in orders it `After=tailscaled` + `network-online.target` /
-`Restart=on-failure`, like every other unit. Prometheus points at it via `alerting.alertmanagers`
-in `prometheus.yml`.
+`Restart=on-failure`, like every other unit. `vmalert` sends notifications to it through
+`-notifier.url=http://100.85.100.81:9093`.
 
-**Routing (`alertmanager/alertmanager.yml`).** One receiver, one channel. The two striatumd severity
-tiers share `#proximal-alerts` but get different urgency:
+**Routing (`alertmanager/alertmanager.yml`).** One receiver, one channel. The two severity tiers
+share `#proximal-alerts` but get different urgency:
 
 | severity | alerts | group_wait | repeat_interval |
 |---|---|---|---|
-| `page` | NecrosisRate, DoctorRed, SupervisorOriginFlood | 10s | 1h |
-| `warning` | the other 6 striatumd alerts | 30s | 4h |
+| `page` | current rules labeled `severity=page` | 10s | 1h |
+| `warning` | current rules labeled `severity=warning` | 30s | 4h |
 
 An **inhibit rule** suppresses a `warning` when a `page` for the same `alertname`+`instance` is
 already firing (no double-notify). Grouping is by `alertname`/`severity`/`instance`.
@@ -412,7 +449,7 @@ sudo systemctl reload prometheus-alertmanager
 ```bash
 amtool check-config /etc/prometheus/alertmanager.yml                                   # SUCCESS
 curl -s http://100.85.100.81:9093/-/healthy                                            # OK
-curl -s http://100.85.100.81:9091/api/v1/alertmanagers | jq '.data.activeAlertmanagers' # [{url:.../9093/api/v2/alerts}]
+curl -s http://127.0.0.1:8880/metrics | grep '^vmalert_alerts_sent_total'
 curl -s http://100.85.100.81:9093/api/v2/alerts | jq -r '.[].labels.alertname'          # the firing alerts
 # fire a synthetic alert through to Slack, then resolve it:
 amtool alert add --alertmanager.url=http://100.85.100.81:9093 \

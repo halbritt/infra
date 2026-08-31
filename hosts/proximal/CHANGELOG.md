@@ -5,6 +5,34 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-08-31
+
+### Prometheus replaced by VictoriaMetrics without changing scrape sources
+
+Prometheus 2.45.3 was replaced by VictoriaMetrics v1.150.0 at the existing tailnet-only
+`100.85.100.81:9091` API endpoint. The eight target definitions, 15-second scrape interval,
+15-day retention, job and instance labels, Grafana datasource UID, 22 alert expressions, and
+existing Alertmanager delivery remain in place. `vmalert` now evaluates the four rule files and
+persists alert state back to VictoriaMetrics. Seven targets were healthy at cutover; the existing
+enceladus exporter outage remained the sole failed scrape.
+
+The migration used a Prometheus admin snapshot while Prometheus was still serving. `vmctl` read
+817,888,782 samples from 26 blocks in 4,036 requests with no retries. VictoriaMetrics rejected
+44,968,397 samples whose timestamps were older than the preserved 15-day retention window.
+Pre-cutover checks found equal label sets for all 22 rule expressions. The post-cutover range check
+returned 350 consecutive hourly node `up=1` points from 2026-08-16 02:00 PDT through
+2026-08-31 01:00 PDT. Prometheus is disabled, not removed, and its original
+`/var/lib/prometheus/metrics2` store remains the rollback source.
+
+VictoriaMetrics cache memory is capped at 2 GiB because its 60%-of-host default is inappropriate
+on this shared 125 GiB workstation and the source TSDB was only 683 MiB. Repeated scrape failures
+are log-suppressed for five minutes without hiding target health or the `TargetDown` rule.
+
+Grafana continues to provision the datasource as `Prometheus` with UID `prometheus-proximal`; the
+Prometheus plugin queries VictoriaMetrics's compatible API. Attempting to rename that provisioned
+UID to `VictoriaMetrics` caused Grafana's duplicate-UID startup failure and was reverted. This is a
+consumer-identity constraint, not evidence that Prometheus still serves the endpoint.
+
 ## 2026-08-21
 
 ### Postmortem: OOM — runaway `rg` store-greps from agent harnesses

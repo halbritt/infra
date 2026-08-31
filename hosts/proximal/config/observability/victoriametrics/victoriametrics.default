@@ -1,0 +1,3 @@
+# /etc/default/victoriametrics — arguments for victoriametrics.service.
+# Preserve Prometheus's 15-day retention and tailnet-only :9091 API contract.
+ARGS="-storageDataPath=/var/lib/victoria-metrics/data -retentionPeriod=15d -memory.allowedBytes=2GiB -httpListenAddr=100.85.100.81:9091 -promscrape.config=/etc/victoria-metrics/promscrape.yml -promscrape.configCheckInterval=1m -promscrape.suppressScrapeErrorsDelay=5m -loggerFormat=json"

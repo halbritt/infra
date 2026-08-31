@@ -1,5 +1,5 @@
 # proximal-authored node_exporter (host) alerting rules. Installed to
-# /etc/prometheus/rules/node-alerting.rules.yml. UNLIKE the striatum rules these are NOT
+# /etc/victoria-metrics/rules/node-alerting.rules.yml. These rules are NOT
 # vendored — they are authored here for this host's own exporters. Every series below was
 # verified live against node_exporter 1.7.0 on proximal (2026-06-21). Severity follows the
 # house scheme: `page` = fast/hourly, `warning` = batched/4h (see alertmanager/alertmanager.yml).

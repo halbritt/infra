@@ -61,6 +61,13 @@ scrape_configs:
         labels:
           instance: peecee
           gpu: 'rtx-3090-ti'
+      # enceladus — Windows 11 workstation, RTX 3060 12 GiB,
+      # nvidia_gpu_exporter as a WinSW service bound to its Tailscale address.
+      # Host-owned desired state: hosts/enceladus/config/nvidia-gpu-exporter/.
+      - targets: ['100.123.179.99:9835']
+        labels:
+          instance: enceladus
+          gpu: 'rtx-3060-12gb'
 
   # Second postgres_exporter instance, dedicated to the gpu_fleet database (fleet
   # registry/lease state — see exporter/queries-gpu-fleet.yaml). Separate instance because

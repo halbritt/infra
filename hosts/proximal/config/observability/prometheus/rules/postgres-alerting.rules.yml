@@ -1,5 +1,5 @@
 # proximal-authored postgres_exporter alerting rules. Installed to
-# /etc/prometheus/rules/postgres-alerting.rules.yml. NOT vendored — authored here. Series
+# /etc/victoria-metrics/rules/postgres-alerting.rules.yml. NOT vendored — authored here. Series
 # verified live (2026-06-21) against postgres_exporter 0.15.0 + the custom queries.yaml on the
 # PG17 cluster (max_connections=100). Thresholds sit clear of current readings.
 groups:

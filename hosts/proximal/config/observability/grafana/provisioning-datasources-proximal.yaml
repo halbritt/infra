@@ -1,5 +1,7 @@
 apiVersion: 1
 datasources:
+  # Keep the established name and UID: Grafana's Prometheus datasource plugin queries
+  # VictoriaMetrics's compatible API, and provisioning cannot rename an existing UID in place.
   - name: Prometheus
     uid: prometheus-proximal
     type: prometheus

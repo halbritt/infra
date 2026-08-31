@@ -1,0 +1,34 @@
+[Unit]
+Description=VictoriaMetrics single-node metrics storage and scraper
+Documentation=https://docs.victoriametrics.com/victoriametrics/single-server-victoriametrics/
+Wants=network-online.target
+After=network-online.target tailscaled.service
+
+[Service]
+Type=simple
+User=victoriametrics
+Group=victoriametrics
+EnvironmentFile=/etc/default/victoriametrics
+ExecStart=/usr/local/bin/victoria-metrics-prod $ARGS
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+StateDirectory=victoria-metrics
+UMask=0027
+AmbientCapabilities=
+CapabilityBoundingSet=
+LockPersonality=true
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictNamespaces=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

@@ -1,8 +1,9 @@
 # proximal-authored nvidia_gpu_exporter alerting rules. Installed to
-# /etc/prometheus/rules/gpu-alerting.rules.yml. NOT vendored — authored here. Series verified
-# live (2026-06-21) against utkuozdemir/nvidia_gpu_exporter on both GPU targets: proximal
-# (RTX 3090) and peecee (RTX 3090 Ti). Each series carries instance/gpu labels from the scrape
-# config, so alerts fire per-GPU and name which card.
+# /etc/victoria-metrics/rules/gpu-alerting.rules.yml. NOT vendored — authored here. Series verified
+# live (2026-06-21) against utkuozdemir/nvidia_gpu_exporter on proximal (RTX 3090) and peecee
+# (RTX 3090 Ti). Enceladus uses the same exporter for its RTX 3060 but is currently unreachable.
+# Each series carries instance/gpu labels from the scrape config, so alerts fire per-GPU and name
+# which card.
 #
 # DELIBERATELY NO VRAM-utilization alert: on proximal the local LLM server pins ~22.8/25.8 GiB
 # by design (see observability/README "GPU dashboard"), so a "VRAM full" rule would fire

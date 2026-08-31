@@ -1,0 +1,33 @@
+[Unit]
+Description=VictoriaMetrics rule evaluation and Alertmanager delivery
+Documentation=https://docs.victoriametrics.com/victoriametrics/vmalert/
+Wants=network-online.target victoriametrics.service prometheus-alertmanager.service
+After=network-online.target tailscaled.service victoriametrics.service prometheus-alertmanager.service
+
+[Service]
+Type=simple
+User=victoriametrics
+Group=victoriametrics
+EnvironmentFile=/etc/default/vmalert
+ExecStart=/usr/local/bin/vmalert-prod $ARGS
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+UMask=0027
+AmbientCapabilities=
+CapabilityBoundingSet=
+LockPersonality=true
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictNamespaces=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

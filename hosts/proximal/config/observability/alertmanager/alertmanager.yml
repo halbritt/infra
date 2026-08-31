@@ -7,9 +7,9 @@
 # #proximal-alerts via a dedicated Slack app "proximal-alerts" (workspace gearheads),
 # isolated from the praxis app. Notifications post through an incoming webhook whose URL is
 # the one secret here — it is NOT in git; Alertmanager reads it from a 0640 root:prometheus
-# file via api_url_file (see slack_webhook_url.template). The two striatumd severity tiers
-# (`page`, `warning`) share the channel but get different urgency: pages notify fast and
-# re-alert hourly; warnings batch and re-alert every 4h.
+# file via api_url_file (see slack_webhook_url.template). The two severity tiers (`page`,
+# `warning`) share the channel but get different urgency: pages notify fast and re-alert hourly;
+# warnings batch and re-alert every 4h.
 
 global:
   resolve_timeout: 5m
@@ -29,7 +29,7 @@ route:
   group_interval: 5m       # min gap before notifying about new alerts in an existing group
   repeat_interval: 4h      # re-send an unresolved group at most this often (warnings)
   routes:
-    # Pages (NecrosisRate, DoctorRed, SupervisorOriginFlood) — notify fast, nag hourly.
+    # Pages notify fast and repeat hourly while unresolved.
     - matchers: ['severity = "page"']
       receiver: slack-proximal-alerts
       group_wait: 10s

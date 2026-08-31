@@ -1,7 +1,7 @@
 # proximal-authored cross-cutting infra alerting rules. Installed to
-# /etc/prometheus/rules/infra-alerting.rules.yml. NOT vendored — authored here. `up` is
-# synthesized by Prometheus for every scrape target, so this covers all jobs
-# (prometheus/node/postgresql/gpu×2/striatumd) uniformly — a down exporter is a blind spot.
+# /etc/victoria-metrics/rules/infra-alerting.rules.yml. NOT vendored — authored here. `up` is
+# synthesized by VictoriaMetrics for every scrape target, so this covers all jobs
+# (prometheus/node/postgresql/gpu×3/gpu-fleet/llama) uniformly — a down exporter is a blind spot.
 groups:
   - name: infra_alerts
     rules:
@@ -15,7 +15,7 @@ groups:
           severity: warning
         annotations:
           summary: "scrape target {{ $labels.job }} / {{ $labels.instance }} is down"
-          description: "Prometheus has not scraped {{ $labels.job }} on {{ $labels.instance }} for 10m (up=0) — metrics for it are blind."
+          description: "The metrics backend has not scraped {{ $labels.job }} on {{ $labels.instance }} for 10m (up=0) — metrics for it are blind."
 
   # gpu-fleet registry (job "gpu-fleet", :9188 — second postgres_exporter instance reading
   # database gpu_fleet). The registry is the routing truth for multi-host inference: slots
@@ -68,7 +68,7 @@ groups:
           severity: page
         annotations:
           summary: "llama-server (:8081) is down"
-          description: "Prometheus cannot scrape llama-server on {{ $labels.instance }} (up=0 for 1m) — the primary inference endpoint is unreachable. Check: systemctl status llama-27b / journalctl -u llama-27b."
+          description: "The metrics backend cannot scrape llama-server on {{ $labels.instance }} (up=0 for 1m) — the primary inference endpoint is unreachable. Check: systemctl status llama-27b / journalctl -u llama-27b."
 
       # Demand, not utilization: the unit runs -np 1 (one full-context slot), so any
       # deferred request means callers are queueing behind the busy slot. Sustained 5m of
