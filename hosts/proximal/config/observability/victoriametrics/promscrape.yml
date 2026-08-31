@@ -12,6 +12,14 @@ scrape_configs:
     static_configs:
       - targets: ['100.85.100.81:9091']
 
+  # Separate two-year Home Assistant telemetry store. It is loopback-only;
+  # clients use the authenticated vmauth ingress on tailnet port 8427.
+  - job_name: victoriametrics-homeassistant
+    static_configs:
+      - targets: ['127.0.0.1:8428']
+        labels:
+          instance: proximal
+
   - job_name: postgresql
     static_configs:
       - targets: ['100.85.100.81:9187']

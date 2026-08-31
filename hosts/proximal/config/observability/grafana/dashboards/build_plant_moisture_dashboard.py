@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Generate the plant-moisture Grafana dashboard JSON, reading the HA appliance's
-InfluxDB add-on via the influx-ha datasource.
+"""Generate the plant-moisture Grafana dashboard JSON.
 
 Migration of the appliance's broken "Plant Moisture" Lovelace dashboard onto
-proximal Grafana (the recorder only keeps ~10 days; InfluxDB keeps full history).
+proximal Grafana (Recorder keeps 30 days; VictoriaMetrics keeps two years).
 
 SCHEMA — the HA InfluxDB integration's default layout, verified live against
 this instance 2026-07-22 (measurement "%" / "%/d", entity_id tags as below).
@@ -18,12 +17,21 @@ If the measurement isn't "%" (some setups override_measurement per entity), or
 the entity_id tags carry a different form, adjust the two *_UNIT constants and
 the PLANTS / RATES tables and re-run. Regenerate:
   python3 build_plant_moisture_dashboard.py > plant-moisture.json
+  python3 build_plant_moisture_dashboard.py --backend victoriametrics \
+    > plant-moisture-victoriametrics.json
 Installs to /var/lib/grafana/dashboards-homeassistant/ (the "Home Assistant"
 folder provider), NOT the proximal folder — this is appliance data.
 """
+import argparse
 import json
 
-DS = {"type": "influxdb", "uid": "influx-ha"}
+parser = argparse.ArgumentParser()
+parser.add_argument("--backend", choices=("influxdb", "victoriametrics"),
+                    default="influxdb")
+BACKEND = parser.parse_args().backend
+VM = BACKEND == "victoriametrics"
+DS = ({"type": "prometheus", "uid": "victoriametrics-ha"} if VM else
+      {"type": "influxdb", "uid": "influx-ha"})
 
 # HA InfluxDB default schema: measurement = unit_of_measurement, entity_id is a
 # tag (short id, no "sensor." prefix), numeric reading in the "value" field.
@@ -69,6 +77,17 @@ def q(unit, entity_id, fn="mean", fill="none"):
     fill=none (not previous): a sensor that stops reporting must leave a real gap,
     not carry its last value forward — otherwise a dead sensor reads as a live one.
     """
+    if VM:
+        selector = (f'homeassistant_state_value{{db="homeassistant",'
+                    f'entity_id="{entity_id}",unit="{unit}"}}')
+        rollup = "last_over_time" if fn == "last" else "avg_over_time"
+        return {
+            "datasource": DS,
+            "editorMode": "code",
+            "expr": f"{rollup}({selector}[$__interval])",
+            "range": True,
+            "refId": "A",
+        }
     return {
         "datasource": DS,
         "refId": "A",
@@ -80,6 +99,10 @@ def q(unit, entity_id, fn="mean", fill="none"):
         ),
         "rawQuery": True,
     }
+
+def named(target, name):
+    target["legendFormat" if VM else "alias"] = name
+    return target
 
 def gauge(name, unit, entity_id, x, y, w=4, h=6):
     return {
@@ -93,7 +116,7 @@ def gauge(name, unit, entity_id, x, y, w=4, h=6):
         "hideTimeOverride": True,
         # alias = plant name: without it the single InfluxQL series is named after
         # the measurement ("%"), so the gauge caption reads "%" instead of the plant.
-        "targets": [{**q(unit, entity_id, fn="last"), "alias": name}],
+        "targets": [named(q(unit, entity_id, fn="last"), name)],
         "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
                     "showThresholdLabels": False, "showThresholdMarkers": True},
         "fieldConfig": {"defaults": {
@@ -112,7 +135,7 @@ def rate_ts(x, y, w=24, h=9):
         "datasource": DS, "id": nid(),
         "gridPos": {"h": h, "w": w, "x": x, "y": y},
         "targets": [
-            {**q(RATE_UNIT, eid, fn="mean"), "refId": chr(65 + i), "alias": name}
+            {**named(q(RATE_UNIT, eid, fn="mean"), name), "refId": chr(65 + i)}
             for i, (name, eid) in enumerate(RATES)
         ],
         "fieldConfig": {"defaults": {
@@ -136,7 +159,7 @@ def readings_table(x, y, w=24, h=8):
         "datasource": DS, "id": nid(),
         "gridPos": {"h": h, "w": w, "x": x, "y": y},
         "targets": [
-            {**q(SOIL_UNIT, eid, fn="mean"), "refId": chr(65 + i), "alias": name}
+            {**named(q(SOIL_UNIT, eid, fn="mean"), name), "refId": chr(65 + i)}
             for i, (name, eid) in enumerate(PLANTS)
         ],
         "fieldConfig": {"defaults": {
@@ -174,6 +197,16 @@ ANNOT = [
     ("Areca Palm",        "areca_palm_soil_moisture",       "#88c0d0"),
 ]
 def annotation(name, entity_id, color):
+    if VM:
+        selector = (f'homeassistant_state_value{{db="homeassistant",'
+                    f'entity_id="{entity_id}",unit="%"}}')
+        return {
+            "datasource": DS, "enable": True, "hide": False,
+            "iconColor": color, "name": f"{name} watered",
+            "expr": (f"(max_over_time({selector}[6h]) - "
+                     f"max_over_time({selector}[6h] offset 6h)) > 15"),
+            "step": "6h", "tagKeys": "", "textFormat": "",
+        }
     return {
         "datasource": DS, "enable": True, "hide": False, "iconColor": color,
         "name": f"{name} watered",
@@ -186,9 +219,10 @@ def annotation(name, entity_id, color):
     }
 
 dashboard = {
-    "uid": "plant-moisture",
-    "title": "Plant Moisture — homeassistant (via InfluxDB)",
-    "tags": ["plants", "homeassistant", "influxdb"],
+    "uid": "plant-moisture-victoriametrics" if VM else "plant-moisture",
+    "title": ("Plant Moisture — homeassistant (via VictoriaMetrics)" if VM else
+              "Plant Moisture — homeassistant (via InfluxDB)"),
+    "tags": ["plants", "homeassistant", BACKEND],
     "timezone": "browser",
     "schemaVersion": 39,
     "version": 1,

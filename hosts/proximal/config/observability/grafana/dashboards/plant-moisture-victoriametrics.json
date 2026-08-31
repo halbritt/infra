@@ -1,0 +1,941 @@
+{
+  "uid": "plant-moisture-victoriametrics",
+  "title": "Plant Moisture \u2014 homeassistant (via VictoriaMetrics)",
+  "tags": [
+    "plants",
+    "homeassistant",
+    "victoriametrics"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#b48ead",
+        "name": "Dracaena Lisa watered",
+        "expr": "(max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_lisa_moisture_soil_moisture\",unit=\"%\"}[6h]) - max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_lisa_moisture_soil_moisture\",unit=\"%\"}[6h] offset 6h)) > 15",
+        "step": "6h",
+        "tagKeys": "",
+        "textFormat": ""
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#5db8a4",
+        "name": "Ficus Audrey watered",
+        "expr": "(max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"ficus_audrey_top_soil_moisture\",unit=\"%\"}[6h]) - max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"ficus_audrey_top_soil_moisture\",unit=\"%\"}[6h] offset 6h)) > 15",
+        "step": "6h",
+        "tagKeys": "",
+        "textFormat": ""
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#a3be8c",
+        "name": "Monstera adansonii watered",
+        "expr": "(max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"monstera_adansonii_soil_moisture\",unit=\"%\"}[6h]) - max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"monstera_adansonii_soil_moisture\",unit=\"%\"}[6h] offset 6h)) > 15",
+        "step": "6h",
+        "tagKeys": "",
+        "textFormat": ""
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#ebcb8b",
+        "name": "Palm watered",
+        "expr": "(max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"palm_moisture_soil_moisture\",unit=\"%\"}[6h]) - max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"palm_moisture_soil_moisture\",unit=\"%\"}[6h] offset 6h)) > 15",
+        "step": "6h",
+        "tagKeys": "",
+        "textFormat": ""
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#81a1c1",
+        "name": "Kangaroo Paw Fern watered",
+        "expr": "(max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"kangaroo_paw_fern_soil_moisture\",unit=\"%\"}[6h]) - max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"kangaroo_paw_fern_soil_moisture\",unit=\"%\"}[6h] offset 6h)) > 15",
+        "step": "6h",
+        "tagKeys": "",
+        "textFormat": ""
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#d08770",
+        "name": "Dracaena Michiko watered",
+        "expr": "(max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_michiko_soil_moisture\",unit=\"%\"}[6h]) - max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_michiko_soil_moisture\",unit=\"%\"}[6h] offset 6h)) > 15",
+        "step": "6h",
+        "tagKeys": "",
+        "textFormat": ""
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics-ha"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#88c0d0",
+        "name": "Areca Palm watered",
+        "expr": "(max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"areca_palm_soil_moisture\",unit=\"%\"}[6h]) - max_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"areca_palm_soil_moisture\",unit=\"%\"}[6h] offset 6h)) > 15",
+        "step": "6h",
+        "tagKeys": "",
+        "textFormat": ""
+      }
+    ]
+  },
+  "editable": true,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Soil Moisture \u2014 red <30% \u00b7 yellow 30\u201350% \u00b7 green >50%",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "panels": []
+    },
+    {
+      "type": "gauge",
+      "title": "Ficus Audrey (Top)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"ficus_audrey_top_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Ficus Audrey (Top)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Dracaena Lisa",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_lisa_moisture_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Dracaena Lisa"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Ficus Audrey (Deep)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_soil_moisture_1\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Ficus Audrey (Deep)"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Kangaroo Paw Fern",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"kangaroo_paw_fern_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Kangaroo Paw Fern"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Monstera adansonii",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"monstera_adansonii_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Monstera adansonii"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Palm",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"palm_moisture_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Palm"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Dracaena Michiko",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 8,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 0,
+        "y": 7
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_michiko_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Dracaena Michiko"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Areca Palm",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 7
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"areca_palm_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Areca Palm"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Soil moisture \u2014 history",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"ficus_audrey_top_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Ficus Audrey (Top)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_lisa_moisture_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "Dracaena Lisa"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_soil_moisture_1\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "C",
+          "legendFormat": "Ficus Audrey (Deep)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"kangaroo_paw_fern_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "D",
+          "legendFormat": "Kangaroo Paw Fern"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"monstera_adansonii_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "E",
+          "legendFormat": "Monstera adansonii"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"palm_moisture_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "F",
+          "legendFormat": "Palm"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_michiko_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "G",
+          "legendFormat": "Dracaena Michiko"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"areca_palm_soil_moisture\",unit=\"%\"}[$__interval])",
+          "range": true,
+          "refId": "H",
+          "legendFormat": "Areca Palm"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Drying Rate",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "id": 11,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Drying rate \u2014 % per day (negative = drying)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_lisa_moisture_rate\",unit=\"%/d\"}[$__interval])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "Dracaena Lisa"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"ficus_audrey_top_moisture_rate\",unit=\"%/d\"}[$__interval])",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "Ficus Audrey"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"kangaroo_paw_fern_moisture_rate\",unit=\"%/d\"}[$__interval])",
+          "range": true,
+          "refId": "C",
+          "legendFormat": "Kangaroo Paw Fern"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"monstera_adansonii_moisture_rate\",unit=\"%/d\"}[$__interval])",
+          "range": true,
+          "refId": "D",
+          "legendFormat": "Monstera adansonii"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"palm_moisture_palm_moisture_rate\",unit=\"%/d\"}[$__interval])",
+          "range": true,
+          "refId": "E",
+          "legendFormat": "Palm"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"dracaena_michiko_moisture_rate\",unit=\"%/d\"}[$__interval])",
+          "range": true,
+          "refId": "F",
+          "legendFormat": "Dracaena Michiko"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"areca_palm_moisture_rate\",unit=\"%/d\"}[$__interval])",
+          "range": true,
+          "refId": "G",
+          "legendFormat": "Areca Palm"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    }
+  ]
+}

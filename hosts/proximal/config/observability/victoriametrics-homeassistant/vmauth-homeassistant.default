@@ -1,0 +1,2 @@
+# Authenticated tailnet ingress for the loopback-only Home Assistant store.
+ARGS="-auth.config=/etc/vmauth-homeassistant/auth.yml -httpListenAddr=100.85.100.81:8427 -maxConcurrentRequests=64 -loggerFormat=json"

@@ -7,6 +7,40 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-31
 
+### Added a two-year Home Assistant VictoriaMetrics store
+
+Deployed a second VictoriaMetrics v1.150.0 instance dedicated to 34 allowlisted
+Home Assistant numeric sensors. The backend binds only `127.0.0.1:8428`, keeps
+two years, stops ingestion below 20 GB free, and caps cache memory at 512 MiB.
+`vmauth-homeassistant` exposes tailnet port `8427` with independent write-only
+Home Assistant and query-only Grafana/plant-bridge users. Anonymous access,
+reader writes, and writer queries were rejected in live tests.
+
+`vmctl` imported the selected InfluxDB history: 34 source series and 1,063,433
+numeric source samples were processed, while ingestion relabeling retained the
+732,391 `value` samples used by the dashboards and discarded unrelated numeric
+attributes. The retained series begin at `2026-02-07T06:50:20.035Z`. A final
+cutover delta processed 74 more source samples with no retries. The normalized
+schema is `homeassistant_state_value` with `db`, `domain`, `entity_id`, and
+`unit` labels.
+Exact-timestamp deduplication is set to 1 ms, matching VictoriaMetrics storage
+precision, so an inclusive delta-import boundary cannot produce duplicate
+query results while distinct sensor timestamps remain intact.
+
+Grafana now provisions authenticated datasource UID `victoriametrics-ha` and
+parallel VictoriaMetrics variants of the Plant Moisture and Indoor Environment
+dashboards. Datasource health passed and a 24-hour Grafana query returned 134
+points. The original `influx-ha` datasource and dashboard UIDs remain for
+rollback.
+
+`plant-praxis-bridge` now queries VictoriaMetrics with the real stored sample
+timestamp (`tlast_over_time`) so DARK detection preserves its semantics. Four
+unit tests cover timestamp age, missing series, backend dispatch, and a missing
+backend configuration. Live
+InfluxDB and VictoriaMetrics dry-runs produced the same six plant decisions;
+the hourly timer retained a future `NEXT`. Its environment file keeps the old
+read-only Influx credential for `METRICS_BACKEND=influxdb` rollback.
+
 ### Prometheus replaced by VictoriaMetrics without changing scrape sources
 
 Prometheus 2.45.3 was replaced by VictoriaMetrics v1.150.0 at the existing tailnet-only

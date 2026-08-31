@@ -2,6 +2,27 @@
 
 ## 2026-08-31
 
+### Moved allowlisted telemetry writes to VictoriaMetrics
+
+Changed the existing imported InfluxDB integration config entry from the local
+InfluxDB add-on to proximal's authenticated VictoriaMetrics ingress at
+`100.85.100.81:8427`. Connection credentials remain runtime-only. YAML now
+owns a 34-entity numeric sensor allowlist, `max_retries: 3`, and millisecond
+precision; this avoids exporting people, locks, trackers, or other unrelated
+Home Assistant state.
+
+The source InfluxDB history was copied before cutover and a final delta import
+added 74 samples without retries. VictoriaMetrics retained all 34 expected
+series, started at the same `2026-02-07T06:50:20.035Z` timestamp, and advanced
+past the final InfluxDB sample after Core restarted. The InfluxDB add-on remains
+running and its data was not deleted.
+
+Recorder was not redirected. After cutover, the Core UI returned HTTP 200,
+configuration validation passed, the Recorder WAL continued updating, no
+Recorder/Influx write errors appeared, and the existing seven-entity 72-hour
+native history card remained present. Config-entry and YAML rollback copies are
+stored on the appliance with the `before-vm-cutover-20260831` suffix.
+
 ### Extended Recorder history and reduced SQLite commit frequency
 
 Added explicit Recorder policy to the canonical Core configuration:
@@ -11,10 +32,11 @@ writes. Recorder remains the source for native Home Assistant History,
 Activity, dashboard history cards, events, and long-term statistics; the
 separate VictoriaMetrics migration does not replace it.
 
-A full local appliance backup was created before installation. The rollback is
-the pre-change `/config/configuration.yaml` plus that backup; configuration
-validation and post-restart Recorder/History checks are required before this
-change is considered operationally complete.
+A full local appliance backup (`a84408eb`) was created before installation.
+The live canonical file passed `ha core check`, Core restarted successfully,
+the UI returned HTTP 200, and the Recorder WAL continued to advance without
+Recorder/database errors. The pre-change configuration and full backup remain
+the rollback paths.
 
 ## 2026-08-12
 

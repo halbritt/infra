@@ -6,9 +6,10 @@ touching Home Assistant.
 
 ## What it does
 
-Hourly, it reads each plant's latest soil moisture from the HA appliance's
-InfluxDB add-on (`100.105.145.26:8086`, the same data the observability
-`plant-moisture` Grafana dashboard uses) and files a work item in the **harm**
+Hourly, it reads each plant's latest soil moisture from the dedicated
+VictoriaMetrics store (`100.85.100.81:8427`, through a query-only `vmauth`
+credential, the same data the observability VictoriaMetrics dashboard uses)
+and files a work item in the **harm**
 Plane `PRAXIS` project (`plane.harm.org`, id `978fcda1-…`) — which Praxis's
 standing Plane sync (ADR 0014) imports as a reminder (Slack `#praxis-chat`) —
 for either of two conditions:
@@ -25,8 +26,8 @@ sensor reports again. State is a small JSON file at
 `~/.local/state/plant-praxis-bridge/` (`last_value`, `last_age_h`, and the two
 `*_alerted` flags per plant).
 
-**Why here and not in HA:** detection is off InfluxDB, which proximal already
-reads, so no HA config change and no Plane token on the (public-repo'd)
+**Why here and not in HA:** detection is off the telemetry store, which proximal already
+reads, so no HA automation or Plane token is needed on the (public-repo'd)
 appliance — both tokens already live on proximal. Chosen over an HA
 `rest_command` because that would have needed the `ha_mcp_tools` helper
 component installed + an HA restart, and a workspace-broad Plane token on the
@@ -91,7 +92,7 @@ reboot; if you do, set `initial_state: false` **and** turn it off, since
 | `plant_praxis_bridge.py` | run in place from `~/git/infra/hosts/proximal/config/plant-praxis-bridge/` |
 | `plant-praxis-bridge.service` | `~/.config/systemd/user/plant-praxis-bridge.service` |
 | `plant-praxis-bridge.timer` | `~/.config/systemd/user/plant-praxis-bridge.timer` |
-| `plant-praxis-bridge.env.template` | `~/.config/plant-praxis-bridge.env` (`0600`, **add real InfluxDB creds**) |
+| `plant-praxis-bridge.env.template` | `~/.config/plant-praxis-bridge.env` (`0600`, **add real VictoriaMetrics and rollback InfluxDB creds**) |
 
 Install: `cp *.service *.timer ~/.config/systemd/user/ && systemctl --user
 daemon-reload && systemctl --user enable --now plant-praxis-bridge.timer`.
@@ -118,9 +119,10 @@ systemctl --user list-timers plant-praxis-bridge.timer   # NEXT must not be '-'
 
 No credentials in this repo. Two env files, both `0600`, outside git:
 
-- `~/.config/plant-praxis-bridge.env` — `INFLUXDB_URL/USER/PASSWORD`
-  (read-only `grafana_ro`, the same user the Grafana HA-InfluxDB datasource
-  uses; see `observability/`).
+- `~/.config/plant-praxis-bridge.env` — `METRICS_BACKEND` plus
+  `VICTORIAMETRICS_URL/USER/PASSWORD` (query-only `homeassistant_reader`). The
+  retained `INFLUXDB_URL/USER/PASSWORD` values provide rollback by setting
+  `METRICS_BACKEND=influxdb`.
 - `~/.config/plane/harm-mcp.env` — `PLANE_API_KEY` for the harm Plane, plus
   `PLANE_INTERNAL_BASE_URL` / `PLANE_WORKSPACE_SLUG` (reused, not duplicated).
 

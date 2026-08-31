@@ -6,7 +6,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-# InfluxDB read creds (proximal-local) + the harm Plane API key (already on box).
+# VictoriaMetrics read creds + retained InfluxDB rollback creds (proximal-local),
+# plus the harm Plane API key (already on box).
 # Leading '-' on the plane env: missing file => no PLANE_API_KEY => create fails
 # loudly rather than the unit refusing to start.
 EnvironmentFile=%h/.config/plant-praxis-bridge.env

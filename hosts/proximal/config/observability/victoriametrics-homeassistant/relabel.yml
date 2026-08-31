@@ -1,0 +1,22 @@
+# Store only the numeric Home Assistant sensor series used by the provisioned
+# dashboards and plant reminder bridge. This is also a defense-in-depth boundary
+# if the Home Assistant include list drifts.
+- action: keep
+  if: '{domain="sensor",entity_id=~"^(areca_palm_moisture_rate|areca_palm_soil_moisture|classic_300s_humidity|dracaena_lisa_moisture_rate|dracaena_lisa_moisture_soil_moisture|dracaena_michiko_moisture_rate|dracaena_michiko_soil_moisture|ficus_audrey_top_moisture_rate|ficus_audrey_top_soil_moisture|gw1200b_indoor_dewpoint|gw1200b_indoor_humidity|gw1200b_indoor_temperature|gw1200b_relative_pressure|gw1200b_soil_moisture_1|hall_night_light_illuminance|kangaroo_paw_fern_moisture_rate|kangaroo_paw_fern_soil_moisture|local_weather_humidity|local_weather_pressure|local_weather_temperature|local_weather_uv_index|local_weather_wind_speed|lumi_light_sensor|midea_ac_temperature|monstera_adansonii_moisture_rate|monstera_adansonii_soil_moisture|palm_moisture_palm_moisture_rate|palm_moisture_soil_moisture|sonoff_snzb_02d_humidity|sonoff_snzb_02d_temperature|sonoff_snzb_02wd_humidity|sonoff_snzb_02wd_temperature|temperature_and_humidity_sensor_humidity|temperature_and_humidity_sensor_temperature)$"}'
+
+# Influx line protocol maps a measurement and its numeric value field to
+# {measurement}_value. Preserve the original unit/measurement as a label, then
+# normalize all selected series behind one stable metric name.
+- source_labels: [__name__]
+  regex: '(.+)_value'
+  replacement: '$1'
+  target_label: unit
+- action: keep
+  source_labels: [__name__]
+  regex: '(.+)_value'
+- action: labelkeep
+  regex: '__name__|db|domain|entity_id|unit'
+- source_labels: [__name__]
+  regex: '(.+)_value'
+  replacement: homeassistant_state_value
+  target_label: __name__

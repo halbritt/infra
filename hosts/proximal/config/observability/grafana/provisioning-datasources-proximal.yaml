@@ -30,3 +30,18 @@ datasources:
       httpMode: GET
     secureJsonData:
       password: ${INFLUX_HA_READ_PASSWORD}
+
+  # Dedicated two-year Home Assistant telemetry store. The reader credential is
+  # accepted only for query paths by vmauth-homeassistant.
+  - name: HA-VictoriaMetrics
+    uid: victoriametrics-ha
+    type: prometheus
+    access: proxy
+    url: http://100.85.100.81:8427
+    basicAuth: true
+    basicAuthUser: ${VM_HA_READ_USER}
+    jsonData:
+      timeInterval: 30s
+      httpMethod: POST
+    secureJsonData:
+      basicAuthPassword: ${VM_HA_READ_PASSWORD}

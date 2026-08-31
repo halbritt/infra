@@ -1,0 +1,28 @@
+# Install as /etc/vmauth-homeassistant/auth.yml (0640 root:vmauth-homeassistant)
+# after replacing both CHANGE_ME values with independent random credentials.
+# Never commit the installed file or its passwords.
+users:
+  - username: homeassistant_writer
+    password: CHANGE_ME_WRITE_PASSWORD
+    url_map:
+      - src_paths:
+          - /write.*
+          - /influx/write.*
+          - /api/v2/write.*
+          - /influx/api/v2/write.*
+        url_prefix: http://127.0.0.1:8428/
+    default_url: http://127.0.0.1:8428/unauthorized-path
+
+  - username: homeassistant_reader
+    password: CHANGE_ME_READ_PASSWORD
+    url_map:
+      - src_paths:
+          - /api/v1/query
+          - /api/v1/query_range
+          - /api/v1/series
+          - /api/v1/labels
+          - /api/v1/label/.*
+          - /api/v1/metadata
+          - /api/v1/status/.*
+        url_prefix: http://127.0.0.1:8428/
+    default_url: http://127.0.0.1:8428/unauthorized-path

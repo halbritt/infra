@@ -11,8 +11,8 @@ providers:
       path: /var/lib/grafana/dashboards
       foldersFromFilesStructure: false
 
-  # Dashboards reading the Home Assistant appliance (via the HA-InfluxDB datasource),
-  # NOT proximal host metrics — kept in their own folder + path so the proximal
+  # Dashboards reading Home Assistant telemetry (VictoriaMetrics plus retained
+  # InfluxDB rollback dashboards), NOT proximal host metrics. Kept in their own path so the proximal
   # provider above (which recurses its path) doesn't also claim them.
   - name: homeassistant
     orgId: 1

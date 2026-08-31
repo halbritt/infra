@@ -1,0 +1,1023 @@
+{
+  "uid": "indoor-environment-victoriametrics",
+  "title": "Indoor Environment \u2014 homeassistant (via VictoriaMetrics)",
+  "tags": [
+    "environment",
+    "homeassistant",
+    "victoriametrics"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-2d",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Now",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Indoor Temp",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_indoor_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Indoor Temp",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 64
+              },
+              {
+                "color": "orange",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Outdoor Temp",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"sonoff_snzb_02wd_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Outdoor Temp",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 64
+              },
+              {
+                "color": "orange",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Indoor Humidity",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_indoor_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Indoor Humidity",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 30
+              },
+              {
+                "color": "blue",
+                "value": 65
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Outdoor Humidity",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"sonoff_snzb_02wd_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Outdoor Humidity",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 30
+              },
+              {
+                "color": "blue",
+                "value": 65
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Barometric",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 5
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_relative_pressure\",unit=\"inHg\"}[$__interval])",
+          "legendFormat": "Barometric",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressureinhg",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Dewpoint (indoor)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 5
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_indoor_dewpoint\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Dewpoint (indoor)",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Light (LUMI)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 8,
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 5
+      },
+      "timeFrom": "24h",
+      "hideTimeOverride": true,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "last_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"lumi_light_sensor\",unit=\"lx\"}[$__interval])",
+          "legendFormat": "Light (LUMI)",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lux",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Temperature",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 9,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Temperature (\u00b0F) \u2014 indoor rooms + outdoor reference",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_indoor_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Indoor (Ecowitt)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"sonoff_snzb_02d_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Greenhouse",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "C",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"temperature_and_humidity_sensor_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Room (THS)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "D",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"midea_ac_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "AC (Midea)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "E",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_indoor_dewpoint\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Dewpoint (indoor)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "F",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"sonoff_snzb_02wd_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Outdoor (sensor)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "G",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"local_weather_temperature\",unit=\"\u00b0F\"}[$__interval])",
+          "legendFormat": "Weather (met.no)",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "fahrenheit",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Humidity",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 11,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Relative humidity (%)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_indoor_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Indoor (Ecowitt)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"sonoff_snzb_02d_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Greenhouse",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "C",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"temperature_and_humidity_sensor_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Room (THS)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "D",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"classic_300s_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Humidifier (Levoit)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "E",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"sonoff_snzb_02wd_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Outdoor (sensor)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "F",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"local_weather_humidity\",unit=\"%\"}[$__interval])",
+          "legendFormat": "Weather (met.no)",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Pressure & Light",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 13,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Barometric pressure (inHg) \u2014 Ecowitt vs met.no",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"gw1200b_relative_pressure\",unit=\"inHg\"}[$__interval])",
+          "legendFormat": "Barometric (relative)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"local_weather_pressure\",unit=\"inHg\"}[$__interval])",
+          "legendFormat": "Weather (met.no)",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressureinhg",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Illuminance (lux, log)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 15,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"lumi_light_sensor\",unit=\"lx\"}[$__interval])",
+          "legendFormat": "Light sensor (LUMI)",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "B",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"hall_night_light_illuminance\",unit=\"lx\"}[$__interval])",
+          "legendFormat": "Hall night light",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lux",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false,
+            "scaleDistribution": {
+              "type": "log",
+              "log": 10
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Local weather (met.no)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 16,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Wind speed (mph)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 37
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"local_weather_wind_speed\",unit=\"mph\"}[$__interval])",
+          "legendFormat": "Wind (met.no)",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "velocitymph",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "UV index",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics-ha"
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 37
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics-ha"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "avg_over_time(homeassistant_state_value{db=\"homeassistant\",entity_id=\"local_weather_uv_index\",unit=\"UV index\"}[$__interval])",
+          "legendFormat": "UV index (met.no)",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 6,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "min",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    }
+  ]
+}

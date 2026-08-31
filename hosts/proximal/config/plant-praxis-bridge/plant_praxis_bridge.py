@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """plant-praxis-bridge — file a Praxis reminder when a plant needs attention.
 
-Reads each plant's latest soil moisture from the HA appliance's InfluxDB add-on
-and files a work item in the harm Plane `PRAXIS` project — which Praxis imports
+Reads each plant's latest soil moisture from the Home Assistant VictoriaMetrics
+store and files a work item in the harm Plane `PRAXIS` project — which Praxis imports
 as a reminder via its ADR-0014 standing sync — for either of two conditions:
 
   1. THIRSTY  — moisture has dropped below the plant's per-plant rewater
@@ -14,17 +14,25 @@ as a reminder via its ADR-0014 standing sync — for either of two conditions:
                 must never mean a silent dead plant.)
 
 Each condition alerts once and re-arms only when it clears (watered / sensor
-back). State is a small JSON file. No Home Assistant credential or config
-change: detection is off InfluxDB, which proximal already reads.
+back). State is a small JSON file. The bridge holds no Home Assistant
+credential: detection is off the telemetry store, which proximal already reads.
 
 Env (from the unit's EnvironmentFiles):
-  INFLUXDB_URL, INFLUXDB_USER, INFLUXDB_PASSWORD   (~/.config/plant-praxis-bridge.env)
+  METRICS_BACKEND, VICTORIAMETRICS_URL/USER/PASSWORD
+  INFLUXDB_URL/USER/PASSWORD (rollback)              (~/.config/plant-praxis-bridge.env)
   PLANE_API_KEY, PLANE_INTERNAL_BASE_URL, PLANE_WORKSPACE_SLUG  (~/.config/plane/harm-mcp.env)
   PLANT_PRAXIS_STALE_HOURS (optional, default 24), PLANT_PRAXIS_PROJECT_ID (optional)
 """
-import json, os, sys, time, urllib.parse, urllib.request, datetime as dt
+import base64
+import datetime as dt
+import json
+import os
+import sys
+import time
+import urllib.parse
+import urllib.request
 
-# (display name, InfluxDB entity_id tag, rewater threshold %)
+# (display name, Home Assistant entity_id suffix, rewater threshold %)
 PLANTS = [
     ("Dracaena Lisa",      "dracaena_lisa_moisture_soil_moisture", 20),
     # Ficus Audrey top probe (ficus_audrey_top_soil_moisture) removed
@@ -73,6 +81,56 @@ def influx_last(entity):
         return None
     ts, val = s[0]["values"][0]
     return float(val), max(0.0, time.time() - int(ts))
+
+
+def _victoriametrics_query(query):
+    """Return one instant-vector value, None for no series, or raise on bad data."""
+    base = os.environ["VICTORIAMETRICS_URL"].rstrip("/")
+    url = base + "/api/v1/query?" + urllib.parse.urlencode({"query": query})
+    credentials = (f'{os.environ["VICTORIAMETRICS_USER"]}:'
+                   f'{os.environ["VICTORIAMETRICS_PASSWORD"]}').encode()
+    authorization = base64.b64encode(credentials).decode("ascii")
+    request = urllib.request.Request(url, headers={
+        "Authorization": f"Basic {authorization}",
+    })
+    with urllib.request.urlopen(request, timeout=20) as response:
+        payload = json.load(response)
+    if payload.get("status") != "success":
+        error = payload.get("error", payload)
+        raise RuntimeError(f"VictoriaMetrics query failed: {error!r}")
+    results = payload.get("data", {}).get("result")
+    if results == []:
+        return None
+    if not isinstance(results, list) or len(results) != 1:
+        count = len(results or [])
+        raise RuntimeError(f"VictoriaMetrics returned {count} series; expected one")
+    sample = results[0].get("value")
+    if not isinstance(sample, list) or len(sample) != 2:
+        raise RuntimeError("VictoriaMetrics returned a malformed instant-vector sample")
+    return float(sample[1])
+
+
+def victoriametrics_last(entity):
+    """Latest reading as (value, age_seconds), or None if silent for 30 days."""
+    selector = (f'homeassistant_state_value{{db="homeassistant",'
+                f'entity_id={json.dumps(entity)},unit="%"}}')
+    value = _victoriametrics_query(f"last_over_time({selector}[{LOOKBACK_DAYS}d])")
+    if value is None:
+        return None
+    timestamp = _victoriametrics_query(f"tlast_over_time({selector}[{LOOKBACK_DAYS}d])")
+    if timestamp is None:
+        raise RuntimeError("VictoriaMetrics returned a value without its source timestamp")
+    return value, max(0.0, time.time() - timestamp)
+
+
+def metrics_last(entity):
+    """Read the configured backend; retain InfluxDB as an explicit rollback."""
+    backend = os.environ["METRICS_BACKEND"]
+    if backend == "influxdb":
+        return influx_last(entity)
+    if backend == "victoriametrics":
+        return victoriametrics_last(entity)
+    raise RuntimeError(f"unsupported METRICS_BACKEND={backend!r}")
 
 
 def create_plane_item(name, description_html):
@@ -124,9 +182,10 @@ def main():
     for name, entity, threshold in PLANTS:
         st = state.setdefault(entity, {})
         try:
-            res = influx_last(entity)
+            res = metrics_last(entity)
         except Exception as e:
-            log(f"{name}: InfluxDB read failed: {e}"); continue
+            backend = os.environ.get("METRICS_BACKEND", "unconfigured backend")
+            log(f"{name}: {backend} read failed: {e}"); continue
 
         # --- DARK: no data within LOOKBACK_DAYS, or last point older than STALE_HOURS
         age_h = res[1] / 3600 if res else LOOKBACK_DAYS * 24

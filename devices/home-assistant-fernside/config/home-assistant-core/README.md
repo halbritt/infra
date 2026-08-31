@@ -41,6 +41,14 @@ Activity, dashboard history cards, events, and long-term statistics.
 Do not point Recorder at VictoriaMetrics. VictoriaMetrics is a separate,
 derived numeric telemetry store for Grafana and the plant reminder bridge.
 
+## VictoriaMetrics export
+
+The `influxdb:` block intentionally contains only integration options and the
+34-entity allowlist. Core 2026.8 stores connection details in the integration
+config entry and treats YAML connection keys as deprecated. The live entry
+points at the authenticated VictoriaMetrics ingress on proximal; its password
+is runtime state and is not copied into this repository.
+
 ## Credentials
 
 The canonical YAML may reference keys from `/config/secrets.yaml`, but

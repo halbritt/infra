@@ -6,6 +6,11 @@ PostgreSQL, gpu-fleet, llama.cpp, and GPU exporters; Grafana queries its Prometh
 Alertmanager. Prometheus 2.45.3 was replaced on 2026-08-31. Its package, configuration, and
 `/var/lib/prometheus/metrics2` remain on the box as the rollback path.
 
+A second, isolated VictoriaMetrics instance stores the allowlisted Home
+Assistant numeric telemetry for two years. It is not part of the host-monitoring
+retention domain: its backend is loopback-only and `vmauth-homeassistant`
+provides separate write-only and query-only credentials on the tailnet.
+
 The GPU job covers proximal, **peecee**, and **enceladus** over the tailnet. The peecee exporter
 desired state lives under [`hosts/peecee/`](../../../peecee/). Enceladus is still a live scrape
 source, but its referenced host-owned exporter directory is absent from this checkout; retain that
@@ -17,6 +22,9 @@ exporters ──scrape──> VictoriaMetrics ──Prometheus API──> Grafan
                           ▲     │
                           │     └──query──> vmalert ──notify──> Alertmanager ──> Slack
                           └────────remote write alert state
+
+Home Assistant ──Influx write──> vmauth ──> VictoriaMetrics (2y) ──> Grafana
+                                      └──────────────query────────> plant bridge
 ```
 
 ## Topology & ports
@@ -34,6 +42,8 @@ what keeps it off `192.168.1.92`). Default ports collided, so:
 | nvidia_gpu_exporter (peecee) | `nvidia_gpu_exporter` (WinSW, on **peecee**) | `100.113.63.58:9835` | RTX 3090 Ti; Windows host, scraped over tailnet |
 | nvidia_gpu_exporter (enceladus) | `nvidia_gpu_exporter` (WinSW, on **enceladus**) | `100.123.179.99:9835` | RTX 3060 12 GiB; Windows host, scraped over tailnet |
 | VictoriaMetrics     | `victoriametrics`               | `100.85.100.81:9091`  | preserves the former Prometheus API port; 9090 is `cockpit.socket` |
+| VictoriaMetrics (Home Assistant) | `victoriametrics-homeassistant` | `127.0.0.1:8428` | isolated two-year store; no direct network ingress |
+| vmauth (Home Assistant) | `vmauth-homeassistant` | `100.85.100.81:8427` | authenticated tailnet ingress for HA writes and queries |
 | vmalert             | `vmalert`                       | `127.0.0.1:8880`      | loopback origin; Tailscale Serve exposes HTTPS `:9480` |
 | Grafana             | `grafana-server`                | `100.85.100.81:3003`  | 3000/3001/3002 taken (open-webui, token-dashboard) |
 | Alertmanager        | `prometheus-alertmanager`       | `100.85.100.81:9093`  | 9093 free; HA cluster listener (:9094) disabled (single node) |
@@ -104,6 +114,7 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `victoriametrics/victoriametrics.service` | `/etc/systemd/system/victoriametrics.service` |
 | `victoriametrics/vmalert.default` | `/etc/default/vmalert` |
 | `victoriametrics/vmalert.service` | `/etc/systemd/system/vmalert.service` |
+| `victoriametrics-homeassistant/*` | paths listed in [`victoriametrics-homeassistant/README.md`](victoriametrics-homeassistant/README.md) |
 | `prometheus/rules/*.yml` | `/etc/victoria-metrics/rules/` (Prometheus-format rules evaluated by vmalert) |
 | `prometheus/prometheus.yml` | `/etc/prometheus/prometheus.yml` (disabled rollback service) |
 | `prometheus/prometheus.default` | `/etc/default/prometheus` (disabled rollback service) |
@@ -124,7 +135,9 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `grafana/dashboards/gpu-fleet-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/plant-moisture.json` | `/var/lib/grafana/dashboards-homeassistant/` (provisioned, folder "Home Assistant" — appliance data, not proximal metrics); built by `build_plant_moisture_dashboard.py` |
 | `grafana/dashboards/indoor-environment.json` | `/var/lib/grafana/dashboards-homeassistant/` (folder "Home Assistant"); built by `build_indoor_environment_dashboard.py` — ambient temp/humidity/pressure/light |
+| `grafana/dashboards/*-victoriametrics.json` | `/var/lib/grafana/dashboards-homeassistant/` (parallel two-year Home Assistant dashboards) |
 | `grafana/ha-influx.env.template` | `/etc/grafana/ha-influx.env` (0600 root, **add real read-only Influx creds**) |
+| `grafana/ha-victoriametrics.env.template` | `/etc/grafana/ha-victoriametrics.env` (0600 root, **add query-only vmauth creds**) |
 | `role.sql` | run once via `sudo -u postgres psql` |
 | `tailscale-index-card.patch` | **superseded 2026-07-29** — historical record of the Grafana/Prometheus/Alertmanager cards, from when the index dir was not a git repo. The page is now versioned at [`../tailscale-index/`](../tailscale-index/); make index changes there as ordinary commits. |
 
@@ -169,6 +182,8 @@ tar -xzf "$VM_STAGE/victoria-metrics.tar.gz" -C "$VM_STAGE"
 tar -xzf "$VM_STAGE/vmutils.tar.gz" -C "$VM_STAGE"
 sudo install -m 0755 "$VM_STAGE/victoria-metrics-prod" /usr/local/bin/
 sudo install -m 0755 "$VM_STAGE/vmalert-prod" /usr/local/bin/
+sudo install -m 0755 "$VM_STAGE/vmauth-prod" /usr/local/bin/
+sudo install -m 0755 "$VM_STAGE/vmctl-prod" /usr/local/bin/
 rm -r -- "$VM_STAGE"
 
 # 5. create the service account, install the files from the table above, then enable the units
@@ -182,6 +197,9 @@ sudo systemctl enable --now prometheus-postgres-exporter prometheus-node-exporte
 `victoria-metrics-prod` and `vmalert-prod` must have the binary SHA-256 values
 `8aaafea8ea32ed04eea3064386110c6978d5db66e462406e6c9eb3b89c496d20` and
 `f00e5b78f414d58310ac194c885005811ee3787a913bc7578f44c907014c9b6b` respectively.
+The `vmauth-prod` and `vmctl-prod` binaries from that archive have SHA-256
+`d224fffa798ebf0ab7a2865a3665a37b61267bb58c72f39b67c130c7cb770486`
+and `3b29c8a5d29e71d098e100d7b17e00e38d63aa2fb1ac2362680397ea96d2910f`.
 
 ## Prometheus data migration and rollback
 
@@ -473,3 +491,9 @@ journalctl -u prometheus-alertmanager -n 20 | grep -i slack                     
   (Chronograf UI), grant READ on `homeassistant` only, never reuse the HA write user.
   Wire it in by adding `EnvironmentFile=-/etc/grafana/ha-influx.env` to the
   `10-proximal.conf` drop-in.
+- **Home Assistant VictoriaMetrics creds** — independent writer and reader
+  values in `/etc/vmauth-homeassistant/credentials.env` (0600 root), rendered
+  into `/etc/vmauth-homeassistant/auth.yml` (0640 root:vmauth-homeassistant).
+  Grafana receives only the reader in `/etc/grafana/ha-victoriametrics.env`;
+  Home Assistant's config entry receives only the writer. The plant bridge
+  uses the reader and retains its old Influx credential for rollback.

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the indoor-environment Grafana dashboard JSON, reading the HA
-appliance's InfluxDB add-on via the influx-ha datasource.
+"""Generate the indoor-environment Grafana dashboard JSON.
 
 Ambient conditions across the house: temperature, humidity, barometric
 pressure, light, dewpoint. Sensor set discovered 2026-07-23 (no CO2/PM/VOC
@@ -11,10 +10,19 @@ areas assigned). Outdoor is included as a reference line, not indoor.
 Installs to /var/lib/grafana/dashboards-homeassistant/ (the "Home Assistant"
 folder provider), same as plant-moisture. Regenerate:
   python3 build_indoor_environment_dashboard.py > indoor-environment.json
+  python3 build_indoor_environment_dashboard.py --backend victoriametrics \
+    > indoor-environment-victoriametrics.json
 """
+import argparse
 import json
 
-DS = {"type": "influxdb", "uid": "influx-ha"}
+parser = argparse.ArgumentParser()
+parser.add_argument("--backend", choices=("influxdb", "victoriametrics"),
+                    default="influxdb")
+BACKEND = parser.parse_args().backend
+VM = BACKEND == "victoriametrics"
+DS = ({"type": "prometheus", "uid": "victoriametrics-ha"} if VM else
+      {"type": "influxdb", "uid": "influx-ha"})
 
 # (label, measurement, entity_id)
 # "Weather (met.no)" lines come from template sensors mirroring weather.forecast_home
@@ -50,6 +58,15 @@ def nid():
     return _id[0]
 
 def q(measurement, entity_id, alias, fn="mean", refid="A"):
+    if VM:
+        selector = (f'homeassistant_state_value{{db="homeassistant",'
+                    f'entity_id="{entity_id}",unit="{measurement}"}}')
+        rollup = "last_over_time" if fn == "last" else "avg_over_time"
+        return {
+            "datasource": DS, "refId": refid, "editorMode": "code",
+            "expr": f"{rollup}({selector}[$__interval])",
+            "legendFormat": alias, "range": True,
+        }
     return {
         "datasource": DS, "refId": refid, "resultFormat": "time_series",
         "alias": alias, "rawQuery": True,
@@ -134,9 +151,11 @@ panels.append(ts("Wind speed (mph)", [WIND], 0, y, w=12, unit="velocitymph"))
 panels.append(ts("UV index", [UV], 12, y, w=12, unit="short")); y += 8
 
 dashboard = {
-    "uid": "indoor-environment",
-    "title": "Indoor Environment — homeassistant (via InfluxDB)",
-    "tags": ["environment", "homeassistant", "influxdb"],
+    "uid": ("indoor-environment-victoriametrics" if VM else
+            "indoor-environment"),
+    "title": ("Indoor Environment — homeassistant (via VictoriaMetrics)" if VM else
+              "Indoor Environment — homeassistant (via InfluxDB)"),
+    "tags": ["environment", "homeassistant", BACKEND],
     "timezone": "browser",
     "schemaVersion": 39,
     "version": 1,

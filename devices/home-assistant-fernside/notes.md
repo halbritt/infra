@@ -43,9 +43,10 @@ The repository import did not change the appliance. The live rename was handled
 as a separate operational change with before-and-after probes. Known consumers
 use fixed addresses rather than the hostname:
 
-- the proximal Grafana InfluxDB datasource uses `100.105.145.26:8086`;
-- plant-praxis-bridge uses the same Tailnet address from a root-readable
-  environment file and a versioned template;
+- the active Grafana and plant-praxis-bridge paths use proximal's authenticated
+  VictoriaMetrics ingress at `100.85.100.81:8427`;
+- the retained Grafana InfluxDB rollback datasource uses
+  `100.105.145.26:8086`;
 - agent access to ha-mcp is registered through the Tailnet address, with its
   private path stored outside Git.
 

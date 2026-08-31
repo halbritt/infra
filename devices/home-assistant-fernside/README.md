@@ -82,20 +82,24 @@ configuration page if the URL ever leaks.
 
 ## Data out to proximal Grafana
 
-The InfluxDB add-on (`:8086`, InfluxQL/v1, db `homeassistant`) already receives
-HA state exports via the `influxdb` integration, and is the data path for
-long-term charting on proximal's Grafana — the recorder only keeps ~10 days.
-The Grafana datasource (`influx-ha`) and the **Plant Moisture** + **Indoor
-Environment** dashboards live in the proximal repo under
+The `influxdb` integration now exports an explicit 34-entity numeric sensor
+allowlist to the dedicated VictoriaMetrics store on proximal through
+authenticated tailnet ingress `100.85.100.81:8427`. The store keeps two years
+and feeds the VictoriaMetrics versions of the **Plant Moisture** and **Indoor
+Environment** Grafana dashboards plus `plant-praxis-bridge`.
+
+The former InfluxDB add-on (`:8086`, InfluxQL/v1, db `homeassistant`) remains
+running but is no longer the integration's write destination. Its unlimited
+retention data, Grafana datasource (`influx-ha`), and original dashboards are
+preserved as the rollback path during acceptance. All Grafana desired state lives under
 [`hosts/proximal/config/observability/grafana/`](https://github.com/halbritt/infra/tree/master/hosts/proximal/config/observability/grafana);
-this appliance only hosts the InfluxDB add-on and its `influxdb` integration.
-Grafana authenticates as a dedicated read-only Influx user (created in the
-add-on's Chronograf UI) — never the HA write user.
+this appliance retains the old InfluxDB add-on and owns the exporting
+integration. VictoriaMetrics credentials remain outside Git.
 
 **Appliance-side bridges for the dashboards** (created here, consumed there):
 
-- **Local Weather template sensors** — the `weather.*` domain is *not* written
-  to InfluxDB, so six template helpers (`sensor.local_weather_*`:
+- **Local Weather template sensors** — the `weather.*` domain is not in the
+  numeric export allowlist, so six template helpers (`sensor.local_weather_*`:
   temperature, humidity, pressure, dew_point, wind_speed, uv_index) mirror
   `weather.forecast_home` (met.no) into sensor-domain entities that do record,
   feeding the Indoor Environment dashboard's "Weather (met.no)" overlays.

@@ -15,6 +15,50 @@ recorder:
   purge_keep_days: 30
   commit_interval: 30
 
+# Export only the numeric telemetry consumed by the provisioned Grafana
+# dashboards and plant reminder bridge. Connection credentials live in the
+# InfluxDB integration's config entry; on Core 2026.8, YAML owns these options
+# but connection details are UI/config-entry owned.
+influxdb:
+  max_retries: 3
+  precision: ms
+  include:
+    entities:
+      - sensor.areca_palm_moisture_rate
+      - sensor.areca_palm_soil_moisture
+      - sensor.classic_300s_humidity
+      - sensor.dracaena_lisa_moisture_rate
+      - sensor.dracaena_lisa_moisture_soil_moisture
+      - sensor.dracaena_michiko_moisture_rate
+      - sensor.dracaena_michiko_soil_moisture
+      - sensor.ficus_audrey_top_moisture_rate
+      - sensor.ficus_audrey_top_soil_moisture
+      - sensor.gw1200b_indoor_dewpoint
+      - sensor.gw1200b_indoor_humidity
+      - sensor.gw1200b_indoor_temperature
+      - sensor.gw1200b_relative_pressure
+      - sensor.gw1200b_soil_moisture_1
+      - sensor.hall_night_light_illuminance
+      - sensor.kangaroo_paw_fern_moisture_rate
+      - sensor.kangaroo_paw_fern_soil_moisture
+      - sensor.local_weather_humidity
+      - sensor.local_weather_pressure
+      - sensor.local_weather_temperature
+      - sensor.local_weather_uv_index
+      - sensor.local_weather_wind_speed
+      - sensor.lumi_light_sensor
+      - sensor.midea_ac_temperature
+      - sensor.monstera_adansonii_moisture_rate
+      - sensor.monstera_adansonii_soil_moisture
+      - sensor.palm_moisture_palm_moisture_rate
+      - sensor.palm_moisture_soil_moisture
+      - sensor.sonoff_snzb_02d_humidity
+      - sensor.sonoff_snzb_02d_temperature
+      - sensor.sonoff_snzb_02wd_humidity
+      - sensor.sonoff_snzb_02wd_temperature
+      - sensor.temperature_and_humidity_sensor_humidity
+      - sensor.temperature_and_humidity_sensor_temperature
+
 # NOAA Tides
 sensor:
   - platform: noaa_tides
