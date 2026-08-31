@@ -1,0 +1,11 @@
+Principal, 2026-08-31 ~11:2x PDT, interactive multiple-choice adjudication (requested by the Principal verbatim: "for principal actions give me a multiple choice with recommendations"). Four personal rulings, each selected individually; selections verbatim:
+
+1. Governance sitting — the staged package on branch governance-sitting-2026-08-31@700894f (RFC 0010 amendment: by-content continuity ratification + decoy-candidate lifecycle; RFC 0016 amendment: C5 pair-completion rule + IR-acceptance proxy as a delegation record; gates.yaml v3: both P12 renewals to 2026-10-31 + the ir-acceptance-proxy record): "Accept all as staged (Recommended)". This is the personal acceptance of both RFC amendments and both delegation renewals plus the ir-acceptance-proxy record, under instruction RQ-339830 §3.
+
+2. mhcs Phase-2 — the two catalog stubs on mhcs-registration@8c3bd40 (maintenance-has-a-computed-successor@1 + read-dependencies-are-decidable@1) with the enforcement-point claims (make deploy + semantics/current claimed as clause-4 points; --no-verify, remote pushes, web edits unclaimed, listed, fail-closed): "Sign and accept now (Recommended)". This is the Phase-2 signature set and personal acceptance of the registration branch, under instruction RQ-339830 §4.
+
+3. B1(ii) — window readout (longest clean stretch 2h36m < 3h bar, 9 lease-busy + 1 exit-2 in 9.3h, ~1h25m periodic bounce): "Hold open, next window (Recommended)". The clause stays open; re-evaluate on the next full window.
+
+4. Bootstrap qualification pin (policy/bootstrap-qualification.yaml, expiring 2026-09-21): "Renew to 2026-10-31 (Recommended)". Renewal staged with these words as the verbatim renewal grant.
+
+Write routing: the accepted rfcs/catalog/policy changes are semantic-environment class (gates.yaml policy_version bump re-pins every gate environment; decision records regenerate on acceptance). The acceptances are in force as recorded here; the tree merge of both branches, the standing-policy artifact, and the pin renewal land as ONE transaction at the next drain or otherwise-paid base-movement boundary, with decision-record regeneration and deploy — never as a lone mid-frontier base move. The merge write is authorized by instruction RQ-339830 §0 (personal acceptances named in §3/§4).

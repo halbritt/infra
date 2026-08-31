@@ -1,0 +1,8 @@
+[Unit]
+Description=Striatum semantic-environment train (04:30) — executes the accepted governance transaction when its condition is mechanically true
+
+[Service]
+Type=oneshot
+ExecStart=/home/halbritt/git/infra/hosts/proximal/config/striatum-train/striatum-train.sh
+TimeoutStartSec=0
+Nice=5
