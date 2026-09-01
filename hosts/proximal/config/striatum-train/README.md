@@ -45,3 +45,10 @@ session's uncommitted backends/*.yaml, which the train must never touch), pushes
 The payload is one-shot (done-marker). Future payloads: new payload dir +
 new pinned SHAs + a new Principal ruling on the ledger; the mhcs delivery is
 expected to absorb this machinery into the compiler proper.
+
+LANDED 2026-08-31 23:21 PDT — attempt 2 (run 20260831T230749, after attempt 1
+failed closed on three latent defects in the signed branches, each fixed as a
+striatum-next code-class landing): main e1d8124, deploy/20260901T062120Z-e1d8124de351,
+merge record RQ-346414 before the write, observed closes RQ-346561–346566. The
+done-marker is set and `striatum-train.timer` is disabled (`systemctl --user
+disable --now`); the unit files stay installed for the next payload.

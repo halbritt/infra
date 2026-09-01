@@ -7,6 +7,11 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-31
 
+### striatum-train landed the governance transaction (attempt 2)
+
+Attempt 1 (22:09) failed closed at `make deploy` on latent defects in the Principal-signed branches; three striatum-next fixes later, attempt 2 (23:07) merged both branches, regenerated D0010/D0016, passed the full check, deployed `e1d8124`, pushed, and wrote the observed closes. Timer disabled after the done-marker; units retained.
+
+
 ### striatum-train: executed now under a Principal timing amendment
 
 The Principal amended the train's timing ruling ("do it now", striatum-next ledger RQ-345848) after the guard condition proved unsatisfiable without a separately-authorized materialization act. The script gained two env-gated modes — a forced-ruling mode that logs the ledger record and skips the condition, and a detached-worktree mode that runs the transaction from a clean worktree at origin/main and pushes `HEAD:main` (the shared checkout's uncommitted files are never touched) — and was run immediately.
