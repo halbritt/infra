@@ -25,6 +25,15 @@ GUARDS=(
 AM_URL=http://100.85.100.81:9093/api/v2/alerts
 export PATH=/home/halbritt/.local/bin:/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin
 export HOME=/home/halbritt
+# STRIATUM_TRAIN_FORCE_RULING=RQ-<seq>: a Principal ruling on the ledger that
+# supersedes the condition for THIS payload (2026-08-31 22:15 PDT "do it now",
+# RQ-345848). STRIATUM_TRAIN_WORKTREE=1: run the transaction from a clean
+# detached worktree at origin/main instead of the shared checkout (which may
+# carry another session's uncommitted files that must never be touched); the
+# shared checkout's main is fast-forwarded afterwards, non-fatally.
+FORCE_RULING=${STRIATUM_TRAIN_FORCE_RULING:-}
+USE_WORKTREE=${STRIATUM_TRAIN_WORKTREE:-}
+WORK=$REPO
 
 mkdir -p "$STATE"
 TS=$(date +%Y%m%dT%H%M%S)
@@ -47,7 +56,7 @@ alert() { # $1 severity $2 summary
 
 ORIG_SHA=""
 restore() {
-  cd "$REPO" || return
+  cd "$WORK" || return
   git branch "train-failed-$TS" HEAD 2>/dev/null || true   # preserve evidence
   git merge --abort 2>/dev/null || true
   [ -n "$ORIG_SHA" ] && git reset --hard "$ORIG_SHA"
@@ -63,7 +72,7 @@ fail() {
 req() { # ledger request with lock-busy retries: req <subject> <target> <note-file>
   local i out
   for i in 1 2 3 4 5; do
-    out=$(cd "$REPO" && striatum request "$1" -target "$2" -note-file "$3" 2>&1) && { echo "$out"; return 0; }
+    out=$(cd "$WORK" && striatum request "$1" -target "$2" -note-file "$3" 2>&1) && { echo "$out"; return 0; }
     echo "$out" | grep -qi 'lock busy' && { sleep 60; continue; }
     echo "$out"; return 1
   done
@@ -84,16 +93,26 @@ print(sum(1 for i in ids if i in m and m[i]!='red'))
 ") || fail "condition read failed"
 TODAY=$(date +%F)
 echo "condition: guards delivered=$DELIVERED/3, today=$TODAY (fallback $FALLBACK_DATE)"
-if [ "$DELIVERED" -lt 3 ] && [[ "$TODAY" < "$FALLBACK_DATE" ]]; then
+if [ -n "$FORCE_RULING" ]; then
+  echo "condition superseded by Principal ruling $FORCE_RULING for this payload; proceeding"
+elif [ "$DELIVERED" -lt 3 ] && [[ "$TODAY" < "$FALLBACK_DATE" ]]; then
   echo "condition not met; quiet exit"
   exit 0
 fi
 
 # ---- Phase 1: preflight -----------------------------------------------------
-[ -z "$(git status --porcelain)" ] || fail "working tree not clean"
-git checkout -q main || fail "cannot checkout main"
-git merge --ff-only -q origin/main 2>/dev/null || fail "local main diverged from origin/main"
+if [ -n "$USE_WORKTREE" ]; then
+  WORK=/home/halbritt/git/striatum-next-wt/train-$TS
+  git worktree add -q --detach "$WORK" origin/main || fail "cannot create train worktree"
+  cd "$WORK" || fail "train worktree missing"
+  echo "running from detached worktree $WORK"
+else
+  [ -z "$(git status --porcelain)" ] || fail "working tree not clean"
+  git checkout -q main || fail "cannot checkout main"
+  git merge --ff-only -q origin/main 2>/dev/null || fail "local main diverged from origin/main"
+fi
 ORIG_SHA=$(git rev-parse HEAD)
+[ "$ORIG_SHA" = "$(git rev-parse origin/main)" ] || fail "HEAD is not origin/main"
 git cat-file -e "$GOV_SHA"  || fail "governance sha missing"
 git cat-file -e "$MHCS_SHA" || fail "mhcs sha missing"
 [ "$(git rev-parse origin/governance-sitting-2026-08-31)" = "$GOV_SHA" ] || fail "governance branch moved off the signed tip"
@@ -118,7 +137,7 @@ NOTE="$STATE/merge-record-$TS.md"
   echo "Affected-frontier projection (script output, striatum status live-request lines at $(date -Is)); every listed frontier's gate environments re-pin:"
   cat "$PROJ"
   echo
-  echo "Condition at execution: withholding-guards delivered=$DELIVERED/3; date=$TODAY; fallback=$FALLBACK_DATE."
+  echo "Condition at execution: withholding-guards delivered=$DELIVERED/3; date=$TODAY; fallback=$FALLBACK_DATE.${FORCE_RULING:+ Condition superseded for this payload by Principal ruling $FORCE_RULING (\"do it now\", verbatim on that record).}"
   echo
   echo "Recovery successor for every affected frontier: ordinary exact regeneration under the cured additive-regeneration path (b731563: an additive Decision Record regeneration keeps pinned environments current; a7eba05: identical regeneration of a stale accepted head is revalidation, not livelock). Stale heads revalidate or rebuild through standard recovery; no manual successor required. Variance handling: if actual consequence exceeds this projection, write a variance record and notify (RQ-339831 variance form applies by analogy)."
 } > "$NOTE"
@@ -150,8 +169,15 @@ git fetch -q origin main || true
 if [ "$(git rev-parse origin/main)" != "$ORIG_SHA" ]; then
   fail "origin/main moved during the train (variance; not pushing)"
 fi
-git push origin main || fail "push failed after deploy"
+git push origin HEAD:main || fail "push failed after deploy"
 touch "$STATE/done-2026-08-31"
+if [ -n "$USE_WORKTREE" ]; then
+  # Bring the shared checkout's main to the pushed tip without touching its
+  # working files (a fast-forward leaves unrelated dirty paths alone).
+  ( cd "$REPO" && git fetch -q origin && git merge --ff-only -q origin/main ) \
+    && echo "shared checkout main fast-forwarded to $(git rev-parse --short HEAD)" \
+    || echo "WARN: shared checkout main NOT fast-forwarded (origin/main is authoritative; ff by hand)"
+fi
 
 for pair in \
   "striatum-next/passes/governance-train-2026-08-31-merge:$NOTE" \
