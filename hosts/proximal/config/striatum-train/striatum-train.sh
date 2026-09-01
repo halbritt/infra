@@ -14,7 +14,7 @@ set -u
 REPO=/home/halbritt/git/striatum-next
 STATE=/home/halbritt/.local/state/striatum-train
 PAYLOAD=/home/halbritt/git/infra/hosts/proximal/config/striatum-train/payload-2026-08-31
-GOV_SHA=47e1b98a44ad8799225e78609e9db486de36bd2d      # governance-sitting-2026-08-31 (RQ-340088 + RQ-340279)
+GOV_SHA=81f1e69f7b1fbbd6500b8be867468a8743839dbf      # governance-sitting-2026-08-31 (RQ-340088 + RQ-340279; re-staged 2026-08-31 22:50 PDT with the D0016.C8 pin under RQ-345848)
 MHCS_SHA=8c3bd40c5a1814a28d1ccc681f676faf34279090     # mhcs-registration (RQ-340088 ruling 2, signed at this commit exactly)
 FALLBACK_DATE=2026-09-07                               # RQ-340254: land regardless of frontier state on/after this date
 GUARDS=(
