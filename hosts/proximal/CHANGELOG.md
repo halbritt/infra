@@ -7,6 +7,11 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-31
 
+### striatum-train: executed now under a Principal timing amendment
+
+The Principal amended the train's timing ruling ("do it now", striatum-next ledger RQ-345848) after the guard condition proved unsatisfiable without a separately-authorized materialization act. The script gained two env-gated modes — a forced-ruling mode that logs the ledger record and skips the condition, and a detached-worktree mode that runs the transaction from a clean worktree at origin/main and pushes `HEAD:main` (the shared checkout's uncommitted files are never touched) — and was run immediately.
+
+
 ### wezterm: SSH mux PATH fixed with `/usr/local/bin` mirror links, pinned build bumped to 20260901
 
 A remote client (Windows `halbr@peecee`) could not attach to the `proximal`

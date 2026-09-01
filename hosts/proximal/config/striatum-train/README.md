@@ -30,6 +30,17 @@ keys entries on `check_id` (not `id`) and a delivered check carries NO
 delivered — only the 2026-09-07 fallback could ever have fired the train. Now
 delivered == present and status != red (tested: live 0/3; synthetic 2/3).
 
+Timing amendment 2026-08-31 22:15 PDT (Principal, verbatim "do it now", ledger
+record RQ-345848 on striatum-next): the guard condition and the 09-07 fallback are
+superseded for this payload; the transaction was executed immediately with
+`STRIATUM_TRAIN_FORCE_RULING=RQ-345848 STRIATUM_TRAIN_WORKTREE=1` — the forced
+mode logs the ruling and proceeds; the worktree mode runs the whole transaction
+from a clean detached worktree at origin/main (the shared checkout carried another
+session's uncommitted backends/*.yaml, which the train must never touch), pushes
+`HEAD:main`, then fast-forwards the shared checkout non-fatally. Run log:
+`~/.local/state/striatum-train/train-20260831T220944.log`.
+
+
 
 The payload is one-shot (done-marker). Future payloads: new payload dir +
 new pinned SHAs + a new Principal ruling on the ledger; the mhcs delivery is
