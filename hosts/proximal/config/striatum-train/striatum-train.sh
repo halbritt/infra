@@ -76,9 +76,11 @@ git fetch -q origin main || fail "fetch failed"
 DELIVERED=$(git show origin/main:policy/checks/repository.json | python3 -c "
 import json,sys
 d=json.load(sys.stdin)
-m={c.get('id'):c.get('delivery_status') for c in d['checks']}
+# registry entries key on check_id; a delivered check carries NO delivery_status
+# field (only forward-registered red ones do) -- delivered == present and not red.
+m={c.get('check_id'):c.get('delivery_status') for c in d['checks']}
 ids='${GUARDS[0]} ${GUARDS[1]} ${GUARDS[2]}'.split()
-print(sum(1 for i in ids if m.get(i) not in (None,'red')))
+print(sum(1 for i in ids if i in m and m[i]!='red'))
 ") || fail "condition read failed"
 TODAY=$(date +%F)
 echo "condition: guards delivered=$DELIVERED/3, today=$TODAY (fallback $FALLBACK_DATE)"

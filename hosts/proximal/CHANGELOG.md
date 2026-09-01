@@ -7,6 +7,11 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-31
 
+### striatum-train: condition read could never fire on the guards
+
+The 04:30 train's guard condition read the check registry by a key that does not exist (`id` vs `check_id`) and treated an absent `delivery_status` — which is what a delivered check looks like — as undelivered, so it reported 0/3 unconditionally and only the 2026-09-07 fallback would have landed the governance transaction. Fixed before the first fire: delivered == present and not red. Live 0/3 confirmed (the guards are genuinely red); synthetic 2-delivered/1-missing reads 2.
+
+
 ### Added a two-year Home Assistant VictoriaMetrics store
 
 Deployed a second VictoriaMetrics v1.150.0 instance dedicated to 34 allowlisted

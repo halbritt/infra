@@ -24,6 +24,13 @@ make deploy (full check inline) -> race guard -> push -> observed closes ->
 Alertmanager notice. Any failure: rescue branch train-failed-<ts>, checkout
 restored to origin/main, nothing deployed, severity=page alert.
 
+Condition-read fix 2026-08-31 21:30 PDT (before the first fire): the registry
+keys entries on `check_id` (not `id`) and a delivered check carries NO
+`delivery_status` field, so the original read counted 0/3 even with every guard
+delivered — only the 2026-09-07 fallback could ever have fired the train. Now
+delivered == present and status != red (tested: live 0/3; synthetic 2/3).
+
+
 The payload is one-shot (done-marker). Future payloads: new payload dir +
 new pinned SHAs + a new Principal ruling on the ledger; the mhcs delivery is
 expected to absorb this machinery into the compiler proper.
