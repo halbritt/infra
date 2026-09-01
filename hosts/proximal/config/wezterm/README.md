@@ -5,9 +5,11 @@ the matching client profile used by macOS and Windows. Programs and scrollback
 live in the mux on `proximal`; each client imports those remote windows, tabs,
 and panes into its local WezTerm GUI.
 
-Current pinned build: **`20260715-174104-3658b656`**, Ubuntu 24.04 x86_64.
+Current pinned build: **`20260901-002820-4fbd6b8e`**, Ubuntu 24.04 x86_64.
 The server is installed without root under `~/.local/opt`, with stable command
-symlinks under `~/.local/bin`.
+symlinks under `~/.local/bin`, plus root-owned mirror symlinks under
+`/usr/local/bin` so the SSH mux can find the binary over its non-login PATH
+(see "SSH mux PATH" below).
 
 ## Why this exists
 
@@ -33,8 +35,9 @@ artifact is fixed; that requires repeated real sleep/wake cycles.
 |---|---|---|---|
 | [`install-user.sh`](install-user.sh) | run from this checkout | `halbritt` 0755 | installs the pinned Ubuntu asset, stable symlinks, and server config; never restarts a live mux |
 | [`shared/editor/wezterm/server.lua`](../../../../shared/editor/wezterm/server.lua) | `~/.config/wezterm/wezterm.lua` on `proximal` | `halbritt` 0644 | shared login-bash profile, 100,000-line scrollback, automatic updates disabled |
-| downloaded pinned asset | `~/.local/opt/wezterm-20260715-174104-3658b656/` | `halbritt` | SHA-256 checked before extraction |
+| downloaded pinned asset | `~/.local/opt/wezterm-20260901-002820-4fbd6b8e/` | `halbritt` | SHA-256 checked before extraction |
 | stable executable links | `~/.local/bin/{wezterm,wezterm-mux-server}` | `halbritt` symlinks | resolve through `~/.local/opt/wezterm-current` |
+| SSH-PATH mirror links | `/usr/local/bin/{wezterm,wezterm-mux-server}` | `root` symlinks | point at the `~/.local/bin` links; put `wezterm-mux-server` on the non-login SSH PATH (see below) |
 | [`client-proximal.lua`](client-proximal.lua) | Mac: `~/.config/wezterm/wezterm.lua`; Windows: `%USERPROFILE%/.wezterm.lua` | operator 0644 | canonical cross-platform client profile; assumes an SSH config host named `proximal` |
 
 No SSH keys, agent sockets, host keys, or credentials belong in this repo.
@@ -93,6 +96,30 @@ Keep `tui` set to `default` in `~/.claude/settings.json`, or run `/tui default`
 inside Claude Code, when terminal-native scrollback is required. Changing the
 saved setting affects the next Claude process; an already-running full-screen
 session must relaunch before it starts writing to normal scrollback.
+
+## SSH mux PATH (why `/usr/local/bin` mirror links exist)
+
+A remote client with `ssh_domains` + `multiplexing = 'WezTerm'` spawns
+`wezterm-mux-server` on `proximal` over SSH. WezTerm resolves that command using
+the **non-login** SSH exec PATH
+(`/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:…`), which does
+**not** include `~/.local/bin` — that path is only added by login shells via
+`~/.profile`. If the binary is not on the SSH PATH, the spawn emits nothing and
+the client fails the version handshake with:
+
+    Error while decoding response pdu … EOF while reading leb128 encoded value
+
+This is easily misread as a version skew, but it happens even when client and
+server builds are identical. Two independent mitigations exist, and both are in
+effect:
+
+1. The client profile sets
+   `remote_wezterm_path = '/home/halbritt/.local/bin/wezterm'`, which bypasses
+   PATH resolution entirely (see `client-proximal.lua`).
+2. The installer mirrors `wezterm` and `wezterm-mux-server` into
+   `/usr/local/bin` (root-owned, on the SSH PATH) via symlinks to the
+   `~/.local/bin` links, so even a client that omits `remote_wezterm_path`
+   connects.
 
 ## Verify persistence
 

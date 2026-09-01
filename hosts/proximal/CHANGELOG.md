@@ -7,6 +7,27 @@ history. **Values and config, never credentials.**
 
 ## 2026-08-31
 
+### wezterm: SSH mux PATH fixed with `/usr/local/bin` mirror links, pinned build bumped to 20260901
+
+A remote client (Windows `halbr@peecee`) could not attach to the `proximal`
+WezTerm mux: the version handshake failed with `EOF while reading leb128`, even
+after client and server were both on `20260901-002820-4fbd6b8e`. Root cause was
+**PATH, not version skew**: `ssh_domains` with `multiplexing = 'WezTerm'` spawns
+`wezterm-mux-server` over the non-login SSH exec PATH
+(`/usr/local/{sbin,bin}:/usr/{sbin,bin}:…`), which never includes `~/.local/bin`
+— that path is only added by login shells via `~/.profile`. The spawn emitted
+nothing and the client misread it as an incompatible server.
+
+Fix (both layers): (1) the canonical client profile already sets
+`remote_wezterm_path = '/home/halbritt/.local/bin/wezterm'` to bypass PATH; (2)
+the installer now mirrors `wezterm` and `wezterm-mux-server` into root-owned
+`/usr/local/bin` (on the SSH PATH) as symlinks to the `~/.local/bin` links, so
+even a client that omits `remote_wezterm_path` connects. The pinned build was
+bumped `20260715-174104-3658b656` → `20260901-002820-4fbd6b8e`
+(`WEZTERM_VERSION`/`WEZTERM_SHA256` updated together in `install-user.sh`), and
+the live mux was restarted onto the new build. `wezterm-mux-server --version`
+now resolves to the pinned build from the SSH exec channel.
+
 ### striatum-train: condition read could never fire on the guards
 
 The 04:30 train's guard condition read the check registry by a key that does not exist (`id` vs `check_id`) and treated an absent `delivery_status` — which is what a delivered check looks like — as undelivered, so it reported 0/3 unconditionally and only the 2026-09-07 fallback would have landed the governance transaction. Fixed before the first fire: delivered == present and not red. Live 0/3 confirmed (the guards are genuinely red); synthetic 2-delivered/1-missing reads 2.

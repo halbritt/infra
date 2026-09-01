@@ -3,8 +3,8 @@
 # This is intentionally user-local: the GUI runs on clients, not on proximal.
 set -euo pipefail
 
-WEZTERM_VERSION=20260715-174104-3658b656
-WEZTERM_SHA256=8bd7746682f3290b1fb9b3673f40fdc7203c557ac10e32b2107caef37ccbf77b
+WEZTERM_VERSION=20260901-002820-4fbd6b8e
+WEZTERM_SHA256=fb639004a233a48de11801972f989a9a5b84c764eee563ddb891669bdf9341de
 ASSET_URL=https://github.com/wezterm/wezterm/releases/download/nightly/wezterm-nightly.Ubuntu24.04.tar.xz
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
@@ -69,6 +69,21 @@ fi
 ln -sfn "$TARGET" "$CURRENT"
 ln -sfn "$CURRENT/usr/bin/wezterm" "$BIN_DIR/wezterm"
 ln -sfn "$CURRENT/usr/bin/wezterm-mux-server" "$BIN_DIR/wezterm-mux-server"
+
+# The SSH mux (ssh_domains on a remote client) spawns `wezterm-mux-server` over
+# the non-login SSH exec PATH, which is /usr/local/{sbin,bin}:/usr/{sbin,bin}:/...;
+# it does NOT include ~/.local/bin (that is added only by login shells via
+# ~/.profile). Without a system-wide link the spawn emits nothing and the client
+# fails the version handshake with "EOF while reading leb128". These symlinks
+# point at the user-local links above, so version swaps keep working without
+# touching /usr/local/bin again. Requires sudo (root-owned dir).
+if [[ -d /usr/local/bin ]] && command -v sudo >/dev/null 2>&1; then
+  sudo ln -sfn "$BIN_DIR/wezterm" /usr/local/bin/wezterm
+  sudo ln -sfn "$BIN_DIR/wezterm-mux-server" /usr/local/bin/wezterm-mux-server
+  printf 'created /usr/local/bin/{wezterm,wezterm-mux-server} -> %s (SSH mux PATH)\\n' "$BIN_DIR"
+else
+  printf 'skipped /usr/local/bin symlinks (sudo unavailable); SSH mux clients may fail version handshake\\n' >&2
+fi
 if [[ ! -f $SERVER_CONFIG ]]; then
   printf 'shared server config is missing: %s\n' "$SERVER_CONFIG" >&2
   exit 1
