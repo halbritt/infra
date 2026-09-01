@@ -52,3 +52,14 @@ striatum-next code-class landing): main e1d8124, deploy/20260901T062120Z-e1d8124
 merge record RQ-346414 before the write, observed closes RQ-346561–346566. The
 done-marker is set and `striatum-train.timer` is disabled (`systemctl --user
 disable --now`); the unit files stay installed for the next payload.
+
+STANDING RULE for every future payload (Principal, 2026-08-31 23:40 PDT, verbatim):
+"the thing the Principal signs be a merged, generated, make check-green candidate,
+not a set of source branches presumed to compose." A sitting therefore presents one
+candidate commit — source branches merged onto current main, decision records and
+policy artifacts regenerated over that merged tree, `make check` green at that exact
+SHA, gate exit recorded in the sitting note — and the train's payload is that single
+SHA: fast-forward (or a no-op merge of an already-composed commit), deploy, push,
+closes. The 2026-08-31 script's "merge two branches + regenerate at fire time" shape
+is retired; the next payload rewrites Phases 3–4 to verify and land the signed
+candidate SHA only.
