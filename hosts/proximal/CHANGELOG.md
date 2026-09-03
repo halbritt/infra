@@ -1079,3 +1079,5 @@ Tailnet-only static leaderboard for the CAPLAB advisory campaign:
 `caplab-leaderboard.service` (user unit, loopback `:18082`, serving
 `~/git/caplab/docs/leaderboard/`) fronted by Tailscale Serve HTTPS `:18082`.
 See [`config/caplab-leaderboard/`](config/caplab-leaderboard/README.md).
+
+- 2026-09-03: `striatum-exchange-gc.service` drop-in `striatum-exchange-gc.service.d-override.conf` sets the retention window to 6 h (was the unit's 72 h) per Principal instruction RQ-373383 §4.5, standing until STRNEX-73 lands; user-scope, `daemon-reload` applied.
