@@ -76,7 +76,7 @@ tunnel.
 
 ## Cards on the index
 
-Sweep of 2026-08-31 — 15 cards, all reachable
+Sweep of 2026-09-04 — 16 cards, all reachable
 (`check-links.sh` exit 0). Card names are the `<h2>` text.
 
 | card | target | status |
@@ -96,6 +96,7 @@ Sweep of 2026-08-31 — 15 cards, all reachable
 | VictoriaMetrics — proximal | `:9491/` | 200 |
 | vmalert — proximal | `:9480/` | 200 |
 | Alertmanager — proximal | `:9493/` | 200 |
+| Council | `:7331/` | 200 |
 
 All targets are `https://proximal.tail0ecc2e.ts.net`.
 
@@ -153,8 +154,7 @@ cloudflared --config ../cloudflared/config.yml tunnel ingress validate
 Expected: local origin `200`, public `200`, ingress validation `OK`, and
 `check-links.sh` exit `0`.
 
-Verified on 2026-08-31 after the Prometheus replacement: the VictoriaMetrics `:9491` and vmalert
-`:9480` cards both returned `200`; the full 15-card link sweep exited `0`.
+Verified on 2026-09-04 after adding the Council card: all 16 cards reachable, `check-links.sh` exit 0.
 
 Verified on 2026-07-29 after the fold: unit active and enabled from the new
 `WorkingDirectory`, origin on `127.0.0.1:3912`, `https://tailscale.harm.org/`
