@@ -54,3 +54,10 @@ is runtime state and is not copied into this repository.
 The canonical YAML may reference keys from `/config/secrets.yaml`, but
 `secrets.yaml` and its values never enter Git. Keep the appliance copy outside
 repository synchronization and include it in Home Assistant backups.
+
+## Plant notification troubleshooting
+
+The [September 8 investigation](plant-alert-investigation-2026-09-08.md)
+records the live watering automation, notification traces, remaining delivery
+uncertainty, and a direct phone test. It is an observation record, not an
+installed automation file.

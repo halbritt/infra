@@ -1,5 +1,16 @@
 # Home Assistant at Fernside changelog
 
+## 2026-09-08
+
+### Investigated missing plant watering notifications
+
+The enabled watering automation completed three runs at 05:08 PDT, and both
+phone notification entities recorded sends. Phone receipt remains unverified.
+Recorded the trace, current moisture values, bridge-to-Plane handoff, reminder
+suppression, and Ficus configuration mismatch in the
+[investigation report](config/home-assistant-core/plant-alert-investigation-2026-09-08.md).
+No live configuration changed and no diagnostic notification was sent.
+
 ## 2026-08-31
 
 ### Moved allowlisted telemetry writes to VictoriaMetrics
