@@ -3,8 +3,14 @@
 The owner reported missing plant watering notifications. Home Assistant's
 automation executed and recorded sends to both registered phones. The owner
 subsequently confirmed receipt of an authorized direct iPhone test at 08:15
-PDT. Receipt of the earlier watering messages remains unverified. No live
-configuration was changed.
+PDT. No live configuration was changed during that initial investigation.
+
+The owner then found the morning alerts bundled with other notifications and
+approved daily repeat reminders. The
+[daily summary](plant-watering-daily.yaml) was subsequently installed at 09:00
+America/Los_Angeles; see the [subsystem README](README.md#daily-plant-watering-reminder)
+and device changelog for installation and verification. The observations below
+preserve what was known before that confirmation and change.
 
 ## Observations
 

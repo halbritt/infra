@@ -2,6 +2,32 @@
 
 ## 2026-09-08
 
+### Added a daily plant watering summary to the iPhone
+
+The owner found the morning watering alerts bundled with other notifications
+and approved a daily daytime reminder while plants remain dry. Installed
+`automation.plant_watering_daily_summary` (unique ID `1788880838740`) through
+the HA config API from the canonical
+[`plant-watering-daily.yaml`](config/home-assistant-core/plant-watering-daily.yaml).
+It runs at 09:00 America/Los_Angeles, reads all six plants, and sends one
+ordinary-priority summary directly to `notify.mobile_app_dont_panic` when any
+plant is below threshold. It sends nothing for an empty dry-plant list and
+excludes unavailable/nonnumeric readings. Ficus uses the deep probe below 30%.
+
+Verified the installed configuration matches the canonical YAML and all ten
+pre-existing automations retained their configuration. HA template checks
+covered watered plants, exact thresholds, just-below thresholds, zero moisture,
+unknown/unavailable/missing readings, invalid numbers, and empty-summary
+suppression. The entity/threshold pairs match the bridge. `ha core check`
+passed without a restart.
+
+A manual run with conditions enabled at 08:21:22 PDT completed successfully,
+listing Lisa 13.2%, fern 28.1%, and Michiko 10.8%. Trace
+`15a9b7d725db75ef8d4f8fcf6a6a9c61` recorded the rendered message, the passing
+condition, and the direct iPhone action; the phone notification entity advanced
+to `2026-09-08T15:21:22.732990Z`. The owner confirmed receipt of this summary.
+The first scheduled 09:00 run had not occurred at verification time.
+
 ### Investigated missing plant watering notifications
 
 The enabled watering automation completed three runs at 05:08 PDT, and both

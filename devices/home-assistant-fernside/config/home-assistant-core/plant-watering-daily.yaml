@@ -1,0 +1,55 @@
+id: '1788880838740'
+alias: Plant watering daily summary
+description: >-
+  Daily reminder at 09:00 America/Los_Angeles for plants still below their
+  rewater thresholds. Added after the owner found the one-shot alerts bundled
+  with other notifications on 2026-09-08. Thresholds and probes mirror PLANTS
+  in hosts/proximal/config/plant-praxis-bridge/plant_praxis_bridge.py.
+triggers:
+  - trigger: time
+    at: "09:00:00"
+variables:
+  plants:
+    - name: Dracaena Lisa
+      entity_id: sensor.dracaena_lisa_moisture_soil_moisture
+      threshold: 20
+    - name: Ficus Audrey
+      entity_id: sensor.gw1200b_soil_moisture_1
+      threshold: 30
+    - name: Monstera adansonii
+      entity_id: sensor.monstera_adansonii_soil_moisture
+      threshold: 38
+    - name: Palm
+      entity_id: sensor.palm_moisture_soil_moisture
+      threshold: 30
+    - name: Kangaroo Paw Fern
+      entity_id: sensor.kangaroo_paw_fern_soil_moisture
+      threshold: 45
+    - name: Dracaena Michiko
+      entity_id: sensor.dracaena_michiko_soil_moisture
+      threshold: 20
+  dry_plants: >-
+    {% set ns = namespace(plants=[]) %}
+    {% for plant in plants %}
+      {% set moisture = states(plant.entity_id) %}
+      {% if is_number(moisture) and (moisture | float) < plant.threshold %}
+        {% set ns.plants = ns.plants + [dict(name=plant.name,
+          moisture=moisture | float | round(1), threshold=plant.threshold)] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.plants }}
+conditions:
+  - condition: template
+    value_template: "{{ dry_plants | count > 0 }}"
+actions:
+  - action: notify.mobile_app_dont_panic
+    data:
+      title: Daily plant watering reminder
+      message: >-
+        Water these plants:
+        {%- for plant in dry_plants %}
+        {{ '\n' }}• {{ plant.name }}: {{ plant.moisture }}%
+        (water below {{ plant.threshold }}%)
+        {%- endfor %}
+initial_state: true
+mode: single
