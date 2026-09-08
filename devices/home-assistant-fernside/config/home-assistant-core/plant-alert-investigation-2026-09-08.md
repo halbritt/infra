@@ -1,9 +1,10 @@
 # Plant alert investigation, 2026-09-08
 
 The owner reported missing plant watering notifications. Home Assistant's
-automation executed and recorded sends to both registered phones. Receipt and
-display on the owner's phone remain unverified. No live configuration was
-changed and no test notification was sent during this investigation.
+automation executed and recorded sends to both registered phones. The owner
+subsequently confirmed receipt of an authorized direct iPhone test at 08:15
+PDT. Receipt of the earlier watering messages remains unverified. No live
+configuration was changed.
 
 ## Observations
 
@@ -77,11 +78,23 @@ Praxis import and downstream message delivery were not established by this
 check. The bridge state dates Michiko's alert to August 26; its original item
 was not independently retrieved.
 
-## Next discriminating check
+## Direct phone test: received
 
-Confirm the intended phone and send one approved, ordinary-priority test
-directly to it while the owner can observe the phone. For `Don't Panic`, the
-exact action is:
+After the initial investigation, the owner authorized the test below. At
+08:15:41 PDT, `notify.mobile_app_dont_panic` returned success and
+`notify.dont_panic` advanced to `2026-09-08T15:15:41.747475Z`. The subsequent
+structured system-log query for `notif` returned no entries. The owner
+confirmed that the test appeared on the phone.
+
+This verifies ordinary-priority delivery through the direct iPhone action at
+that time. It does not establish receipt of the morning automation messages,
+explain their absence, or verify the generic action's delivery to each phone.
+The reported failure was not reproduced by the direct test. Focus or
+notification presentation remains a hypothesis, not a confirmed cause.
+
+## Test action and remaining checks
+
+The approved, ordinary-priority test sent directly to `Don't Panic` was:
 
 ```yaml
 action: notify.mobile_app_dont_panic
@@ -90,17 +103,16 @@ data:
   message: This is a test of Home Assistant plant alerts. No watering action is required.
 ```
 
-Check the notification entity's timestamp and Core errors, then obtain the
-owner's receipt result. If the phone displays this test, inspect Notification
-Center and Focus settings for the 05:08 watering messages. Normal iOS alerts
+For the earlier missed messages, inspect Notification Center and Focus settings
+for the 05:08 watering messages. Normal iOS alerts
 do not override Focus; see the
 [interruption-level documentation](https://companion.home-assistant.io/docs/notifications/notifications-basic/#interruption-level).
-If the test is absent, inspect iOS notification permission and the Companion
+If a future direct test is absent, inspect iOS notification permission and the Companion
 app's Settings → Companion app → Notifications diagnostics and counters,
 following the [official troubleshooting guide](https://companion.home-assistant.io/docs/troubleshooting/faqs/).
 Do not reset the push registration before collecting that evidence.
 
-After phone delivery is verified, a daytime daily dry-plant summary would
+With direct phone delivery verified, a daytime daily dry-plant summary would
 address the lack of repeat reminders. Selecting its time, changing recipients,
 and aligning the Ficus trigger are separate configuration decisions. The
 current investigation does not establish that any of these changes alone

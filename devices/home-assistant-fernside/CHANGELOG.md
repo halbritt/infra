@@ -5,11 +5,15 @@
 ### Investigated missing plant watering notifications
 
 The enabled watering automation completed three runs at 05:08 PDT, and both
-phone notification entities recorded sends. Phone receipt remains unverified.
+phone notification entities recorded sends. Receipt of those morning messages
+remains unverified. The owner authorized a direct `Don't Panic` iPhone test at
+08:15 PDT and confirmed it appeared; the service returned success and the
+notification entity recorded the send without a matching system-log error.
 Recorded the trace, current moisture values, bridge-to-Plane handoff, reminder
 suppression, and Ficus configuration mismatch in the
 [investigation report](config/home-assistant-core/plant-alert-investigation-2026-09-08.md).
-No live configuration changed and no diagnostic notification was sent.
+No live configuration changed. The direct test did not reproduce the reported
+missing notification, and the cause of the earlier missed alerts remains open.
 
 ## 2026-08-31
 
