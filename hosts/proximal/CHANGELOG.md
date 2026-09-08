@@ -5,6 +5,32 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-08
+
+### AI Newsroom public publication
+
+Added `newsroom.harm.org` through the existing Cloudflare Tunnel to the new
+loopback static origin on `127.0.0.1:3913`. The user explicitly requested a news
+page, Local Inference coverage, and weekly synthesis. Application code and
+canonical web/editorial units live in `/home/halbritt/git/ai-newsroom`; this repo
+owns public ingress and the host record (`config/ai-newsroom/README.md`).
+
+The site has a front page, topic pages, 30 historical editions (184 links), RSS,
+and a source-linked editorial. Private SQLite archives and draft files stay
+outside the served root. Daily selections are saved independently of Slack
+acknowledgments. The Sunday 10:00 Pacific timer drafts editorials but does not
+automatically publish them. Initial model drafts failed factual review and stayed
+private; the first published piece was authored by Codex and passed a separate
+local-model critic.
+
+Before installing, a diff exposed an existing live `pastebin.harm.org` ingress
+rule absent from the repo. Preserved it and reconciled both canonical copies;
+the installed change only added the newsroom hostname. Both configs validate
+and have matching ingress. Restarted cloudflared, then verified newsroom root,
+topic, CSS, RSS and editorial over public HTTPS. Database/draft paths return 404.
+Existing tailscale, tokens, dram, Plane and Pastebin routes still return 200.
+Desktop/mobile browser checks passed without overflow or script errors.
+
 ## 2026-09-06
 
 - striatum-next wake units: shared drop-in `striatum-wake-.service.d/gomemlimit.conf` (`Environment=GOMEMLIMIT=24GiB`) after a global OOM kill of a 46 GiB drive at 19:47Z; installed on the box (`daemon-reload` done), mirrored here. Courtesy drives (instance scratchpad `cdrive-pnnp.sh`) export the same. Durable fix: the generator (`striatum-next` follow-up 15).

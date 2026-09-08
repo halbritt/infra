@@ -42,9 +42,11 @@ no explicit DNS record of its own — onto Pages. Do not point it back at `harm.
 | public hostname | local service |
 |---|---|
 | `tailscale.harm.org` | `http://localhost:3912` ([`../tailscale-index`](../tailscale-index/)) |
+| `newsroom.harm.org` | `http://localhost:3913` ([`../ai-newsroom`](../ai-newsroom/)) |
 | `tokens.harm.org` | `http://localhost:3001` |
 | `dram.harm.org` | `http://localhost:3011` |
 | `plane.harm.org` | `http://localhost:8190` |
+| `pastebin.harm.org` | `https://proximal.tail0ecc2e.ts.net:18081` (existing live route reconciled September 8) |
 
 ## Files -> install paths
 
@@ -145,3 +147,10 @@ Stop and ask before:
 - exposing new local services without a hostname-specific ingress rule and
   external verification
 - letting the two configs diverge: an ingress change to one is a change to both
+
+Verified September 8, 2026: added the hostname-specific newsroom route and
+reconciled the already-installed Pastebin route before deployment. Both canonical
+configs validate; installed ingress parity is exact. Newsroom root, topic pages,
+CSS, RSS and the first editorial return 200; private archive/draft paths return
+404. Tailscale index, tokens, dram, Plane and Pastebin remain reachable (200).
+No DNS records or tunnel credentials were changed.

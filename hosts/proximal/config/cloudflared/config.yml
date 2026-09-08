@@ -4,10 +4,14 @@ credentials-file: /etc/cloudflared/e6e104cb-75a2-4ccc-a46f-aca2c725328c.json
 ingress:
   - hostname: tailscale.harm.org
     service: http://localhost:3912
+  - hostname: newsroom.harm.org
+    service: http://localhost:3913
   - hostname: tokens.harm.org
     service: http://localhost:3001
   - hostname: dram.harm.org
     service: http://localhost:3011
   - hostname: plane.harm.org
     service: http://localhost:8190
+  - hostname: pastebin.harm.org
+    service: https://proximal.tail0ecc2e.ts.net:18081
   - service: http_status:404
