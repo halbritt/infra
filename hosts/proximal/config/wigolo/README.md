@@ -7,7 +7,14 @@ research-service replacement** for local agent work. Core search/fetch/crawl/ext
 are fully keyless and on-box; only the `research` / `agent` synthesis step calls out to an
 LLM (see **Synthesis model** below).
 
-- **Version audited & installed:** `0.2.1` (npm), source commit `180ac3d` (see `SOURCE_COMMIT`).
+- **Version installed (2026-09-08):** `0.2.1` + unreleased upstream `main` @ `c6ad4479` (2026-08-19),
+  built from `~/git/wigolo` and installed via `npm pack` → `npm i -g <tarball>` because npm's
+  latest is still `0.2.1` (2026-07-19) while `main` carries 132 commits (41 fixes, opt-in anti-bot
+  fetch ladder, crates.io engine, JobPosting schema). `SOURCE_COMMIT` records the installed commit.
+- **Version audited:** `0.2.1`, source commit `180ac3d`. The 2026-09-08 delta was *not* re-audited in
+  full — only a dependency/egress scan: 2 new pinned deps (`patchright`, `chrome-remote-interface`,
+  both for the opt-in CDP rung), still no lifecycle scripts, new egress limited to credential-gated
+  Reddit OAuth and the crates.io engine. All new anti-bot knobs default off.
 - **Install method:** global npm (`~/.npm-global/bin/wigolo`), matching the box's global-tool
   convention (node 24 / npm 11). **No `postinstall`** — browser + models download at `warmup`.
 - **Data dir:** `~/.wigolo/` (cache DB, browser engine, embeddings, plugins).
@@ -135,7 +142,11 @@ wigolo doctor                    # health probe
 ## Update / remove
 
 ```bash
-npm update -g wigolo             # bump; re-run `wigolo warmup` if a new engine ships
+npm update -g wigolo             # bump when npm has a newer release; re-run `wigolo warmup` if a new engine ships
+# from-source (current install): build main and install the tarball over the global package
+cd ~/git/wigolo && git pull --ff-only && npm ci && npm run build && npm pack --pack-destination /tmp \
+  && npm i -g /tmp/wigolo-*.tgz && systemctl --user restart wigolo && wigolo doctor
+npm i -g wigolo@0.2.1 && systemctl --user restart wigolo   # revert to the audited npm release
 claude mcp remove wigolo -s user # unwire from Claude Code
 wigolo config --uninstall --yes  # wipe ~/.wigolo entirely
 ```

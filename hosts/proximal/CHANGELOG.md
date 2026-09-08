@@ -7,6 +7,19 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-08
 
+### wigolo updated to unreleased upstream main (c6ad4479)
+
+Rebuilt [`wigolo`](config/wigolo/) from `~/git/wigolo` at upstream `main` `c6ad4479`
+(2026-08-19) and installed the tarball over the global npm `0.2.1`, ahead of a
+planned wigolo-vs-Exa search comparison. npm has had no release since `0.2.1`
+(2026-07-19); `main` carries 132 commits, mostly fetch fixes and an opt-in
+anti-bot ladder whose knobs all default off. Build clean; test suite 8371/8401
+with the 12 failures confined to REPL readline tests that fail under a
+non-TTY runner (`--help` paths exit 0 in a real shell). `wigolo doctor` OK
+after the `wigolo.service` restart; the Claude Code MCP entry uses the same
+global binary. Not fully re-audited — dependency/egress delta scanned only,
+see the README. `SOURCE_COMMIT` now records `c6ad4479`.
+
 ### AI Newsroom public publication
 
 Added `newsroom.harm.org` through the existing Cloudflare Tunnel to the new
