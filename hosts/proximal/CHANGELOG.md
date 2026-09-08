@@ -7,6 +7,21 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-08
 
+### wigolo vs Exa search comparison; Exa account opened
+
+Signed up for [Exa](https://exa.ai) (free tier, no card; key in `~/.config/exa/env`,
+never in git) and ran a 40-query blind comparison against the on-box
+[`wigolo`](config/wigolo/) daemon, judged by local Qwen3.8-27B, plus a 15-URL
+fetch leg. Exa `auto` won decisively on technical and research queries
+(nDCG@5 0.94 vs 0.54 overall) and on latency; parity on news and Council-style
+queries. Root cause on the wigolo side is DuckDuckGo challenging proximal's IP
+mid-run (wigolo reports it as `ok:0`), leaving Bing's HTML endpoint alone.
+Fetch is near parity once wigolo's ~14k-token default output budget is raised.
+Write-up + harness + raw results in
+[`config/wigolo/exa-comparison-2026-09-08/`](config/wigolo/exa-comparison-2026-09-08/README.md).
+Recommendation recorded: Exa as primary search for Council / grounding, wigolo
+as keyless fallback and fetch. Total Exa spend: $0.37 of free credit.
+
 ### wigolo updated to unreleased upstream main (c6ad4479)
 
 Rebuilt [`wigolo`](config/wigolo/) from `~/git/wigolo` at upstream `main` `c6ad4479`

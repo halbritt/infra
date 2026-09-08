@@ -1,0 +1,15 @@
+https://arxiv.org/abs/2609.01595
+https://arxiv.org/html/2609.01595v1
+https://arxiv.org/pdf/2609.01595v1
+https://code.claude.com/docs/en/memory
+https://codex.danielvaughan.com/2026/05/01/codex-cli-memories-persistent-context-session-memory-ecosystem/
+https://deepwiki.com/NousResearch/hermes-agent/4.3-memory-and-sessions
+https://github.com/ggml-org/llama.cpp/releases/latest
+https://nodejs.org/en/about/previous-releases
+https://api.semanticscholar.org/graph/v1/paper/arXiv:2609.01595?fields=title,abstract,tldr,year
+https://www.postgresql.org/docs/current/logical-replication.html
+https://www.reddit.com/r/LocalLLaMA/top/?t=week
+https://news.ycombinator.com/
+https://exa.ai/pricing
+https://www.home-assistant.io/blog/
+https://huggingface.co/unsloth

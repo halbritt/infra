@@ -1,0 +1,50 @@
+{
+ "council": [
+  "Claude Code auto memory feature how it decides what to save",
+  "Codex CLI memory feature AGENTS.md automatic memories",
+  "Hermes Agent Nous Research memory system MEMORY.md self-curating",
+  "GLM-5.3 model release",
+  "Node.js current Active LTS version 2026",
+  "llama.cpp latest release notes",
+  "striatum halbritt council escalation agents",
+  "Home Assistant ha-mcp add-on MCP server"
+ ],
+ "news": [
+  "Anthropic announcement this week",
+  "OpenAI new model release September 2026",
+  "Qwen 3.8 open weights release",
+  "EU AI Act general-purpose AI obligations enforcement 2026",
+  "NVIDIA quarterly earnings data center revenue AI",
+  "Home Assistant 2026.9 release notes",
+  "DeepSeek new model announcement",
+  "Meta Llama 5 release",
+  "Cloudflare AI crawler blocking policy news",
+  "Mistral AI funding round 2026",
+  "Google Gemini 3.6 update"
+ ],
+ "technical": [
+  "PostgreSQL logical replication slot failover",
+  "systemd Restart=on-failure versus Restart=always",
+  "Tailscale exit node setup Linux",
+  "sqlite-vec vec0 virtual table example",
+  "patchright vs playwright bot detection",
+  "Garage S3 multi-node cluster layout",
+  "Prometheus remote write receiver configuration",
+  "whisper.cpp CUDA build flags",
+  "npm allow-scripts config global install",
+  "Cloudflare tunnel static site origin loopback",
+  "llama.cpp MTP speculative decoding draft depth"
+ ],
+ "research": [
+  "does speculative decoding change the output distribution",
+  "position bias in LLM-as-a-judge evaluation",
+  "sandbagging evaluations language models arXiv",
+  "reciprocal rank fusion k parameter choice",
+  "BGE-small-en-v1.5 embedding dimensions MTEB score",
+  "GGUF quantization perplexity Q4_K vs Q5_K comparison",
+  "lost in the middle long context degradation",
+  "Model Context Protocol sampling specification",
+  "agent memory consolidation survey 2026",
+  "reasoning model thinking tokens disable chat template Qwen"
+ ]
+}

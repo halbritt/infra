@@ -87,6 +87,17 @@ billing occasionally to confirm it never racks up a charge. Fetched pages are pu
 content, so nothing private leaves the box; only that content + the question reach the
 Gemini API. To stay fully keyless/on-box, drop to core `search`/`fetch` (no LLM).
 
+## Compared against Exa (2026-09-08)
+
+Full write-up, harness, and raw results: [`exa-comparison-2026-09-08/`](exa-comparison-2026-09-08/README.md).
+Headline: over 40 blind-judged queries, Exa `auto` scored nDCG@5 **0.94** vs wigolo **0.54**
+(council 0.95/0.88, news 0.95/0.91, technical 0.92/0.35, research 0.94/0.07) at 1.2 s vs 6.1 s
+median. wigolo's collapse on technical/research traces to **DuckDuckGo challenging this box's
+IP mid-run** (reported by wigolo as `ok:0`, not as blocked) leaving Bing alone, whose HTML
+endpoint loosens rare terms. Fetch is near parity once `max_tokens_out` is raised above the
+~14k-token default that truncates papers. Recommendation: Exa as primary search for Council /
+research grounding, wigolo as keyless fallback + fetch. Exa key: `~/.config/exa/env` (free tier).
+
 ## Configuration (how it's wired)
 
 Registered as a Claude Code MCP server at **user scope** (all projects). Uses the native
