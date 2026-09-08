@@ -7,6 +7,21 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-08
 
+### Exa wired in as Council's primary web search (`exa-search` CLI)
+
+New [`config/exa/`](config/exa/README.md): a stdlib `exa-search` CLI over the Exa
+search API, symlinked to `~/.local/bin/exa-search` and reading its key from
+`~/.config/exa/env` (never a member's environment). Council
+(`halbritt/council` e1c8b71, deployed as council-runtime release
+`exa-search-20260908-e1c8b71`, unit repointed and restarted 21:39Z) now tells
+web-granted members to search with `exa-search`, read pages with `wigolo fetch`
+(bigger output budget for papers), and fall back to `wigolo search`; isolated
+Claude members get `Bash(exa-search:*)`, opencode policy revision 3 opens bash
+to `exa-search *`. Verified end to end with an isolated opencode member (glm)
+returning live Exa results; the two smoke topics were archived. Pre-existing,
+unrelated: the `fable` Claude member's session fails with
+`provider_authentication_failed` (seen since 2026-08-30).
+
 ### wigolo vs Exa search comparison; Exa account opened
 
 Signed up for [Exa](https://exa.ai) (free tier, no card; key in `~/.config/exa/env`,

@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""exa-search — thin CLI over Exa's /search for agents. Always prints one JSON object on stdout.
+
+usage: exa-search "<query>" [--max-results N] [--news] [--type auto|fast|instant|deep-lite|deep]
+                            [--include-domains a.com,b.org] [--exclude-domains ...] [--max-age-hours H]
+                            [--text] [--json]
+
+The API key comes from EXA_API_KEY or from <account home>/.config/exa/env (the account's passwd
+home, not $HOME, so a caller running under a private HOME still finds it). Exit 0 on success;
+on failure a JSON {"error": ...} goes to stdout and the exit code is non-zero.
+"""
+import argparse, json, os, pwd, sys, time, urllib.request, urllib.error
+
+ENDPOINT = "https://api.exa.ai/search"
+TYPES = ("auto", "fast", "instant", "deep-lite", "deep", "deep-reasoning")
+
+
+def load_key():
+    key = os.environ.get("EXA_API_KEY", "").strip()
+    if key:
+        return key
+    home = pwd.getpwuid(os.getuid()).pw_dir
+    try:
+        with open(os.path.join(home, ".config", "exa", "env")) as fh:
+            for line in fh:
+                line = line.strip()
+                if line.startswith("EXA_API_KEY="):
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return ""
+
+
+def fail(message, code=2, **extra):
+    print(json.dumps({"error": message, **extra}), flush=True)
+    sys.exit(code)
+
+
+def main():
+    p = argparse.ArgumentParser(prog="exa-search", add_help=True)
+    p.add_argument("query", nargs="+", help="search query (quote it, or pass as several words)")
+    p.add_argument("--max-results", type=int, default=5)
+    p.add_argument("--news", action="store_true", help="search Exa's news index only")
+    p.add_argument("--type", default="auto", choices=TYPES)
+    p.add_argument("--include-domains", default="")
+    p.add_argument("--exclude-domains", default="")
+    p.add_argument("--max-age-hours", type=int, default=None, help="0 = always livecrawl, -1 = cache only")
+    p.add_argument("--text", action="store_true", help="return page text (capped) instead of highlights")
+    p.add_argument("--max-chars", type=int, default=8000, help="text cap per result when --text is set")
+    p.add_argument("--json", action="store_true", help="accepted for symmetry; output is always JSON")
+    a = p.parse_args()
+
+    key = load_key()
+    if not key:
+        fail("no Exa API key: set EXA_API_KEY or create ~/.config/exa/env", code=3)
+    n = max(1, min(a.max_results, 20))
+    contents = {"text": {"maxCharacters": a.max_chars}} if a.text else {"highlights": True}
+    if a.max_age_hours is not None:
+        contents["maxAgeHours"] = a.max_age_hours
+    body = {"query": " ".join(a.query), "type": a.type, "numResults": n, "contents": contents}
+    if a.news:
+        body["category"] = "news"
+    if a.include_domains:
+        body["includeDomains"] = [d.strip() for d in a.include_domains.split(",") if d.strip()]
+    if a.exclude_domains:
+        body["excludeDomains"] = [d.strip() for d in a.exclude_domains.split(",") if d.strip()]
+
+    req = urllib.request.Request(ENDPOINT, data=json.dumps(body).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "x-api-key": key,
+                                          "User-Agent": "exa-search/1 (proximal)"})
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            raw = json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        fail(f"Exa HTTP {e.code}", code=4, detail=e.read()[:400].decode(errors="replace"))
+    except Exception as e:  # network, timeout, bad JSON
+        fail(f"{type(e).__name__}: {e}", code=5)
+
+    results = []
+    for r in raw.get("results", []):
+        item = {"title": r.get("title"), "url": r.get("url"), "published": r.get("publishedDate"),
+                "author": r.get("author")}
+        if a.text:
+            item["text"] = r.get("text")
+        else:
+            item["highlights"] = r.get("highlights") or []
+        results.append(item)
+    out = {"query": body["query"], "type": a.type, "category": "news" if a.news else None,
+           "results": results, "result_count": len(results),
+           "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "latency_ms": round((time.time() - t0) * 1000),
+           "cost_dollars": (raw.get("costDollars") or {}).get("total"), "request_id": raw.get("requestId")}
+    print(json.dumps(out, ensure_ascii=False), flush=True)
+
+
+if __name__ == "__main__":
+    main()
