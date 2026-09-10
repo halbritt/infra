@@ -5,6 +5,15 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-10
+
+### Private report linked from the tailnet index
+
+Added a verified Genome Report card and `/genome/` redirect at
+`tailscale.harm.org`. Report content remains outside Git and the public origin;
+Tailscale Serve provides HTTPS on port 8786 from a dedicated local directory.
+The index subsystem README records persistence, restoration, and withdrawal.
+
 ## 2026-09-08
 
 ### Exa wired in as Council's primary web search (`exa-search` CLI)

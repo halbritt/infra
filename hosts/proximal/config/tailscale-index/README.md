@@ -76,7 +76,7 @@ tunnel.
 
 ## Cards on the index
 
-Sweep of 2026-09-04 — 16 cards, all reachable
+Sweep of 2026-09-10 — 17 cards, all reachable
 (`check-links.sh` exit 0). Card names are the `<h2>` text.
 
 | card | target | status |
@@ -97,6 +97,7 @@ Sweep of 2026-09-04 — 16 cards, all reachable
 | vmalert — proximal | `:9480/` | 200 |
 | Alertmanager — proximal | `:9493/` | 200 |
 | Council | `:7331/` | 200 |
+| Genome Report | `:8786/` | 200 |
 
 All targets are `https://proximal.tail0ecc2e.ts.net`.
 
@@ -154,12 +155,40 @@ cloudflared --config ../cloudflared/config.yml tunnel ingress validate
 Expected: local origin `200`, public `200`, ingress validation `OK`, and
 `check-links.sh` exit `0`.
 
-Verified on 2026-09-04 after adding the Council card: all 16 cards reachable, `check-links.sh` exit 0.
+Verified on 2026-09-10 after adding the Genome Report card: all 17 cards reachable, `check-links.sh` exit 0.
 
 Verified on 2026-07-29 after the fold: unit active and enabled from the new
 `WorkingDirectory`, origin on `127.0.0.1:3912`, `https://tailscale.harm.org/`
 `200` and byte-identical to `site/index.html`. After the card edits the same
 day, `check-links.sh` exits `0` — 14/14 reachable.
+
+## Private report entry point
+
+Added 2026-09-10 at the owner's request. `/genome/` is a public, content-free
+redirect page pointing to `https://proximal.tail0ecc2e.ts.net:8786/`. The index
+also links that verified endpoint directly. Neither public page contains report
+findings. The report's HTML and its supporting text files live outside Git at
+`~/genome/site/`; never copy them into this public content root or commit them.
+
+Tailscale Serve serves that dedicated directory directly, using the existing
+system-managed `tailscaled` service. There is no extra HTTP process or user unit.
+The HTTPS mapping was installed in background mode and persists across restarts:
+
+```bash
+sudo tailscale serve --bg --https=8786 "$HOME/genome/site"
+curl -fI https://proximal.tail0ecc2e.ts.net:8786/
+```
+
+Validation for this addition: browser checks passed at desktop and mobile widths,
+including search, category filters, evidence expansion, and print rendering. The
+six infrastructure unit tests passed. The repository-wide validator reports two
+pre-existing broken links in `services/debug-escalation/README.md`; the unchanged
+base checkout reports the same two failures.
+
+Only the prepared report directory is exposed; analysis inputs and other genome
+files are outside it. Tailscale Funnel is not enabled for this port. To withdraw
+the report, disable this mapping with `sudo tailscale serve --https=8786 off` and
+update the card and entry point under owner authority. Report bytes remain local.
 
 ## History
 
