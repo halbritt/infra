@@ -5,6 +5,22 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-14
+
+### Claude Code OAuth tokens renewed by timer between sessions
+
+New [`config/claude-oauth-refresh/`](config/claude-oauth-refresh/README.md):
+`claude-oauth-refresh.timer` runs every 15 minutes and renews any local Claude
+Code profile (`~/.claude`, `~/.claude-harm`) whose 8-hour access token expires
+within 45 minutes, using the CLI's own token endpoint and client id. Motivation:
+the CLI only refreshes lazily inside a running session, five minutes before
+expiry, so between sessions the token lapsed and the agent-usage dashboard
+reported `claude-harm` as expired for ~35 minutes on the night of 2026-09-13
+while the CLI itself was fine. The dashboard (`halbritt/agent-usage`, now
+pushed to GitHub as a private repo) was also fixed to re-check immediately when
+a credential file changes instead of waiting out its 401 backoff. Verified
+end to end with a forced renewal of `~/.claude`.
+
 ## 2026-09-10
 
 ### Private report linked from the tailnet index

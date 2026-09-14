@@ -1,0 +1,9 @@
+[Unit]
+Description=Renew Claude Code OAuth tokens for all local profiles
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/.local/bin/claude-oauth-refresh
+UMask=0077

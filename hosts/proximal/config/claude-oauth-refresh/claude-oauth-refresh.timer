@@ -1,0 +1,12 @@
+[Unit]
+Description=Renew Claude Code OAuth tokens every 15 minutes
+
+[Timer]
+OnBootSec=2min
+OnCalendar=*:0/15
+RandomizedDelaySec=60
+Persistent=true
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
