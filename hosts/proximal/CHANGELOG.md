@@ -7,6 +7,22 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-14
 
+### striatum harness Claude profiles get their tokens from the refresh timer
+
+`claude-oauth-refresh` now mirrors each source profile's **access** token into
+the striatum harness home that consumes it —
+`harness-config/claude-code` from `~/.claude` (halbritt@gmail.com) and
+`harness-config/claude-harm` from `~/.claude-harm` (halbritt@harm.org) — along
+with the source's `oauthAccount` block, so each mirror reports the account its
+token actually belongs to. Both harness profiles held empty credentials before
+this: `claude-harm` was created empty at 05:42, and `claude-code` was zeroed at
+08:02 when the 08:00 renewal rotated the refresh token an agent had copied into
+it verbatim. Refresh tokens are deliberately **not** mirrored — two holders of
+one refresh token cannot both survive a rotation — so a mirror can authenticate
+but never rotate. Verified: both profiles return `loggedIn: true` on their own
+account and PROBE-OK from a live `claude -p` run. Detail and rationale in
+[`config/claude-oauth-refresh/`](config/claude-oauth-refresh/README.md).
+
 ### Claude Code OAuth tokens renewed by timer between sessions
 
 New [`config/claude-oauth-refresh/`](config/claude-oauth-refresh/README.md):

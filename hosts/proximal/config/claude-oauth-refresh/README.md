@@ -34,8 +34,41 @@ for each profile (`~/.claude`, `~/.claude-harm` by default):
    as `mcpOAuth`. The provider rotates the refresh token on every renewal, so
    the re-read guard matters.
 
+5. Mirrors the renewed **access** token into the consumer profiles listed in
+   `MIRRORS` — striatum's harness homes, `harness-config/claude-code` from
+   `~/.claude` and `harness-config/claude-harm` from `~/.claude-harm` — and
+   copies the source's `oauthAccount` block into the mirror's `.claude.json`
+   so the profile reports the account its token actually belongs to.
+   `--no-mirror` renews only.
+
 Nothing is logged but the profile path and minutes-to-expiry. No token material
 reaches the journal or this repo.
+
+## Why mirrors get an access token and never a refresh token (2026-09-14)
+
+The striatum harness profiles have no login of their own. On 2026-09-14 an
+agent gave `harness-config/claude-code` a byte-identical *copy* of `~/.claude`'s
+refresh token; the 08:00 renewal rotated the source and the copy was dead by
+08:02. Two holders of one refresh token cannot both survive a rotation — the
+same failure the Council credential-rotation note records.
+
+A mirror therefore receives only the fields in `MIRRORED_FIELDS`
+(`accessToken`, `expiresAt`, `scopes`, `subscriptionType`, `rateLimitTier`),
+and any `refreshToken`/`refreshTokenExpiresAt` already in the mirror is dropped
+on write. The mirror holds a read-only lease on the source's session: it can
+authenticate, it cannot rotate, so it can never invalidate the source. Tokens
+last eight hours and the timer rewrites every fifteen minutes at a 45-minute
+lead, so a mirror is never within reach of expiry. Verified 2026-09-14: both
+mirrors report `loggedIn: true` on their own account and return PROBE-OK from
+a live `claude -p` run with no refresh token present.
+
+Mirroring the `oauthAccount` block matters for the same reason the 2026-09-14
+restore went wrong: it asserted the two profiles held different accounts on the
+strength of a stale `.claude.json` while the tokens said otherwise. The
+authoritative check is the token itself —
+`GET https://api.anthropic.com/api/oauth/profile` with
+`Authorization: Bearer <accessToken>` and `anthropic-beta: oauth-2025-04-20`
+returns `account.uuid` and `organization.name`.
 
 ## Units
 
