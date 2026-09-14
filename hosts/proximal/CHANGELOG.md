@@ -7,6 +7,28 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-14
 
+### Removed the deprecated `gemini-cli` harness (Gemini models are unaffected)
+
+`npm uninstall -g @google/gemini-cli` (was 0.44.1) plus the `~/.local/bin/gemini`
+symlink. The package was deprecated upstream and nothing on this box invoked it:
+no striatum-next backend adapter, no Council driver, no systemd unit, no MCP
+server entry, no cron.
+
+⚠️ **Harness, not model.** Gemini *models* are served through a different
+harness, `agy` (Google Antigravity CLI, `~/.local/bin/agy`, a standalone 213 MB
+ELF with no npm dependency) — 17 `agy-gemini-*` backends in striatum-next and the
+`agy` Council member. Those are untouched and verified working after the removal
+(`agy --version` 1.2.2; a live `--model "Gemini 3.8 Flash (Medium)"` run returns
+PROBE-OK). Agents have repeatedly confused the two, so the harness list in
+`AGENTS.md` now reads `agy` rather than `gemini`.
+
+`~/.gemini/` was deliberately **left in place**: despite the name it is
+Antigravity's config directory (3.0 GiB of `~/.gemini/antigravity-cli/`, plus the
+shared `~/.gemini/config/`), it is live agy state, and deleting it would break the
+Gemini backends. Unrelated too is wigolo's `GEMINI_API_KEY`, which reaches the
+Gemini API directly and never went through the CLI.
+
+
 ### striatum harness Claude profiles get their tokens from the refresh timer
 
 `claude-oauth-refresh` now mirrors each source profile's **access** token into

@@ -3,7 +3,7 @@
 You are maintaining the durable, inspectable, cross-agent **provenance and
 desired-state for the host `proximal`** (the workstation + home-lab node). This host
 partition is operational state, not a codebase: its job is to remember — across runs and across
-agents (claude, codex, gemini, opencode-local) — what each service on this box looks
+agents (claude, codex, agy, opencode-local) — what each service on this box looks
 like, what config it should run, and what was already tried and rejected.
 
 It exists because per-agent memory is opaque and single-agent; a git repo is the
