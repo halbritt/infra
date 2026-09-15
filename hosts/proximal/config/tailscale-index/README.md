@@ -176,6 +176,12 @@ served directly by the existing service without a restart. Its commands were
 checked against the linked Microsoft setup guide; they were not executed on a
 Windows host as part of publication.
 
+Each command box has a Copy button, added after the owner reported the missing
+control. Buttons copy the exact command text, announce success or failure, and
+remain outside the horizontally scrolling code on narrow screens. Browser checks
+against the public URL verified all four clipboard results, keyboard activation,
+375-pixel layout, and feedback when clipboard access is denied.
+
 Verification: local and public HTTP 200, public HTML byte-identical to the file,
 existing noindex/referrer/nosniff headers retained, and all 17 index links reachable.
 The six validator tests passed. Repository validation still reports the two

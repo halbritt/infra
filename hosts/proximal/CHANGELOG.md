@@ -7,6 +7,13 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-15
 
+### Added Copy buttons to the Windows SSH guide
+
+The owner reported that the published command boxes lacked Copy buttons. All four
+now copy their command text and announce success or clipboard failure. Verified
+against the public page in Chromium: exact clipboard contents for each box,
+keyboard activation, mobile layout, and denied-copy feedback.
+
 ### Published a short Windows SSH setup guide
 
 At the owner's request, published the conversation's Windows OpenSSH instructions
