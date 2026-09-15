@@ -48,6 +48,7 @@ next request — no restart, no reinstall.**
 | [`tailscale-index.service`](tailscale-index.service) | `~/.config/systemd/user/tailscale-index.service` | `halbritt:halbritt 0644` | user-scope unit; the only file that needs installing |
 | [`server.py`](server.py) | *served from here* | `halbritt:halbritt 0644` | run in place by the unit's `ExecStart` |
 | [`site/index.html`](site/index.html) | *served from here* | `halbritt:halbritt 0644` | run in place via `TAILSCALE_INDEX_SITE_DIR` |
+| [`site/windows-ssh/index.html`](site/windows-ssh/index.html) | *served from here* | `halbritt:halbritt 0644` | public Windows SSH quick setup guide |
 | [`bin/check-links.sh`](bin/check-links.sh) | *run from here* | `halbritt:halbritt 0755` | link sweep, see [Verify](#verify) |
 
 Install after editing the unit:
@@ -76,7 +77,7 @@ tunnel.
 
 ## Cards on the index
 
-Sweep of 2026-09-10 — 17 cards, all reachable
+Sweep of 2026-09-15 — 17 cards, all reachable
 (`check-links.sh` exit 0). Card names are the `<h2>` text.
 
 | card | target | status |
@@ -155,12 +156,30 @@ cloudflared --config ../cloudflared/config.yml tunnel ingress validate
 Expected: local origin `200`, public `200`, ingress validation `OK`, and
 `check-links.sh` exit `0`.
 
+Verified on 2026-09-15 after publishing the Windows SSH guide: all 17 cards reachable, `check-links.sh` exit 0. The guide returns public HTTP 200 and matches the repository bytes.
+
 Verified on 2026-09-10 after adding the Genome Report card: all 17 cards reachable, `check-links.sh` exit 0.
 
 Verified on 2026-07-29 after the fold: unit active and enabled from the new
 `WorkingDirectory`, origin on `127.0.0.1:3912`, `https://tailscale.harm.org/`
 `200` and byte-identical to `site/index.html`. After the card edits the same
 day, `check-links.sh` exits `0` — 14/14 reachable.
+
+## Windows SSH guide
+
+At the owner's explicit request on 2026-09-15, the public document at
+<https://tailscale.harm.org/windows-ssh/> contains the short Windows OpenSSH
+setup instructions from the conversation. This authorizes this generic how-to
+alongside the URL index; it contains no machine-specific account details or
+credentials. The canonical file is [`site/windows-ssh/index.html`](site/windows-ssh/index.html),
+served directly by the existing service without a restart. Its commands were
+checked against the linked Microsoft setup guide; they were not executed on a
+Windows host as part of publication.
+
+Verification: local and public HTTP 200, public HTML byte-identical to the file,
+existing noindex/referrer/nosniff headers retained, and all 17 index links reachable.
+The six validator tests passed. Repository validation still reports the two
+pre-existing broken links in `services/debug-escalation/README.md` recorded below.
 
 ## Private report entry point
 

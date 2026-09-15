@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive, noimageindex, nosnippet" />
+    <title>SSH into Windows: quick setup</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #f7f8fa; color: #17202a; font: 17px/1.6 system-ui, sans-serif; }
+      main { max-width: 800px; margin: auto; padding: 40px 20px; }
+      h1 { font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1.15; }
+      h2 { margin-top: 2rem; font-size: 1.3rem; }
+      a { color: #0e6663; text-underline-offset: 3px; }
+      pre { padding: 18px; border: 1px solid #d7dde5; border-radius: 8px; background: white; overflow-x: auto; font-size: .85rem; }
+      code { font-family: ui-monospace, Consolas, monospace; }
+      footer { margin-top: 2.5rem; border-top: 1px solid #d7dde5; padding-top: 16px; color: #5d6875; font-size: .85rem; }
+      @media print {
+        body { background: white; color: black; }
+        main { padding: 0; }
+        pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>SSH into Windows</h1>
+      <p>Quick setup using the built-in OpenSSH Server on Windows 10 (1809 or later) or Windows 11.</p>
+
+      <h2>1. Enable the server</h2>
+      <p>On the Windows machine, open <strong>PowerShell as Administrator</strong> and run:</p>
+      <pre><code>Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+Set-Service -Name sshd -StartupType Automatic
+Start-Service sshd</code></pre>
+      <p>This installs the server, enables startup at boot, and starts it now. Installation normally creates the firewall rule for TCP port 22.</p>
+
+      <h2>2. Connect</h2>
+      <p>From your other machine:</p>
+      <pre><code>ssh username@windows-ip</code></pre>
+      <p>Replace the placeholders with your Windows username and reachable IP address. Enter your Windows account password; the Windows Hello PIN is for local sign-in.</p>
+      <p>To find the account and network addresses, run on Windows:</p>
+      <pre><code>whoami
+ipconfig</code></pre>
+      <p>For a local account shown as <code>PCNAME\alice</code>, use <code>alice</code> as the username.</p>
+
+      <h2>If the connection fails</h2>
+      <p>In administrator PowerShell, check the service and firewall rule:</p>
+      <pre><code>Get-Service sshd
+Get-NetFirewallRule -Name OpenSSH-Server-In-TCP</code></pre>
+      <p>The service should show <code>Running</code> and the rule <code>Enabled: True</code>. See Microsoft's setup guide below for a missing firewall rule.</p>
+
+      <footer>
+        <p>Reference: <a href="https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse">Microsoft OpenSSH setup guide</a>. Updated September 15, 2026.</p>
+      </footer>
+    </main>
+  </body>
+</html>

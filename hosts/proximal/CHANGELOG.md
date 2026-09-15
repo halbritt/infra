@@ -5,6 +5,21 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-15
+
+### Published a short Windows SSH setup guide
+
+At the owner's request, published the conversation's Windows OpenSSH instructions
+at `https://tailscale.harm.org/windows-ssh/`. The public guide lives in
+[`config/tailscale-index/site/windows-ssh/index.html`](config/tailscale-index/site/windows-ssh/index.html)
+and is served directly from this checkout by the existing service. Commands were
+checked against Microsoft's documentation; no Windows host was changed.
+
+Verified local and public HTTP 200 with identical file bytes, the existing response
+headers, and all 17 service links. The six validator tests passed; repository
+validation reports the same two pre-existing broken links in
+`services/debug-escalation/README.md` noted on 2026-09-10.
+
 ## 2026-09-14
 
 ### Removed the deprecated `gemini-cli` harness (Gemini models are unaffected)
