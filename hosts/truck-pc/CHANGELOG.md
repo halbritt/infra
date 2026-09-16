@@ -1,5 +1,12 @@
 # Host changelog
 
+## Power policy (disable AC sleep) — 2026-09-16
+
+Owner directed disabling sleep on AC power to keep `truck-pc` reachable over
+Tailscale and SSH. Created subsystem `config/power/` with canonical recipe
+`set-power.ps1` and documentation. Prepared to apply `standby-timeout-ac 0` and
+`hibernate-timeout-ac 0` upon host wake.
+
 ## Identity change and SSH setup — 2026-09-16
 
 Applied and verified the authorized identity changes and SSH key installation:

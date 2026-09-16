@@ -51,3 +51,11 @@ with strict ACLs restricted to `halbritt`, `SYSTEM`, and `Administrators`:
 - Proximal `~/.ssh/authorized_keys` updated and outgoing SSH from `truck-pc` to
   `proximal` verified with key authentication.
 - Client alias configured in `~/.ssh/config.d/truck-pc` on proximal.
+
+### Power policy: disable sleep on AC
+The owner requested disabling sleep on AC power on 2026-09-16 to keep `truck-pc`
+consistently reachable for remote SSH and Tailscale administration. Prepared the
+`config/power/` subsystem with recipe `set-power.ps1` (`standby-timeout-ac 0` and
+`hibernate-timeout-ac 0`, retaining 15-minute DC battery sleep). When the request
+arrived, the laptop had returned to idle sleep ~30 minutes after prior maintenance;
+deployment will be applied and verified as soon as the machine is woken.
