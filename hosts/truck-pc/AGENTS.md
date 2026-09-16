@@ -1,4 +1,4 @@
-# userpas-gbb8opo
+# truck-pc
 
 Read `machine.yaml`, `notes.md`, and the target subsystem README before changes.
 This Windows host is distinct from peecee. Preserve its observed hostname unless

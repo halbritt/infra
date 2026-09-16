@@ -1,5 +1,11 @@
 # Host changelog
 
+## Requested identity change — 2026-09-15
+
+Owner selected computer name `truck-pc` and login `halbritt`, with display name
+Heath Albritton. Renamed the repository host directory and prepared the live
+recipe. Both LAN and Tailscale access were unavailable; live changes are pending.
+
 ## 2026-09-15
 
 Recorded the Windows host after the owner supplied its LAN SSH endpoint and

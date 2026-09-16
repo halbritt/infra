@@ -1,4 +1,8 @@
-# userpas-gbb8opo
+# truck-pc
+
+Requested identity: `truck-pc`, account `halbritt` (Heath Albritton).
+Live rename is pending because the laptop is offline; the access details below
+are the last verified values. See the [identity recipe](config/identity/README.md).
 
 Windows 10 Pro machine, initially observed at `192.168.1.116` on 2026-09-15.
 The administrator SSH account is `User`.
