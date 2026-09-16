@@ -20,5 +20,10 @@ Samsung migration cannot stop until reboot; no forced termination was attempted.
 Checked FORScan explicitly: installed 2.3.71 matches the official current release.
 Started a SYSTEM Windows Update task for six offered software updates. Application
 upgrade inventory succeeds in an interactive scheduled task; the same WinGet
-source operation failed in the OpenSSH logon context. Updates and post-reboot
-verification remain in progress.
+source operation failed in the OpenSSH logon context.
+
+All six Windows updates subsequently reported success, with a restart required.
+The cumulative-update servicing log briefly reported a missing `prjflt.sys`
+component but completed successfully; no separate repair was necessary. Removed
+the completed Windows Update task and started the selected application upgrades.
+Application updates and post-reboot verification remain in progress.

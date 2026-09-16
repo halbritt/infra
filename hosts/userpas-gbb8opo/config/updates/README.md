@@ -45,3 +45,22 @@ requires inspection; completion of the loop is not proof that every upgrade work
 
 Recheck vendor startup choices after installing. The task does not request a
 reboot. Remove maintenance tasks after their recorded result has been inspected.
+
+## Windows Update result — 2026-09-15
+
+All six offered updates reported `ResultCode=2` (succeeded), `HResult=0`; the
+aggregate result requires a reboot. [Per-update evidence](windows-update-result-20260915.json)
+records KB5066747, KB5126106, KB5126104, Defender platform KB4052623, MRT KB890830,
+and Windows cumulative KB5066791. The temporary Windows Update task was removed.
+
+During cumulative-update processing, CBS logged missing `prjflt.sys` and
+`0x800f0984`. Servicing subsequently succeeded without a separate repair attempt;
+that intermediate log entry alone did not justify an additional DISM operation.
+Defender platform now reports 4.18.26080.3 with real-time protection enabled.
+
+The OS cumulative update offered was from October 2025. This does not establish
+that Windows has current 2026 OS security patches. After reboot, rescan and check
+Extended Security Updates enrollment. The observed licensing query returned the
+active Windows Professional retail license and no active ESU product. Microsoft's
+[Windows 10 release information](https://learn.microsoft.com/en-us/windows/release-health/release-information)
+explains the distinction between the final standard updates and ESU updates.
