@@ -1,0 +1,22 @@
+{
+  "ResultCode": 2,
+  "RebootRequired": true,
+  "Updates": [
+    {
+      "Title": "2026-09 Cumulative Update for .NET Framework 3.5, 4.8 and 4.8.1 for Windows 10 Version 22H2 for x64 (KB5126146)",
+      "ResultCode": 2,
+      "HResult": 0
+    },
+    {
+      "Title": "2026-09 Windows Recovery Environment Update (KB5127070)",
+      "ResultCode": 2,
+      "HResult": 0
+    },
+    {
+      "Title": "2026-09 Cumulative Update for Windows 10 Version 22H2 for x64-based Systems (KB5122878)",
+      "ResultCode": 2,
+      "HResult": 0
+    }
+  ],
+  "Stage": "Complete"
+}

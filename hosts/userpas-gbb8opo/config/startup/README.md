@@ -65,12 +65,29 @@ Application upgrades can restore vendor startup entries or packaged-service
 settings. Recheck and reapply this policy after upgrades. Manual services can be
 started with `Start-Service SERVICE_NAME` from administrator PowerShell.
 
+## First post-restart verification — 2026-09-15
+
+After the owner-approved restart, all seven optional services were Manual and
+Stopped, including CMigrationService. The Dell and Samsung launch tasks stayed
+disabled. SSH and Tailscale were Automatic and Running before anyone logged in.
+Wacom remained absent from installed-program registration. This verifies service
+startup behavior; a desktop-login check and a settled CPU sample are separate
+observations.
+
+Windows' built-in `WacomPen` serial HID driver remains Manual and Stopped. Its
+file metadata identifies Microsoft Corporation, version 10.0.19041.1. It is
+separate from the removed vendor tablet package and contributes no running helper.
+
 ## Performance evidence limits
 
 These changes remove owner-rejected startup work. A numerical speedup is not yet
-established: updates were active during measurement, and no controlled before/after
-idle workload or post-reboot observation exists. Reboot, settle updates, and take
-another process CPU sample before diagnosing remaining slowness.
+established: the first measurement overlapped updates, and there is no controlled
+before/after desktop workload. After the second restart and installer completion,
+a [30-sample CPU observation](postboot-cpu-sample-20260915.json) at the login screen
+averaged **2.12%** CPU, with a **26.81%** peak. Defender averaged approximately
+1.46% across the four logical CPUs; the diagnostic PowerShell process used 0.59%.
+The optional vendor helpers were absent. This establishes low background load in
+that logged-out sample; it does not quantify desktop responsiveness after login.
 
 Doctrine packet `pkt-e3f8ab89966107b9`, SHA-256
 `e3f8ab89966107b9aadce75b8f31ce223c33a5cf93f5dc6d8a571d9b2ef1f98c`,

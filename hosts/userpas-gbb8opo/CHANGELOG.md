@@ -32,3 +32,17 @@ upgrades for after restart. Reapplied the optional-helper startup policy after
 the upgrades. Added resume support and corrected rollback to restore Cowork from
 its own saved state. Restart, remaining runtimes, ESU assessment, and post-boot
 performance/access verification remain pending.
+
+The owner approved restart after saving work. Completed two restarts: the first
+exposed September 2026 OS/.NET/recovery updates, and the second booted build
+19045.7725. All three update installers reported success. Both remaining runtime
+installers then returned exit 0 with current x86/x64 framework registrations;
+all 11 selected application upgrades are complete. SSH/Tailscale returned before
+login, seven optional services stayed stopped/manual, and Defender/firewall
+remained enabled. Logged-out CPU averaged 2.12% over 30 samples.
+
+Found a separate recovery issue: KB5127070 reports success and is re-offered,
+while WinRE is disabled and its image remains build 19041.6094. The 535 MB recovery
+partition has only 22 MB free, and its recorded offset is stale. Recorded the
+partition layout and one retry result for a separate recovery repair; made no
+partition or boot-configuration changes. Removed temporary maintenance tasks.

@@ -1,0 +1,55 @@
+{
+  "Stage": "Complete",
+  "Results": [
+    {
+      "Package": "Adobe.CreativeCloud",
+      "ExitCode": 0
+    },
+    {
+      "Package": "calibre.calibre",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Anthropic.Claude",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Garmin.Express",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2013.x64",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2013.x86",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2015+.x64",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2015+.x86",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.WindowsPCHealthCheck",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.WindowsAppRuntime.1.7",
+      "Version": "1.7.9",
+      "Method": "Microsoft signed runtime installer",
+      "ExitCode": 0,
+      "FrameworksVerified": true
+    },
+    {
+      "Package": "Microsoft.WindowsAppRuntime.1.8",
+      "Version": "1.8.10",
+      "Method": "Microsoft signed runtime installer",
+      "ExitCode": 0,
+      "FrameworksVerified": true
+    }
+  ]
+}

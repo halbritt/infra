@@ -1,0 +1,114 @@
+{
+  "Timestamp": "2026-09-15T18:03:39.2843396-07:00",
+  "LastBoot": "2026-09-15T18:00:42.5000000-07:00",
+  "Build": "19045.7725",
+  "Services": [
+    {
+      "Name": "CMigrationService",
+      "StartMode": "Manual",
+      "State": "Stopped"
+    },
+    {
+      "Name": "CoworkVMService",
+      "StartMode": "Manual",
+      "State": "Stopped"
+    },
+    {
+      "Name": "DellClientManagementService",
+      "StartMode": "Manual",
+      "State": "Stopped"
+    },
+    {
+      "Name": "DellTechHub",
+      "StartMode": "Manual",
+      "State": "Stopped"
+    },
+    {
+      "Name": "EpsonScanSvc",
+      "StartMode": "Manual",
+      "State": "Stopped"
+    },
+    {
+      "Name": "SamsungMagicianSVC",
+      "StartMode": "Manual",
+      "State": "Stopped"
+    },
+    {
+      "Name": "sshd",
+      "StartMode": "Auto",
+      "State": "Running"
+    },
+    {
+      "Name": "SupportAssistAgent",
+      "StartMode": "Manual",
+      "State": "Stopped"
+    },
+    {
+      "Name": "Tailscale",
+      "StartMode": "Auto",
+      "State": "Running"
+    }
+  ],
+  "VendorTasks": [
+    {
+      "TaskName": "Dell SupportAssistAgent AutoUpdate",
+      "Enabled": false
+    },
+    {
+      "TaskName": "SamsungMagician",
+      "Enabled": false
+    }
+  ],
+  "Defender": {
+    "RealTimeProtectionEnabled": true,
+    "Platform": "4.18.26080.3",
+    "AntivirusEnabled": true
+  },
+  "Firewall": [
+    {
+      "Name": "Domain",
+      "Enabled": true
+    },
+    {
+      "Name": "Private",
+      "Enabled": true
+    },
+    {
+      "Name": "Public",
+      "Enabled": true
+    }
+  ],
+  "Runtimes": [
+    {
+      "Name": "Microsoft.WindowsAppRuntime.1.8",
+      "Version": "8000.770.947.0",
+      "Architecture": "X86",
+      "Status": "Ok"
+    },
+    {
+      "Name": "Microsoft.WindowsAppRuntime.1.7",
+      "Version": "7000.785.2325.0",
+      "Architecture": "X64",
+      "Status": "Ok"
+    },
+    {
+      "Name": "Microsoft.WindowsAppRuntime.1.7",
+      "Version": "7000.785.2325.0",
+      "Architecture": "X86",
+      "Status": "Ok"
+    },
+    {
+      "Name": "Microsoft.WindowsAppRuntime.1.8",
+      "Version": "8000.921.1539.0",
+      "Architecture": "X64",
+      "Status": "Ok"
+    },
+    {
+      "Name": "Microsoft.WindowsAppRuntime.1.8",
+      "Version": "8000.921.1539.0",
+      "Architecture": "X86",
+      "Status": "Ok"
+    }
+  ],
+  "MaintenanceTasks": []
+}

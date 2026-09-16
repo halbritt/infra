@@ -1,0 +1,8 @@
+{
+  "ResultCode": 2,
+  "CBSRebootPending": false,
+  "Updates": [
+    "2026-09 Windows Recovery Environment Update (KB5127070)"
+  ],
+  "WindowsUpdateRebootPending": false
+}

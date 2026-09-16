@@ -1,0 +1,12 @@
+{
+  "ResultCode": 2,
+  "RebootRequired": false,
+  "Updates": [
+    {
+      "Title": "2026-09 Windows Recovery Environment Update (KB5127070)",
+      "ResultCode": 2,
+      "HResult": 0
+    }
+  ],
+  "Stage": "Complete"
+}

@@ -1,0 +1,42 @@
+{
+  "AverageCpuPercent": 2.12,
+  "Timestamp": "2026-09-15T18:06:10.0356316-07:00",
+  "Samples": 30,
+  "TopProcesses": [
+    {
+      "Name": "MsMpEng",
+      "Percent": 1.46
+    },
+    {
+      "Name": "powershell",
+      "Percent": 0.59
+    },
+    {
+      "Name": "System",
+      "Percent": 0.1
+    },
+    {
+      "Name": "tailscaled",
+      "Percent": 0.05
+    },
+    {
+      "Name": "svchost",
+      "Percent": 0.04
+    },
+    {
+      "Name": "svchost",
+      "Percent": 0.03
+    },
+    {
+      "Name": "svchost",
+      "Percent": 0.03
+    },
+    {
+      "Name": "tailscaled",
+      "Percent": 0.03
+    }
+  ],
+  "Context": "After maintenance, no interactive desktop login",
+  "PeakCpuPercent": 26.81,
+  "Seconds": 31.07
+}

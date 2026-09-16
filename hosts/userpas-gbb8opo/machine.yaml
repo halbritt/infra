@@ -7,7 +7,7 @@
     "os": "windows",
     "edition": "Windows 10 Pro",
     "architecture": "x86_64",
-    "build": "19045"
+    "build": "19045.7725"
   },
   "network": {
     "lan_address": "192.168.1.116",
