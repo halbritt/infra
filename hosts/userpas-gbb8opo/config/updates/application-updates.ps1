@@ -1,3 +1,4 @@
+param([switch]$Resume)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $output = 'C:\ProgramData\Infra\application-update-result.json'
@@ -11,7 +12,13 @@ $packages = @(
     'Microsoft.WindowsPCHealthCheck', 'Microsoft.WindowsAppRuntime.1.7', 'Microsoft.WindowsAppRuntime.1.8'
 )
 $results = @()
+if ($Resume) {
+    $previous = Get-Content $output -Raw | ConvertFrom-Json
+    $results = @($previous.Results)
+}
 foreach ($id in $packages) {
+    if (@($results | Where-Object {$_.Package -eq $id -and $_.ExitCode -eq 0}).Count) { continue }
+    $results = @($results | Where-Object {$_.Package -ne $id})
     @{Stage='Upgrading'; Package=$id; Results=$results} | ConvertTo-Json -Depth 4 | Set-Content $output
     "Updating $id" | Out-File $log -Append -Encoding utf8
     $stdout = "C:\ProgramData\Infra\winget-$id.stdout.txt"

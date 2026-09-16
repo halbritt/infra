@@ -1,0 +1,46 @@
+{
+  "Pending": [
+    "Microsoft.WindowsAppRuntime.1.7",
+    "Microsoft.WindowsAppRuntime.1.8"
+  ],
+  "Reason": "Runtime 1.7 deployment stalled; Windows Update independently requires restart",
+  "Stage": "PausedForRestart",
+  "Results": [
+    {
+      "Package": "Adobe.CreativeCloud",
+      "ExitCode": 0
+    },
+    {
+      "Package": "calibre.calibre",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Anthropic.Claude",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Garmin.Express",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2013.x64",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2013.x86",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2015+.x64",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.VCRedist.2015+.x86",
+      "ExitCode": 0
+    },
+    {
+      "Package": "Microsoft.WindowsPCHealthCheck",
+      "ExitCode": 0
+    }
+  ]
+}

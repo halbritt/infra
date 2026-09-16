@@ -64,3 +64,36 @@ Extended Security Updates enrollment. The observed licensing query returned the
 active Windows Professional retail license and no active ESU product. Microsoft's
 [Windows 10 release information](https://learn.microsoft.com/en-us/windows/release-health/release-information)
 explains the distinction between the final standard updates and ESU updates.
+
+## Runtime installer observation
+
+While updating Windows App Runtime 1.7, an older bootstrapper remained at
+`C:\Windows\SystemTemp\SupportAssistAgent\windowsappruntimeinstall-x64.exe`.
+It had started at 16:51 local time, before the application-update batch, and its
+SupportAssist parent was gone. After verifying that exact path and absent parent,
+terminated only that orphaned process (PID 15064). The WinGet-owned runtime
+installer was left running. This observation did not by itself prove which
+process owned the deployment queue.
+
+## Application result before restart — 2026-09-15
+
+Nine installers returned exit 0: Creative Cloud, calibre, Claude, Garmin Express,
+both VC++ 2013 architectures, both current VC++ v14 architectures, and PC Health
+Check. [The saved result](application-update-result-20260915.json) preserves those
+outcomes. Windows App Runtime 1.7 remained queued in AppX deployment, and 1.8 had
+not started. No failure code identified the cause of that queue.
+
+Stopped the temporary update task and its verified WinGet/runtime client
+processes, preserved the successful results, and removed the task. Windows
+deployment services were left running. Reapplied the manual-start policy because
+the Garmin upgrade recreated its login entry. The result is `PausedForRestart`;
+the two runtime upgrades are still pending.
+
+After an owner-approved reboot, use the same elevated Interactive scheduled-task
+context to run `C:\ProgramData\Infra\application-updates.ps1 -Resume` with
+PowerShell's process-local `-ExecutionPolicy Bypass`. Resume retains recorded
+successes and retries only the packages without an exit-0 result. Inspect any
+nonzero result, including an already-current package, before declaring completion.
+Then recheck startup policy, remove the temporary task, rescan Windows Update,
+and verify Tailscale and SSH after boot. Two existing logged-in user sessions
+require coordination before restarting to avoid discarding unsaved work.

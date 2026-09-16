@@ -26,4 +26,9 @@ All six Windows updates subsequently reported success, with a restart required.
 The cumulative-update servicing log briefly reported a missing `prjflt.sys`
 component but completed successfully; no separate repair was necessary. Removed
 the completed Windows Update task and started the selected application upgrades.
-Application updates and post-reboot verification remain in progress.
+Nine application installers returned success. Windows App Runtime 1.7 stalled in
+the deployment queue; paused its clients and preserved two pending runtime
+upgrades for after restart. Reapplied the optional-helper startup policy after
+the upgrades. Added resume support and corrected rollback to restore Cowork from
+its own saved state. Restart, remaining runtimes, ESU assessment, and post-boot
+performance/access verification remain pending.
