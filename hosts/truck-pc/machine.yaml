@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "truck-pc",
-  "hostname": "USERPAS-GBB8OPO",
+  "hostname": "truck-pc",
   "status": "active",
   "platform": {
     "os": "windows",
@@ -12,7 +12,7 @@
   "network": {
     "lan_address": "192.168.1.116",
     "tailnet_address": "100.121.157.17",
-    "tailnet_dns_name": "userpas-gbb8opo.tail0ecc2e.ts.net"
+    "tailnet_dns_name": "truck-pc.tail0ecc2e.ts.net"
   },
   "roles": [
     "windows"

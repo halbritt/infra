@@ -8,12 +8,10 @@ The owner requested these names on 2026-09-15:
 | Local account login | `halbritt` |
 | Account display name | Heath Albritton |
 
-Deployment is pending: the laptop was offline on both its LAN and Tailscale
-addresses when the request arrived. The repository resource is now `truck-pc`;
-`machine.yaml` retains the last observed Windows hostname and DNS name until
-live verification. The previous resource path was `hosts/userpas-gbb8opo/`.
-The recipe has been reviewed but has not been parsed or executed on Windows yet;
-local PowerShell is unavailable. Perform the Windows parser check before running.
+Deployment is complete: on 2026-09-16, the recipe was parsed, executed, and
+verified on Windows. The computer name is `truck-pc`, local account is `halbritt`
+(full name Heath Albritton), account SID and profile path were preserved, and
+Tailscale DNS is active at `truck-pc.tail0ecc2e.ts.net`.
 
 ## Apply
 

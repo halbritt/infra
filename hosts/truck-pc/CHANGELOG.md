@@ -1,5 +1,22 @@
 # Host changelog
 
+## Identity change and SSH setup — 2026-09-16
+
+Applied and verified the authorized identity changes and SSH key installation:
+- Diagnosed power logs upon reconnect: confirmed laptop entered standard idle
+  sleep (Kernel-Power Event 42) at 30-minute AC timeout; zero unexpected shutdowns
+  or hardware crash events recorded.
+- Executed `config/identity/rename.ps1`: snapshot saved to `C:\ProgramData\Infra\`,
+  Windows hostname staged as `truck-pc`, Tailscale hostname set to `truck-pc`,
+  local user `User` renamed to `halbritt` (full name Heath Albritton), preserving
+  account SID `S-1-5-21-1644079127-1291031853-2162120719-1002` and profile path.
+- Verified key-authenticated SSH as `halbritt` prior to reboot.
+- Rebooted host; verified hostname `truck-pc`, user `halbritt`, automatic service
+  resumption for `sshd` and `Tailscale`, and tailnet DNS `truck-pc.tail0ecc2e.ts.net`.
+- Installed owner's ED25519 SSH key pair into `C:\Users\User\.ssh/` with strict ACLs;
+  configured bidirectional key authentication with proximal and added client
+  configuration `~/.ssh/config.d/truck-pc`.
+
 ## Requested identity change — 2026-09-15
 
 Owner selected computer name `truck-pc` and login `halbritt`, with display name
