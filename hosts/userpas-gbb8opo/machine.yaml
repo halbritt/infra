@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "name": "userpas-gbb8opo",
+  "hostname": "USERPAS-GBB8OPO",
+  "status": "active",
+  "platform": {
+    "os": "windows",
+    "edition": "Windows 10 Pro",
+    "architecture": "x86_64",
+    "build": "19045"
+  },
+  "network": {
+    "lan_address": "192.168.1.116",
+    "tailnet_address": "100.121.157.17",
+    "tailnet_dns_name": "userpas-gbb8opo.tail0ecc2e.ts.net"
+  },
+  "roles": [
+    "windows"
+  ],
+  "paths": {
+    "config": "config",
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  },
+  "hardware": {
+    "manufacturer": "Dell Inc.",
+    "model": "Latitude 7280",
+    "cpu": "Intel Core i7-7600U",
+    "cores": 2,
+    "logical_cpus": 4,
+    "memory_gib": 16,
+    "storage": [
+      "Samsung SSD 990 EVO Plus 1TB"
+    ]
+  }
+}

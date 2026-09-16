@@ -1,0 +1,21 @@
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+$output = 'C:\ProgramData\Infra\application-update-result.json'
+$log = 'C:\ProgramData\Infra\application-update-log.txt'
+$windowsTask = Get-ScheduledTask -TaskName 'InfraWindowsUpdates-20260915' -ErrorAction SilentlyContinue
+if ($windowsTask -and $windowsTask.State -eq 'Running') { throw 'Wait for the Windows Update task before starting MSI application updates' }
+$packages = @(
+    'Adobe.CreativeCloud', 'calibre.calibre', 'Anthropic.Claude', 'Garmin.Express',
+    'Microsoft.VCRedist.2013.x64', 'Microsoft.VCRedist.2013.x86',
+    'Microsoft.VCRedist.2015+.x64', 'Microsoft.VCRedist.2015+.x86',
+    'Microsoft.WindowsPCHealthCheck', 'Microsoft.WindowsAppRuntime.1.7', 'Microsoft.WindowsAppRuntime.1.8'
+)
+$results = @()
+foreach ($id in $packages) {
+    @{Stage='Upgrading'; Package=$id; Results=$results} | ConvertTo-Json -Depth 4 | Set-Content $output
+    "Updating $id" | Out-File $log -Append -Encoding utf8
+    & winget upgrade --id $id --exact --source winget --silent --accept-source-agreements --accept-package-agreements --disable-interactivity 2>&1 | Out-File $log -Append -Encoding utf8
+    $results += [pscustomobject]@{Package=$id; ExitCode=$LASTEXITCODE}
+}
+@{Stage='Complete'; Results=$results} | ConvertTo-Json -Depth 4 | Set-Content $output
+if (@($results | Where-Object {$_.ExitCode -ne 0}).Count -gt 0) { exit 1 }
