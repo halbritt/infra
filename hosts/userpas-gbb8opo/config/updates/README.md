@@ -30,4 +30,18 @@ license changes were made.
 WinGet 1.29.290 exists, but source refresh under the OpenSSH session failed:
 `A specified logon session does not exist. It may already have been terminated.`
 This is a package-source/session failure, not evidence that every app is current.
-Use official package installers or an appropriate interactive Windows session.
+An elevated task with `LogonType Interactive` under the already logged-in `User`
+account successfully refreshed the source and found 13 upgrades. No password is
+stored in the task. Use that context for [application-updates.ps1](application-updates.ps1),
+installed as `C:\ProgramData\Infra\application-updates.ps1` and run with the
+temporary task `InfraApplicationUpdates-20260915` once Windows Update finishes.
+
+The application recipe selects 11 observed upgrades (Creative Cloud, calibre,
+Claude, Garmin Express, four VC++ runtimes, PC Health Check, and two Windows App
+Runtime versions). The two .NET upgrades are handled by Windows Update. Each
+WinGet result is recorded in `C:\ProgramData\Infra\application-update-result.json`
+with detailed output in `application-update-log.txt`. A nonzero package result
+requires inspection; completion of the loop is not proof that every upgrade worked.
+
+Recheck vendor startup choices after installing. The task does not request a
+reboot. Remove maintenance tasks after their recorded result has been inspected.

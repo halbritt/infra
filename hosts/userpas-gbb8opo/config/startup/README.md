@@ -78,7 +78,9 @@ used `performance-profile-causal-bottleneck`, `performance-metric-semantics`, an
 `universal-preserve-behavior-by-default`. Validated release commit
 `d3e0c0d4ccd1920b2e045c156f1cf0db4fc5f04f`, corpus `corpus-2026-07-12-a11702cc9217`,
 doctrine `doctrine-f6bbb5196a3f8bf9`, retriever `retriever-ec995ecdd083b2c8`.
-Source locators and typed evidence are in the temporary packet used for this run.
+Source locators: *100 Go Mistakes*, chapter 12, "Not using Go diagnostics tooling";
+*Designing Data-Intensive Applications* (2nd ed.), chapter 2, "Average, Median,
+and Percentiles"; *Efficient Go*, chapter 3, "Functionality Phase".
 Its recommendation ceiling did not grant operational authority; the owner's
 explicit cleanup/manual-start instructions did. Unmet benchmark, repetition,
 causal attribution, and numeric-target obligations preclude a performance claim.

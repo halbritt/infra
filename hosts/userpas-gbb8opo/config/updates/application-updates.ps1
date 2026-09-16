@@ -14,8 +14,14 @@ $results = @()
 foreach ($id in $packages) {
     @{Stage='Upgrading'; Package=$id; Results=$results} | ConvertTo-Json -Depth 4 | Set-Content $output
     "Updating $id" | Out-File $log -Append -Encoding utf8
-    & winget upgrade --id $id --exact --source winget --silent --accept-source-agreements --accept-package-agreements --disable-interactivity 2>&1 | Out-File $log -Append -Encoding utf8
-    $results += [pscustomobject]@{Package=$id; ExitCode=$LASTEXITCODE}
+    $stdout = "C:\ProgramData\Infra\winget-$id.stdout.txt"
+    $stderr = "C:\ProgramData\Infra\winget-$id.stderr.txt"
+    $process = Start-Process -FilePath (Get-Command winget).Source -ArgumentList @('upgrade', '--id', $id, '--exact', '--source', 'winget', '--silent', '--accept-source-agreements', '--accept-package-agreements', '--disable-interactivity') -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    Get-Content $stdout,$stderr | Out-File $log -Append -Encoding utf8
+    $results += [pscustomobject]@{Package=$id; ExitCode=$process.ExitCode}
 }
+@{Stage='RestoringStartupPolicy'; Results=$results} | ConvertTo-Json -Depth 4 | Set-Content $output
+& 'C:\ProgramData\Infra\manual-helpers.ps1'
+& 'C:\ProgramData\Infra\manual-cowork.ps1'
 @{Stage='Complete'; Results=$results} | ConvertTo-Json -Depth 4 | Set-Content $output
 if (@($results | Where-Object {$_.ExitCode -ne 0}).Count -gt 0) { exit 1 }
