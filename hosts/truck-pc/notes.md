@@ -54,8 +54,12 @@ with strict ACLs restricted to `halbritt`, `SYSTEM`, and `Administrators`:
 
 ### Power policy: disable sleep on AC
 The owner requested disabling sleep on AC power on 2026-09-16 to keep `truck-pc`
-consistently reachable for remote SSH and Tailscale administration. Prepared the
-`config/power/` subsystem with recipe `set-power.ps1` (`standby-timeout-ac 0` and
-`hibernate-timeout-ac 0`, retaining 15-minute DC battery sleep). When the request
-arrived, the laptop had returned to idle sleep ~30 minutes after prior maintenance;
-deployment will be applied and verified as soon as the machine is woken.
+consistently reachable for remote SSH and Tailscale administration. When the request
+arrived, the laptop had returned to idle sleep ~30 minutes after prior maintenance.
+Upon host wake at 16:00 local time:
+- Backed up initial power configuration to `C:\ProgramData\Infra\power-before-20260916.json`
+  (AC standby 1800s, AC hibernate 10800s).
+- Executed `config/power/set-power.ps1`: set `standby-timeout-ac 0` and `hibernate-timeout-ac 0`.
+- Verified live settings: `Current AC Power Setting Index` is `0x00000000` (disabled)
+  for both standby and hibernate. Battery/DC settings were retained (`STANDBYIDLE` 900s /
+  15 min, `HIBERNATEIDLE` 10800s / 3 hours).

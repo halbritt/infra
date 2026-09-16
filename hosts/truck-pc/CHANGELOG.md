@@ -2,10 +2,13 @@
 
 ## Power policy (disable AC sleep) — 2026-09-16
 
-Owner directed disabling sleep on AC power to keep `truck-pc` reachable over
-Tailscale and SSH. Created subsystem `config/power/` with canonical recipe
-`set-power.ps1` and documentation. Prepared to apply `standby-timeout-ac 0` and
-`hibernate-timeout-ac 0` upon host wake.
+Applied and verified owner-directed power policy to keep `truck-pc` reachable over
+Tailscale and SSH:
+- Backed up initial power settings to `C:\ProgramData\Infra\power-before-20260916.json`.
+- Executed `config/power/set-power.ps1`: disabled standby and hibernate on AC
+  (`standby-timeout-ac 0`, `hibernate-timeout-ac 0`).
+- Verified `Current AC Power Setting Index` is `0x00000000` (disabled) for both standby
+  and hibernate. Preserved 15-minute battery sleep (`STANDBYIDLE` 900s).
 
 ## Identity change and SSH setup — 2026-09-16
 
