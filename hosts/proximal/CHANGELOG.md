@@ -36,6 +36,35 @@ Verified: the bridge dry-run reads all seven plants (Areca Palm 33% against its
 pass. Repository validation still reports the same two pre-existing broken links
 in `services/debug-escalation/README.md` noted on 2026-09-10 and 2026-09-15.
 
+### Synced the HA automation to the bridge (same seven plants, same thresholds)
+
+At the owner's direction, `automation.plant_drying_rate_has_slowed` was brought
+into line with `PLANTS`, closing both cross-channel gaps left by the change
+above:
+
+- **Ficus Audrey trigger moved off the top probe.** It watched
+  `sensor.ficus_audrey_top_soil_moisture` `below: 40` — a pre-fix value from when
+  that probe read a stuck ~23%. It now watches the deep Ecowitt probe
+  `sensor.gw1200b_soil_moisture_1` `below: 30`, the trusted root-zone signal the
+  bridge uses. The fixed top probe still has no post-fix drying curve, so no
+  threshold could be derived for it; a value set today would be a guess.
+- **Areca Palm added** (`sensor.areca_palm_soil_moisture` `below: 30`), so the HA
+  push channel now covers it too.
+
+⚠️ **Trade-off accepted: Ficus sensor diversity across channels is gone.** Both
+channels now read the same deep probe, so a failure of that probe leaves no
+second opinion for Ficus on the HA side — the bridge's DARK check is its
+detector. The redundancy the 2026-08-12 re-enable was for is therefore narrower
+than it was; re-add a top-probe trigger once it has its own curve.
+
+Applied through the gated `ha_config_set_automation` (strict best-practices mode
+requires a rotating `BestPracticeKey` from `ha_get_skill_guide`). Verified by
+read-back, not by the write's return value: the automation now returns all seven
+triggers with the entities and thresholds above, config hash `2c6e662918732ae9`
+→ `e5fe2f8b2a1db3b1`, entity `on` with a fresh `last_changed`. The automation's
+`mode: parallel` / `max: 10` / `initial_state: true` and its single
+`notify.notify` action are unchanged.
+
 ## 2026-09-15
 
 ### Added Copy buttons to the Windows SSH guide

@@ -80,16 +80,14 @@ Two asymmetries to keep in mind:
   to ~83% at 18:56 PDT as a real wet-after-watering reading and settled ~70%
   (no longer the old flat line). So the false-alert concern below is retired in
   practice; the probe stays out of this bridge until a post-fix dry-down gives it
-  its own rewater point. ⚠️ The HA automation's `numeric_state` trigger still
-  watches this probe `below: 40` — that threshold was the pre-fix value and
-  should be re-derived from the fixed probe's drying curve before it is trusted.
+  its own rewater point. ⚠️ The HA automation no longer watches this probe
+  either: on 2026-09-17 its Ficus trigger was moved to the deep probe
+  `below: 30`, so both channels now agree (see "Both channels synced" below).
 - **The Areca Palm was the last unmonitored plant (fixed 2026-09-17).** Its
   ThirdReality probe (`areca_palm_soil_moisture`) was paired 2026-08-27 and
   reported healthily, but neither this bridge nor the HA automation knew about
   it — a live sensor with no watcher, so a dead sensor there would have been
-  invisible. Now watched here at a provisional 30%. **It is still absent from the
-  HA automation**, so the HA push channel does not cover it (the reverse gap of
-  the Ficus case above).
+  invisible. It is now watched by **both** channels at a provisional 30%.
 - **The HA side has no re-arm hysteresis.** It re-fires on each fresh threshold
   crossing after `for: 06:00:00`, where this bridge alerts once and re-arms only
   above `threshold + 8%`.
@@ -97,6 +95,29 @@ Two asymmetries to keep in mind:
 Retire the HA channel again only once this bridge has demonstrably survived a
 reboot; if you do, set `initial_state: false` **and** turn it off, since
 `initial_state` alone only takes effect at HA restart.
+
+### Both channels synced (2026-09-17)
+
+The two channels now cover the **same seven plants at the same rewater points** —
+the HA automation was brought into line with `PLANTS` rather than the other way
+round. Two edits to `automation.plant_drying_rate_has_slowed`:
+
+| change | before | after | why |
+|---|---|---|---|
+| Ficus Audrey trigger | `sensor.ficus_audrey_top_soil_moisture` `below: 40` | `sensor.gw1200b_soil_moisture_1` `below: 30` | `40` was a pre-fix value from when the top probe read a stuck ~23%. The deep Ecowitt probe is the trusted root-zone signal this bridge uses; the fixed top probe still has no post-fix drying curve. |
+| Areca Palm trigger | *(absent)* | `sensor.areca_palm_soil_moisture` `below: 30` | It was the one plant with a live sensor and no watcher on either channel. |
+
+⚠️ **Trade-off accepted: the Ficus sensors are no longer diverse across
+channels.** Both channels now read the same deep probe, so a failure of that one
+probe no longer leaves the HA push as a second opinion for Ficus — the bridge's
+DARK check is the detector for it. The alternative (keeping the top probe on HA
+at a re-derived threshold) was rejected because the probe was re-seated on
+2026-09-17 and has no post-fix dry-down to derive from; a threshold set today
+would be a guess. **Re-add a top-probe trigger once it has its own curve** — that
+restores the diversity and the redundancy that the 2026-08-12 re-enable was for.
+
+The HA side still has no re-arm hysteresis (it re-fires on each fresh crossing
+after `for: 06:00:00`) and still cannot see DARK.
 
 ## Repo file → install path
 
