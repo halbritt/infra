@@ -5,6 +5,37 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-17
+
+### plant-praxis-bridge: watch the Areca Palm; record the Ficus top-probe fix
+
+Two gaps closed in the watering-alert path.
+
+**The Areca Palm was the last plant with a live sensor and no watcher.** Its
+ThirdReality probe (`areca_palm_soil_moisture`, paired 2026-08-27) reported
+healthily to HA and into VictoriaMetrics, but it appeared in neither the bridge's
+`PLANTS` nor the HA automation's `numeric_state` triggers — so no THIRSTY alert
+and, worse, no DARK alert: a dead sensor on it would have been invisible, which
+is exactly the failure the DARK check exists to prevent. Added to `PLANTS` at a
+provisional 30% (mirrors Palm, same habit). It had never been watered in the
+recorded history (30-day range 32.8–50.2%, falling ~0.4–0.9 %/d), so it has no
+drying curve yet; retune from its own curve after one dry-down.
+
+**Ficus Audrey's top probe is reporting plausibly again.** It was dropped from
+the bridge 2026-08-20 for reading a stuck ~23% while the deep probe showed the
+plant fine at 37%. It had drifted up to ~34–38% through September, then jumped to
+~83% at 18:56 PDT on 2026-09-17 as a real wet-after-watering reading and settled
+~70% — no longer the old flat line. It stays out of the bridge (the deep Ecowitt
+probe remains the trusted root-zone signal) until a post-fix dry-down gives it
+its own rewater point, but the "false alerts from the stuck probe" caveat is
+retired. ⚠️ The HA automation's trigger still watches this probe `below: 40`,
+which is the pre-fix value and should be re-derived from the fixed probe's curve.
+
+Verified: the bridge dry-run reads all seven plants (Areca Palm 33% against its
+30% threshold, no alert); the four bridge unit tests and the six repository tests
+pass. Repository validation still reports the same two pre-existing broken links
+in `services/debug-escalation/README.md` noted on 2026-09-10 and 2026-09-15.
+
 ## 2026-09-15
 
 ### Added Copy buttons to the Windows SSH guide

@@ -47,6 +47,7 @@ so it nudges with lead time. **Edit `PLANTS` in the script** to retune.
 | Palm | `palm_moisture_soil_moisture` | 30 |
 | Kangaroo Paw Fern | `kangaroo_paw_fern_soil_moisture` | 45 |
 | Dracaena Michiko | `dracaena_michiko_soil_moisture` | 20 (provisional — paired 2026-07-29, mirrors Dracaena Lisa; retune after one dry-down) |
+| Areca Palm | `areca_palm_soil_moisture` | 30 (provisional — added 2026-09-17, mirrors Palm; no drying curve yet) |
 
 ### Two live channels (2026-08-12) — keep the thresholds in sync
 
@@ -70,13 +71,25 @@ Two asymmetries to keep in mind:
 - **Only this bridge detects DARK.** A dead sensor never crosses a numeric
   threshold, so the HA automation cannot see a plant going unmonitored — that
   is exactly how Ficus Audrey went unnoticed from 2026-08-07 to 2026-08-12.
-- **Ficus Audrey's top probe was dropped from the bridge (2026-08-20).** It
-  reads a stuck ~23% regardless of watering while the deep probe confirms the
-  plant is fine (37%), so it only filed false THIRSTY alerts. The bridge now
-  watches only the deep probe (`gw1200b_soil_moisture_1`). ⚠️ The HA automation's
-  `numeric_state` triggers still watch the stuck top probe, so the HA push
-  channel may keep firing false "water Ficus" alerts — retire it if that
-  bothers you.
+- **Ficus Audrey's top probe was dropped from the bridge (2026-08-20)** after it
+  read a stuck ~23% regardless of watering while the deep probe confirmed the
+  plant was fine (37%), so it only filed false THIRSTY alerts. The bridge now
+  watches only the deep probe (`gw1200b_soil_moisture_1`).
+  **UPDATE 2026-09-17 — the top probe was fixed/re-seated and is reporting
+  plausibly again.** It had drifted up to ~34-38% through September, then jumped
+  to ~83% at 18:56 PDT as a real wet-after-watering reading and settled ~70%
+  (no longer the old flat line). So the false-alert concern below is retired in
+  practice; the probe stays out of this bridge until a post-fix dry-down gives it
+  its own rewater point. ⚠️ The HA automation's `numeric_state` trigger still
+  watches this probe `below: 40` — that threshold was the pre-fix value and
+  should be re-derived from the fixed probe's drying curve before it is trusted.
+- **The Areca Palm was the last unmonitored plant (fixed 2026-09-17).** Its
+  ThirdReality probe (`areca_palm_soil_moisture`) was paired 2026-08-27 and
+  reported healthily, but neither this bridge nor the HA automation knew about
+  it — a live sensor with no watcher, so a dead sensor there would have been
+  invisible. Now watched here at a provisional 30%. **It is still absent from the
+  HA automation**, so the HA push channel does not cover it (the reverse gap of
+  the Ficus case above).
 - **The HA side has no re-arm hysteresis.** It re-fires on each fresh threshold
   crossing after `for: 06:00:00`, where this bridge alerts once and re-arms only
   above `threshold + 8%`.

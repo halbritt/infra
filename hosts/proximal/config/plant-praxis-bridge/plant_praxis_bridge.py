@@ -36,9 +36,15 @@ import urllib.request
 PLANTS = [
     ("Dracaena Lisa",      "dracaena_lisa_moisture_soil_moisture", 20),
     # Ficus Audrey top probe (ficus_audrey_top_soil_moisture) removed
-    # 2026-08-20 — stuck at ~23% regardless of watering (deep probe confirms
-    # plant is fine at 37%). The deep Ecowitt probe (below) is the trusted
-    # root-zone signal.
+    # 2026-08-20 — read a stuck ~23% regardless of watering (deep probe
+    # confirmed the plant was fine at 37%). UPDATE 2026-09-17: the probe was
+    # fixed/re-seated and reports plausibly again — it had drifted up to
+    # ~34-38%, then jumped to ~83% at 18:56 PDT and settled ~70% (a real
+    # wet-after-watering reading, not the old flat line). It is still NOT
+    # re-added here: the deep Ecowitt probe stays the trusted root-zone
+    # signal. Re-add only once a post-fix dry-down establishes its own
+    # rewater point. The HA push automation still watches this probe at
+    # below: 40 — see the README before retiring that caveat.
     # Deep probe (Ecowitt GW1200B, entity gw1200b_soil_moisture_1), added
     # 2026-08-20. Sits alongside the ThirdReality "top" probe above — the top
     # probe under-reports after watering (reads ~23% while deep reads 37-40%),
@@ -53,6 +59,13 @@ PLANTS = [
     # Lisa, same genus, which dries fully. Refine from its own curve after one
     # dry-down. entity_id renamed off the ThirdReality default 2026-07-29.
     ("Dracaena Michiko",   "dracaena_michiko_soil_moisture", 20),
+    # Areca Palm: ThirdReality 3RSM0347Z paired 2026-08-27, renamed off the
+    # default. Added to the watch list 2026-09-17 — until then it was the one
+    # plant with a live sensor and no watcher on either channel. Threshold
+    # PROVISIONAL: mirrors Palm (30%), same habit. It had never been watered in
+    # the recorded history (30d range 32.8-50.2%, falling ~0.4-0.9 %/d), so it
+    # has no drying curve yet; retune from its own curve after one dry-down.
+    ("Areca Palm",         "areca_palm_soil_moisture",             30),
 ]
 REARM_HYSTERESIS = 8   # re-arm THIRSTY once moisture climbs this far back above threshold
 STALE_HOURS = float(os.environ.get("PLANT_PRAXIS_STALE_HOURS", "24"))  # DARK after this silence
