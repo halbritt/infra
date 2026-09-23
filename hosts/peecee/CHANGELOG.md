@@ -3,6 +3,14 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-23 — Zwift uninstalled
+
+Stopped its launcher, ran Zwift 1.1.13's registered quiet uninstaller, and
+removed residual files from its program directory. Verified the app and its
+startup entry are absent. The previous LG Switch Run value is also absent,
+and its recorded executable is missing; its Start app entry remains. See
+[config/startup/README.md](config/startup/README.md) for the current inventory.
+
 ## 2026-09-23 — Microsoft Teams uninstalled
 
 After the owner clarified that Teams itself should go, removed the installed

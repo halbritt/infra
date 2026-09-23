@@ -1,11 +1,8 @@
 # peecee startup inventory
 
 Observed on 2026-09-23 as user `halbr` after the Ollama, Evernote, LG installer,
-and Teams changes. After the owner clarified that Teams should be removed
-entirely, its installed `MSTeams` package was removed for all users and its
-provisioned package was removed from Windows. A follow-up found no Teams app
-package, provisioned package, Start app, packaged startup task, or automatic
-service.
+Teams, and Zwift changes. Teams' installed and provisioned `MSTeams` packages
+were removed; a follow-up found no Teams app, startup task, or automatic service.
 This records user-facing startup registrations, enabled packaged-app startup
 tasks, enabled boot/logon Scheduled Tasks outside `\Microsoft\Windows\`, and
 automatic services whose executable is outside the usual Windows system
@@ -24,8 +21,15 @@ exit quickly after launch.
 | Signal | `halbr` Run key |
 | Google Chrome (no startup window) | `halbr` Run key |
 | Windows Security tray | Machine Run key |
-| Zwift Launcher | 32-bit machine Run key |
-| LG Switch | 32-bit machine Run key |
+
+Zwift 1.1.13 was uninstalled at the owner's request. Its launcher process,
+uninstall entry, Run value, and program directory are now absent. The
+32-bit machine Run key that had also held `LG Switch` is absent at this
+observation. LG Switch's recorded startup executable at
+`C:\Program Files (x86)\LG Electronics\LG Switch\bin\SwitchAppStartUpApp.exe`
+is also missing, so the old Run value was not restored. Windows still shows
+an LG Switch Start app entry; its install state needs a separate check if the
+owner wants to use it.
 
 `Ollama.lnk.disabled` was in `halbr`'s Startup folder and was reported by
 `Win32_StartupCommand` despite its suffix. It is now parked at
@@ -41,8 +45,10 @@ not affect basic display operation. The shortcut is parked at
 `C:\ProgramData\Infra\startup-disabled\LG Monitor App Installer.lnk`.
 The related `LGMonitorInstallManager` machine Run value was removed after its
 command was saved in the same directory as `LGMonitorInstallManager.run.txt`.
-`LG Monitor Software Notice Cleanup` was disabled in Task Scheduler. LG Switch
-remains configured to start, and the LG UltraFine monitor device reports `OK`. See
+`LG Monitor Software Notice Cleanup` was disabled in Task Scheduler. At that
+earlier observation LG Switch remained configured to start, and the LG UltraFine
+monitor device reported `OK`. The later Zwift uninstall verification found the
+LG Switch Run value and its recorded executable absent, as noted above. See
 [LG's support article](https://www.lg.com/us/support/help-library/how-to-uninstall-and-reinstall-the-lg-monitor-app-installer-CT10000030-20155428691646).
 
 ## Packaged-app startup tasks

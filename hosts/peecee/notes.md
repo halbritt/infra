@@ -1,5 +1,22 @@
 # peecee host notes
 
+## Zwift uninstalled — 2026-09-23
+
+The owner said Zwift had not been used in years and requested its removal.
+Live checks found Zwift version 1.1.13 installed under
+`C:\Program Files (x86)\Zwift`, with a `ZwiftLauncher` process and a 32-bit
+machine Run value. Stopped the launcher and ran the registered quiet uninstaller;
+it exited 0. Removed seven residual files left in the program directory.
+Verification found no Zwift uninstall entry, package, Run value, startup
+command, task, service, process, Start app, or program directory.
+
+The 32-bit machine Run key, which had also held an `LG Switch` value at the
+previous inventory, was absent in the follow-up. The recorded LG Switch startup
+executable is also missing, so restoring the old value would leave a broken
+startup command. Windows still lists LG Switch in Start apps. The timing alone
+does not establish what removed its files. The current login inventory is in
+[config/startup/README.md](config/startup/README.md).
+
 ## Microsoft Teams removed — 2026-09-23
 
 The owner clarified that Teams should be uninstalled, not merely prevented
