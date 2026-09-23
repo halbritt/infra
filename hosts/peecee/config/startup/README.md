@@ -6,8 +6,9 @@ tasks, enabled boot/logon Scheduled Tasks outside `\Microsoft\Windows\`, and
 automatic services whose executable is outside the usual Windows system
 directories. The host also had 36 enabled Windows namespace boot/logon tasks
 and 74 other automatic services whose executable paths match those system
-locations; those entries are excluded from the tables below. A registration
-may exit quickly after launch.
+locations. Their names and observed states are in the
+[system inventory appendix](system-inventory-2026-09-23.md). A registration may
+exit quickly after launch.
 
 ## Startup folders and Run keys
 
