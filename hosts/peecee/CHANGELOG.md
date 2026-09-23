@@ -3,6 +3,15 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-23 — Ollama startup shortcut removed; Evernote autostart disabled
+
+Moved the parked `Ollama.lnk.disabled` file out of the user's Startup folder,
+where Windows still treated it as a startup command. Updated the Ollama
+lifecycle scripts to park and restore the shortcut outside that folder.
+Disabled Evernote's packaged `EvernoteStartup` task for user `halbr`. Verified
+the Ollama server task and API still run; no other startup entry was changed.
+The dated inventory is in [config/startup/README.md](config/startup/README.md).
+
 ## 2026-09-23 — ASUS onboard audio driver repaired
 
 The motherboard's Realtek USB audio device (`VID_0B05&PID_1A20`) was using

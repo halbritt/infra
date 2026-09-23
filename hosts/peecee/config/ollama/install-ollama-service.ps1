@@ -35,20 +35,26 @@ Write-Host "Set machine env: OLLAMA_HOST, OLLAMA_MODELS, OLLAMA_KEEP_ALIVE=-1, O
 Get-Process 'ollama app','ollama' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
-# 3. Park the desktop auto-start shortcut so it does not reclaim 11434 on next login.
+# 3. Park the desktop auto-start shortcut outside the Startup folder so Windows
+#    does not try to open the former .lnk.disabled file at login.
 $startup = [Environment]::GetFolderPath('Startup')
 $lnk = Join-Path $startup 'Ollama.lnk'
+$LogDir = 'C:\ProgramData\Ollama'
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+$parkedLnk = Join-Path $LogDir 'Ollama-desktop.lnk'
+if (Test-Path "$lnk.disabled") {
+  Move-Item -LiteralPath "$lnk.disabled" -Destination $parkedLnk -Force
+  Write-Host "Moved legacy parked shortcut outside Startup: $parkedLnk"
+}
 if (Test-Path $lnk) {
-  Move-Item $lnk "$lnk.disabled" -Force
-  Write-Host "Parked startup shortcut: $lnk -> $lnk.disabled"
+  Move-Item -LiteralPath $lnk -Destination $parkedLnk -Force
+  Write-Host "Parked startup shortcut: $lnk -> $parkedLnk"
 }
 
 # 4. (Re)create the scheduled task. The SYSTEM service has no console, and a bare
 #    `ollama serve` writes no logfile, so wrap it in a cmd that redirects stdout+stderr
 #    to a logfile -- this is what makes the startup "server config" line and the
 #    per-load KV-cache line auditable (e.g. confirming type_k=q8_0, not f16).
-$LogDir = 'C:\ProgramData\Ollama'
-New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 $Wrapper = Join-Path $LogDir 'run-ollama-serve.cmd'
 @"
 @echo off

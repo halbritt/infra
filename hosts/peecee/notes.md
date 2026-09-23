@@ -1,5 +1,19 @@
 # peecee host notes
 
+## Startup cleanup and inventory — 2026-09-23
+
+The owner reported `Ollama.lnk.disabled` trying to open at login and asked to
+disable Evernote autostart. `Win32_StartupCommand` still listed the Ollama file
+in the user's Startup folder. The file was moved to
+`C:\ProgramData\Ollama\Ollama-desktop.lnk`, and the canonical Ollama install
+and rollback scripts now use that location. Evernote was absent from the Run
+keys and Startup folders; its packaged-app `EvernoteStartup` task was enabled
+(state `2`) and is now disabled by user (state `1`). The Evernote process was
+left running. A read-only follow-up found no Ollama Startup command, the
+parked shortcut present, `OllamaServer` running, and its local API returning
+HTTP 200. See [config/startup/README.md](config/startup/README.md) for the
+dated inventory of the other launch points.
+
 ## Onboard audio driver repair — 2026-09-23
 
 Live PowerShell identified the board as `ROG STRIX Z690-I GAMING WIFI` and its

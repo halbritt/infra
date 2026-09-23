@@ -26,7 +26,7 @@ Ollama runs as a **headless server**, not the desktop tray app. Swapped
   serve has no console/logfile, so the wrapper is what makes the startup config +
   per-load KV-cache lines auditable). Trigger **At startup**, no time limit,
   auto-restart. Survives logout and reboot with no login session (the desktop
-  `Ollama.lnk` startup shortcut is parked `.disabled`). gpu-fleet-sanctioned
+  `Ollama.lnk` startup shortcut is parked outside the Startup folder). gpu-fleet-sanctioned
   Windows approach ("scheduled task or service").
 - **Endpoint:** `http://peecee:11434` (OpenAI-compatible at `/v1`), bound
   `0.0.0.0:11434` → reachable on LAN + tailnet. **Same port as the old desktop app.**
@@ -161,6 +161,8 @@ Do not install fleet database credentials or self-heartbeat code on peecee.
 
 ## Subsystems
 
+- [`config/startup/`](config/startup/) — dated inventory of app launch points,
+  boot/logon tasks, and automatic services.
 - [`config/audio/`](config/audio/) — onboard Realtek USB audio driver, ASUS
   package identity, and repair procedure.
 - [`config/ollama/`](config/ollama/) — Ollama headless-server desired state and

@@ -4,11 +4,12 @@ Ollama runs as the Windows Scheduled Task `OllamaServer` under `SYSTEM`, not as
 the desktop tray application. The canonical lifecycle scripts are:
 
 - [`install-ollama-service.ps1`](install-ollama-service.ps1), which configures
-  machine-scoped Ollama variables, parks the desktop startup shortcut, writes
+  machine-scoped Ollama variables, parks the desktop startup shortcut at
+  `C:\ProgramData\Ollama\Ollama-desktop.lnk`, writes
   `C:\ProgramData\Ollama\run-ollama-serve.cmd`, registers the startup task, and
   starts it; and
 - [`uninstall-ollama-service.ps1`](uninstall-ollama-service.ps1), which removes
-  the task, stops Ollama, restores the startup shortcut when present, and
+  the task, stops Ollama, restores the parked startup shortcut when present, and
   relaunches the desktop application.
 
 The service listens on port `11434`, uses the existing user model store, and

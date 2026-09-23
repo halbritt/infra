@@ -14,7 +14,14 @@ Write-Host "Removed task '$TaskName' and stopped serve."
 # 2. Restore the desktop auto-start shortcut.
 $startup = [Environment]::GetFolderPath('Startup')
 $lnk = Join-Path $startup 'Ollama.lnk'
-if (Test-Path "$lnk.disabled") { Move-Item "$lnk.disabled" $lnk -Force; Write-Host "Restored $lnk" }
+$parkedLnk = 'C:\ProgramData\Ollama\Ollama-desktop.lnk'
+if (Test-Path $parkedLnk) {
+  Move-Item -LiteralPath $parkedLnk -Destination $lnk -Force
+  Write-Host "Restored $lnk"
+} elseif (Test-Path "$lnk.disabled") {
+  Move-Item -LiteralPath "$lnk.disabled" -Destination $lnk -Force
+  Write-Host "Restored legacy $lnk"
+}
 
 # 3. Relaunch the desktop app now (it re-binds 11434).
 $app = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama app.exe'
