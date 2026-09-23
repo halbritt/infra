@@ -3,6 +3,14 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-23 — LG installer and Teams autostart disabled
+
+After the owner's follow-up, parked the LG Monitor App Installer shortcut
+outside Startup, removed its installer manager Run value, and disabled the
+installer cleanup logon task. LG Switch and the monitor driver remain in place.
+Disabled the packaged Teams startup task without uninstalling Teams. Updated
+the dated inventory in [config/startup/README.md](config/startup/README.md).
+
 ## 2026-09-23 — Ollama startup shortcut removed; Evernote autostart disabled
 
 Moved the parked `Ollama.lnk.disabled` file out of the user's Startup folder,

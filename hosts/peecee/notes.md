@@ -1,5 +1,22 @@
 # peecee host notes
 
+## LG installer and Teams startup cleanup — 2026-09-23
+
+The owner questioned the need for `LG Monitor App Installer` and explicitly
+rejected Teams autostart. LG states that its installer discovers optional
+monitor applications and is not needed for basic display operation. On peecee,
+the shortcut targeted a packaged app staged for SYSTEM but not registered for
+user `halbr`. Parked the shortcut outside Startup, removed the related machine
+`LGMonitorInstallManager` Run value after saving its command, and disabled the
+`LG Monitor Software Notice Cleanup` logon task. Set the packaged Teams
+`TeamsTfwStartupTask` from state `2` to state `1` (disabled by user). The Teams
+app remains installed. `Win32_StartupCommand` now reports neither LG installer
+entry; LG Switch still has its Run entry, and the LG UltraFine monitor is `OK`.
+No logoff or reboot was performed to test the next login.
+
+Paths and the updated inventory are in
+[config/startup/README.md](config/startup/README.md).
+
 ## Startup cleanup and inventory — 2026-09-23
 
 The owner reported `Ollama.lnk.disabled` trying to open at login and asked to
