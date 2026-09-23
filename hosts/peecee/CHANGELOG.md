@@ -3,6 +3,27 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-23 — Kev classifier service; ollama resident model back to qwen3-vl:8b
+
+Owner-directed (option "2" of the VRAM tradeoff in
+`showerthoughts/jev/research/tiny-model-benchmark-2026-09-22.md`).
+
+- Unloaded the drifted resident `qwen3.6:27b` (16 GB, ctx 4096) and loaded
+  `qwen3-vl:8b` at `num_ctx` 32768 with keep-alive forever, converging the box on
+  gpu-fleet migration 013's advertised slot-0 state. No fleet migration needed.
+- Installed Kev (`jaredpalmer/kev` @ `557598f`, torch 2.8.0+cu128, triton-windows,
+  flash-linear-attention 0.5.2) under `C:\Users\halbr\kev` via the one-shot task
+  `KevInstall`, and registered `KevServer` (user, S4U, AtStartup, restart x3) serving
+  `kev-4b` bf16 with the adapter unmerged on `0.0.0.0:8008`. New subsystem
+  `config/kev/` holds the installer, both task wrappers, the bind shim and a README
+  with the serving contract and five Windows gotchas (SSH kills the process tree;
+  PS 5.1 Stop preference vs. redirected stderr; cmd quote stripping; DOMAIN\user
+  SID mapping; uv venv refuses overwrite).
+- Verified from proximal: `/v1/models` reports cuda/bfloat16; the 64-row benchmark
+  matches the proximal run (risk 0.83, irreversible 0.88, network 0.92) at 439 ms p50.
+- Not changed: ollama task, marker, exporter, firewall. Card is now full (~0.7 GB free
+  with the desktop open); marker jobs must stop `KevServer` first.
+
 ## 2026-08-11
 
 ### GPU exporter made independent of Tailscale service restarts

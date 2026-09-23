@@ -87,6 +87,29 @@ curl -s http://peecee:11434/api/tags
 - **Roll back to the desktop app:**
   [`config/ollama/uninstall-ollama-service.ps1`](config/ollama/uninstall-ollama-service.ps1).
 
+## Kev — local System One classifier (added 2026-09-23)
+
+`jaredpalmer/kev-4b` (Qwen3.5-4B-Base + LoRA + pointer head; calibrated typed-question
+answers over a System One–compatible API) runs as Scheduled Task **`KevServer`** (user
+`halbr`, S4U, AtStartup, auto-restart) from a uv venv at `C:\Users\halbr\kev\.venv`,
+bound `0.0.0.0:8008`. It is snap's local leg (`showerthoughts/jev/`), placed here by
+owner direction because proximal's card is committed to the 27B. Endpoint
+`http://100.113.63.58:8008/v1/systemone`; card at `/v1/models`. Files, contract, VRAM
+budget and the Windows gotchas met while installing it: [`config/kev/README.md`](config/kev/README.md).
+
+- **Resident model swap (same day, owner option "2"):** ollama's loaded model was
+  moved from the drifted `qwen3.6:27b` (16 GB, ctx 4096, observed since 2026-08-05) back
+  to **`qwen3-vl:8b` at `num_ctx` 32768** (`8.0 GB / 100% GPU / 32768 / Forever`), which
+  is what gpu-fleet migration 013 already advertises for slot 0, so the directory and
+  the box agree again. Done with `ollama stop qwen3.6:27b` and one `/api/generate` load.
+- **VRAM after both:** ~23.6 GB used / ~0.7 GB free with the owner's desktop apps open
+  (they hold 6–7 GB; the 011 idle band assumed ~2.5 GB). Kev loads with the adapter
+  unmerged (`KEV_MERGE=0`) because the merged path peaks at 16 GB.
+- **Verified 2026-09-23 from proximal over the tailnet** (balanced 64-command
+  permission-gate set, agreement with hosted jev): risk 0.83, irreversible 0.88,
+  reaches_network 0.92, identical confusion matrix to the proximal run, 439 ms p50 per
+  three-question request (133 ms on proximal's merged bf16 run).
+
 ## Marker — batch GPU document conversion
 
 peecee is the fleet's **batch** node for document conversion: marker (surya models)
