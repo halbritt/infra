@@ -3,6 +3,13 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-23 — Microsoft Teams uninstalled
+
+After the owner clarified that Teams itself should go, removed the installed
+`MSTeams` app for all users and its Windows provisioned package. Verified that
+the app, its packaged startup task, and Start app entry are absent. The
+remaining startup inventory is in [config/startup/README.md](config/startup/README.md).
+
 ## 2026-09-23 — LG installer and Teams autostart disabled
 
 After the owner's follow-up, parked the LG Monitor App Installer shortcut

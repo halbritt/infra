@@ -1,5 +1,16 @@
 # peecee host notes
 
+## Microsoft Teams removed — 2026-09-23
+
+The owner clarified that Teams should be uninstalled, not merely prevented
+from starting. The only installed Teams package was
+`MSTeams_24295.605.3225.8804_x64__8wekyb3d8bbwe`, registered for `halbr`.
+Removed it for all users with `Remove-AppxPackage -AllUsers` and removed the
+matching provisioned package with `Remove-AppxProvisionedPackage -Online`.
+Follow-up checks found no Teams package for any user, provisioned package,
+Start app, packaged startup task, or automatic service. The other enabled
+startup entries remain listed in [config/startup/README.md](config/startup/README.md).
+
 ## LG installer and Teams startup cleanup — 2026-09-23
 
 The owner questioned the need for `LG Monitor App Installer` and explicitly

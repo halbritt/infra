@@ -1,7 +1,11 @@
 # peecee startup inventory
 
 Observed on 2026-09-23 as user `halbr` after the Ollama, Evernote, LG installer,
-and Teams changes.
+and Teams changes. After the owner clarified that Teams should be removed
+entirely, its installed `MSTeams` package was removed for all users and its
+provisioned package was removed from Windows. A follow-up found no Teams app
+package, provisioned package, Start app, packaged startup task, or automatic
+service.
 This records user-facing startup registrations, enabled packaged-app startup
 tasks, enabled boot/logon Scheduled Tasks outside `\Microsoft\Windows\`, and
 automatic services whose executable is outside the usual Windows system
@@ -59,9 +63,10 @@ manifest identifies its GUID task as the WhatsApp startup task.
 
 Evernote's `EvernoteStartup` was state `2` and launched Evernote after the
 2026-09-23 reboot. It is now state `1` (disabled by user). Its running process
-was left alone. Microsoft Teams' `TeamsTfwStartupTask` was also changed from
-state `2` to state `1` at the owner's request; Teams remains installed. Other
-registered tasks observed disabled (state `0`) were an
+was left alone. Microsoft Teams' `TeamsTfwStartupTask` was first changed from
+state `2` to state `1`; the owner then requested removal of Teams itself. The
+`MSTeams` package and its startup task are now absent. Other registered tasks
+observed disabled (state `0`) were an
 older `WhatsAppStartupTask`, Claude, Xbox Gaming App, Office Hub, Windows
 Terminal, and Phone Link.
 
