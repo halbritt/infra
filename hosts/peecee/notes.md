@@ -15,8 +15,8 @@ and requested a reboot. After restarting, `pnputil /enum-devices /drivers`
 reported Realtek `6.3.9600.2342` as best ranked and installed, with the device
 started. `Get-PnpDevice` reported `CM_PROB_NONE`, the new Realtek SPDIF endpoint
 was `OK`, and both Windows audio services were running. The exporter service,
-`OllamaServer`, and `KevServer` were also running after reboot. A remote probe
-cannot confirm sound from the physical jack or speakers.
+`OllamaServer`, and `KevServer` were also running after reboot. The owner then
+confirmed that sound works on peecee (2026-09-23).
 
 See [config/audio/README.md](config/audio/README.md) for the package identity,
 staged files, and reinstall procedure.
