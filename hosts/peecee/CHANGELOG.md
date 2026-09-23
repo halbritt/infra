@@ -3,6 +3,19 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-23 — ASUS onboard audio driver repaired
+
+The motherboard's Realtek USB audio device (`VID_0B05&PID_1A20`) was using
+Windows' generic `usbaudio2.inf` despite a Realtek extension being present.
+Installed the signed base driver `6.3.9600.2342` from the newest ASUS audio
+package listed for the ROG Strix Z690-I Gaming WiFi. Only the matching driver
+files were staged and installed; the package's optional apps and on-logon task
+were not run. Windows reported a reboot requirement, so peecee was restarted.
+Post-reboot verification found the Realtek driver bound and best ranked, its
+device started without a PnP problem, and a live Realtek SPDIF endpoint.
+See [config/audio/README.md](config/audio/README.md) for package identity and
+reinstallation instructions.
+
 ## 2026-09-23 — Kev classifier service; ollama resident model back to qwen3-vl:8b
 
 Owner-directed (option "2" of the VRAM tradeoff in

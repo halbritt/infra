@@ -1,5 +1,26 @@
 # peecee host notes
 
+## Onboard audio driver repair — 2026-09-23
+
+Live PowerShell identified the board as `ROG STRIX Z690-I GAMING WIFI` and its
+Realtek USB audio interface as `USB\VID_0B05&PID_1A20&MI_00`. Before the change,
+the base device used Microsoft's generic `usbaudio2.inf` while the Realtek
+extension (`oem45.inf`) was already installed. ASUS listed
+`B6.3.9600.2342` as the latest audio package for the board on this date. Its
+base driver INF specifically matches that hardware ID; the extracted catalog
+verified with a Microsoft Windows Hardware Compatibility Publisher signature.
+
+`pnputil /add-driver ... /install` installed `RtDUsbAD_asus.inf` as `oem94.inf`
+and requested a reboot. After restarting, `pnputil /enum-devices /drivers`
+reported Realtek `6.3.9600.2342` as best ranked and installed, with the device
+started. `Get-PnpDevice` reported `CM_PROB_NONE`, the new Realtek SPDIF endpoint
+was `OK`, and both Windows audio services were running. The exporter service,
+`OllamaServer`, and `KevServer` were also running after reboot. A remote probe
+cannot confirm sound from the physical jack or speakers.
+
+See [config/audio/README.md](config/audio/README.md) for the package identity,
+staged files, and reinstall procedure.
+
 ## Repository import
 
 The standalone repository `github.com/halbritt/peecee` was imported without

@@ -161,6 +161,8 @@ Do not install fleet database credentials or self-heartbeat code on peecee.
 
 ## Subsystems
 
+- [`config/audio/`](config/audio/) — onboard Realtek USB audio driver, ASUS
+  package identity, and repair procedure.
 - [`config/ollama/`](config/ollama/) — Ollama headless-server desired state and
   install/rollback scripts.
 - [`config/ssh-client/`](config/ssh-client/) — proximal-side OpenSSH route for
