@@ -17,11 +17,13 @@ requirements spec live in [`DESIGN.md`](./DESIGN.md).
 
 **Prior art drawn on (on-box):**
 
-- [`~/git/council`](../../git/council) — members (named models), chair (arbiter),
+- [council](https://github.com/halbritt/council) (`~/git/council`) — members
+  (named models), chair (arbiter),
   scribe (synthesis), deliberation ledger (challenge/ready/ballot/consensus),
   raised hand (escalation signal), operator checkpoint (human authority gate).
-- [`~/git/striatum-next`](../../git/striatum-next) — model choice is *scheduler
-  policy*; execution backends are crash-only adapters behind a submit/admit seam;
+- [striatum-next](https://github.com/halbritt/striatum-next)
+  (`~/git/striatum-next`) — model choice is *scheduler policy*; execution backends
+  are crash-only adapters behind a submit/admit seam;
   escalation is a first-class record type; backend qualification (RFC 0019)
   names **independence / aliasing class** (uncorrelated models) and
   capability-aware placement.
