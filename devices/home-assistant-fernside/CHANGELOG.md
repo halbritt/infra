@@ -177,3 +177,7 @@ authorized audible tests were heard by the owner. The second identified the
 kid-bedroom Mini as `media_player.dining_room_speaker` (old room name), now the
 default; the unavailable historical kid-bedroom entity is a different device.
 See `config/home-assistant-core/announce.md` for source and recovery.
+
+Follow-up: assigned the confirmed Mini’s device and entity to Bedroom 2 and set
+both HA display names to Kid Bedroom Mini. Preserved the entity ID and verified
+the registry records.

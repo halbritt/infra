@@ -25,8 +25,9 @@ The kid's current Mini advertises **Dining Room speaker** and is model
 **Google Home Mini**. The owner heard the second authorized identification test
 in the kid's bedroom. Do not confuse it with the unavailable historical
 `media_player.kid_bedroom_speaker`, Cast UUID
-`b3b25499-dfa3-9fcb-1a18-2a0c355d3620`, model Google Nest Mini. Entity IDs, area
-assignments and Google Home names were not changed. IPs are observations; the
+`b3b25499-dfa3-9fcb-1a18-2a0c355d3620`, model Google Nest Mini. At the owner’s request, the working device and entity were renamed **Kid Bedroom
+Mini** in HA and both assigned to **Bedroom 2** (`bedroom_2`). Readback verified
+both records. Entity IDs and Google Home names were not changed. IPs are observations; the
 script targets HA entities.
 
 ## Verification and maintenance
