@@ -167,3 +167,13 @@ depend on the generic hostname. Documented the authenticated Supervisor/CLI
 operation and its before-and-after probes. The live hostname was not changed:
 the registered agent surface does not expose host options and network SSH is
 disabled.
+
+## 2026-09-25 — Shared spoken announcements
+
+Installed `script.announce` and the persistent playback-uncertainty helper via
+HA config APIs. Reuses Google Translate TTS and Cast. The queue serializes speech,
+suppresses progress and 22:00–07:00 requests, and expires stale requests. Two
+authorized audible tests were heard by the owner. The second identified the
+kid-bedroom Mini as `media_player.dining_room_speaker` (old room name), now the
+default; the unavailable historical kid-bedroom entity is a different device.
+See `config/home-assistant-core/announce.md` for source and recovery.

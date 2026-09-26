@@ -99,3 +99,8 @@ records the watering automation, notification traces, a confirmed direct phone
 test, and the owner's subsequent discovery of the morning alerts bundled with
 other notifications. It is an observation record, not an installed automation
 file.
+
+## Spoken announcements
+
+[Announce](announce.md) records the shared speech queue, quiet-hours policy,
+verified room-to-speaker mapping, deployment source, and recovery procedure.
