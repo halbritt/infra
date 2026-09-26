@@ -1,5 +1,17 @@
 # Home Assistant at Fernside changelog
 
+## 2026-09-25 — Gemini announcement service
+
+Added generated-media playback to the shared Announce script at the owner's
+request. The proximal request service uses exact Gemini 3.8 Flash TTS with
+selectable delivery styles, durable job/idempotency state and cached audio.
+HA retains serialization, quiet hours and the persistent uncertainty latch.
+Existing direct Luna calls remain compatible. See
+[Announce operations](config/home-assistant-core/announce.md) for deployment,
+verification, credentials locations and rollback. Config validation/readback,
+25 tests and an urgent bedroom playback passed.
+
+
 ## 2026-09-08
 
 ### Added a daily plant watering summary to the iPhone
