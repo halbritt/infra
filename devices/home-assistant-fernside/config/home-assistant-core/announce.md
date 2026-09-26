@@ -5,8 +5,8 @@ Installed 2026-09-25 at the owner's request. Source and CLI live in
 for `script.announce`. The installed `~/.local/bin/announce` command uses the
 existing owner-only `~/.config/agent-board/ha-mcp-url` file. No new credentials,
 daemon, integration, or wake-up schedule were added. The final TTS provider is
-Home Assistant Cloud (`tts.home_assistant_cloud`), voice `SoniaNeural`, language
-`en-GB`. The owner requested a distinct female voice because the initial Google
+Home Assistant Cloud (`tts.home_assistant_cloud`), voice `LunaNeural`, language
+`en-US`. The owner requested a distinct female voice because the initial Google
 Translate voice sounded too much like Google Assistant.
 
 Home Assistant owns a FIFO queue of up to three requests. It suppresses progress

@@ -186,3 +186,7 @@ Voice follow-up: switched Announce to existing Home Assistant Cloud TTS, Sonia
 (`en-GB`, `SoniaNeural`), at the owner’s request for a distinct female reminder
 voice. Native voice discovery confirmed support; a sample completed on the
 kid-bedroom Mini.
+
+Final voice choice: after hearing Aria, Jenny and Luna sequentially on the bedroom
+Nest Audio, the owner chose Luna. Set `en-US` / `LunaNeural` in Announce and
+verified the live script matches its source.
