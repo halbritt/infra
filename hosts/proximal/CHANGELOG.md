@@ -5,6 +5,17 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-26
+
+### Morning: household routine web app
+
+Added the owner-requested `morning.harm.org` route to loopback port 8878 and
+recorded the `morning.service` user unit. Sign-in codes speak on the kid’s bedroom
+Mini; routines, adaptive reminders, and voices are managed behind authentication.
+Scheduled reminders start disabled. Existing Announce/HA queue policy is retained.
+Both tunnel configurations also preserve the already-live `usage.harm.org` route,
+which was absent from the repository copies. No tunnel credentials were changed.
+
 ## 2026-09-17
 
 ### plant-praxis-bridge: watch the Areca Palm; record the Ficus top-probe fix

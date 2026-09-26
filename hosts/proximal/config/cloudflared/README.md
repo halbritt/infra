@@ -43,6 +43,8 @@ no explicit DNS record of its own — onto Pages. Do not point it back at `harm.
 |---|---|
 | `tailscale.harm.org` | `http://localhost:3912` ([`../tailscale-index`](../tailscale-index/)) |
 | `newsroom.harm.org` | `http://localhost:3913` ([`../ai-newsroom`](../ai-newsroom/)) |
+| `morning.harm.org` | `http://127.0.0.1:8878` ([`../morning`](../morning/)) |
+| `usage.harm.org` | `http://localhost:8796` (existing installed route reconciled September 26) |
 | `tokens.harm.org` | `http://localhost:3001` |
 | `dram.harm.org` | `http://localhost:3011` |
 | `plane.harm.org` | `http://localhost:8190` |

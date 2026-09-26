@@ -19,4 +19,8 @@ ingress:
     service: http://localhost:8190
   - hostname: pastebin.harm.org
     service: https://proximal.tail0ecc2e.ts.net:18081
+  - hostname: usage.harm.org
+    service: http://localhost:8796
+  - hostname: morning.harm.org
+    service: http://127.0.0.1:8878
   - service: http_status:404
