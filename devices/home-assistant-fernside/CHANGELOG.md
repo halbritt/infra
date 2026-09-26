@@ -181,3 +181,8 @@ See `config/home-assistant-core/announce.md` for source and recovery.
 Follow-up: assigned the confirmed Mini’s device and entity to Bedroom 2 and set
 both HA display names to Kid Bedroom Mini. Preserved the entity ID and verified
 the registry records.
+
+Voice follow-up: switched Announce to existing Home Assistant Cloud TTS, Sonia
+(`en-GB`, `SoniaNeural`), at the owner’s request for a distinct female reminder
+voice. Native voice discovery confirmed support; a sample completed on the
+kid-bedroom Mini.
