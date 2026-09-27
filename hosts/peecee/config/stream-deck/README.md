@@ -37,13 +37,26 @@ one after another and the Watcher never exits.
 
 ## Monitor USB routing
 
-The deck sits on the monitor's downstream USB hub (a Fresco Logic
-`1D5C:5801` hub, next to the monitor's own `0451:ACE1` device on archon). At
-install time that hub was attached to **archon**, even though archon's
-DisplayPort output was in DPMS Off. Peecee is also connected over USB: it sees
-the monitor's control device (`043E:9A39`, serial `601INZY73733`) through
-motherboard hub port 10. The downstream ports did not follow the input switch.
-Check the monitor's USB upstream / KVM selection. Verify with:
+The LG 32U990A (UltraFine evo 6K) is shared by peecee and archon:
+
+- **Archon:** Thunderbolt 5 upstream (its kernel logs Thunderbolt port 0:5).
+- **Peecee:** DisplayPort video plus a USB link. Peecee sees the monitor's
+  control device (`043E:9A39`, serial `601INZY73733`) through motherboard hub
+  port 10.
+
+The deck was first plugged into the monitor's **Thunderbolt 5 downstream**
+(daisy-chain) port. It enumerated on archon behind a Fresco Logic `1D5C:5801`
+hub, next to the monitor's `0451:ACE1` device. It stayed on archon while
+archon's DisplayPort output was in DPMS Off. Toggling the OSD **USB Selection**
+didn't disconnect that hub either. Archon's kernel logged no hub disconnect.
+Conclusion: the Thunderbolt downstream port follows the Thunderbolt host, not
+the monitor's KVM/USB Selection. Use the monitor's USB-C 3.2 downstream ports,
+or peecee's own ports, for devices that belong to peecee.
+
+The owner then moved the deck. At 2026-09-26 22:46, peecee enumerated it
+(`USB\VID_0FD9&PID_0080\A00SA6102QCGR8`) through Genesys `05E3:0610` hubs
+under root hub port 10. The Stream Deck app log reported `Device connected`,
+firmware 1.02.000. Archon no longer listed it. Verify with:
 
 ```powershell
 Get-PnpDevice -PresentOnly | Where-Object InstanceId -match 'VID_0FD9'

@@ -8,7 +8,9 @@ history contain the original 2026-06-20 deployment record.
 Installed `Elgato.StreamDeck` 7.6.0.23012 with winget for the owner's Stream
 Deck MK.2. It adds two `halbr` Run entries (Stream Deck, Volume Controller)
 and no services or tasks. Both were started in the desktop session. The deck
-itself was still on archon via the shared monitor's USB hub. See
+was first on the monitor's Thunderbolt downstream port, which follows archon
+(the Thunderbolt host) regardless of USB Selection. After the owner moved it,
+peecee enumerated it and the app connected (firmware 1.02.000). See
 [config/stream-deck/README.md](config/stream-deck/README.md).
 
 ## 2026-09-23 — Zwift uninstalled
