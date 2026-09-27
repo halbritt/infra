@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "name": "archon",
+  "hostname": "archon",
+  "status": "active",
+  "platform": {
+    "os": "linux",
+    "distribution": "Omarchy (Arch Linux)",
+    "distribution_version": "4.0.4",
+    "architecture": "x86_64",
+    "kernel": "7.2.5-3-omarchy"
+  },
+  "network": {
+    "lan_interface": "wlo1",
+    "lan_address": "192.168.1.179",
+    "tailnet_address": "100.100.42.51",
+    "tailnet_dns_name": "archon.tail0ecc2e.ts.net"
+  },
+  "roles": [
+    "linux",
+    "developer"
+  ],
+  "paths": {
+    "config": "config",
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  },
+  "hardware": {
+    "manufacturer": "Intel",
+    "model": "NUC13ANHi7",
+    "cpu": "Intel Core i7-1360P",
+    "logical_cpus": 16,
+    "memory_gib": 62,
+    "gpu": [
+      "Intel Iris Xe Graphics (Raptor Lake-P)"
+    ],
+    "storage": [
+      "Samsung SSD 990 PRO 2TB"
+    ]
+  }
+}
