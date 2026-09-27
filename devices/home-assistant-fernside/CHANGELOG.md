@@ -1,5 +1,12 @@
 # Home Assistant at Fernside changelog
 
+
+## 2026-09-26 — Stream Deck webhooks
+
+Created `automation.stream_deck_peecee` (ten local-only webhook triggers), plus
+`script.movie_mode` and `script.goodnight`, for the peecee Stream Deck. The
+Red Light webhook was tested end-to-end from peecee. See
+[Stream Deck webhooks](config/home-assistant-core/stream-deck.md).
 ## 2026-09-25 — Gemini announcement service
 
 Added generated-media playback to the shared Announce script at the owner's

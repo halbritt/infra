@@ -104,3 +104,8 @@ file.
 
 [Announce](announce.md) records the shared speech queue, quiet-hours policy,
 verified room-to-speaker mapping, deployment source, and recovery procedure.
+
+## Stream Deck webhooks
+
+[Stream Deck webhooks](stream-deck.md) records the local-only webhook
+automation and the Movie mode and Goodnight scripts behind peecee's Stream Deck.

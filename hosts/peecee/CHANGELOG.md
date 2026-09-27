@@ -3,6 +3,13 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-26 — Stream Deck Home page
+
+Added a 15-key Home page as the first page: HA light toggles, announcements,
+Movie/Goodnight, media keys, Grafana, Lock PC and More ›. Added ‹ Home on the
+old first page. Profiles backup is in `C:\ProgramData\Infra\streamdeck\`.
+See [config/stream-deck/README.md](config/stream-deck/README.md).
+
 ## 2026-09-26 — Elgato Stream Deck installed
 
 Installed `Elgato.StreamDeck` 7.6.0.23012 with winget for the owner's Stream
