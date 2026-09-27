@@ -8,9 +8,13 @@ publishing had been retired on 2026-09-25, but the user unit
 `~/git/agent-board/publisher/herdr_publish.py --url http://proximal.attlocal.net:8787`,
 was still enabled. Its reports began failing at 04:25 because
 `proximal.attlocal.net` stopped resolving (`Name or service not known`). The
-unit is now disabled and stopped; the file is kept. Rollback:
-`systemctl --user enable --now herdr-publish.service`. The `herdr` server
-itself is untouched.
+unit was disabled and stopped. At the owner's request, the leftovers were
+then removed: the unit file and archon's copy of the board write token
+(`~/.config/agent-board/token`, whose SHA-256 matched proximal's copy, so
+nothing was lost). The publisher script was already absent from archon's
+agent-board checkout at `8483060`. Afterwards, nothing on archon referenced
+`proximal.attlocal.net`, and no publisher process ran. The `herdr` app itself
+is untouched.
 
 ## Terminal font size 9 → 11 — 2026-09-26
 
