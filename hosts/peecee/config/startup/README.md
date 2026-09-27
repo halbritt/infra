@@ -20,6 +20,8 @@ exit quickly after launch.
 | Steam | `halbr` Run key |
 | Signal | `halbr` Run key |
 | Google Chrome (no startup window) | `halbr` Run key |
+| Stream Deck (`--runinbk`), added 2026-09-26 | `halbr` Run key |
+| Elgato Volume Controller SD plugin, added 2026-09-26 | `halbr` Run key |
 | Windows Security tray | Machine Run key |
 
 Zwift 1.1.13 was uninstalled at the owner's request. Its launcher process,

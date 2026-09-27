@@ -3,6 +3,14 @@
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 
+## 2026-09-26 — Elgato Stream Deck installed
+
+Installed `Elgato.StreamDeck` 7.6.0.23012 with winget for the owner's Stream
+Deck MK.2. It adds two `halbr` Run entries (Stream Deck, Volume Controller)
+and no services or tasks. Both were started in the desktop session. The deck
+itself was still on archon via the shared monitor's USB hub. See
+[config/stream-deck/README.md](config/stream-deck/README.md).
+
 ## 2026-09-23 — Zwift uninstalled
 
 Stopped its launcher, ran Zwift 1.1.13's registered quiet uninstaller, and

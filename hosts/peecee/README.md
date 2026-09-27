@@ -163,6 +163,8 @@ Do not install fleet database credentials or self-heartbeat code on peecee.
 
 - [`config/startup/`](config/startup/) — dated inventory of app launch points,
   boot/logon tasks, and automatic services.
+- [`config/stream-deck/`](config/stream-deck/) — Elgato Stream Deck app (winget),
+  its login entries, and the shared-monitor USB routing note.
 - [`config/audio/`](config/audio/) — onboard Realtek USB audio driver, ASUS
   package identity, and repair procedure.
 - [`config/ollama/`](config/ollama/) — Ollama headless-server desired state and
