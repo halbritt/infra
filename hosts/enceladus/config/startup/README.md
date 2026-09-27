@@ -27,8 +27,11 @@ Get-Process Wacom_*,WacomHost,WacomCenterUI -ErrorAction SilentlyContinue | Stop
 Start-Service WTabletServicePro
 ```
 
-State on 2026-09-26: `halbritt` is `false` (owner request); `Saturn` is `true`
-(unchanged). Pre-change copies of the halbritt files are at
-`C:\ProgramData\Infra\wacom-prefs-before-20260926\`. Rollback: copy them back
+State on 2026-09-26: `false` for both `halbritt` and `Saturn` (owner request;
+Saturn doesn't use Wacom Center). Saturn was edited while logged out, when no
+driver session holds the prefs, so no service restart was needed; the files keep
+their inherited ACL (Saturn FullControl). Pre-change copies are in
+`C:\ProgramData\Infra\wacom-prefs-before-20260926\` (the `Saturn\` subfolder
+holds that profile's files). Rollback: copy them back
 using the same stop/start procedure, or turn the option back on in Wacom Center.
 Do not disable `WTabletServicePro`, because pen input needs it.

@@ -1,11 +1,19 @@
 # Host changelog
 
+## Wacom Center login autostart disabled (Saturn) — 2026-09-26
+
+Owner request: Saturn doesn't use Wacom Center. Set `WCAutoStart` to `false` in
+`C:\Users\Saturn\AppData\Roaming\WTablet\Wacom_Tablet.{dat,bak}` while
+only `halbritt` was logged in. Backups are under
+`C:\ProgramData\Infra\wacom-prefs-before-20260926\Saturn\`. Not yet checked
+at Saturn's next login.
+
 ## Wacom Center login autostart disabled (halbritt) — 2026-09-26
 
 Owner request. Set `WCAutoStart` to `false` in the halbritt Wacom driver prefs,
 stopping and restarting `WTabletServicePro` around the edit. The tablet driver
 itself is unchanged. After restart, the driver's user processes came back but
-`WacomCenterUI` did not. The `Saturn` profile still has `true`. See
+`WacomCenterUI` did not. See
 [config/startup](config/startup/README.md).
 
 ## Tailscale unattended mode — 2026-09-26
