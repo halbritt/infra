@@ -1,5 +1,17 @@
 # Host changelog
 
+## Herdr board publisher disabled — 2026-09-27
+
+The agent board showed "herdr@archon not reporting since 04:25". Herdr
+publishing had been retired on 2026-09-25, but the user unit
+`herdr-publish.service`, which runs
+`~/git/agent-board/publisher/herdr_publish.py --url http://proximal.attlocal.net:8787`,
+was still enabled. Its reports began failing at 04:25 because
+`proximal.attlocal.net` stopped resolving (`Name or service not known`). The
+unit is now disabled and stopped; the file is kept. Rollback:
+`systemctl --user enable --now herdr-publish.service`. The `herdr` server
+itself is untouched.
+
 ## Terminal font size 9 → 11 — 2026-09-26
 
 The owner requested a font 2 points larger. Changed `font=` in
