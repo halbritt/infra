@@ -15,7 +15,8 @@ whisper.cpp and Ollama GPU residents first; see "Strict GPU residency" below.
 
 | | |
 |---|---|
-| build | mainline llama.cpp `10210 (000547513)` — `~/git/llama.cpp/build/bin/llama-server` |
+| build | mainline llama.cpp `11222 (a97cce86a)` on disk — `~/git/llama.cpp/build/bin/llama-server`. **Running process is still `10210 (000547513)`** (started 2026-09-22; the updater never restarts live processes). Next `llama-27b` restart picks up the new binary. |
+| auto-update | `llama-cpp-update.timer` (daily 04:50 UTC ±20m) → `llama-cpp-update.service` (user) — build-in-a-worktree, fast-forward `master`, install binaries. Fixed 2026-09-27; see "Daily llama.cpp updater" |
 | unit | `llama-27b.service` (system, `User=halbritt`, `Restart=on-failure`) + drop-in override |
 | endpoint | `http://0.0.0.0:8081/v1` (OpenAI-compatible) — reachable on LAN/tailnet, **no API key** |
 | model (live) | `~/models/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf` (~16.4 GiB, unsloth UD), alias `qwen3.8-27b` |
@@ -140,12 +141,78 @@ generation drops ~10%. Depth 2 stays the balanced default (confirmed 58.8 tok/s 
 re-test). Acceptance is strongly content-dependent (0.43–0.94), so single-figure acceptance
 numbers in older entries are not comparable across workloads.
 
+## Daily llama.cpp updater (fixed 2026-09-27)
+
+`llama-cpp-update.timer` fires `llama-cpp-update.service` daily (04:50 UTC, `RandomizedDelaySec=20m`,
+`Persistent=true`). The service runs `~/.local/bin/llama-cpp-update`, which refuses to run unless
+`~/git/llama.cpp` is clean and on `master`, checks out `origin/master` into a detached candidate
+worktree (`~/.local/state/llama-cpp-update/worktree`), configures and builds `llama-server`,
+`llama-cli`, `llama-quantize` there, then fast-forwards `master` and installs the three binaries.
+**It never restarts live processes** — `llama-27b` picks up the new binary at its next managed restart.
+
+### Incident: the updater had never worked (2026-07-31 → 2026-09-26, 20/20 runs failed)
+
+Every scheduled run died at the CMake configure step:
+
+```
+CMake Error at ggml/src/ggml-cuda/CMakeLists.txt:59 (enable_language):
+  No CMAKE_CUDA_COMPILER could be found.
+```
+
+**Cause:** CMake resolves `nvcc` from `PATH` (or `CUDACXX`) when enabling the CUDA language.
+`nvcc` lives at `/usr/local/cuda/bin/nvcc` and that directory is added to `PATH` only by
+`~/.profile` — i.e. by **login shells**. The unit is a *user* unit, and the systemd user manager
+environment does not inherit `~/.profile`, so `/usr/local/cuda/bin` was absent and configure
+failed. The stock `llama-27b.service` unit already carried the explicit
+`Environment=PATH=/usr/local/cuda/bin:...` line for exactly this reason; the updater unit was
+written without it.
+
+**Reproduced 2026-09-27** with a two-line `project(t LANGUAGES CXX CUDA)`: fails under the
+systemd-manager `PATH`, succeeds with `/usr/local/cuda/bin` prepended.
+
+**Fix:** the unit now sets both, matching the `llama-27b.service` pattern:
+
+```
+Environment=PATH=/usr/local/cuda/bin:/home/halbritt/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=CUDACXX=/usr/local/cuda/bin/nvcc
+```
+
+A second failure mode was latent but did **not** need a workaround: the candidate build dir held a
+poisoned cache entry (`CMAKE_CUDA_COMPILER:FILEPATH=CMAKE_CUDA_COMPILER-NOTFOUND`) from the earlier
+failed runs. CMake re-runs compiler detection when the cached value is `*-NOTFOUND`, so once `PATH`
+was correct the cache self-healed on the next configure (`CMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc`).
+No cache wipe is required; do not add one pre-emptively.
+
+**Verified end-to-end 2026-09-27 10:32–10:41 PDT:** `systemctl --user start llama-cpp-update.service`
+→ `Result=success`, `ExecMainStatus=0`; `master` fast-forwarded `000547513` → `a97cce86a`
+(build 10210 → 11222); `llama-server --version` reports the new build; `llama-cpp-update --check`
+returns `status=current`; `llama-27b` stayed `active` with `:8081/health` = `{"status":"ok"}` on the
+old process throughout.
+
+⚠️ **Note the observability gap this exposed:** a failing oneshot unit with no watchdog is silent.
+Nothing alerted on 20 consecutive daily failures — it was found by asking. There is still no alert
+on `llama-cpp-update.service` failure or on "llama.cpp has not advanced in N days".
+
 ## Files → install locations
 
 | repo file | install path |
 |---|---|
 | `llama-27b.service` | `/etc/systemd/system/llama-27b.service` (stock 27B+MTP config) |
 | `llama-27b.service.d/override.conf` | `/etc/systemd/system/llama-27b.service.d/override.conf` (live 3.8-27B config) |
+| `llama-cpp-update` | `/home/halbritt/.local/bin/llama-cpp-update` (mode 0755) |
+| `llama-cpp-update.service` | `/home/halbritt/.config/systemd/user/llama-cpp-update.service` (user unit) |
+| `llama-cpp-update.timer` | `/home/halbritt/.config/systemd/user/llama-cpp-update.timer` (user timer) |
+
+Install the updater trio and reload:
+
+```bash
+install -m 0755 llama-cpp-update            ~/.local/bin/llama-cpp-update
+install -m 0644 llama-cpp-update.service    ~/.config/systemd/user/
+install -m 0644 llama-cpp-update.timer      ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user start llama-cpp-update.service   # run once, verify Result=success
+systemctl --user list-timers llama-cpp-update.timer
+```
 
 ## Archived models
 

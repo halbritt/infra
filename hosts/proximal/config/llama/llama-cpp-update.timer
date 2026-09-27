@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for a validated llama.cpp update every day
+
+[Timer]
+OnCalendar=*-*-* 04:50:00 UTC
+RandomizedDelaySec=20m
+Persistent=true
+Unit=llama-cpp-update.service
+
+[Install]
+WantedBy=timers.target

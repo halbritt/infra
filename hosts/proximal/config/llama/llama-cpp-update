@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+repo=/home/halbritt/git/llama.cpp
+state_dir=/home/halbritt/.local/state/llama-cpp-update
+candidate=$state_dir/worktree
+lock_file=$state_dir/update.lock
+jobs=${LLAMA_CPP_UPDATE_JOBS:-8}
+
+mkdir -p "$state_dir"
+exec 9>"$lock_file"
+if ! flock --nonblock 9; then
+    echo "llama.cpp update already running"
+    exit 0
+fi
+
+if [[ ! -d "$repo/.git" ]]; then
+    echo "llama.cpp repository not found at $repo" >&2
+    exit 1
+fi
+if [[ "$(git -C "$repo" branch --show-current)" != master ]]; then
+    echo "refusing update: $repo is not on master" >&2
+    exit 1
+fi
+if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
+    echo "refusing update: $repo has uncommitted or untracked work" >&2
+    exit 1
+fi
+
+git -C "$repo" fetch --quiet origin master
+current=$(git -C "$repo" rev-parse HEAD)
+target=$(git -C "$repo" rev-parse origin/master)
+echo "current=$current"
+echo "target=$target"
+
+if [[ "${1:-}" == --check ]]; then
+    if [[ "$current" == "$target" ]]; then
+        echo "status=current"
+    elif git -C "$repo" merge-base --is-ancestor "$current" "$target"; then
+        echo "status=fast-forward-available"
+    else
+        echo "status=diverged"
+        exit 1
+    fi
+    exit 0
+fi
+
+if [[ "$current" == "$target" ]]; then
+    echo "llama.cpp already current"
+    exit 0
+fi
+if ! git -C "$repo" merge-base --is-ancestor "$current" "$target"; then
+    echo "refusing update: local master has diverged from origin/master" >&2
+    exit 1
+fi
+
+if [[ -e "$candidate/.git" ]]; then
+    if [[ -n "$(git -C "$candidate" status --porcelain --untracked-files=no)" ]]; then
+        echo "refusing update: updater worktree has tracked modifications" >&2
+        exit 1
+    fi
+    git -C "$candidate" checkout --quiet --detach "$target"
+elif [[ -e "$candidate" ]]; then
+    echo "refusing update: unmanaged path exists at $candidate" >&2
+    exit 1
+else
+    git -C "$repo" worktree add --quiet --detach "$candidate" "$target"
+fi
+
+cmake \
+    -S "$candidate" \
+    -B "$candidate/build" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DGGML_CUDA=ON \
+    -DGGML_NATIVE=ON \
+    -DCMAKE_CUDA_ARCHITECTURES=86-real \
+    -DGGML_BUILD_TESTS=OFF \
+    -DGGML_BUILD_EXAMPLES=OFF \
+    -DLLAMA_BUILD_SERVER=ON
+cmake --build "$candidate/build" \
+    --target llama-server llama-cli llama-quantize \
+    --parallel "$jobs"
+
+if [[ "$(git -C "$repo" rev-parse HEAD)" != "$current" ]] \
+    || [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
+    echo "refusing install: main worktree changed during candidate build" >&2
+    exit 1
+fi
+
+git -C "$repo" merge --quiet --ff-only "$target"
+for binary in llama-server llama-cli llama-quantize; do
+    install -m 0755 \
+        "$candidate/build/bin/$binary" \
+        "$repo/build/bin/$binary.new"
+    mv -f "$repo/build/bin/$binary.new" "$repo/build/bin/$binary"
+done
+
+"$repo/build/bin/llama-server" --version
+echo "updated=$target"
+echo "Live processes were not restarted; they will use the new binary on their next managed restart."

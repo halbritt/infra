@@ -5,6 +5,34 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-27
+
+### llama: the daily llama.cpp auto-updater had never once succeeded
+
+`llama-cpp-update.service` (user unit, daily timer) had failed on **all 20 runs** since it was
+installed on 2026-07-31, always at CMake configure: `No CMAKE_CUDA_COMPILER could be found`.
+`llama.cpp` had therefore been frozen at `000547513` while upstream moved on.
+
+Root cause was environment, not code: CMake finds `nvcc` through `PATH`/`CUDACXX`, `nvcc` lives in
+`/usr/local/cuda/bin`, and that directory is added to `PATH` only by `~/.profile` (login shells).
+The unit is a *user* unit and the systemd user manager does not inherit `~/.profile`, so configure
+could never locate the CUDA compiler. The `llama-27b.service` unit already set
+`Environment=PATH=/usr/local/cuda/bin:...` for this exact reason; the updater unit was written
+without it.
+
+Fixed by adding `Environment=PATH=…` and `Environment=CUDACXX=/usr/local/cuda/bin/nvcc` to the unit
+(repo copy now canonical at `config/llama/llama-cpp-update.service`, alongside the previously
+unversioned `llama-cpp-update` script and `.timer`). Reproduced with a minimal
+`project(t LANGUAGES CXX CUDA)`: fails under the systemd-manager `PATH`, succeeds with
+`/usr/local/cuda/bin` prepended. The candidate worktree's stale
+`CMAKE_CUDA_COMPILER-NOTFOUND` cache entry self-healed on the corrected configure — no wipe needed.
+
+Verified end-to-end: `Result=success`, `master` fast-forwarded `000547513` → `a97cce86a`
+(build 10210 → 11222), `llama-server --version` reports the new build, `--check` returns
+`status=current`, and `llama-27b` stayed active with `:8081/health` ok throughout (the updater
+never restarts live processes). Details and the still-open observability gap (20 silent failures,
+no watchdog) are in `config/llama/README.md`.
+
 ## 2026-09-26
 
 ### Morning: household routine web app
