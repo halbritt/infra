@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "name": "enceladus",
+  "hostname": "enceladus",
+  "status": "active",
+  "platform": {
+    "os": "windows",
+    "edition": "Windows 11 Pro",
+    "architecture": "x86_64",
+    "build": "26200"
+  },
+  "network": {
+    "lan_address": "192.168.1.140",
+    "tailnet_address": "100.123.179.99",
+    "tailnet_dns_name": "enceladus.tail0ecc2e.ts.net"
+  },
+  "roles": [
+    "windows"
+  ],
+  "responsibilities": [
+    "monitoring-target"
+  ],
+  "paths": {
+    "config": "config",
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  },
+  "hardware": {
+    "manufacturer": "Micro-Star International",
+    "model": "MS-7D75",
+    "cpu": "AMD Ryzen 7 9700X",
+    "logical_cpus": 16,
+    "memory_gib": 62,
+    "gpu": [
+      "NVIDIA GeForce RTX 3060 12 GiB",
+      "AMD Radeon Graphics (integrated)"
+    ],
+    "storage": [
+      "Samsung SSD 980 PRO 2TB"
+    ]
+  }
+}
