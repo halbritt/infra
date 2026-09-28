@@ -19,6 +19,7 @@ Each directory beside this file is one subsystem, self-contained with its own `R
 
 | dir | subsystem | what it tracks |
 |---|---|---|
+| [`update-bot/`](update-bot/) | Daily maintenance discovery | Hermes/DeepSeek read-only survey, Cairn checkpoints, execution lock and budget, independent Slack completion monitoring |
 | [`postgres/`](postgres/) | PostgreSQL 17 (`:5432`) | GUC baseline/desired/known-bad, inventory snapshots, tuning reports, pg-repack maintenance, vendored best-practices skill |
 | [`observability/`](observability/) | Prometheus + Grafana + exporters | node_exporter (host) + postgres_exporter (PG) + nvidia_gpu_exporter (RTX 3090) → Prometheus → Grafana dashboards; all systemd, tailnet-bound |
 | [`cloudflared/`](cloudflared/) | Cloudflare Tunnel edge for `harm.org` | public hostname ingress to selected loopback services, including `plane.harm.org` -> Plane on `127.0.0.1:8190`; tunnel credentials stay root-only under `/etc/cloudflared` |

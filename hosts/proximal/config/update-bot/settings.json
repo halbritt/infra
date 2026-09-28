@@ -1,0 +1,10 @@
+{
+  "host": "proximal",
+  "stage": "discovery-v1",
+  "model": "deepseek/deepseek-v4.1-flash",
+  "provider": "openrouter",
+  "agent_timeout_seconds": 900,
+  "overdue_seconds": 108000,
+  "reminder_seconds": 604800,
+  "slack_target": "slack:D0BMCL7T2FM"
+}

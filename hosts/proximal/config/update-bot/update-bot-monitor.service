@@ -1,0 +1,26 @@
+[Unit]
+Description=Independent update-bot completion and delivery monitor (no model)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=halbritt
+Group=halbritt
+StateDirectory=update-bot
+StateDirectoryMode=0700
+UMask=0077
+Environment=HOME=/home/halbritt
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONNOUSERSITE=1
+LoadCredential=slack:/etc/update-bot/slack.key
+ExecStart=/usr/bin/python3 /usr/local/lib/update-bot/update_bot.py monitor
+TimeoutStartSec=90s
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/update-bot
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

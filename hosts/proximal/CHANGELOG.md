@@ -7,6 +7,36 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-27
 
+### Daily maintenance discovery agent and independent completion monitor
+
+Deployed the owner's approved first stage of the update-bot architecture: an
+isolated Hermes profile using OpenRouter/DeepSeek v4.1 Flash, launched daily at
+06:30 America/Los_Angeles (up to ten minutes jitter) by systemd. Its installed
+policy authorizes inspection and proposals only. Existing updaters retain their
+ownership; no software upgrade, service restart, reboot or development-checkout
+change was performed by the discovery job.
+
+The execution boundary enforces a read-only host filesystem, no privilege
+escalation, one host-local lock, 15-minute agent/18-minute service deadlines and
+cgroup descendant cleanup. An independent non-model monitor checks every 15
+minutes and on failure, delivering through the existing Hermes Slack bot. Cairn
+holds checkpoints; private run receipts distinguish execution, recording and
+delivery. The first completed report's Slack message was read back successfully.
+
+Live probes confirmed denied host/policy writes, denied sudo and user-bus access,
+duplicate-lock refusal, and cleanup of a detached child. Commissioning exposed
+and fixed filtered MCP environment propagation and overly strict report formatting;
+failed/interrupted receipts remain preserved. Record-only finalization stored the
+first survey without rerunning its observations. Provider failure and checkpoint
+outage/retry paths are covered by fault-injection tests.
+
+Rationale: the llama.cpp updater incident below demonstrated the need for both
+adaptive inspection and independent failure visibility. The survey confirmed
+installed llama.cpp build 11222 versus live build 10210. Activation and the
+separately discovered OS maintenance remain held for explicit scope decisions.
+Canonical files, trust-model limitations, first proposals and verification are in
+[`config/update-bot/`](config/update-bot/README.md).
+
 ### llama: the daily llama.cpp auto-updater had never once succeeded
 
 `llama-cpp-update.service` (user unit, daily timer) had failed on **all 20 runs** since it was

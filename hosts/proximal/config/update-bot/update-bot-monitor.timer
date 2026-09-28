@@ -1,0 +1,10 @@
+[Unit]
+Description=Check update-bot completion and pending delivery every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Unit=update-bot-monitor.service
+
+[Install]
+WantedBy=timers.target

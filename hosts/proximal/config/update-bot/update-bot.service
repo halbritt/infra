@@ -1,0 +1,44 @@
+[Unit]
+Description=Proximal daily maintenance discovery (Hermes, read-only host)
+Wants=network-online.target
+After=network-online.target
+OnFailure=update-bot-monitor.service
+
+[Service]
+Type=oneshot
+User=halbritt
+Group=halbritt
+WorkingDirectory=/home/halbritt/git/infra
+StateDirectory=update-bot
+StateDirectoryMode=0700
+UMask=0077
+Environment=HOME=/home/halbritt
+Environment=PATH=/home/halbritt/.local/bin:/home/halbritt/.npm-global/bin:/usr/local/cuda/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONNOUSERSITE=1
+LoadCredential=openrouter:/etc/update-bot/openrouter.key
+ExecStart=/usr/bin/python3 /usr/local/lib/update-bot/update_bot.py run
+TimeoutStartSec=18min
+TimeoutStopSec=20s
+KillMode=control-group
+MemoryMax=4G
+CPUQuota=100%
+TasksMax=128
+Nice=10
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/update-bot
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+InaccessiblePaths=-/run/user/1000/bus -/run/user/1000/systemd/private -/run/docker.sock -/run/containerd/containerd.sock
+InaccessiblePaths=-/home/halbritt/.ssh -/home/halbritt/.aws -/home/halbritt/.gnupg -/home/halbritt/.config/plane -/home/halbritt/.hermes/.env -/home/halbritt/.hermes/auth.json -/home/halbritt/.profile
+
+[Install]
+WantedBy=multi-user.target

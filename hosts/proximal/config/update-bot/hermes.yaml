@@ -1,0 +1,32 @@
+model:
+  provider: openrouter
+  default: deepseek/deepseek-v4.1-flash
+agent:
+  max_turns: 30
+  reasoning_effort: medium
+  verbose: false
+terminal:
+  backend: local
+  cwd: /home/halbritt/git/infra
+  timeout: 45
+  lifetime_seconds: 900
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+skills:
+  creation_nudge_interval: 0
+compression:
+  enabled: true
+  threshold: 0.65
+fallback_providers: []
+platform_toolsets:
+  cli: [terminal, file, cairn]
+mcp_servers:
+  cairn:
+    command: /usr/local/lib/update-bot/cairn-mcp
+    env:
+      UPDATE_BOT_RUN_ID: ${UPDATE_BOT_RUN_ID}
+    timeout: 30
+    connect_timeout: 10
+    tools:
+      include: [cairn_search, cairn_pull, cairn_pull_evidence]

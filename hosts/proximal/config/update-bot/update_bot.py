@@ -1,0 +1,346 @@
+#!/usr/bin/env python3
+"""Small execution/receipt boundary around the installed Hermes harness.
+
+No maintenance commands or installation inventory live here. Host investigation
+belongs to the agent; scheduling and descendant cleanup belong to systemd.
+"""
+from __future__ import annotations
+
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import signal
+import subprocess
+import sys
+import time
+import uuid
+
+CONFIG = Path('/etc/update-bot')
+STATE = Path('/var/lib/update-bot')
+HERMES = '/home/halbritt/.local/bin/hermes'
+CAIRN = ['/home/halbritt/.local/bin/cairn', 'agent', '--token-file',
+         '/home/halbritt/.local/share/cairn/hosted-agent.token']
+COLLECTION = '/home/halbritt/git/cairn'
+REPO = '/home/halbritt/git/infra'
+SECRET = re.compile(r'(?:xox[baprs]-[A-Za-z0-9-]{12,}|sk-or-v1-[A-Za-z0-9]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)')
+
+
+def read_json(path, default=None):
+    try:
+        return json.loads(Path(path).read_text())
+    except FileNotFoundError:
+        return default
+
+
+def atomic_json(path, value):
+    path = Path(path)
+    temporary = path.with_name(path.name + '.tmp-' + str(uuid.uuid4()))
+    with temporary.open('x') as stream:
+        json.dump(value, stream, indent=2)
+        stream.write('\n')
+        stream.flush()
+        os.fsync(stream.fileno())
+    temporary.replace(path)
+
+
+def command(argv, *, input=None, timeout=40, env=None):
+    return subprocess.run(argv, input=input, text=True, capture_output=True,
+                          timeout=timeout, env=env)
+
+
+def cairn(argv, *, input=None):
+    result = command(CAIRN + argv, input=input)
+    if result.returncode:
+        raise RuntimeError('Cairn command failed; consult private runner evidence')
+    response = json.loads(result.stdout)
+    if not response.get('ok'):
+        raise RuntimeError('Cairn refused the request')
+    return response
+
+
+def credential(name):
+    return (Path(os.environ['CREDENTIALS_DIRECTORY']) / name).read_text().strip()
+
+
+def validate_report(raw, usage):
+    # Fail closed on an interrupted tool loop even if it emitted a plausible answer.
+    if usage.get('failed') or usage.get('completed') is not True:
+        raise ValueError('Hermes did not report a completed conversation')
+    # Tolerate a short presentation preamble/fence, while requiring one complete
+    # object and no trailing content. Do not reject useful evidence for typography.
+    start = raw.find('{')
+    if start < 0 or start > 256:
+        raise ValueError('Missing report object')
+    value, end = json.JSONDecoder().raw_decode(raw[start:])
+    if raw[start + end:].strip() not in ('', '```'):
+        raise ValueError('Unexpected trailing report content')
+    fields = {'status', 'summary', 'checked', 'deferred', 'unchecked', 'notification'}
+    if not isinstance(value, dict) or set(value) != fields:
+        raise ValueError('Invalid report fields')
+    if value['status'] not in ('completed', 'partial'):
+        raise ValueError('Invalid report status')
+    for key, limit in [('summary', 4000), ('notification', 3000)]:
+        if not isinstance(value[key], str) or len(value[key]) > limit:
+            raise ValueError('Invalid report text: ' + key)
+    for key, fields in [('checked', {'target', 'evidence', 'outcome'}),
+                        ('deferred', {'target', 'reason', 'proposed_action', 'verification', 'recovery'})]:
+        if not isinstance(value[key], list):
+            raise ValueError('Invalid report list: ' + key)
+        for item in value[key]:
+            if not isinstance(item, dict) or set(item) != fields or not all(isinstance(v, str) for v in item.values()):
+                raise ValueError('Invalid report item: ' + key)
+    if not isinstance(value['unchecked'], list) or not all(isinstance(x, str) for x in value['unchecked']):
+        raise ValueError('Invalid unchecked coverage')
+    if not value['checked']:
+        raise ValueError('A completed investigation needs observation evidence')
+    if len(raw) > 30000 or SECRET.search(raw):
+        raise ValueError('Report too large or contains a credential-shaped value')
+    return value
+
+
+def record_status(run_dir, status):
+    atomic_json(run_dir / 'status.json', status)
+    atomic_json(STATE / 'latest.json', status)
+
+
+def finish_report(run_dir, status):
+    usage = read_json(run_dir / 'usage.json', {})
+    report = validate_report((run_dir / 'stdout.json').read_text(), usage)
+    atomic_json(run_dir / 'report.json', report)
+    status['usage'] = usage
+    status['summary'] = report['summary']
+    request_id = status.setdefault('checkpoint_request_id', str(uuid.uuid4()))
+    checkpoint_path = run_dir / 'checkpoint.txt'
+    if checkpoint_path.exists():
+        checkpoint = checkpoint_path.read_text()
+    else:
+        checkpoint = ('Project infra; host proximal; role update-bot; discovery-only checkpoint.\n' +
+                      'Run ' + status['run_id'] + '; policy ' + status['policy_sha256'] +
+                      '; provider/model ' + status['provider'] + '/' + status['model'] +
+                      '; evidence ' + str(run_dir) + '. No host changes authorized or performed.\n' +
+                      json.dumps(report, ensure_ascii=False))
+        checkpoint_path.write_text(checkpoint)
+    record_status(run_dir, status)
+    receipt = cairn(['remember', '--repo', COLLECTION, '--request-id', request_id,
+                    '--kind', 'observation', '--shareable', '--stdin'], input=checkpoint)
+    atomic_json(run_dir / 'checkpoint-receipt.json', receipt)
+    status.update(status=report['status'], recording='recorded', finished=time.time())
+    record_status(run_dir, status)
+    if report['status'] == 'completed':
+        atomic_json(STATE / 'last-completed.json', status)
+    print('Discovery ' + status['status'] + '; Cairn checkpoint recorded; run ' + status['run_id'], flush=True)
+    return 0 if report['status'] == 'completed' else 2
+
+
+def reconcile(run_id):
+    """Explicit operator record-only retry; never invokes inference or host tools."""
+    run_id = str(uuid.UUID(run_id))
+    with (STATE / 'host.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if read_json(STATE / 'latest.json', {}).get('run_id') != run_id:
+            raise ValueError('Only the latest run can be explicitly finalized')
+        run_dir = STATE / 'runs' / run_id
+        status = read_json(run_dir / 'status.json')
+        if status.get('recording') == 'recorded':
+            return 0
+        atomic_json(run_dir / 'before-reconciliation.json', status)
+        status['record_only_reconciled_at'] = time.time()
+        if 'error' in status:
+            status['prior_error'] = status.pop('error')
+        return finish_report(run_dir, status)
+
+
+def run():
+    if not os.environ.get('INVOCATION_ID'):
+        raise RuntimeError('Launch via sudo systemctl start update-bot.service')
+    settings = read_json(CONFIG / 'settings.json')
+    if settings['stage'] != 'discovery-v1':
+        raise RuntimeError('This launcher implements only the approved discovery stage')
+    STATE.mkdir(mode=0o700, exist_ok=True)
+    with (STATE / 'host.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print('Skipped duplicate: host maintenance lock is held', flush=True)
+            return 0
+        previous = read_json(STATE / 'latest.json', {})
+        run_id = str(uuid.uuid4())
+        run_dir = STATE / 'runs' / run_id
+        run_dir.mkdir(parents=True, mode=0o700)
+        policy = (CONFIG / 'policy.md').read_text()
+        status = {'run_id': run_id, 'host': settings['host'], 'stage': settings['stage'],
+                  'started': time.time(), 'status': 'running', 'recording': 'pending',
+                  'policy_sha256': hashlib.sha256(policy.encode()).hexdigest(),
+                  'role_sha256': hashlib.sha256((CONFIG / 'role.md').read_bytes()).hexdigest(),
+                  'profile_sha256': hashlib.sha256((CONFIG / 'hermes.yaml').read_bytes()).hexdigest(),
+                  'launcher_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                  'infra_revision': command(['git', '-C', REPO, 'rev-parse', 'HEAD']).stdout.strip(),
+                  'hermes_revision': command(['git', '-C', '/home/halbritt/.hermes/hermes-agent',
+                                              'rev-parse', 'HEAD']).stdout.strip(),
+                  'provider': settings['provider'], 'model': settings['model'],
+                  'evidence': str(run_dir), 'host_mutations_authorized': False,
+                  'previous_run': previous.get('run_id'),
+                  'previous_status': previous.get('status'),
+                  'invocation_id': os.environ['INVOCATION_ID']}
+        if previous.get('status') == 'running':
+            status['reconciliation'] = 'Previous run interrupted; discovery-only, no host mutation to replay'
+        record_status(run_dir, status)
+        if not (STATE / 'first-started.json').exists():
+            atomic_json(STATE / 'first-started.json', {'started': status['started']})
+        print('Started discovery run ' + run_id, flush=True)
+        try:
+            if previous.get('checkpoint_request_id') and previous.get('recording') != 'recorded':
+                old_dir = STATE / 'runs' / str(uuid.UUID(previous['run_id']))
+                checkpoint = (old_dir / 'checkpoint.txt').read_text()
+                receipt = cairn(['remember', '--repo', COLLECTION,
+                                '--request-id', previous['checkpoint_request_id'],
+                                '--kind', 'observation', '--shareable', '--stdin'], input=checkpoint)
+                atomic_json(old_dir / 'checkpoint-receipt.json', receipt)
+                previous.update(recording='recorded', recording_reconciled_at=time.time())
+                atomic_json(old_dir / 'status.json', previous)
+                status['reconciled_checkpoint'] = previous['run_id']
+                record_status(run_dir, status)
+            recalled = cairn(['search', '--repo', COLLECTION, '--task', 'proximal/update-bot',
+                             '--run', run_id, 'proximal update-bot checkpoint'])
+            atomic_json(run_dir / 'recall.json', recalled)
+            profile = STATE / 'hermes'
+            profile.mkdir(exist_ok=True)
+            config_link = profile / 'config.yaml'
+            if config_link.is_symlink() or config_link.exists():
+                config_link.unlink()
+            config_link.symlink_to(CONFIG / 'hermes.yaml')
+            env = os.environ.copy()
+            env.update(HERMES_HOME=str(profile), UPDATE_BOT_RUN_ID=run_id,
+                       OPENROUTER_API_KEY=credential('openrouter'),
+                       PYTHONDONTWRITEBYTECODE='1', PYTHONNOUSERSITE='1',
+                       XDG_CACHE_HOME=str(STATE / 'cache'))
+            for key in ('CUSTOM_BASE_URL', 'OPENROUTER_BASE_URL', 'HERMES_INFERENCE_MODEL',
+                        'DBUS_SESSION_BUS_ADDRESS', 'SSH_AUTH_SOCK'):
+                env.pop(key, None)
+            prompt = ((CONFIG / 'role.md').read_text() + '\n\n' + policy +
+                      '\n\nRun ID: ' + run_id + '\nPrevious receipt: ' + json.dumps(previous) +
+                      '\nStarted UTC: ' + time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()) +
+                      '\nRuntime saves the final Cairn checkpoint; return the required JSON.')
+            if (STATE / 'commissioning').exists():
+                prompt += ('\nDeployment commissioning is in progress. Disabled update-bot timers and '
+                           'failed update-bot-probe units are expected acceptance work, not host incidents. '
+                           'The owner already authorized enabling these timers after verification; '
+                           'do not request that authorization or notify about commissioning artifacts.')
+            args = [HERMES, '--provider', settings['provider'], '--model', settings['model'],
+                    '--toolsets', 'terminal,file,cairn', '--usage-file', str(run_dir / 'usage.json'),
+                    '--in', REPO, '-z', prompt]
+            with (run_dir / 'stdout.json').open('w') as out, (run_dir / 'stderr.log').open('w') as err:
+                process = subprocess.Popen(args, stdout=out, stderr=err, env=env,
+                                           start_new_session=True, pass_fds=(lock.fileno(),))
+                try:
+                    code = process.wait(timeout=settings['agent_timeout_seconds'])
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGTERM)
+                    try:
+                        process.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(process.pid, signal.SIGKILL)
+                        process.wait()
+                    raise RuntimeError('Discovery time budget exhausted; systemd cleans up remaining descendants')
+            if code:
+                raise RuntimeError('Hermes failed with exit status ' + str(code))
+            raw = (run_dir / 'stdout.json').read_text()
+            if env['OPENROUTER_API_KEY'] in raw:
+                raise ValueError('Report contains the provider credential')
+            return finish_report(run_dir, status)
+        except Exception as exc:
+            status.update(status='failed', error=str(exc), finished=time.time())
+            record_status(run_dir, status)
+            print('Discovery failed: ' + str(exc), file=sys.stderr, flush=True)
+            return 1
+
+
+def monitor_messages(latest, completed, service, settings, now):
+    messages = []
+    age = now - (completed or {}).get('finished', (latest or {}).get('started', 0))
+    if age > settings['overdue_seconds']:
+        messages.append(('overdue', 'No completed maintenance discovery in the last 30 hours.'))
+    active = service.get('ActiveState') in ('active', 'activating', 'deactivating')
+    if latest and (latest.get('status') in ('failed', 'partial') or
+                   (latest.get('status') == 'running' and not active)):
+        messages.append(('run:' + latest['run_id'], 'Maintenance discovery ' +
+                         ('interrupted' if latest['status'] == 'running' else latest['status']) +
+                         ': ' + latest.get('error', latest.get('summary', 'Inspect the run evidence.'))))
+    elif not active and service.get('Result', 'success') != 'success':
+        messages.append(('service:' + service.get('InvocationID', ''),
+                         'Maintenance service failed: ' + service.get('Result', 'unknown')))
+    return messages
+
+
+def monitor():
+    STATE.mkdir(mode=0o700, exist_ok=True)
+    with (STATE / 'monitor.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return 0
+        settings = read_json(CONFIG / 'settings.json')
+        latest = read_json(STATE / 'latest.json', {})
+        completed = read_json(STATE / 'last-completed.json', {})
+        if not completed:
+            completed = {'finished': read_json(STATE / 'first-started.json', {}).get('started', 0)}
+        result = command(['systemctl', 'show', 'update-bot.service',
+                          '--property=ActiveState,Result,InvocationID'])
+        if result.returncode:
+            raise RuntimeError('Cannot inspect maintenance service status')
+        service = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+        messages = monitor_messages(latest, completed, service, settings, time.time())
+        if latest.get('status') in ('completed', 'partial') and latest.get('recording') == 'recorded':
+            report = read_json(Path(latest['evidence']) / 'report.json', {})
+            note = report.get('notification', '')
+            if note:
+                messages.append(('finding:' + hashlib.sha256(note.encode()).hexdigest(), note))
+        delivered = read_json(STATE / 'delivery.json', {})
+        uncertain = any(item.get('status') == 'sending-uncertain' for item in delivered.values())
+        env = os.environ.copy()
+        profile = STATE / 'delivery-hermes'
+        profile.mkdir(exist_ok=True)
+        env.update(HERMES_HOME=str(profile), SLACK_BOT_TOKEN=credential('slack'))
+        for key, message in messages:
+            old = delivered.get(key, {})
+            if old.get('status') == 'sending-uncertain':
+                print('Delivery uncertain; manual reconciliation required: ' + key, file=sys.stderr)
+                continue
+            if time.time() - old.get('at', 0) < settings['reminder_seconds']:
+                continue
+            # Persist before network I/O. A crash/timeout is ambiguous; do not blindly resend.
+            delivered[key] = {'status': 'sending-uncertain', 'at': time.time()}
+            atomic_json(STATE / 'delivery.json', delivered)
+            message = ('[proximal update-bot / discovery-only]\n' + message +
+                       '\nRun: ' + latest.get('run_id', 'none') +
+                       '\nEvidence: ' + latest.get('evidence', str(STATE)) +
+                       '\nPolicy: infra/hosts/proximal/config/update-bot/policy.md')
+            result = command([HERMES, 'send', '--to', settings['slack_target'], '--json'],
+                             input=message, env=env, timeout=60)
+            if result.returncode:
+                # Backend failures may have followed a successful send; retain uncertainty.
+                print('Slack delivery failed/uncertain; inspect delivery state', file=sys.stderr)
+                return 1
+            receipt = json.loads(result.stdout)
+            if receipt.get('success') is not True:
+                print('Slack rejected delivery', file=sys.stderr)
+                return 1
+            delivered[key] = {'status': 'sent', 'at': time.time(), 'receipt': receipt}
+            atomic_json(STATE / 'delivery.json', delivered)
+            print('Delivered ' + key, flush=True)
+        if uncertain:
+            print('Prior delivery uncertainty still requires reconciliation', file=sys.stderr)
+            return 1
+        return 0
+
+
+if __name__ == '__main__':
+    os.umask(0o077)
+    if len(sys.argv) == 3 and sys.argv[1] == 'reconcile':
+        sys.exit(reconcile(sys.argv[2]))
+    if len(sys.argv) != 2 or sys.argv[1] not in ('run', 'monitor'):
+        sys.exit('usage: update_bot.py run|monitor|reconcile RUN_UUID')
+    sys.exit(run() if sys.argv[1] == 'run' else monitor())
