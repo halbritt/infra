@@ -1,0 +1,2313 @@
+From abb9e8878da91ffb9ed563b74ad83e1f12fb20ea Mon Sep 17 00:00:00 2001
+From: halbritt <halbritt@gmail.com>
+Date: Thu, 24 Sep 2026 01:34:49 -0700
+Subject: [PATCH 1/3] feat(opencode): fence native idle prompts and instance
+ teardown
+
+---
+ .../opencode/src/project/instance-store.ts    |  19 ++
+ .../routes/instance/httpapi/groups/session.ts |  41 +++-
+ .../instance/httpapi/handlers/session.ts      |  86 +++++---
+ packages/opencode/src/session/admission.ts    | 183 ++++++++++++++++++
+ packages/opencode/src/session/prompt.ts       |  59 +++++-
+ .../opencode/test/project/instance.test.ts    |  59 +++++-
+ .../test/server/httpapi-session.test.ts       |  58 ++++++
+ .../opencode/test/session/admission.test.ts   | 156 +++++++++++++++
+ packages/opencode/test/session/prompt.test.ts |  92 +++++++++
+ packages/sdk/js/src/client.ts                 |  22 ++-
+ packages/sdk/js/src/v2/gen/sdk.gen.ts         | 109 +++++++++++
+ packages/sdk/js/src/v2/gen/types.gen.ts       | 106 +++++++++-
+ 12 files changed, 950 insertions(+), 40 deletions(-)
+ create mode 100644 packages/opencode/src/session/admission.ts
+ create mode 100644 packages/opencode/test/session/admission.test.ts
+
+diff --git a/packages/opencode/src/project/instance-store.ts b/packages/opencode/src/project/instance-store.ts
+index 720549d..fc62b1e 100644
+--- a/packages/opencode/src/project/instance-store.ts
++++ b/packages/opencode/src/project/instance-store.ts
+@@ -9,6 +9,7 @@ import { FSUtil } from "@opencode-ai/core/fs-util"
+ import { Context, Deferred, Duration, Effect, Exit, Layer, Scope } from "effect"
+ import { type InstanceContext } from "./instance-context"
+ import { InstanceBootstrap } from "./bootstrap-service"
++import { SessionAdmission } from "@/session/admission"
+ import * as Project from "./project"
+ 
+ export interface LoadInput {
+@@ -58,6 +59,7 @@ const layer: Layer.Layer<Service, never, Project.Service | InstanceBootstrap.Ser
+                   project: result.project,
+                 })),
+               )
++        SessionAdmission.openInstance(input.directory)
+         yield* bootstrap.run.pipe(Effect.provideService(InstanceRef, ctx))
+         return ctx
+       }).pipe(Effect.withSpan("InstanceStore.boot"))
+@@ -92,8 +94,12 @@ const layer: Layer.Layer<Service, never, Project.Service | InstanceBootstrap.Ser
+       )
+ 
+     const disposeContext = Effect.fn("InstanceStore.disposeContext")(function* (ctx: InstanceContext) {
++      if (!SessionAdmission.beginDispose(ctx.directory)) {
++        yield* Effect.die(new Error(`instance has active session work: ${ctx.directory}`))
++      }
+       yield* Effect.logInfo("disposing instance", { directory: ctx.directory })
+       yield* Effect.promise(() => runDisposers(ctx.directory))
++      SessionAdmission.finishDispose(ctx.directory)
+       yield* emitDisposed({ directory: ctx.directory, project: ctx.project.id })
+     })
+ 
+@@ -128,6 +134,18 @@ const layer: Layer.Layer<Service, never, Project.Service | InstanceBootstrap.Ser
+       return Effect.uninterruptibleMask((restore) =>
+         Effect.gen(function* () {
+           const previous = cache.get(directory)
++          // A reload must not dispose an instance whose bootstrap is still
++          // running: boot may have opened the admission gate but not finished
++          // creating the services that the disposers own.
++          if (previous && !(yield* Deferred.isDone(previous.deferred))) {
++            yield* Effect.die(new Error(`instance is still loading: ${directory}`))
++          }
++          if (previous && cache.get(directory) !== previous) {
++            yield* Effect.die(new Error(`instance changed during reload: ${directory}`))
++          }
++          if (previous && !SessionAdmission.beginDispose(directory)) {
++            yield* Effect.die(new Error(`instance has active session work: ${directory}`))
++          }
+           const entry: Entry = { deferred: Deferred.makeUnsafe<InstanceContext>() }
+           cache.set(directory, entry)
+           yield* Effect.gen(function* () {
+@@ -135,6 +153,7 @@ const layer: Layer.Layer<Service, never, Project.Service | InstanceBootstrap.Ser
+             if (previous) {
+               yield* Deferred.await(previous.deferred).pipe(Effect.ignore)
+               yield* Effect.promise(() => runDisposers(directory))
++              SessionAdmission.finishDispose(directory)
+               yield* emitDisposed({ directory, project: input.project?.id })
+             }
+             yield* completeLoad(directory, input, entry)
+diff --git a/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts b/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts
+index 959a303..0389199 100644
+--- a/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts
++++ b/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts
+@@ -68,6 +68,13 @@ export const SummarizePayload = Schema.Struct({
+   auto: Schema.optional(Schema.Boolean),
+ })
+ export const PromptPayload = Schema.Struct(Struct.omit(SessionPrompt.PromptInput.fields, ["sessionID"]))
++export const IdlePromptPayload = Schema.Struct({
++  ...PromptPayload.fields,
++  requestID: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(128)),
++})
++export const RequestCancelPayload = Schema.Struct({
++  requestID: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(128)),
++})
+ export const CommandPayload = Schema.Struct(Struct.omit(SessionPrompt.CommandInput.fields, ["sessionID"]))
+ export const ShellPayload = Schema.Struct(Struct.omit(SessionPrompt.ShellInput.fields, ["sessionID"]))
+ export const RevertPayload = Schema.Struct(Struct.omit(SessionRevert.RevertInput.fields, ["sessionID"]))
+@@ -94,6 +101,8 @@ export const SessionPaths = {
+   summarize: `${root}/:sessionID/summarize`,
+   prompt: `${root}/:sessionID/message`,
+   promptAsync: `${root}/:sessionID/prompt_async`,
++  promptIdle: `${root}/:sessionID/prompt_idle`,
++  cancelRequest: `${root}/:sessionID/cancel_request`,
+   command: `${root}/:sessionID/command`,
+   shell: `${root}/:sessionID/shell`,
+   revert: `${root}/:sessionID/revert`,
+@@ -254,7 +263,7 @@ export const SessionApi = HttpApi.make("session")
+           params: { sessionID: SessionID },
+           query: WorkspaceRoutingQuery,
+           success: described(Schema.Boolean, "Aborted session"),
+-          error: HttpApiError.BadRequest,
++          error: [HttpApiError.BadRequest, SessionBusyError],
+         }).annotateMerge(
+           OpenApi.annotations({
+             identifier: "session.abort",
+@@ -340,6 +349,36 @@ export const SessionApi = HttpApi.make("session")
+               "Create and send a new message to a session asynchronously, starting the session if needed and returning immediately.",
+           }),
+         ),
++        HttpApiEndpoint.post("promptIdle", SessionPaths.promptIdle, {
++          params: { sessionID: SessionID },
++          query: WorkspaceRoutingQuery,
++          payload: IdlePromptPayload,
++          success: Schema.Struct({
++            status: Schema.Literals(["accepted", "completed", "cancelled", "failed", "busy", "conflict"]),
++          }),
++          error: [HttpApiError.BadRequest, ApiNotFoundError],
++        }).annotateMerge(
++          OpenApi.annotations({
++            identifier: "session.prompt_idle",
++            summary: "Admit an exclusive prompt only when idle",
++            description:
++              "Atomically reserves native ownership. Owner submissions wait through completion and cancellation cleanup. Request IDs are idempotent for this server instance.",
++          }),
++        ),
++        HttpApiEndpoint.post("cancelRequest", SessionPaths.cancelRequest, {
++          params: { sessionID: SessionID },
++          query: WorkspaceRoutingQuery,
++          payload: RequestCancelPayload,
++          success: Schema.Struct({ cancelled: Schema.Boolean }),
++          error: [HttpApiError.BadRequest, ApiNotFoundError],
++        }).annotateMerge(
++          OpenApi.annotations({
++            identifier: "session.cancel_request",
++            summary: "Cancel only the named exclusive prompt",
++            description:
++              "Returns after native interruption and tool cleanup. A stale request ID cannot cancel another run.",
++          }),
++        ),
+         HttpApiEndpoint.post("command", SessionPaths.command, {
+           params: { sessionID: SessionID },
+           query: WorkspaceRoutingQuery,
+diff --git a/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts b/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts
+index 6625850..f2b12a2 100644
+--- a/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts
++++ b/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts
+@@ -31,6 +31,8 @@ import {
+   MessagesQuery,
+   PermissionResponsePayload,
+   PromptPayload,
++  IdlePromptPayload,
++  RequestCancelPayload,
+   RevertPayload,
+   ShellPayload,
+   SummarizePayload,
+@@ -176,7 +178,10 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+     })
+ 
+     const remove = Effect.fn("SessionHttpApi.remove")(function* (ctx: { params: { sessionID: SessionID } }) {
+-      yield* SessionError.mapStorageNotFound(session.remove(ctx.params.sessionID))
++      yield* promptSvc.withOwner(
++        ctx.params.sessionID,
++        SessionError.mapStorageNotFound(session.remove(ctx.params.sessionID)),
++      )
+       return true
+     })
+ 
+@@ -230,7 +235,7 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+     })
+ 
+     const abort = Effect.fn("SessionHttpApi.abort")(function* (ctx: { params: { sessionID: SessionID } }) {
+-      yield* promptSvc.cancel(ctx.params.sessionID)
++      yield* SessionError.mapBusy(promptSvc.cancelOwner(ctx.params.sessionID))
+       return true
+     })
+ 
+@@ -274,22 +279,27 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+       params: { sessionID: SessionID }
+       payload: typeof SummarizePayload.Type
+     }) {
+-      yield* revertSvc.cleanup(yield* requireSession(ctx.params.sessionID))
+-      const messages = yield* SessionError.mapStorageNotFound(session.messages({ sessionID: ctx.params.sessionID }))
+-      const defaultAgent = yield* agentSvc.defaultAgent()
+-      const currentAgent = messages.findLast((message) => message.info.role === "user")?.info.agent ?? defaultAgent
+-
+-      yield* compactSvc.create({
+-        sessionID: ctx.params.sessionID,
+-        agent: currentAgent,
+-        model: {
+-          providerID: ctx.payload.providerID,
+-          modelID: ctx.payload.modelID,
+-        },
+-        auto: ctx.payload.auto ?? false,
+-      })
+-      yield* promptSvc.loop({ sessionID: ctx.params.sessionID })
+-      return true
++      return yield* promptSvc.withOwner(
++        ctx.params.sessionID,
++        Effect.gen(function* () {
++          yield* revertSvc.cleanup(yield* requireSession(ctx.params.sessionID))
++          const messages = yield* SessionError.mapStorageNotFound(session.messages({ sessionID: ctx.params.sessionID }))
++          const defaultAgent = yield* agentSvc.defaultAgent()
++          const currentAgent = messages.findLast((message) => message.info.role === "user")?.info.agent ?? defaultAgent
++
++          yield* compactSvc.create({
++            sessionID: ctx.params.sessionID,
++            agent: currentAgent,
++            model: {
++              providerID: ctx.payload.providerID,
++              modelID: ctx.payload.modelID,
++            },
++            auto: ctx.payload.auto ?? false,
++          })
++          yield* promptSvc.loop({ sessionID: ctx.params.sessionID })
++          return true
++        }),
++      )
+     })
+ 
+     const prompt = Effect.fn("SessionHttpApi.prompt")(function* (ctx: {
+@@ -328,6 +338,21 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+       return HttpApiSchema.NoContent.make()
+     })
+ 
++    const promptIdle = Effect.fn("SessionHttpApi.promptIdle")(function* (ctx: {
++      params: { sessionID: SessionID }
++      payload: typeof IdlePromptPayload.Type
++    }) {
++      yield* requireSession(ctx.params.sessionID)
++      return { status: yield* promptSvc.promptIdle({ ...ctx.payload, sessionID: ctx.params.sessionID }) }
++    })
++    const cancelRequest = Effect.fn("SessionHttpApi.cancelRequest")(function* (ctx: {
++      params: { sessionID: SessionID }
++      payload: typeof RequestCancelPayload.Type
++    }) {
++      yield* requireSession(ctx.params.sessionID)
++      return { cancelled: yield* promptSvc.cancelRequest(ctx.params.sessionID, ctx.payload.requestID) }
++    })
++
+     const command = Effect.fn("SessionHttpApi.command")(function* (ctx: {
+       params: { sessionID: SessionID }
+       payload: typeof CommandPayload.Type
+@@ -351,12 +376,18 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+       payload: typeof RevertPayload.Type
+     }) {
+       yield* requireSession(ctx.params.sessionID)
+-      return yield* SessionError.mapBusy(revertSvc.revert({ sessionID: ctx.params.sessionID, ...ctx.payload }))
++      return yield* promptSvc.withOwner(
++        ctx.params.sessionID,
++        SessionError.mapBusy(revertSvc.revert({ sessionID: ctx.params.sessionID, ...ctx.payload })),
++      )
+     })
+ 
+     const unrevert = Effect.fn("SessionHttpApi.unrevert")(function* (ctx: { params: { sessionID: SessionID } }) {
+       yield* requireSession(ctx.params.sessionID)
+-      return yield* SessionError.mapBusy(revertSvc.unrevert({ sessionID: ctx.params.sessionID }))
++      return yield* promptSvc.withOwner(
++        ctx.params.sessionID,
++        SessionError.mapBusy(revertSvc.unrevert({ sessionID: ctx.params.sessionID })),
++      )
+     })
+ 
+     const permissionRespond = Effect.fn("SessionHttpApi.permissionRespond")(function* (ctx: {
+@@ -381,8 +412,13 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+       params: { sessionID: SessionID; messageID: MessageID }
+     }) {
+       yield* requireSession(ctx.params.sessionID)
+-      yield* SessionError.mapBusy(runState.assertNotBusy(ctx.params.sessionID))
+-      yield* session.removeMessage(ctx.params)
++      yield* promptSvc.withOwner(
++        ctx.params.sessionID,
++        Effect.gen(function* () {
++          yield* SessionError.mapBusy(runState.assertNotBusy(ctx.params.sessionID))
++          yield* session.removeMessage(ctx.params)
++        }),
++      )
+       return true
+     })
+ 
+@@ -390,7 +426,7 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+       params: { sessionID: SessionID; messageID: MessageID; partID: PartID }
+     }) {
+       yield* requireSession(ctx.params.sessionID)
+-      yield* session.removePart(ctx.params)
++      yield* promptSvc.withOwner(ctx.params.sessionID, session.removePart(ctx.params))
+       return true
+     })
+ 
+@@ -407,7 +443,7 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+       ) {
+         return yield* new HttpApiError.BadRequest({})
+       }
+-      return yield* session.updatePart(payload)
++      return yield* promptSvc.withOwner(ctx.params.sessionID, session.updatePart(payload))
+     })
+ 
+     return handlers
+@@ -430,6 +466,8 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+       .handle("summarize", summarize)
+       .handle("prompt", prompt)
+       .handle("promptAsync", promptAsync)
++      .handle("promptIdle", promptIdle)
++      .handle("cancelRequest", cancelRequest)
+       .handle("command", command)
+       .handle("shell", shell)
+       .handle("revert", revert)
+diff --git a/packages/opencode/src/session/admission.ts b/packages/opencode/src/session/admission.ts
+new file mode 100644
+index 0000000..06e5bbd
+--- /dev/null
++++ b/packages/opencode/src/session/admission.ts
+@@ -0,0 +1,183 @@
++import { Deferred, Effect, Fiber, Scope } from "effect"
++
++type DirectoryGate = {
++  epoch: number
++  phase: "open" | "disposing" | "closed"
++  exclusive: number
++  owners: number
++}
++
++// The runner and its instance are process-local. This gate is shared by native
++// admission and instance teardown, so neither can pass a separate busy check
++// and then race the other before changing state.
++const directories = new Map<string, DirectoryGate>()
++
++const gate = (directory: string) => {
++  const existing = directories.get(directory)
++  if (existing) return existing
++  const created: DirectoryGate = { epoch: 0, phase: "open", exclusive: 0, owners: 0 }
++  directories.set(directory, created)
++  return created
++}
++
++export const openInstance = (directory: string) => {
++  const current = gate(directory)
++  if (current.phase === "disposing") throw new Error("instance disposal is in progress")
++  if (current.phase === "closed") current.phase = "open"
++}
++
++export const beginDispose = (directory: string) => {
++  const current = gate(directory)
++  if (current.phase !== "open" || current.exclusive > 0 || current.owners > 0) return false
++  current.phase = "disposing"
++  return true
++}
++
++export const finishDispose = (directory: string) => {
++  const current = gate(directory)
++  current.phase = "closed"
++  current.epoch += 1
++}
++
++// This owner spans prompt preparation, the native run, and cancellation cleanup.
++// Owner prompts retain their usual steering behavior; only automated work is exclusive.
++export const make = (scope: Scope.Scope, directory: string) => {
++  const directoryGate = gate(directory)
++  const epoch = directoryGate.epoch
++  const owners = new Map<string, number>()
++  const active = new Map<string, Request>()
++  const requests = new Map<string, Map<string, Request>>()
++
++  type Request = {
++    requestID: string
++    fingerprint: string
++    done: Deferred.Deferred<void>
++    ready: Deferred.Deferred<Fiber.Fiber<void>>
++    status: "accepted" | "completed" | "cancelled" | "failed"
++    stopping: boolean
++  }
++
++  const release = (sessionID: string, request: Request) =>
++    Effect.gen(function* () {
++      if (active.get(sessionID) === request) {
++        active.delete(sessionID)
++        directoryGate.exclusive -= 1
++      }
++      yield* Deferred.succeed(request.done, undefined)
++    })
++
++  const available = () => directoryGate.phase === "open" && directoryGate.epoch === epoch
++
++  const owner = <A, E, R>(sessionID: string, work: Effect.Effect<A, E, R>) =>
++    Effect.acquireUseRelease(
++      Effect.sync(() => {
++        if (!available()) throw new Error("instance is unavailable for owner work")
++        owners.set(sessionID, (owners.get(sessionID) ?? 0) + 1)
++        directoryGate.owners += 1
++        return active.get(sessionID)
++      }),
++      (request) => (request ? Deferred.await(request.done).pipe(Effect.andThen(work)) : work),
++      () =>
++        Effect.sync(() => {
++          const count = owners.get(sessionID)! - 1
++          if (count === 0) owners.delete(sessionID)
++          else owners.set(sessionID, count)
++          directoryGate.owners -= 1
++        }),
++    )
++
++  // Abort is different from ordinary owner steering: waiting and then aborting
++  // could cancel a later owner's turn. Reserve the owner slot immediately or
++  // refuse while an exclusive request holds it.
++  const tryOwner = <A, E, R>(sessionID: string, work: Effect.Effect<A, E, R>) =>
++    Effect.acquireUseRelease(
++      Effect.sync(() => {
++        if (!available() || active.has(sessionID)) return false
++        owners.set(sessionID, (owners.get(sessionID) ?? 0) + 1)
++        directoryGate.owners += 1
++        return true
++      }),
++      (admitted): Effect.Effect<{ status: "completed"; value: A } | { status: "busy" }, E, R> =>
++        admitted
++          ? Effect.map(work, (value) => ({ status: "completed" as const, value }))
++          : Effect.succeed({ status: "busy" as const }),
++      (admitted) =>
++        Effect.sync(() => {
++          if (!admitted) return
++          const count = owners.get(sessionID)! - 1
++          if (count === 0) owners.delete(sessionID)
++          else owners.set(sessionID, count)
++          directoryGate.owners -= 1
++        }),
++    )
++
++  const start = (
++    sessionID: string,
++    requestID: string,
++    fingerprint: string,
++    work: Effect.Effect<void>,
++    idle = Effect.succeed(true),
++  ) =>
++    Effect.uninterruptible(
++      Effect.gen(function* () {
++        const previous = requests.get(sessionID)?.get(requestID)
++        if (previous) return previous.fingerprint === fingerprint ? previous.status : ("conflict" as const)
++        if (!available() || active.has(sessionID) || owners.has(sessionID)) return "busy" as const
++        const request: Request = {
++          requestID,
++          fingerprint,
++          done: Deferred.makeUnsafe<void>(),
++          ready: Deferred.makeUnsafe<Fiber.Fiber<void>>(),
++          status: "accepted",
++          stopping: false,
++        }
++        // No suspension between checking ownership and reserving it.
++        active.set(sessionID, request)
++        directoryGate.exclusive += 1
++        if (!(yield* idle)) {
++          yield* release(sessionID, request)
++          return "busy" as const
++        }
++        const history = requests.get(sessionID) ?? new Map<string, Request>()
++        history.set(requestID, request)
++        requests.set(sessionID, history)
++        const fiber = yield* work.pipe(
++          Effect.interruptible,
++          Effect.onExit((exit) =>
++            Effect.gen(function* () {
++              if (request.stopping) return
++              request.status = exit._tag === "Success" ? "completed" : "failed"
++              yield* release(sessionID, request)
++            }),
++          ),
++          Effect.forkIn(scope),
++        )
++        yield* Deferred.succeed(request.ready, fiber)
++        return "accepted" as const
++      }),
++    )
++
++  const cancel = (sessionID: string, requestID: string, cleanup: Effect.Effect<void>) =>
++    Effect.uninterruptible(
++      Effect.gen(function* () {
++        const request = active.get(sessionID)
++        if (!request || request.requestID !== requestID) return false
++        if (request.stopping) {
++          yield* Deferred.await(request.done)
++          return true
++        }
++        request.stopping = true
++        const fiber = yield* Deferred.await(request.ready)
++        // Do not release ownership until the native runner and its tools have stopped.
++        yield* cleanup
++        yield* Fiber.interrupt(fiber)
++        request.status = "cancelled"
++        yield* release(sessionID, request)
++        return true
++      }),
++    )
++
++  return { owner, tryOwner, start, cancel }
++}
++
++export * as SessionAdmission from "./admission"
+diff --git a/packages/opencode/src/session/prompt.ts b/packages/opencode/src/session/prompt.ts
+index 0f85d44..7d49c56 100644
+--- a/packages/opencode/src/session/prompt.ts
++++ b/packages/opencode/src/session/prompt.ts
+@@ -46,6 +46,7 @@ import { Cause, Effect, Exit, Latch, Layer, Option, Scope, Context, Schema, Type
+ import { InstanceState } from "@/effect/instance-state"
+ import { TaskTool, type TaskPromptOps } from "@/tool/task"
+ import { SessionRunState } from "./run-state"
++import { SessionAdmission } from "./admission"
+ import { RuntimeFlags } from "@/effect/runtime-flags"
+ import { EventV2Bridge } from "@/event-v2-bridge"
+ import { Database } from "@opencode-ai/core/database/database"
+@@ -101,6 +102,12 @@ function isOrphanedInterruptedTool(part: SessionV1.ToolPart) {
+ 
+ export interface Interface {
+   readonly cancel: (sessionID: SessionID) => Effect.Effect<void>
++  readonly cancelOwner: (sessionID: SessionID) => Effect.Effect<void, Session.BusyError>
++  readonly promptIdle: (
++    input: PromptInput & { requestID: string },
++  ) => Effect.Effect<"accepted" | "completed" | "cancelled" | "failed" | "busy" | "conflict">
++  readonly withOwner: <A, E, R>(sessionID: SessionID, work: Effect.Effect<A, E, R>) => Effect.Effect<A, E, R>
++  readonly cancelRequest: (sessionID: SessionID, requestID: string) => Effect.Effect<boolean>
+   readonly prompt: (input: PromptInput) => Effect.Effect<SessionV1.WithParts, Image.Error>
+   readonly loop: (input: LoopInput) => Effect.Effect<SessionV1.WithParts>
+   readonly shell: (input: ShellInput) => Effect.Effect<SessionV1.WithParts, Session.BusyError>
+@@ -133,6 +140,11 @@ const layer = Layer.effect(
+     const scope = yield* Scope.Scope
+     const instruction = yield* Instruction.Service
+     const state = yield* SessionRunState.Service
++    const admissions = yield* InstanceState.make((ctx) =>
++      Effect.map(Scope.Scope, (admissionScope) => SessionAdmission.make(admissionScope, ctx.directory)),
++    )
++    const owner = <A, E, R>(sessionID: SessionID, work: Effect.Effect<A, E, R>) =>
++      InstanceState.get(admissions).pipe(Effect.flatMap((admission) => admission.owner(sessionID, work)))
+     const revert = yield* SessionRevert.Service
+     const summary = yield* SessionSummary.Service
+     const sys = yield* SystemPrompt.Service
+@@ -145,7 +157,7 @@ const layer = Layer.effect(
+       return {
+         cancel: (sessionID: SessionID) => cancel(sessionID),
+         resolvePromptParts: (template: string) => resolvePromptParts(template),
+-        prompt: (input: PromptInput) => prompt(input).pipe(Effect.catch(Effect.die)),
++        prompt: (input: PromptInput) => owner(input.sessionID, prompt(input)).pipe(Effect.catch(Effect.die)),
+       } satisfies TaskPromptOps
+     })
+ 
+@@ -154,6 +166,12 @@ const layer = Layer.effect(
+       yield* state.cancel(sessionID)
+     })
+ 
++    const cancelOwner = Effect.fn("SessionPrompt.cancelOwner")(function* (sessionID: SessionID) {
++      const admission = yield* InstanceState.get(admissions)
++      const result = yield* admission.tryOwner(sessionID, cancel(sessionID))
++      if (result.status === "busy") yield* new Session.BusyError({ sessionID })
++    })
++
+     const resolvePromptParts = Effect.fn("SessionPrompt.resolvePromptParts")(function* (template: string) {
+       const ctx = yield* InstanceState.context
+       const parts: Types.DeepMutable<PromptInput["parts"]> = [{ type: "text", text: template }]
+@@ -1480,12 +1498,41 @@ const layer = Layer.effect(
+       return result
+     })
+ 
++    const promptIdle = Effect.fn("SessionPrompt.promptIdle")(function* (input: PromptInput & { requestID: string }) {
++      const admission = yield* InstanceState.get(admissions)
++      return yield* admission.start(
++        input.sessionID,
++        input.requestID,
++        JSON.stringify(input),
++        Effect.gen(function* () {
++          yield* prompt(input)
++        }).pipe(
++          Effect.onInterrupt(() => cancel(input.sessionID)),
++          Effect.tapCause((cause) => Effect.logError("idle prompt failed", { sessionID: input.sessionID, cause })),
++          Effect.orDie,
++          Effect.asVoid,
++        ),
++        state.assertNotBusy(input.sessionID).pipe(
++          Effect.as(true),
++          Effect.catchTag("SessionBusyError", () => Effect.succeed(false)),
++        ),
++      )
++    })
++    const cancelRequest = Effect.fn("SessionPrompt.cancelRequest")(function* (sessionID: SessionID, requestID: string) {
++      const admission = yield* InstanceState.get(admissions)
++      return yield* admission.cancel(sessionID, requestID, cancel(sessionID))
++    })
++
+     return Service.of({
+-      cancel,
+-      prompt,
+-      loop,
+-      shell,
+-      command,
++      cancel: (sessionID) => cancelOwner(sessionID).pipe(Effect.orDie),
++      cancelOwner,
++      promptIdle,
++      cancelRequest,
++      withOwner: owner,
++      prompt: (input) => owner(input.sessionID, prompt(input)),
++      loop: (input) => owner(input.sessionID, loop(input)),
++      shell: (input) => owner(input.sessionID, shell(input)),
++      command: (input) => owner(input.sessionID, command(input)),
+       resolvePromptParts,
+     })
+   }),
+diff --git a/packages/opencode/test/project/instance.test.ts b/packages/opencode/test/project/instance.test.ts
+index f78b99e..61115cd 100644
+--- a/packages/opencode/test/project/instance.test.ts
++++ b/packages/opencode/test/project/instance.test.ts
+@@ -1,11 +1,12 @@
+ import { describe, expect } from "bun:test"
+ import { LayerNode } from "@opencode-ai/core/effect/layer-node"
+ import { CrossSpawnSpawner } from "@opencode-ai/core/cross-spawn-spawner"
+-import { Deferred, Effect, Fiber, Layer } from "effect"
++import { Deferred, Effect, Fiber, Layer, Scope } from "effect"
+ import { InstanceRef } from "../../src/effect/instance-ref"
+ import { registerDisposer } from "../../src/effect/instance-registry"
+ import { InstanceBootstrap } from "../../src/project/bootstrap"
+ import { InstanceStore } from "../../src/project/instance-store"
++import { SessionAdmission } from "../../src/session/admission"
+ import { tmpdirScoped } from "../fixture/fixture"
+ import { testEffect } from "../lib/effect"
+ 
+@@ -121,6 +122,36 @@ describe("InstanceStore", () => {
+     }),
+   )
+ 
++  it.live("refuses reload while the previous instance is still booting", () =>
++    Effect.gen(function* () {
++      const dir = yield* tmpdirScoped({ git: true })
++      const store = yield* InstanceStore.Service
++      const started = yield* Deferred.make<void>()
++      const release = yield* Deferred.make<void>()
++      const disposed: string[] = []
++      yield* registerDisposerScoped(async (directory) => {
++        disposed.push(directory)
++      })
++      yield* setBootstrap(
++        Effect.gen(function* () {
++          yield* Deferred.succeed(started, undefined)
++          yield* Deferred.await(release)
++        }),
++      )
++      const loading = yield* store.load({ directory: dir }).pipe(Effect.forkScoped)
++      yield* Deferred.await(started)
++      const refused = yield* store.reload({ directory: dir }).pipe(
++        Effect.as(false),
++        Effect.catchCause(() => Effect.succeed(true)),
++      )
++      expect(refused).toBe(true)
++      expect(disposed).toEqual([])
++      yield* Deferred.succeed(release, undefined)
++      const first = yield* Fiber.join(loading)
++      expect(yield* store.load({ directory: dir })).toBe(first)
++    }),
++  )
++
+   it.live("removes failed loads from the cache", () =>
+     Effect.gen(function* () {
+       const dir = yield* tmpdirScoped({ git: true })
+@@ -166,6 +197,32 @@ describe("InstanceStore", () => {
+     }),
+   )
+ 
++  it.live("refuses reload and disposal while session work owns the instance", () =>
++    Effect.gen(function* () {
++      const dir = yield* tmpdirScoped({ git: true })
++      const store = yield* InstanceStore.Service
++      const first = yield* store.load({ directory: dir })
++      const admission = SessionAdmission.make(yield* Scope.Scope, dir)
++      const entered = yield* Deferred.make<void>()
++      const release = yield* Deferred.make<void>()
++      const owner = yield* admission.owner(
++        "session",
++        Deferred.succeed(entered, undefined).pipe(Effect.andThen(Deferred.await(release))),
++      ).pipe(Effect.forkScoped)
++      yield* Deferred.await(entered)
++      const refused = (effect: Effect.Effect<unknown>) => effect.pipe(
++        Effect.as(false),
++        Effect.catchCause(() => Effect.succeed(true)),
++      )
++      expect(yield* refused(store.reload({ directory: dir }))).toBe(true)
++      expect(yield* refused(store.disposeDirectory(dir))).toBe(true)
++      expect(yield* store.load({ directory: dir })).toBe(first)
++      yield* Deferred.succeed(release, undefined)
++      yield* Fiber.join(owner)
++      expect(yield* store.reload({ directory: dir })).not.toBe(first)
++    }),
++  )
++
+   it.live("stale dispose does not delete an in-flight reload", () =>
+     Effect.gen(function* () {
+       const dir = yield* tmpdirScoped({ git: true })
+diff --git a/packages/opencode/test/server/httpapi-session.test.ts b/packages/opencode/test/server/httpapi-session.test.ts
+index 9d7643c..eb0853f 100644
+--- a/packages/opencode/test/server/httpapi-session.test.ts
++++ b/packages/opencode/test/server/httpapi-session.test.ts
+@@ -1088,3 +1088,61 @@ describe("session HttpApi", () => {
+     { git: true, config: { formatter: false, lsp: false } },
+   )
+ })
++
++it.instance(
++  "idle prompt routes admit once and reject conflicting request reuse",
++  () =>
++    Effect.gen(function* () {
++      const test = yield* TestInstance
++      const headers = { "x-opencode-directory": test.directory, "content-type": "application/json" }
++      const chat = yield* requestJson<Session.Info>(SessionPaths.create, {
++        method: "POST",
++        headers,
++        body: JSON.stringify({ title: "Admission fixture" }),
++      })
++      const url = pathFor(SessionPaths.promptIdle, { sessionID: chat.id })
++      const payload = {
++        requestID: "http-wake",
++        noReply: true,
++        agent: "build",
++        model: { providerID: "test", modelID: "test" },
++        parts: [{ type: "text", text: "exactly once" }],
++      }
++      const first = yield* requestJson<{ status: string }>(url, {
++        method: "POST",
++        headers,
++        body: JSON.stringify(payload),
++      })
++      expect(first.status).toBe("accepted")
++      yield* pollWithTimeout(
++        Effect.suspend(() =>
++          requestJson<{ status: string }>(url, {
++            method: "POST",
++            headers,
++            body: JSON.stringify(payload),
++          }),
++        ).pipe(Effect.map((result) => (result.status === "completed" ? true : undefined))),
++        "idle prompt did not complete",
++      )
++      const messages = yield* requestJson<SessionV1.WithParts[]>(
++        pathFor(SessionPaths.messages, { sessionID: chat.id }),
++        { headers },
++      )
++      expect(messages.filter((message) => message.info.role === "user")).toHaveLength(1)
++      expect(
++        yield* requestJson(url, {
++          method: "POST",
++          headers,
++          body: JSON.stringify({ ...payload, parts: [{ type: "text", text: "changed" }] }),
++        }),
++      ).toEqual({ status: "conflict" })
++      expect(
++        yield* requestJson(pathFor(SessionPaths.cancelRequest, { sessionID: chat.id }), {
++          method: "POST",
++          headers,
++          body: JSON.stringify({ requestID: payload.requestID }),
++        }),
++      ).toEqual({ cancelled: false })
++    }),
++  { git: true, config: { formatter: false, lsp: false, share: "disabled" } },
++)
+diff --git a/packages/opencode/test/session/admission.test.ts b/packages/opencode/test/session/admission.test.ts
+new file mode 100644
+index 0000000..e474b9e
+--- /dev/null
++++ b/packages/opencode/test/session/admission.test.ts
+@@ -0,0 +1,156 @@
++import { expect, test } from "bun:test"
++import { Deferred, Effect, Fiber, Scope } from "effect"
++import { SessionAdmission } from "../../src/session/admission"
++
++const run = (work: Effect.Effect<void, never, Scope.Scope>) => Effect.runPromise(Effect.scoped(work))
++
++test("idle admission refuses existing owner work and simultaneous requests", () =>
++  run(
++    Effect.gen(function* () {
++      const admission = SessionAdmission.make(yield* Scope.Scope, crypto.randomUUID())
++      const entered = yield* Deferred.make<void>()
++      const done = yield* Deferred.make<void>()
++      const owner = yield* admission
++        .owner("session", Deferred.succeed(entered, undefined).pipe(Effect.andThen(Deferred.await(done))))
++        .pipe(Effect.forkChild)
++      yield* Deferred.await(entered)
++      expect(yield* admission.start("session", "wake", "body", Effect.die("must not execute"))).toBe("busy")
++      yield* Deferred.succeed(done, undefined)
++      yield* Fiber.join(owner)
++      const finished = yield* Deferred.make<void>()
++      const statuses = yield* Effect.all(
++        [
++          admission.start("session", "a", "a", Deferred.await(finished)),
++          admission.start("session", "b", "b", Deferred.await(finished)),
++        ],
++        { concurrency: "unbounded" },
++      )
++      expect(statuses.filter((status) => status === "accepted")).toHaveLength(1)
++      expect(statuses.filter((status) => status === "busy")).toHaveLength(1)
++      yield* Deferred.succeed(finished, undefined)
++    }),
++  ))
++
++test("request retries never rerun work and changed payload conflicts", () =>
++  run(
++    Effect.gen(function* () {
++      const admission = SessionAdmission.make(yield* Scope.Scope, crypto.randomUUID())
++      const started = yield* Deferred.make<void>()
++      const done = yield* Deferred.make<void>()
++      const work = Deferred.succeed(started, undefined).pipe(Effect.andThen(Deferred.await(done)))
++      expect(yield* admission.start("session", "request", "body", work)).toBe("accepted")
++      yield* Deferred.await(started)
++      expect(yield* admission.start("session", "request", "body", Effect.die("duplicate"))).toBe("accepted")
++      expect(yield* admission.start("session", "request", "different", work)).toBe("conflict")
++      yield* Deferred.succeed(done, undefined)
++      yield* admission.owner("session", Effect.void)
++      expect(yield* admission.start("session", "request", "body", Effect.die("duplicate"))).toBe("completed")
++    }),
++  ))
++
++test("exact cancellation holds owner input until tool finalizers complete", () =>
++  run(
++    Effect.gen(function* () {
++      const admission = SessionAdmission.make(yield* Scope.Scope, crypto.randomUUID())
++      const started = yield* Deferred.make<void>()
++      const cleaning = yield* Deferred.make<void>()
++      const cleanupDone = yield* Deferred.make<void>()
++      const ownerStarted = yield* Deferred.make<void>()
++      const work = Deferred.succeed(started, undefined).pipe(
++        Effect.andThen(Effect.never),
++        Effect.ensuring(Deferred.succeed(cleaning, undefined).pipe(Effect.andThen(Deferred.await(cleanupDone)))),
++      )
++      expect(yield* admission.start("session", "wake", "body", work)).toBe("accepted")
++      yield* Deferred.await(started)
++      expect(yield* admission.cancel("session", "stale", Effect.die("wrong cleanup"))).toBe(false)
++      const owner = yield* admission.owner("session", Deferred.succeed(ownerStarted, undefined)).pipe(Effect.forkChild)
++      const cancel = yield* admission.cancel("session", "wake", Effect.void).pipe(Effect.forkChild)
++      yield* Deferred.await(cleaning)
++      expect(yield* Deferred.isDone(ownerStarted)).toBe(false)
++      expect(yield* admission.start("session", "other", "body", Effect.void)).toBe("busy")
++      yield* Deferred.succeed(cleanupDone, undefined)
++      expect(yield* Fiber.join(cancel)).toBe(true)
++      yield* Fiber.join(owner)
++      expect(yield* admission.start("session", "wake", "body", Effect.die("duplicate"))).toBe("cancelled")
++      const next = yield* Deferred.make<void>()
++      expect(yield* admission.start("session", "next", "body", Deferred.await(next))).toBe("accepted")
++      expect(yield* admission.cancel("session", "wake", Effect.die("must not cancel next"))).toBe(false)
++      yield* Deferred.succeed(next, undefined)
++    }),
++  ))
++
++test("ordinary owners still overlap for native steering", () =>
++  run(
++    Effect.gen(function* () {
++      const admission = SessionAdmission.make(yield* Scope.Scope, crypto.randomUUID())
++      const both = yield* Deferred.make<void>()
++      let count = 0
++      const work = Effect.gen(function* () {
++        count += 1
++        if (count === 2) yield* Deferred.succeed(both, undefined)
++        yield* Deferred.await(both)
++      })
++      yield* Effect.all([admission.owner("session", work), admission.owner("session", work)], {
++        concurrency: "unbounded",
++      })
++      expect(count).toBe(2)
++    }),
++  ))
++
++test("legacy abort cannot wait behind an exclusive request and cancel later work", () =>
++  run(
++    Effect.gen(function* () {
++      const admission = SessionAdmission.make(yield* Scope.Scope, crypto.randomUUID())
++      const finish = yield* Deferred.make<void>()
++      expect(yield* admission.start("session", "wake", "body", Deferred.await(finish))).toBe("accepted")
++      const abort = yield* admission.tryOwner("session", Effect.die("legacy abort ran during exclusive work"))
++      expect(abort.status).toBe("busy")
++      yield* Deferred.succeed(finish, undefined)
++      const finished = yield* admission.owner("session", Effect.void)
++      expect(finished).toBeUndefined()
++
++      const entered = yield* Deferred.make<void>()
++      const release = yield* Deferred.make<void>()
++      const owner = yield* admission.tryOwner(
++        "session",
++        Deferred.succeed(entered, undefined).pipe(Effect.andThen(Deferred.await(release))),
++      ).pipe(Effect.forkChild)
++      yield* Deferred.await(entered)
++      expect(yield* admission.start("session", "next", "body", Effect.die("must not start"))).toBe("busy")
++      yield* Deferred.succeed(release, undefined)
++      expect((yield* Fiber.join(owner)).status).toBe("completed")
++    }),
++  ))
++
++test("instance teardown is refused while a request or owner runs and seals old admission", () =>
++  run(
++    Effect.gen(function* () {
++      const directory = crypto.randomUUID()
++      const admission = SessionAdmission.make(yield* Scope.Scope, directory)
++      const finish = yield* Deferred.make<void>()
++      expect(yield* admission.start("session", "wake", "body", Deferred.await(finish))).toBe("accepted")
++      expect(SessionAdmission.beginDispose(directory)).toBe(false)
++      yield* Deferred.succeed(finish, undefined)
++      yield* admission.owner("session", Effect.void)
++
++      const enteredOwner = yield* Deferred.make<void>()
++      const releaseOwner = yield* Deferred.make<void>()
++      const owner = yield* admission.owner(
++        "session",
++        Deferred.succeed(enteredOwner, undefined).pipe(Effect.andThen(Deferred.await(releaseOwner))),
++      ).pipe(Effect.forkChild)
++      yield* Deferred.await(enteredOwner)
++      expect(SessionAdmission.beginDispose(directory)).toBe(false)
++      yield* Deferred.succeed(releaseOwner, undefined)
++      yield* Fiber.join(owner)
++
++      expect(SessionAdmission.beginDispose(directory)).toBe(true)
++      expect(yield* admission.start("session", "later", "body", Effect.die("started during disposal"))).toBe("busy")
++      expect((yield* admission.tryOwner("session", Effect.die("owner during disposal"))).status).toBe("busy")
++      SessionAdmission.finishDispose(directory)
++      SessionAdmission.openInstance(directory)
++      expect(yield* admission.start("session", "stale", "body", Effect.die("stale instance ran"))).toBe("busy")
++      const next = SessionAdmission.make(yield* Scope.Scope, directory)
++      expect(yield* next.start("session", "fresh", "body", Effect.void)).toBe("accepted")
++    }),
++  ))
+diff --git a/packages/opencode/test/session/prompt.test.ts b/packages/opencode/test/session/prompt.test.ts
+index da6e0f8..8f6607d 100644
+--- a/packages/opencode/test/session/prompt.test.ts
++++ b/packages/opencode/test/session/prompt.test.ts
+@@ -2468,3 +2468,95 @@ noLLMServer.instance(
+     }),
+   30_000,
+ )
++
++unix(
++  "idle requests reject busy owners and exact cancellation preserves queued owner input",
++  () =>
++    withSh(() =>
++      Effect.gen(function* () {
++        const { llm } = yield* useServerConfig(providerCfg)
++        const { directory } = yield* TestInstance
++        const { prompt, sessions, chat } = yield* boot()
++        const shellReady = path.join(directory, "owner-ready")
++        const shell = yield* prompt
++          .shell({
++            sessionID: chat.id,
++            agent: "build",
++            command: `touch '${shellReady}'; sleep 30`,
++          })
++          .pipe(Effect.forkChild)
++        yield* pollWithTimeout(
++          Effect.promise(() => Bun.file(shellReady).exists()).pipe(Effect.map((exists) => (exists ? true : undefined))),
++          "owner shell did not start",
++        )
++        const wake = {
++          sessionID: chat.id,
++          requestID: "exclusive-wake",
++          agent: "build",
++          model: ref,
++          parts: [{ type: "text" as const, text: "automated request" }],
++        }
++        expect(yield* prompt.promptIdle(wake)).toBe("busy")
++        expect(
++          (yield* sessions.messages({ sessionID: chat.id }))
++            .flatMap((message) => message.parts)
++            .some((part) => part.type === "text" && part.text === "automated request"),
++        ).toBe(false)
++        yield* prompt.cancel(chat.id)
++        yield* Fiber.join(shell)
++
++        const ready = path.join(directory, "wake-ready")
++        yield* llm.tool("bash", {
++          command: `echo $$ > '${ready}'; sleep 30`,
++          description: "Long-running cancellation fixture",
++        })
++        expect(yield* prompt.promptIdle(wake)).toBe("accepted")
++        yield* pollWithTimeout(
++          Effect.promise(() => Bun.file(ready).exists()).pipe(Effect.map((exists) => (exists ? true : undefined))),
++          "wake tool did not start",
++        )
++        const pid = Number(yield* Effect.promise(() => Bun.file(ready).text()))
++        expect(yield* prompt.cancelRequest(chat.id, "different-request")).toBe(false)
++        process.kill(pid, 0)
++        const owner = yield* prompt
++          .prompt({
++            sessionID: chat.id,
++            agent: "build",
++            model: ref,
++            noReply: true,
++            parts: [{ type: "text", text: "queued owner input" }],
++          })
++          .pipe(Effect.forkChild)
++        yield* Effect.yieldNow
++        expect(
++          (yield* sessions.messages({ sessionID: chat.id }))
++            .flatMap((message) => message.parts)
++            .some((part) => part.type === "text" && part.text === "queued owner input"),
++        ).toBe(false)
++        expect(yield* prompt.cancelRequest(chat.id, wake.requestID)).toBe(true)
++        expect(() => process.kill(pid, 0)).toThrow()
++        const result = yield* Fiber.join(owner)
++        expect(result.parts.some((part) => part.type === "text" && part.text === "queued owner input")).toBe(true)
++        expect(yield* prompt.promptIdle(wake)).toBe("cancelled")
++
++        const nextReady = path.join(directory, "next-ready")
++        const next = yield* prompt
++          .shell({
++            sessionID: chat.id,
++            agent: "build",
++            command: `echo $$ > '${nextReady}'; sleep 30`,
++          })
++          .pipe(Effect.forkChild)
++        yield* pollWithTimeout(
++          Effect.promise(() => Bun.file(nextReady).exists()).pipe(Effect.map((exists) => (exists ? true : undefined))),
++          "next owner shell did not start",
++        )
++        expect(yield* prompt.cancelRequest(chat.id, wake.requestID)).toBe(false)
++        process.kill(Number(yield* Effect.promise(() => Bun.file(nextReady).text())), 0)
++        yield* prompt.cancel(chat.id)
++        yield* Fiber.join(next)
++      }),
++    ),
++  { git: true },
++  30_000,
++)
+diff --git a/packages/sdk/js/src/client.ts b/packages/sdk/js/src/client.ts
+index 5cf071e..1def7ef 100644
+--- a/packages/sdk/js/src/client.ts
++++ b/packages/sdk/js/src/client.ts
+@@ -3,6 +3,7 @@ export * from "./gen/types.gen.js"
+ import { createClient } from "./gen/client/client.gen.js"
+ import { type Config } from "./gen/client/types.gen.js"
+ import { OpencodeClient } from "./gen/sdk.gen.js"
++import type { SessionPromptIdleData, SessionPromptIdleResponses, SessionPromptIdleErrors, SessionCancelRequestData, SessionCancelRequestResponses, SessionCancelRequestErrors } from "./v2/gen/types.gen.js"
+ import { wrapClientError } from "./error-interceptor.js"
+ export { type Config as OpencodeClientConfig, OpencodeClient }
+ 
+@@ -30,7 +31,7 @@ function rewrite(request: Request, directory?: string) {
+   return next
+ }
+ 
+-export function createOpencodeClient(config?: Config & { directory?: string }) {
++export function createOpencodeClient(config?: Config & { directory?: string }): OpencodeClient {
+   if (!config?.fetch) {
+     const customFetch: any = (req: any) => {
+       // @ts-ignore
+@@ -53,5 +54,22 @@ export function createOpencodeClient(config?: Config & { directory?: string }) {
+   const client = createClient(config)
+   client.interceptors.request.use((request) => rewrite(request, config?.directory))
+   client.interceptors.error.use(wrapClientError)
+-  return new OpencodeClient({ client })
++  const sdk = new OpencodeClient({ client })
++  const session = Object.assign(sdk.session, {
++    promptIdle: (options: { path: { id: string }; body: SessionPromptIdleData["body"] }) =>
++      client.post<SessionPromptIdleResponses, SessionPromptIdleErrors>({
++        url: "/session/{sessionID}/prompt_idle",
++        path: { sessionID: options.path.id },
++        body: options.body,
++        headers: { "Content-Type": "application/json" },
++      }),
++    cancelRequest: (options: { path: { id: string }; body: SessionCancelRequestData["body"] }) =>
++      client.post<SessionCancelRequestResponses, SessionCancelRequestErrors>({
++        url: "/session/{sessionID}/cancel_request",
++        path: { sessionID: options.path.id },
++        body: options.body,
++        headers: { "Content-Type": "application/json" },
++      }),
++  })
++  return Object.assign(sdk, { session })
+ }
+diff --git a/packages/sdk/js/src/v2/gen/sdk.gen.ts b/packages/sdk/js/src/v2/gen/sdk.gen.ts
+index a2bcd42..8f9327b 100644
+--- a/packages/sdk/js/src/v2/gen/sdk.gen.ts
++++ b/packages/sdk/js/src/v2/gen/sdk.gen.ts
+@@ -177,6 +177,8 @@ import type {
+   QuestionV2Reply,
+   SessionAbortErrors,
+   SessionAbortResponses,
++  SessionCancelRequestErrors,
++  SessionCancelRequestResponses,
+   SessionChildrenErrors,
+   SessionChildrenResponses,
+   SessionCommandErrors,
+@@ -204,6 +206,8 @@ import type {
+   SessionPromptAsyncErrors,
+   SessionPromptAsyncResponses,
+   SessionPromptErrors,
++  SessionPromptIdleErrors,
++  SessionPromptIdleResponses,
+   SessionPromptResponses,
+   SessionRevertErrors,
+   SessionRevertResponses,
+@@ -4147,6 +4151,111 @@ export class Session2 extends HeyApiClient {
+     })
+   }
+ 
++  /**
++   * Admit an exclusive prompt only when idle
++   *
++   * Atomically reserves native ownership. Owner submissions wait through completion and cancellation cleanup. Request IDs are idempotent for this server instance.
++   */
++  public promptIdle<ThrowOnError extends boolean = false>(
++    parameters: {
++      sessionID: string
++      directory?: string
++      workspace?: string
++      messageID?: string
++      model?: {
++        providerID: string
++        modelID: string
++      }
++      agent?: string
++      noReply?: boolean
++      tools?: {
++        [key: string]: boolean
++      }
++      format?: OutputFormat
++      system?: string
++      variant?: string
++      parts?: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
++      requestID?: string
++    },
++    options?: Options<never, ThrowOnError>,
++  ) {
++    const params = buildClientParams(
++      [parameters],
++      [
++        {
++          args: [
++            { in: "path", key: "sessionID" },
++            { in: "query", key: "directory" },
++            { in: "query", key: "workspace" },
++            { in: "body", key: "messageID" },
++            { in: "body", key: "model" },
++            { in: "body", key: "agent" },
++            { in: "body", key: "noReply" },
++            { in: "body", key: "tools" },
++            { in: "body", key: "format" },
++            { in: "body", key: "system" },
++            { in: "body", key: "variant" },
++            { in: "body", key: "parts" },
++            { in: "body", key: "requestID" },
++          ],
++        },
++      ],
++    )
++    return (options?.client ?? this.client).post<SessionPromptIdleResponses, SessionPromptIdleErrors, ThrowOnError>({
++      url: "/session/{sessionID}/prompt_idle",
++      ...options,
++      ...params,
++      headers: {
++        "Content-Type": "application/json",
++        ...options?.headers,
++        ...params.headers,
++      },
++    })
++  }
++
++  /**
++   * Cancel only the named exclusive prompt
++   *
++   * Returns after native interruption and tool cleanup. A stale request ID cannot cancel another run.
++   */
++  public cancelRequest<ThrowOnError extends boolean = false>(
++    parameters: {
++      sessionID: string
++      directory?: string
++      workspace?: string
++      requestID?: string
++    },
++    options?: Options<never, ThrowOnError>,
++  ) {
++    const params = buildClientParams(
++      [parameters],
++      [
++        {
++          args: [
++            { in: "path", key: "sessionID" },
++            { in: "query", key: "directory" },
++            { in: "query", key: "workspace" },
++            { in: "body", key: "requestID" },
++          ],
++        },
++      ],
++    )
++    return (options?.client ?? this.client).post<
++      SessionCancelRequestResponses,
++      SessionCancelRequestErrors,
++      ThrowOnError
++    >({
++      url: "/session/{sessionID}/cancel_request",
++      ...options,
++      ...params,
++      headers: {
++        "Content-Type": "application/json",
++        ...options?.headers,
++        ...params.headers,
++      },
++    })
++  }
++
+   /**
+    * Send command
+    *
+diff --git a/packages/sdk/js/src/v2/gen/types.gen.ts b/packages/sdk/js/src/v2/gen/types.gen.ts
+index f06c20c..f25032b 100644
+--- a/packages/sdk/js/src/v2/gen/types.gen.ts
++++ b/packages/sdk/js/src/v2/gen/types.gen.ts
+@@ -2550,6 +2550,12 @@ export type NotFoundError = {
+   }
+ }
+ 
++export type SessionBusyError = {
++  _tag: "SessionBusyError"
++  sessionID: string
++  message: string
++}
++
+ export type TextPartInput = {
+   id?: string
+   type: "text"
+@@ -2598,12 +2604,6 @@ export type SubtaskPartInput = {
+   command?: string
+ }
+ 
+-export type SessionBusyError = {
+-  _tag: "SessionBusyError"
+-  sessionID: string
+-  message: string
+-}
+-
+ export type EventTuiPromptAppend = {
+   type: "tui.prompt.append"
+   properties: {
+@@ -9976,6 +9976,10 @@ export type SessionAbortErrors = {
+    * BadRequest | InvalidRequestError
+    */
+   400: EffectHttpApiErrorBadRequest | InvalidRequestError
++  /**
++   * SessionBusyError
++   */
++  409: SessionBusyError
+ }
+ 
+ export type SessionAbortError = SessionAbortErrors[keyof SessionAbortErrors]
+@@ -10190,6 +10194,96 @@ export type SessionPromptAsyncResponses = {
+ 
+ export type SessionPromptAsyncResponse = SessionPromptAsyncResponses[keyof SessionPromptAsyncResponses]
+ 
++export type SessionPromptIdleData = {
++  body?: {
++    messageID?: string
++    model?: {
++      providerID: string
++      modelID: string
++    }
++    agent?: string
++    noReply?: boolean
++    tools?: {
++      [key: string]: boolean
++    }
++    format?: OutputFormat
++    system?: string
++    variant?: string
++    parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
++    requestID: string
++  }
++  path: {
++    sessionID: string
++  }
++  query?: {
++    directory?: string
++    workspace?: string
++  }
++  url: "/session/{sessionID}/prompt_idle"
++}
++
++export type SessionPromptIdleErrors = {
++  /**
++   * BadRequest | InvalidRequestError
++   */
++  400: EffectHttpApiErrorBadRequest | InvalidRequestError
++  /**
++   * NotFoundError
++   */
++  404: NotFoundError
++}
++
++export type SessionPromptIdleError = SessionPromptIdleErrors[keyof SessionPromptIdleErrors]
++
++export type SessionPromptIdleResponses = {
++  /**
++   * Success
++   */
++  200: {
++    status: "accepted" | "completed" | "cancelled" | "failed" | "busy" | "conflict"
++  }
++}
++
++export type SessionPromptIdleResponse = SessionPromptIdleResponses[keyof SessionPromptIdleResponses]
++
++export type SessionCancelRequestData = {
++  body?: {
++    requestID: string
++  }
++  path: {
++    sessionID: string
++  }
++  query?: {
++    directory?: string
++    workspace?: string
++  }
++  url: "/session/{sessionID}/cancel_request"
++}
++
++export type SessionCancelRequestErrors = {
++  /**
++   * BadRequest | InvalidRequestError
++   */
++  400: EffectHttpApiErrorBadRequest | InvalidRequestError
++  /**
++   * NotFoundError
++   */
++  404: NotFoundError
++}
++
++export type SessionCancelRequestError = SessionCancelRequestErrors[keyof SessionCancelRequestErrors]
++
++export type SessionCancelRequestResponses = {
++  /**
++   * Success
++   */
++  200: {
++    cancelled: boolean
++  }
++}
++
++export type SessionCancelRequestResponse = SessionCancelRequestResponses[keyof SessionCancelRequestResponses]
++
+ export type SessionCommandData = {
+   body?: {
+     messageID?: string
+-- 
+2.43.0
+
+
+From 6526dd702a62f80afcfa7f23e595eaf8bdcc7aed Mon Sep 17 00:00:00 2001
+From: halbritt <halbritt@gmail.com>
+Date: Thu, 24 Sep 2026 02:04:24 -0700
+Subject: [PATCH 2/3] fix(session): drain active work before final disposal
+
+---
+ .../opencode/src/project/instance-store.ts    |   4 +-
+ .../routes/instance/httpapi/groups/session.ts |   4 +-
+ .../instance/httpapi/handlers/session.ts      |   2 +-
+ packages/opencode/src/session/admission.ts    | 201 ++++++++++++++----
+ packages/opencode/src/session/prompt.ts       |  30 ++-
+ .../opencode/test/project/instance.test.ts    |  72 +++++--
+ .../opencode/test/session/admission.test.ts   |  63 ++++--
+ packages/opencode/test/session/prompt.test.ts |  14 ++
+ packages/sdk/js/src/v2/gen/sdk.gen.ts         |   2 +-
+ packages/sdk/js/src/v2/gen/types.gen.ts       |  16 +-
+ 10 files changed, 311 insertions(+), 97 deletions(-)
+
+diff --git a/packages/opencode/src/project/instance-store.ts b/packages/opencode/src/project/instance-store.ts
+index fc62b1e..65eca23 100644
+--- a/packages/opencode/src/project/instance-store.ts
++++ b/packages/opencode/src/project/instance-store.ts
+@@ -94,9 +94,7 @@ const layer: Layer.Layer<Service, never, Project.Service | InstanceBootstrap.Ser
+       )
+ 
+     const disposeContext = Effect.fn("InstanceStore.disposeContext")(function* (ctx: InstanceContext) {
+-      if (!SessionAdmission.beginDispose(ctx.directory)) {
+-        yield* Effect.die(new Error(`instance has active session work: ${ctx.directory}`))
+-      }
++      if (!(yield* SessionAdmission.drain(ctx.directory).pipe(Effect.provideService(InstanceRef, ctx)))) return
+       yield* Effect.logInfo("disposing instance", { directory: ctx.directory })
+       yield* Effect.promise(() => runDisposers(ctx.directory))
+       SessionAdmission.finishDispose(ctx.directory)
+diff --git a/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts b/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts
+index 0389199..5a888ca 100644
+--- a/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts
++++ b/packages/opencode/src/server/routes/instance/httpapi/groups/session.ts
+@@ -263,7 +263,7 @@ export const SessionApi = HttpApi.make("session")
+           params: { sessionID: SessionID },
+           query: WorkspaceRoutingQuery,
+           success: described(Schema.Boolean, "Aborted session"),
+-          error: [HttpApiError.BadRequest, SessionBusyError],
++          error: HttpApiError.BadRequest,
+         }).annotateMerge(
+           OpenApi.annotations({
+             identifier: "session.abort",
+@@ -376,7 +376,7 @@ export const SessionApi = HttpApi.make("session")
+             identifier: "session.cancel_request",
+             summary: "Cancel only the named exclusive prompt",
+             description:
+-              "Returns after native interruption and tool cleanup. A stale request ID cannot cancel another run.",
++              "Returns after native runner cancellation settles. A stale request ID cannot cancel another run. Host confirmation is needed for external process termination.",
+           }),
+         ),
+         HttpApiEndpoint.post("command", SessionPaths.command, {
+diff --git a/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts b/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts
+index f2b12a2..8a1ac3a 100644
+--- a/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts
++++ b/packages/opencode/src/server/routes/instance/httpapi/handlers/session.ts
+@@ -235,7 +235,7 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session",
+     })
+ 
+     const abort = Effect.fn("SessionHttpApi.abort")(function* (ctx: { params: { sessionID: SessionID } }) {
+-      yield* SessionError.mapBusy(promptSvc.cancelOwner(ctx.params.sessionID))
++      yield* promptSvc.cancelOwner(ctx.params.sessionID)
+       return true
+     })
+ 
+diff --git a/packages/opencode/src/session/admission.ts b/packages/opencode/src/session/admission.ts
+index 06e5bbd..87b637f 100644
+--- a/packages/opencode/src/session/admission.ts
++++ b/packages/opencode/src/session/admission.ts
+@@ -1,10 +1,13 @@
+-import { Deferred, Effect, Fiber, Scope } from "effect"
++import { Cause, Deferred, Effect, Exit, Fiber, Scope } from "effect"
+ 
+ type DirectoryGate = {
+   epoch: number
+   phase: "open" | "disposing" | "closed"
+   exclusive: number
+   owners: number
++  idle?: Deferred.Deferred<void>
++  closed?: Deferred.Deferred<void>
++  stoppers: Set<() => Effect.Effect<void>>
+ }
+ 
+ // The runner and its instance are process-local. This gate is shared by native
+@@ -15,7 +18,7 @@ const directories = new Map<string, DirectoryGate>()
+ const gate = (directory: string) => {
+   const existing = directories.get(directory)
+   if (existing) return existing
+-  const created: DirectoryGate = { epoch: 0, phase: "open", exclusive: 0, owners: 0 }
++  const created: DirectoryGate = { epoch: 0, phase: "open", exclusive: 0, owners: 0, stoppers: new Set() }
+   directories.set(directory, created)
+   return created
+ }
+@@ -30,6 +33,7 @@ export const beginDispose = (directory: string) => {
+   const current = gate(directory)
+   if (current.phase !== "open" || current.exclusive > 0 || current.owners > 0) return false
+   current.phase = "disposing"
++  current.closed = Deferred.makeUnsafe<void>()
+   return true
+ }
+ 
+@@ -37,14 +41,50 @@ export const finishDispose = (directory: string) => {
+   const current = gate(directory)
+   current.phase = "closed"
+   current.epoch += 1
++  current.stoppers.clear()
++  if (current.closed) Deferred.doneUnsafe(current.closed, Effect.void)
++  current.closed = undefined
++  current.idle = undefined
++}
++
++// Final teardown stops current runs and waits for every owner to release before
++// instance services are disposed. Hot reload uses beginDispose and refuses busy
++// work; only final teardown is allowed to revoke an active turn.
++export const drain = (directory: string) =>
++  Effect.uninterruptible(
++    Effect.gen(function* () {
++      const current = gate(directory)
++      if (current.phase === "closed") return false
++      if (current.phase === "disposing") {
++        if (current.closed) yield* Deferred.await(current.closed)
++        return false
++      }
++      current.phase = "disposing"
++      current.closed = Deferred.makeUnsafe<void>()
++      current.idle = Deferred.makeUnsafe<void>()
++      yield* Effect.forEach([...current.stoppers], (stop) => stop(), { concurrency: "unbounded", discard: true })
++      if (current.owners === 0 && current.exclusive === 0) Deferred.doneUnsafe(current.idle, Effect.void)
++      yield* Deferred.await(current.idle)
++      return true
++    }),
++  )
++
++const signalIdle = (current: DirectoryGate) => {
++  if (current.phase === "disposing" && current.owners === 0 && current.exclusive === 0 && current.idle)
++    Deferred.doneUnsafe(current.idle, Effect.void)
+ }
+ 
+ // This owner spans prompt preparation, the native run, and cancellation cleanup.
+ // Owner prompts retain their usual steering behavior; only automated work is exclusive.
+-export const make = (scope: Scope.Scope, directory: string) => {
++export const make = (
++  scope: Scope.Scope,
++  directory: string,
++  stop: (sessionID: string) => Effect.Effect<boolean | void> = () => Effect.void,
++) => {
+   const directoryGate = gate(directory)
+   const epoch = directoryGate.epoch
+   const owners = new Map<string, number>()
++  const ownerFibers = new Map<string, Set<Fiber.Fiber<unknown, unknown>>>()
+   const active = new Map<string, Request>()
+   const requests = new Map<string, Map<string, Request>>()
+ 
+@@ -52,7 +92,7 @@ export const make = (scope: Scope.Scope, directory: string) => {
+     requestID: string
+     fingerprint: string
+     done: Deferred.Deferred<void>
+-    ready: Deferred.Deferred<Fiber.Fiber<void>>
++    ready: Deferred.Deferred<Fiber.Fiber<void> | null>
+     status: "accepted" | "completed" | "cancelled" | "failed"
+     stopping: boolean
+   }
+@@ -62,28 +102,51 @@ export const make = (scope: Scope.Scope, directory: string) => {
+       if (active.get(sessionID) === request) {
+         active.delete(sessionID)
+         directoryGate.exclusive -= 1
++        signalIdle(directoryGate)
+       }
+       yield* Deferred.succeed(request.done, undefined)
+     })
+ 
+   const available = () => directoryGate.phase === "open" && directoryGate.epoch === epoch
+ 
++  const reserveOwner = (sessionID: string, fiber: Fiber.Fiber<unknown, unknown>) => {
++    owners.set(sessionID, (owners.get(sessionID) ?? 0) + 1)
++    const fibers = ownerFibers.get(sessionID) ?? new Set<Fiber.Fiber<unknown, unknown>>()
++    fibers.add(fiber)
++    ownerFibers.set(sessionID, fibers)
++    directoryGate.owners += 1
++  }
++
++  const releaseOwner = (sessionID: string, fiber: Fiber.Fiber<unknown, unknown>) => {
++    const fibers = ownerFibers.get(sessionID)!
++    fibers.delete(fiber)
++    if (fibers.size === 0) ownerFibers.delete(sessionID)
++    const count = owners.get(sessionID)! - 1
++    if (count === 0) owners.delete(sessionID)
++    else owners.set(sessionID, count)
++    directoryGate.owners -= 1
++    signalIdle(directoryGate)
++  }
++
+   const owner = <A, E, R>(sessionID: string, work: Effect.Effect<A, E, R>) =>
+     Effect.acquireUseRelease(
+-      Effect.sync(() => {
+-        if (!available()) throw new Error("instance is unavailable for owner work")
+-        owners.set(sessionID, (owners.get(sessionID) ?? 0) + 1)
+-        directoryGate.owners += 1
+-        return active.get(sessionID)
+-      }),
+-      (request) => (request ? Deferred.await(request.done).pipe(Effect.andThen(work)) : work),
+-      () =>
++      Effect.flatMap(Effect.fiber, (fiber) =>
+         Effect.sync(() => {
+-          const count = owners.get(sessionID)! - 1
+-          if (count === 0) owners.delete(sessionID)
+-          else owners.set(sessionID, count)
+-          directoryGate.owners -= 1
++          if (!available()) throw new Error("instance is unavailable for owner work")
++          reserveOwner(sessionID, fiber)
++          return { request: active.get(sessionID), fiber }
+         }),
++      ),
++      ({ request }) =>
++        (request ? Deferred.await(request.done) : Effect.void).pipe(
++          Effect.andThen(
++            Effect.suspend(() => {
++              if (!available()) throw new Error("instance is unavailable for owner work")
++              return work
++            }),
++          ),
++        ),
++      ({ fiber }) => Effect.sync(() => releaseOwner(sessionID, fiber)),
+     )
+ 
+   // Abort is different from ordinary owner steering: waiting and then aborting
+@@ -91,24 +154,24 @@ export const make = (scope: Scope.Scope, directory: string) => {
+   // refuse while an exclusive request holds it.
+   const tryOwner = <A, E, R>(sessionID: string, work: Effect.Effect<A, E, R>) =>
+     Effect.acquireUseRelease(
+-      Effect.sync(() => {
+-        if (!available() || active.has(sessionID)) return false
+-        owners.set(sessionID, (owners.get(sessionID) ?? 0) + 1)
+-        directoryGate.owners += 1
+-        return true
+-      }),
++      Effect.flatMap(Effect.fiber, (fiber) =>
++        Effect.sync(() => {
++          if (!available() || active.has(sessionID)) return false
++          reserveOwner(sessionID, fiber)
++          return true
++        }),
++      ),
+       (admitted): Effect.Effect<{ status: "completed"; value: A } | { status: "busy" }, E, R> =>
+         admitted
+           ? Effect.map(work, (value) => ({ status: "completed" as const, value }))
+           : Effect.succeed({ status: "busy" as const }),
+       (admitted) =>
+-        Effect.sync(() => {
+-          if (!admitted) return
+-          const count = owners.get(sessionID)! - 1
+-          if (count === 0) owners.delete(sessionID)
+-          else owners.set(sessionID, count)
+-          directoryGate.owners -= 1
+-        }),
++        Effect.flatMap(Effect.fiber, (fiber) =>
++          Effect.sync(() => {
++            if (!admitted) return
++            releaseOwner(sessionID, fiber)
++          }),
++        ),
+     )
+ 
+   const start = (
+@@ -127,21 +190,24 @@ export const make = (scope: Scope.Scope, directory: string) => {
+           requestID,
+           fingerprint,
+           done: Deferred.makeUnsafe<void>(),
+-          ready: Deferred.makeUnsafe<Fiber.Fiber<void>>(),
++          ready: Deferred.makeUnsafe<Fiber.Fiber<void> | null>(),
+           status: "accepted",
+           stopping: false,
+         }
+         // No suspension between checking ownership and reserving it.
+         active.set(sessionID, request)
+         directoryGate.exclusive += 1
+-        if (!(yield* idle)) {
++        const idleResult = yield* Effect.exit(idle)
++        if (Exit.isFailure(idleResult) || !idleResult.value) {
++          yield* Deferred.succeed(request.ready, null)
+           yield* release(sessionID, request)
++          if (Exit.isFailure(idleResult)) return yield* Effect.failCause(idleResult.cause)
+           return "busy" as const
+         }
+         const history = requests.get(sessionID) ?? new Map<string, Request>()
+         history.set(requestID, request)
+         requests.set(sessionID, history)
+-        const fiber = yield* work.pipe(
++        const fork = yield* work.pipe(
+           Effect.interruptible,
+           Effect.onExit((exit) =>
+             Effect.gen(function* () {
+@@ -151,13 +217,20 @@ export const make = (scope: Scope.Scope, directory: string) => {
+             }),
+           ),
+           Effect.forkIn(scope),
++          Effect.exit,
+         )
+-        yield* Deferred.succeed(request.ready, fiber)
++        if (Exit.isFailure(fork)) {
++          request.status = "failed"
++          yield* Deferred.succeed(request.ready, null)
++          yield* release(sessionID, request)
++          return yield* Effect.failCause(fork.cause)
++        }
++        yield* Deferred.succeed(request.ready, fork.value)
+         return "accepted" as const
+       }),
+     )
+ 
+-  const cancel = (sessionID: string, requestID: string, cleanup: Effect.Effect<void>) =>
++  const cancel = (sessionID: string, requestID: string, cleanup: Effect.Effect<boolean | void>) =>
+     Effect.uninterruptible(
+       Effect.gen(function* () {
+         const request = active.get(sessionID)
+@@ -168,16 +241,68 @@ export const make = (scope: Scope.Scope, directory: string) => {
+         }
+         request.stopping = true
+         const fiber = yield* Deferred.await(request.ready)
+-        // Do not release ownership until the native runner and its tools have stopped.
+-        yield* cleanup
++        if (!fiber) return false
++        // Hold ownership until the native runner's cancellation has settled.
++        const cleanupExit = yield* Effect.exit(cleanup)
+         yield* Fiber.interrupt(fiber)
+-        request.status = "cancelled"
++        const exit = yield* Fiber.await(fiber)
++        // A runner can turn an explicit stop into a successful prompt result.
++        // A success is cancelled only when cleanup observed a running runner.
++        request.status = Exit.isSuccess(exit)
++          ? Exit.isSuccess(cleanupExit) && cleanupExit.value === true
++            ? "cancelled"
++            : "completed"
++          : Cause.hasInterruptsOnly(exit.cause)
++            ? "cancelled"
++            : "failed"
+         yield* release(sessionID, request)
++        if (Exit.isFailure(cleanupExit)) yield* Effect.failCause(cleanupExit.cause)
+         return true
+       }),
+     )
+ 
+-  return { owner, tryOwner, start, cancel }
++  // A human abort targets the request active at this instant. If that request
++  // finishes before cancel checks it, the exact ID prevents a later turn from
++  // being stopped. Without exclusive work, reserve the owner slot first.
++  const abort = (sessionID: string, cleanup: Effect.Effect<boolean | void>) =>
++    Effect.uninterruptible(
++      Effect.gen(function* () {
++        const request = active.get(sessionID)
++        if (request) return yield* cancel(sessionID, request.requestID, cleanup)
++        const result = yield* tryOwner(sessionID, cleanup)
++        return result.status === "completed"
++      }),
++    )
++
++  directoryGate.stoppers.add(() =>
++    Effect.forEach(
++      [...new Set([...owners.keys(), ...active.keys()])],
++      (sessionID) => {
++        const request = active.get(sessionID)
++        if (request)
++          return cancel(sessionID, request.requestID, stop(sessionID)).pipe(
++            Effect.exit,
++            Effect.flatMap((exit) =>
++              Exit.isFailure(exit)
++                ? Effect.logWarning("exclusive stop failed during instance disposal", { sessionID, cause: exit.cause })
++                : Effect.void,
++            ),
++          )
++        return Effect.gen(function* () {
++          const stopped = yield* Effect.exit(stop(sessionID))
++          if (Exit.isFailure(stopped))
++            yield* Effect.logWarning("owner stop failed during instance disposal", { sessionID, cause: stopped.cause })
++          yield* Effect.forEach([...(ownerFibers.get(sessionID) ?? [])], (fiber) => Fiber.interrupt(fiber), {
++            concurrency: "unbounded",
++            discard: true,
++          })
++        })
++      },
++      { concurrency: "unbounded", discard: true },
++    ),
++  )
++
++  return { owner, tryOwner, start, cancel, abort }
+ }
+ 
+ export * as SessionAdmission from "./admission"
+diff --git a/packages/opencode/src/session/prompt.ts b/packages/opencode/src/session/prompt.ts
+index 7d49c56..e84be26 100644
+--- a/packages/opencode/src/session/prompt.ts
++++ b/packages/opencode/src/session/prompt.ts
+@@ -102,7 +102,7 @@ function isOrphanedInterruptedTool(part: SessionV1.ToolPart) {
+ 
+ export interface Interface {
+   readonly cancel: (sessionID: SessionID) => Effect.Effect<void>
+-  readonly cancelOwner: (sessionID: SessionID) => Effect.Effect<void, Session.BusyError>
++  readonly cancelOwner: (sessionID: SessionID) => Effect.Effect<void>
+   readonly promptIdle: (
+     input: PromptInput & { requestID: string },
+   ) => Effect.Effect<"accepted" | "completed" | "cancelled" | "failed" | "busy" | "conflict">
+@@ -140,8 +140,22 @@ const layer = Layer.effect(
+     const scope = yield* Scope.Scope
+     const instruction = yield* Instruction.Service
+     const state = yield* SessionRunState.Service
++    const cancel = Effect.fn("SessionPrompt.cancel")(function* (sessionID: SessionID) {
++      yield* Effect.logInfo("cancel", { "session.id": sessionID })
++      yield* state.cancel(sessionID)
++    })
++    const cancelTracked = Effect.fn("SessionPrompt.cancelTracked")(function* (sessionID: SessionID) {
++      const running = yield* state.assertNotBusy(sessionID).pipe(
++        Effect.as(false),
++        Effect.catchTag("SessionBusyError", () => Effect.succeed(true)),
++      )
++      yield* cancel(sessionID)
++      return running
++    })
+     const admissions = yield* InstanceState.make((ctx) =>
+-      Effect.map(Scope.Scope, (admissionScope) => SessionAdmission.make(admissionScope, ctx.directory)),
++      Effect.map(Scope.Scope, (admissionScope) =>
++        SessionAdmission.make(admissionScope, ctx.directory, (sessionID) => cancelTracked(sessionID as SessionID)),
++      ),
+     )
+     const owner = <A, E, R>(sessionID: SessionID, work: Effect.Effect<A, E, R>) =>
+       InstanceState.get(admissions).pipe(Effect.flatMap((admission) => admission.owner(sessionID, work)))
+@@ -161,15 +175,9 @@ const layer = Layer.effect(
+       } satisfies TaskPromptOps
+     })
+ 
+-    const cancel = Effect.fn("SessionPrompt.cancel")(function* (sessionID: SessionID) {
+-      yield* Effect.logInfo("cancel", { "session.id": sessionID })
+-      yield* state.cancel(sessionID)
+-    })
+-
+     const cancelOwner = Effect.fn("SessionPrompt.cancelOwner")(function* (sessionID: SessionID) {
+       const admission = yield* InstanceState.get(admissions)
+-      const result = yield* admission.tryOwner(sessionID, cancel(sessionID))
+-      if (result.status === "busy") yield* new Session.BusyError({ sessionID })
++      yield* admission.abort(sessionID, cancelTracked(sessionID))
+     })
+ 
+     const resolvePromptParts = Effect.fn("SessionPrompt.resolvePromptParts")(function* (template: string) {
+@@ -1520,11 +1528,11 @@ const layer = Layer.effect(
+     })
+     const cancelRequest = Effect.fn("SessionPrompt.cancelRequest")(function* (sessionID: SessionID, requestID: string) {
+       const admission = yield* InstanceState.get(admissions)
+-      return yield* admission.cancel(sessionID, requestID, cancel(sessionID))
++      return yield* admission.cancel(sessionID, requestID, cancelTracked(sessionID))
+     })
+ 
+     return Service.of({
+-      cancel: (sessionID) => cancelOwner(sessionID).pipe(Effect.orDie),
++      cancel: cancelOwner,
+       cancelOwner,
+       promptIdle,
+       cancelRequest,
+diff --git a/packages/opencode/test/project/instance.test.ts b/packages/opencode/test/project/instance.test.ts
+index 61115cd..1db59c9 100644
+--- a/packages/opencode/test/project/instance.test.ts
++++ b/packages/opencode/test/project/instance.test.ts
+@@ -197,29 +197,73 @@ describe("InstanceStore", () => {
+     }),
+   )
+ 
+-  it.live("refuses reload and disposal while session work owns the instance", () =>
++  it.live("refuses hot reload and drains owner work before final disposal", () =>
+     Effect.gen(function* () {
+       const dir = yield* tmpdirScoped({ git: true })
+       const store = yield* InstanceStore.Service
+       const first = yield* store.load({ directory: dir })
+       const admission = SessionAdmission.make(yield* Scope.Scope, dir)
+       const entered = yield* Deferred.make<void>()
+-      const release = yield* Deferred.make<void>()
+-      const owner = yield* admission.owner(
+-        "session",
+-        Deferred.succeed(entered, undefined).pipe(Effect.andThen(Deferred.await(release))),
+-      ).pipe(Effect.forkScoped)
++      const finalized = yield* Deferred.make<void>()
++      const disposed: string[] = []
++      yield* registerDisposerScoped(async (directory) => {
++        expect(Effect.runSync(Deferred.isDone(finalized))).toBe(true)
++        disposed.push(directory)
++      })
++      const owner = yield* admission
++        .owner(
++          "session",
++          Deferred.succeed(entered, undefined).pipe(
++            Effect.andThen(Effect.never),
++            Effect.ensuring(Deferred.succeed(finalized, undefined)),
++          ),
++        )
++        .pipe(Effect.forkScoped)
+       yield* Deferred.await(entered)
+-      const refused = (effect: Effect.Effect<unknown>) => effect.pipe(
+-        Effect.as(false),
+-        Effect.catchCause(() => Effect.succeed(true)),
+-      )
++      const refused = (effect: Effect.Effect<unknown>) =>
++        effect.pipe(
++          Effect.as(false),
++          Effect.catchCause(() => Effect.succeed(true)),
++        )
+       expect(yield* refused(store.reload({ directory: dir }))).toBe(true)
+-      expect(yield* refused(store.disposeDirectory(dir))).toBe(true)
+       expect(yield* store.load({ directory: dir })).toBe(first)
+-      yield* Deferred.succeed(release, undefined)
+-      yield* Fiber.join(owner)
+-      expect(yield* store.reload({ directory: dir })).not.toBe(first)
++      yield* store.disposeAll()
++      expect(disposed).toEqual([dir])
++      expect(yield* Fiber.await(owner)).toMatchObject({ _tag: "Failure" })
++      expect(yield* admission.start("session", "later", "body", Effect.void)).toBe("busy")
++      expect(yield* store.load({ directory: dir })).not.toBe(first)
++    }),
++  )
++
++  it.live("cancels an exclusive request before running final disposers", () =>
++    Effect.gen(function* () {
++      const dir = yield* tmpdirScoped({ git: true })
++      const store = yield* InstanceStore.Service
++      yield* store.load({ directory: dir })
++      const stopped = yield* Deferred.make<void>()
++      const started = yield* Deferred.make<void>()
++      const finalized = yield* Deferred.make<void>()
++      const disposed: string[] = []
++      const admission = SessionAdmission.make(yield* Scope.Scope, dir, () =>
++        Effect.gen(function* () {
++          expect((yield* InstanceRef)?.directory).toBe(dir)
++          yield* Deferred.succeed(stopped, undefined)
++        }),
++      )
++      yield* registerDisposerScoped(async (directory) => {
++        disposed.push(directory)
++      })
++      const work = Deferred.succeed(started, undefined).pipe(
++        Effect.andThen(Effect.never),
++        Effect.ensuring(Deferred.succeed(finalized, undefined)),
++      )
++      expect(yield* admission.start("session", "wake", "body", work)).toBe("accepted")
++      yield* Deferred.await(started)
++      yield* store.disposeDirectory(dir)
++      expect(disposed).toEqual([dir])
++      expect(yield* Deferred.isDone(finalized)).toBe(true)
++      expect(yield* Deferred.isDone(stopped)).toBe(true)
++      expect(yield* admission.start("session", "wake", "body", Effect.die("duplicate"))).toBe("cancelled")
+     }),
+   )
+ 
+diff --git a/packages/opencode/test/session/admission.test.ts b/packages/opencode/test/session/admission.test.ts
+index e474b9e..b3eb36e 100644
+--- a/packages/opencode/test/session/admission.test.ts
++++ b/packages/opencode/test/session/admission.test.ts
+@@ -97,31 +97,61 @@ test("ordinary owners still overlap for native steering", () =>
+     }),
+   ))
+ 
+-test("legacy abort cannot wait behind an exclusive request and cancel later work", () =>
++test("human abort stops the request active at entry without cancelling later work", () =>
+   run(
+     Effect.gen(function* () {
+       const admission = SessionAdmission.make(yield* Scope.Scope, crypto.randomUUID())
+-      const finish = yield* Deferred.make<void>()
+-      expect(yield* admission.start("session", "wake", "body", Deferred.await(finish))).toBe("accepted")
+-      const abort = yield* admission.tryOwner("session", Effect.die("legacy abort ran during exclusive work"))
+-      expect(abort.status).toBe("busy")
+-      yield* Deferred.succeed(finish, undefined)
+-      const finished = yield* admission.owner("session", Effect.void)
+-      expect(finished).toBeUndefined()
++      const started = yield* Deferred.make<void>()
++      expect(
++        yield* admission.start(
++          "session",
++          "wake",
++          "body",
++          Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never)),
++        ),
++      ).toBe("accepted")
++      yield* Deferred.await(started)
++      expect(yield* admission.abort("session", Effect.void)).toBe(true)
++      expect(yield* admission.start("session", "wake", "body", Effect.die("duplicate"))).toBe("cancelled")
++
++      const next = yield* Deferred.make<void>()
++      expect(yield* admission.start("session", "next", "body", Deferred.await(next))).toBe("accepted")
++      expect(yield* admission.cancel("session", "wake", Effect.die("stale abort cancelled next work"))).toBe(false)
++      yield* Deferred.succeed(next, undefined)
++      yield* admission.owner("session", Effect.void)
+ 
+       const entered = yield* Deferred.make<void>()
+       const release = yield* Deferred.make<void>()
+-      const owner = yield* admission.tryOwner(
+-        "session",
+-        Deferred.succeed(entered, undefined).pipe(Effect.andThen(Deferred.await(release))),
+-      ).pipe(Effect.forkChild)
++      const owner = yield* admission
++        .tryOwner("session", Deferred.succeed(entered, undefined).pipe(Effect.andThen(Deferred.await(release))))
++        .pipe(Effect.forkChild)
+       yield* Deferred.await(entered)
+-      expect(yield* admission.start("session", "next", "body", Effect.die("must not start"))).toBe("busy")
++      expect(yield* admission.start("session", "after-owner", "body", Effect.die("must not start"))).toBe("busy")
+       yield* Deferred.succeed(release, undefined)
+       expect((yield* Fiber.join(owner)).status).toBe("completed")
+     }),
+   ))
+ 
++test("completion during cancellation cleanup retains completed status", () =>
++  run(
++    Effect.gen(function* () {
++      const admission = SessionAdmission.make(yield* Scope.Scope, crypto.randomUUID())
++      const release = yield* Deferred.make<void>()
++      const workFiber = yield* Deferred.make<Fiber.Fiber<unknown, unknown>>()
++      const work = Effect.gen(function* () {
++        yield* Deferred.succeed(workFiber, yield* Effect.fiber)
++        yield* Deferred.await(release)
++      })
++      expect(yield* admission.start("session", "wake", "body", work)).toBe("accepted")
++      const cleanup = Deferred.succeed(release, undefined).pipe(
++        Effect.andThen(Effect.flatMap(Deferred.await(workFiber), Fiber.await)),
++        Effect.asVoid,
++      )
++      expect(yield* admission.cancel("session", "wake", cleanup)).toBe(true)
++      expect(yield* admission.start("session", "wake", "body", Effect.die("duplicate"))).toBe("completed")
++    }),
++  ))
++
+ test("instance teardown is refused while a request or owner runs and seals old admission", () =>
+   run(
+     Effect.gen(function* () {
+@@ -135,10 +165,9 @@ test("instance teardown is refused while a request or owner runs and seals old a
+ 
+       const enteredOwner = yield* Deferred.make<void>()
+       const releaseOwner = yield* Deferred.make<void>()
+-      const owner = yield* admission.owner(
+-        "session",
+-        Deferred.succeed(enteredOwner, undefined).pipe(Effect.andThen(Deferred.await(releaseOwner))),
+-      ).pipe(Effect.forkChild)
++      const owner = yield* admission
++        .owner("session", Deferred.succeed(enteredOwner, undefined).pipe(Effect.andThen(Deferred.await(releaseOwner))))
++        .pipe(Effect.forkChild)
+       yield* Deferred.await(enteredOwner)
+       expect(SessionAdmission.beginDispose(directory)).toBe(false)
+       yield* Deferred.succeed(releaseOwner, undefined)
+diff --git a/packages/opencode/test/session/prompt.test.ts b/packages/opencode/test/session/prompt.test.ts
+index 8f6607d..93570f9 100644
+--- a/packages/opencode/test/session/prompt.test.ts
++++ b/packages/opencode/test/session/prompt.test.ts
+@@ -2555,6 +2555,20 @@ unix(
+         process.kill(Number(yield* Effect.promise(() => Bun.file(nextReady).text())), 0)
+         yield* prompt.cancel(chat.id)
+         yield* Fiber.join(next)
++
++        const humanReady = path.join(directory, "human-abort-ready")
++        yield* llm.tool("bash", {
++          command: `echo $$ > '${humanReady}'; sleep 30`,
++          description: "Human abort fixture",
++        })
++        const human = { ...wake, requestID: "human-abort-wake" }
++        expect(yield* prompt.promptIdle(human)).toBe("accepted")
++        yield* pollWithTimeout(
++          Effect.promise(() => Bun.file(humanReady).exists()).pipe(Effect.map((exists) => (exists ? true : undefined))),
++          "human abort tool did not start",
++        )
++        yield* prompt.cancel(chat.id)
++        expect(yield* prompt.promptIdle(human)).toBe("cancelled")
+       }),
+     ),
+   { git: true },
+diff --git a/packages/sdk/js/src/v2/gen/sdk.gen.ts b/packages/sdk/js/src/v2/gen/sdk.gen.ts
+index 8f9327b..ff5a072 100644
+--- a/packages/sdk/js/src/v2/gen/sdk.gen.ts
++++ b/packages/sdk/js/src/v2/gen/sdk.gen.ts
+@@ -4216,7 +4216,7 @@ export class Session2 extends HeyApiClient {
+   /**
+    * Cancel only the named exclusive prompt
+    *
+-   * Returns after native interruption and tool cleanup. A stale request ID cannot cancel another run.
++   * Returns after native runner cancellation settles. A stale request ID cannot cancel another run. Host confirmation is needed for external process termination.
+    */
+   public cancelRequest<ThrowOnError extends boolean = false>(
+     parameters: {
+diff --git a/packages/sdk/js/src/v2/gen/types.gen.ts b/packages/sdk/js/src/v2/gen/types.gen.ts
+index f25032b..e832b8a 100644
+--- a/packages/sdk/js/src/v2/gen/types.gen.ts
++++ b/packages/sdk/js/src/v2/gen/types.gen.ts
+@@ -2550,12 +2550,6 @@ export type NotFoundError = {
+   }
+ }
+ 
+-export type SessionBusyError = {
+-  _tag: "SessionBusyError"
+-  sessionID: string
+-  message: string
+-}
+-
+ export type TextPartInput = {
+   id?: string
+   type: "text"
+@@ -2604,6 +2598,12 @@ export type SubtaskPartInput = {
+   command?: string
+ }
+ 
++export type SessionBusyError = {
++  _tag: "SessionBusyError"
++  sessionID: string
++  message: string
++}
++
+ export type EventTuiPromptAppend = {
+   type: "tui.prompt.append"
+   properties: {
+@@ -9976,10 +9976,6 @@ export type SessionAbortErrors = {
+    * BadRequest | InvalidRequestError
+    */
+   400: EffectHttpApiErrorBadRequest | InvalidRequestError
+-  /**
+-   * SessionBusyError
+-   */
+-  409: SessionBusyError
+ }
+ 
+ export type SessionAbortError = SessionAbortErrors[keyof SessionAbortErrors]
+-- 
+2.43.0
+
+
+From 97979669a04e197f5817f6412072399a0fc742fa Mon Sep 17 00:00:00 2001
+From: halbritt <halbritt@gmail.com>
+Date: Thu, 24 Sep 2026 02:15:12 -0700
+Subject: [PATCH 3/3] fix(session): bound final instance drain
+
+---
+ packages/opencode/src/session/admission.ts    | 109 ++++++++++++------
+ .../opencode/test/project/instance.test.ts    |  29 +++++
+ .../opencode/test/session/admission.test.ts   |  16 +++
+ 3 files changed, 118 insertions(+), 36 deletions(-)
+
+diff --git a/packages/opencode/src/session/admission.ts b/packages/opencode/src/session/admission.ts
+index 87b637f..c7c9b93 100644
+--- a/packages/opencode/src/session/admission.ts
++++ b/packages/opencode/src/session/admission.ts
+@@ -1,4 +1,9 @@
+-import { Cause, Deferred, Effect, Exit, Fiber, Scope } from "effect"
++import { Cause, Deferred, Duration, Effect, Exit, Fiber, Option, Scope } from "effect"
++
++type Stopper = {
++  pending: () => string[]
++  stop: () => Effect.Effect<void>
++}
+ 
+ type DirectoryGate = {
+   epoch: number
+@@ -7,7 +12,7 @@ type DirectoryGate = {
+   owners: number
+   idle?: Deferred.Deferred<void>
+   closed?: Deferred.Deferred<void>
+-  stoppers: Set<() => Effect.Effect<void>>
++  stoppers: Set<Stopper>
+ }
+ 
+ // The runner and its instance are process-local. This gate is shared by native
+@@ -26,6 +31,7 @@ const gate = (directory: string) => {
+ export const openInstance = (directory: string) => {
+   const current = gate(directory)
+   if (current.phase === "disposing") throw new Error("instance disposal is in progress")
++  if (current.owners > 0 || current.exclusive > 0) throw new Error("previous instance still has active session work")
+   if (current.phase === "closed") current.phase = "open"
+ }
+ 
+@@ -47,24 +53,47 @@ export const finishDispose = (directory: string) => {
+   current.idle = undefined
+ }
+ 
+-// Final teardown stops current runs and waits for every owner to release before
+-// instance services are disposed. Hot reload uses beginDispose and refuses busy
+-// work; only final teardown is allowed to revoke an active turn.
+-export const drain = (directory: string) =>
+-  Effect.uninterruptible(
++// Final teardown revokes admission and waits for active work up to a deadline
++// before instance services are disposed. Hot reload uses beginDispose and
++// refuses busy work; only final teardown revokes an active turn.
++export const drain = (directory: string, timeout: Duration.Input = "10 seconds") =>
++  Effect.uninterruptibleMask((restore) =>
+     Effect.gen(function* () {
+       const current = gate(directory)
+       if (current.phase === "closed") return false
+       if (current.phase === "disposing") {
+-        if (current.closed) yield* Deferred.await(current.closed)
++        if (current.closed) {
++          const closed = yield* restore(Deferred.await(current.closed).pipe(Effect.timeoutOption(timeout))).pipe(
++            Effect.exit,
++          )
++          if (Exit.isFailure(closed) || Option.isNone(closed.value))
++            yield* Effect.logWarning("concurrent instance disposal deadline reached", { directory })
++        }
+         return false
+       }
+       current.phase = "disposing"
+       current.closed = Deferred.makeUnsafe<void>()
+       current.idle = Deferred.makeUnsafe<void>()
+-      yield* Effect.forEach([...current.stoppers], (stop) => stop(), { concurrency: "unbounded", discard: true })
++      const stopping = yield* Effect.forEach([...current.stoppers], (stopper) => stopper.stop(), {
++        concurrency: "unbounded",
++        discard: true,
++      }).pipe(Effect.forkDetach({ startImmediately: true, uninterruptible: false }))
+       if (current.owners === 0 && current.exclusive === 0) Deferred.doneUnsafe(current.idle, Effect.void)
+-      yield* Deferred.await(current.idle)
++      const settled = yield* restore(
++        Effect.all([Fiber.await(stopping), Deferred.await(current.idle)], { concurrency: "unbounded" }).pipe(
++          Effect.timeoutOption(timeout),
++        ),
++      ).pipe(Effect.exit)
++      if (Exit.isFailure(settled) || Option.isNone(settled.value)) {
++        const sessions = [...new Set([...current.stoppers].flatMap((stopper) => stopper.pending()))]
++        yield* Effect.logWarning("instance drain deadline reached", {
++          directory,
++          sessions,
++          owners: current.owners,
++          exclusive: current.exclusive,
++        })
++        yield* Fiber.interrupt(stopping).pipe(Effect.forkDetach({ startImmediately: true, uninterruptible: false }))
++      }
+       return true
+     }),
+   )
+@@ -274,33 +303,41 @@ export const make = (
+       }),
+     )
+ 
+-  directoryGate.stoppers.add(() =>
+-    Effect.forEach(
+-      [...new Set([...owners.keys(), ...active.keys()])],
+-      (sessionID) => {
+-        const request = active.get(sessionID)
+-        if (request)
+-          return cancel(sessionID, request.requestID, stop(sessionID)).pipe(
+-            Effect.exit,
+-            Effect.flatMap((exit) =>
+-              Exit.isFailure(exit)
+-                ? Effect.logWarning("exclusive stop failed during instance disposal", { sessionID, cause: exit.cause })
+-                : Effect.void,
+-            ),
+-          )
+-        return Effect.gen(function* () {
+-          const stopped = yield* Effect.exit(stop(sessionID))
+-          if (Exit.isFailure(stopped))
+-            yield* Effect.logWarning("owner stop failed during instance disposal", { sessionID, cause: stopped.cause })
+-          yield* Effect.forEach([...(ownerFibers.get(sessionID) ?? [])], (fiber) => Fiber.interrupt(fiber), {
+-            concurrency: "unbounded",
+-            discard: true,
++  directoryGate.stoppers.add({
++    pending: () => [...new Set([...owners.keys(), ...active.keys()])],
++    stop: () =>
++      Effect.forEach(
++        [...new Set([...owners.keys(), ...active.keys()])],
++        (sessionID) => {
++          const request = active.get(sessionID)
++          if (request)
++            return cancel(sessionID, request.requestID, stop(sessionID)).pipe(
++              Effect.exit,
++              Effect.flatMap((exit) =>
++                Exit.isFailure(exit)
++                  ? Effect.logWarning("exclusive stop failed during instance disposal", {
++                      sessionID,
++                      cause: exit.cause,
++                    })
++                  : Effect.void,
++              ),
++            )
++          return Effect.gen(function* () {
++            const stopped = yield* Effect.exit(stop(sessionID))
++            if (Exit.isFailure(stopped))
++              yield* Effect.logWarning("owner stop failed during instance disposal", {
++                sessionID,
++                cause: stopped.cause,
++              })
++            yield* Effect.forEach([...(ownerFibers.get(sessionID) ?? [])], (fiber) => Fiber.interrupt(fiber), {
++              concurrency: "unbounded",
++              discard: true,
++            })
+           })
+-        })
+-      },
+-      { concurrency: "unbounded", discard: true },
+-    ),
+-  )
++        },
++        { concurrency: "unbounded", discard: true },
++      ),
++  })
+ 
+   return { owner, tryOwner, start, cancel, abort }
+ }
+diff --git a/packages/opencode/test/project/instance.test.ts b/packages/opencode/test/project/instance.test.ts
+index 1db59c9..55c87df 100644
+--- a/packages/opencode/test/project/instance.test.ts
++++ b/packages/opencode/test/project/instance.test.ts
+@@ -267,6 +267,35 @@ describe("InstanceStore", () => {
+     }),
+   )
+ 
++  it.live(
++    "runs final disposers when an exclusive stop never settles",
++    () =>
++      Effect.gen(function* () {
++        const dir = yield* tmpdirScoped({ git: true })
++        const store = yield* InstanceStore.Service
++        yield* store.load({ directory: dir })
++        const started = yield* Deferred.make<void>()
++        const disposed: string[] = []
++        const admission = SessionAdmission.make(yield* Scope.Scope, dir, () => Effect.never)
++        yield* registerDisposerScoped(async (directory) => {
++          disposed.push(directory)
++        })
++        expect(
++          yield* admission.start(
++            "session",
++            "wake",
++            "body",
++            Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never)),
++          ),
++        ).toBe("accepted")
++        yield* Deferred.await(started)
++        yield* store.disposeDirectory(dir)
++        expect(disposed).toEqual([dir])
++        expect(() => SessionAdmission.openInstance(dir)).toThrow("previous instance still has active session work")
++      }),
++    20_000,
++  )
++
+   it.live("stale dispose does not delete an in-flight reload", () =>
+     Effect.gen(function* () {
+       const dir = yield* tmpdirScoped({ git: true })
+diff --git a/packages/opencode/test/session/admission.test.ts b/packages/opencode/test/session/admission.test.ts
+index b3eb36e..de850e8 100644
+--- a/packages/opencode/test/session/admission.test.ts
++++ b/packages/opencode/test/session/admission.test.ts
+@@ -183,3 +183,19 @@ test("instance teardown is refused while a request or owner runs and seals old a
+       expect(yield* next.start("session", "fresh", "body", Effect.void)).toBe("accepted")
+     }),
+   ))
++
++test("final drain reaches its deadline when a stop never settles", () =>
++  run(
++    Effect.gen(function* () {
++      const directory = crypto.randomUUID()
++      const admission = SessionAdmission.make(yield* Scope.Scope, directory, () => Effect.never)
++      const started = yield* Deferred.make<void>()
++      const work = Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never))
++      expect(yield* admission.start("session", "wake", "body", work)).toBe("accepted")
++      yield* Deferred.await(started)
++      expect(yield* SessionAdmission.drain(directory, "20 millis")).toBe(true)
++      expect(yield* admission.start("session", "later", "body", Effect.void)).toBe("busy")
++      SessionAdmission.finishDispose(directory)
++      expect(() => SessionAdmission.openInstance(directory)).toThrow("previous instance still has active session work")
++    }),
++  ))
+-- 
+2.43.0
+

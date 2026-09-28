@@ -206,6 +206,8 @@ def run():
         run_dir = STATE / 'runs' / run_id
         run_dir.mkdir(parents=True, mode=0o700)
         policy = (CONFIG / 'policy.md').read_text()
+        hermes_source = read_json(STATE / 'hermes-installed.json', {}).get(
+            'source', '/home/halbritt/.hermes/hermes-agent')
         status = {'run_id': run_id, 'host': settings['host'], 'stage': settings['stage'],
                   'started': time.time(), 'status': 'running', 'recording': 'pending',
                   'policy_sha256': hashlib.sha256(policy.encode()).hexdigest(),
@@ -213,7 +215,8 @@ def run():
                   'profile_sha256': hashlib.sha256((CONFIG / 'hermes.yaml').read_bytes()).hexdigest(),
                   'launcher_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   'infra_revision': command(['git', '-C', REPO, 'rev-parse', 'HEAD']).stdout.strip(),
-                  'hermes_revision': command(['git', '-C', '/home/halbritt/.hermes/hermes-agent',
+                  'hermes_source': hermes_source,
+                  'hermes_revision': command(['git', '-C', hermes_source,
                                               'rev-parse', 'HEAD']).stdout.strip(),
                   'runtime': read_json(CONFIG / 'runtime.json', {}),
                   'provider': settings['provider'], 'model': settings['model'],

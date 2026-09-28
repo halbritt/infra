@@ -62,3 +62,22 @@ Host: proximal. Policy: maintenance-v2. Run status: completed.
   Activation: installed (helper suppresses package-script service restarts; kernel/libc activation requires the deferred reboot, so those are installed but not yet active; userspace library packages took effect on install).
   Evidence: `/var/lib/update-bot/runs/563e6f35-0993-4491-8b46-8a71a866119e/operations/c27398f3-4ce9-4bf3-b44e-e5eebf927b0c`.
 
+
+
+## 2026-09-28 — owner-directed patch carry and initial broader inventory
+
+OpenCode is installed as 1.18.33+cairn.9797966 with all three carried patches.
+Hermes's four changes are ported to upstream 79a6fd3e as 9b57ee21, selected for new
+CLI launches through a versioned venv; existing CLI/gateway retain their original
+files and processes. A narrowly required Cairn abort-client compatibility fix is
+published as d08bba3 and installed without service restart. The policy now
+requires staging/porting/testing rather than a patch-preservation hold, and the
+role requires periodic broader Python/tool inventory. See VERIFICATION.md and
+PATCHED-UPDATES.md for tests, failed-then-repaired checks, rollback and activation
+limits. Initial inventory receipt: /var/lib/update-bot/inventory-2026-09-28.json.
+
+
+Subsequent gateway activation in the same session: native reversible drain proved
+zero active chat/cron/API tasks; SIGUSR1 transitioned the gateway to9b57ee21,
+Slack reconnected, and the marker was removed. Separate interactive CLI preserved.
+Receipt: /var/lib/update-bot/hermes-gateway-activation.json.

@@ -9,8 +9,9 @@ Approved targets and channels:
 - Hermes: the existing git installation, retaining its carried commits and local
   integration patches. Use native update planning and supported methods. Never
   reset, discard/stash away, or silently replace local work. Do not invoke an
-  updater that restarts busy gateways or interactive sessions. Stage/defer only
-  the affected target when active mutable runtime files cannot be preserved.
+  updater that restarts busy gateways or interactive sessions. Stage and test an
+  isolated candidate even when activation must wait. Use a versioned installation
+  for new launches while retaining the files used by existing processes.
 - wigolo: existing upstream-main source build -> pack -> global npm installation;
   preserve its provider configuration, data/cache and current source provenance.
   Do not replace the newer source build with an older published npm version.
@@ -39,8 +40,11 @@ are allowed to finish while the launcher retains the host lock.
 
 No broad apt upgrade, distribution release upgrade, database migration, destructive
 cleanup, autoremove, reboot, or disruptive service restart. No edits to unrelated
-projects or active development work. A dirty/diverged source checkout is a reason
-to preserve it and defer that target, not a reason to stop all other maintenance.
+projects or active development work. A dirty/diverged source checkout must be preserved. Work in an isolated candidate
+from the installed source revision and carry its patches onto the selected upstream.
+Patch presence alone is never a deferral reason. Resolve routine conflicts and test
+the behavior those patches protect. A genuine blocker must name the conflicting
+behavior, failed check, missing capability, or unsafe activation and its next step.
 A live process alone does not forbid a supported versioned/atomic binary install
 that preserves its current executable and resources. Never kill or interrupt
 sessions to make an update convenient; defer when lazy-loaded files would change.
@@ -60,3 +64,9 @@ Repo publication is owned by the non-model publisher. The agent reports attempte
 completed, verified, failed, rolled-back and activation-deferred states accurately.
 No-op runs get a checkpoint without an empty Git commit. Slack notifications carry
 new meaningful outcomes or specific blockers; never ask to reapprove this mandate.
+
+On 2026-09-28 the owner explicitly rejected indefinite deferral to preserve patches.
+Preparation, verification and activation are separate outcomes. Preserve unfinished
+candidates and their exact source/patch pins across runs; resume them instead of
+repeating the same inspection. Budget exhaustion requires the measured work done,
+remaining work, artifact path and next operation, not a fresh generic deferral.

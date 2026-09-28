@@ -1385,3 +1385,13 @@ Tailnet-only static leaderboard for the CAPLAB advisory campaign:
 See [`config/caplab-leaderboard/`](config/caplab-leaderboard/README.md).
 
 - 2026-09-03: `striatum-exchange-gc.service` drop-in `striatum-exchange-gc.service.d-override.conf` sets the retention window to 6 h (was the unit's 72 h) per Principal instruction RQ-373383 §4.5, standing until STRNEX-73 lands; user-scope, `daemon-reload` applied.
+
+
+## 2026-09-28 — patched harness maintenance
+
+Installed OpenCode 1.18.33 with its local patches and a new Hermes CLI generation
+with the four Cairn changes ported forward. Existing Hermes sessions/gateway are
+preserved. Updated maintenance policy requires patch carry and broader periodic
+inventory. See config/update-bot/VERIFICATION.md for evidence and remaining gateway
+activation evidence. The gateway later transitioned through a verified idle native
+drain; the interactive CLI remained alive. No reboot or inference restart occurred.

@@ -110,3 +110,14 @@ to drain; remove the installed units/polkit rule and scripts only after idle. Ke
 runtime/OS/Cairn evidence. Reverting the automation does **not** downgrade updated
 software. Original design and first-stage evidence remain in `ARCHITECTURE.md`,
 `INITIAL-SCOPE.md`, and `VERIFICATION.md` as historical provenance.
+
+
+## Carried patches and discovery
+
+The owner's 2026-09-28 correction requires carrying patches forward instead of
+indefinitely deferring patched targets. [PATCHED-UPDATES.md](PATCHED-UPDATES.md)
+records the installed Hermes/OpenCode generations, preserved consumers, patch
+artifacts, checks and rollback. The role also requires dated broader inventory
+at least weekly, including Python interpreters, tools and environment libraries;
+project-pinned libraries remain report-only. The first bounded inventory receipt
+is `/var/lib/update-bot/inventory-2026-09-28.json` and is summarized in Cairn.

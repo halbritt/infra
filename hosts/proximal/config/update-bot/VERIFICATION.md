@@ -152,3 +152,48 @@ CLI startup were verified against that snapshot.
   Slack message `1790562359.684729` to `D0BMCL7T2FM`; API readback confirmed its run
   ID and Git commit link. Both timers are enabled and active again, with the next
   daily maintenance run on 2026-09-28 shortly after 06:30 America/Los_Angeles.
+
+
+## 2026-09-28: carry patches rather than blanket deferral
+
+- OpenCode 1.18.33: three patches applied cleanly, typecheck/build passed,
+  102 native tests passed (one skipped), 50 Cairn socket/bridge tests passed.
+  Actual installed binary is `1.18.33+cairn.9797966`; hash and rollback are in
+  `/var/lib/update-bot/opencode-installed.json`. No OpenCode process was found
+  at activation; the atomic replacement mechanism preserves existing mappings.
+- Hermes upstream `79a6fd3e` plus `9b57ee21`: four local commits ported to the
+  current modules, 239 native tests passed (four platform skips). New CLI
+  launches select this source and its Python 3.14.6 venv. Existing CLI and gateway
+  source/venv and processes were preserved. Gateway activation is not claimed.
+- The first Hermes bridge run exposed a four-second cancellation response
+  timeout and fixture incompatibilities. Cairn `d08bba3` fixes the bounded wait
+  and fixture APIs; 71 combined tests pass against new Hermes, 22 cancellation
+  tests against old Hermes, 21 socket-client tests, and `make check` pass.
+  Logs retain both failures and repairs under `/var/lib/update-bot/staging/`.
+- Broader discovery read 1,754 dpkg package records plus npm/uv/pipx metadata and
+  44 venvs (1,933 library records, including archives). This is an installed
+  inventory, not an assertion that those libraries are current or unpinned.
+  Scope/depth and unvisited directories are recorded in the JSON receipt.
+- Updated policy/role require isolated patch carry, behavior verification,
+  separate activation and periodic broader discovery. No new model-driven daily
+  run was triggered solely to test prompt instructions; future adherence remains
+  observable in run receipts. A real-model round trip on new Hermes is untested.
+
+
+### Gateway activation, later in the same maintenance session
+
+The native reversible drain watcher produced a fresh status for old PID1378353
+with `gateway_state=draining` and aggregate chat/cron/API `active_agents=0`.
+Installed canonical `config/hermes/gateway-generation.conf` as the user-unit
+50-generation.conf drop-in, reloaded systemd and requested native SIGUSR1 restart.
+New PID785678 reports source9b57ee21, running and Slack connected. The drain marker
+was removed and separate interactive CLI2369575 remains alive on its old source.
+Exact receipt: `/var/lib/update-bot/hermes-gateway-activation.json`. This supersedes
+the earlier pending-gateway status; no active turn was interrupted or force-killed.
+Native `code_version` is unknown, while the runtime's full `code_sha` is recorded.
+
+Review method: Pincite packet pkt-f21cd24b2aec64e7 supplied repository-contract
+precedence, explicit invariants and default behavior preservation. Typed evidence
+satisfied those selected obligations. Forty-eight nonselected generic obligations
+remain outside this bounded result, including full CI-only build provenance and
+host-wide dependency/CVE qualification; neither is claimed by these checks.

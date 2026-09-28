@@ -11,15 +11,34 @@ software; pull relevant results with complete pull arguments. If recall or inten
 recording is unavailable, do not begin mutations. Native package managers own their
 transactions; use existing update mechanisms and locks instead of inventing them.
 
+Treat the named targets as priorities, not the inventory boundary. Recall
+"proximal update-bot inventory" alongside the checkpoint. On the first run and at
+least weekly, do a broader read-only survey: OS/package-manager ownership, global
+npm packages and standalone harness launchers, uv-managed Python interpreters,
+uv tools, pipx tools, user/site packages, and Python virtual environments under
+~/git, ~/.hermes and the installed tool roots. Inspect package metadata and native
+list commands; do not execute arbitrary project code, dump configs/credentials,
+or follow unbounded filesystem trees. Record paths, versions, manager/owner,
+update method, whether project-pinned, active consumers and coverage limits.
+Save concise inventory findings and the dated local evidence path in Cairn;
+subsequent runs investigate changes and unresolved discoveries. Missing or
+inaccessible managers are unknown, not an empty inventory. Shared project-pinned
+libraries and environment lockfiles are report-only; never run a blanket pip
+upgrade. Ubuntu-owned Python and libraries use the OS helper. Surface independently
+maintained Python/tool update candidates and any missing write authority explicitly.
+
 Prioritize Hermes, wigolo, llama.cpp, Codex, Claude Code, OpenCode, Agy, then Ubuntu
 OS updates. Batch independent inspections. Inspect latest release/channel/provenance
 and active process dependencies. Up-to-date targets are successful no-ops. Do not
 interpret a dirty checkout or busy runtime as permission to lose local work. Preserve
-Cairn's Codex wrapper and the Hermes carried commits. Do not query an isolated
+Cairn's Codex wrapper and the carried Hermes/OpenCode behavior. Do not query an isolated
 HERMES_HOME's empty cron list as if it described the interactive gateway; inspect
 only metadata in /home/halbritt/.hermes/cron/jobs.json when relevant.
 
-Establish installed provenance separately from the source checkout. For wigolo,
+Establish installed provenance separately from the source checkout. Read
+/var/lib/update-bot/{hermes,opencode}-installed.json when present and corroborate
+its launcher/artifact hashes and version. The old Hermes checkout may still belong
+to live sessions while the default launcher points to a newer versioned install. For wigolo,
 read config/wigolo/SOURCE_COMMIT and corroborate it against installed artifacts;
 neither matching npm version 0.2.1 nor a current source checkout proves the installed
 source build is current. Compare the installed source revision with upstream main.
@@ -27,9 +46,23 @@ For Agy, bundled changelog/version alone cannot establish the online latest vers
 inspect the native update help/channel and report unknown if it cannot be checked.
 Never call an unchecked target current, including in the Slack notification.
 
+For patched targets, read config/update-bot/PATCHED-UPDATES.md. Inspect the actual
+installed source pin and patch series; fetch enough ancestry in an isolated clone
+to distinguish local commits from shallow-history artifacts. Check whether upstream
+already incorporates a patch. Port remaining changes to the current runtime entry
+points, build and run focused behavior tests. Do not leave a copied old method that
+passes tests while the live runtime uses a different entry point. Preserve native
+admission, cancellation identity and the user's composer draft. Stage this work
+regardless of whether the gateway is busy. Activate verified versioned/atomic
+artifacts when their old executable and lazy-loaded resources remain available;
+otherwise report only the specific activation step as pending.
+Record candidate location, upstream/base/patch pins, checks/results, rollback and
+next operation in the checkpoint. An unchanged patch-preservation deferral is not
+progress. Surface a precise failed check or conflict after attempting the port.
+
 All host mutations use the generic operation envelope. Write a JSON request under
 /var/lib/update-bot/runs/RUN_ID/requests/NAME.json with exactly:
-{"run_id":"RUN_ID","target":"opencode","argv":["npm","install","-g","opencode-ai@EXACT_VERSION"],"before":"observed old version and active-work check","recovery":"established recovery or stated limits","verify_argv":["/path/to/appropriate/capability/check"]}
+{"run_id":"RUN_ID","target":"opencode","argv":["/path/to/reviewed-native-update-command","EXACT_VERSION"],"before":"observed old version and active-work check","recovery":"established recovery or stated limits","verify_argv":["/path/to/appropriate/capability/check"]}
 Then call `python3 /usr/local/lib/update-bot/operation.py REQUEST.json` using the
 terminal tool with background=true. Poll with the process tool; read the returned
 operations/UUID/{install.log,verify.log,result.json}. Never report success before

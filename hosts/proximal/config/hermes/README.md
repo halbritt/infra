@@ -160,3 +160,22 @@ hermes --yolo -z 'run hostname via your terminal tool and reply with only its ou
 `~/.local/bin/hermes`. Nothing outside those two paths is touched except the apt-installed
 ffmpeg, which is independently useful and can stay. No systemd units, no listeners, no
 changes to `~/.bashrc` — `~/.local/bin` was already on `PATH`.
+
+
+## Versioned CLI update — 2026-09-28
+
+New `hermes` launches select upstream `79a6fd3e` with Cairn port `9b57ee21`
+(Python 3.14.6), installed at `/var/lib/update-bot/staging/hermes-carry`.
+[hermes-launcher](hermes-launcher) is canonical for `~/.local/bin/hermes`.
+`SOURCE_COMMIT` names this default CLI generation. Preserve that directory as an
+installed runtime; it is not disposable scratch.
+
+The separate active CLI still uses the original `~/.hermes/hermes-agent` and its
+venv; it was not restarted. The gateway was transitioned after native reversible
+drain reported zero active chat/cron/API tasks. It now reports source9b57ee21,
+running, and Slack connected. [gateway-generation.conf](gateway-generation.conf)
+is installed as `~/.config/systemd/user/hermes-gateway.service.d/50-generation.conf`;
+reload the user manager after editing. It selects the default launcher for future
+starts. Preserve the old venv for the active CLI and the unit's existing
+ExecStopPost cleanup. Receipt: `/var/lib/update-bot/hermes-gateway-activation.json`.
+See [patch procedure and evidence](../update-bot/PATCHED-UPDATES.md).
