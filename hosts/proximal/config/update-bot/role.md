@@ -19,6 +19,14 @@ Cairn's Codex wrapper and the Hermes carried commits. Do not query an isolated
 HERMES_HOME's empty cron list as if it described the interactive gateway; inspect
 only metadata in /home/halbritt/.hermes/cron/jobs.json when relevant.
 
+Establish installed provenance separately from the source checkout. For wigolo,
+read config/wigolo/SOURCE_COMMIT and corroborate it against installed artifacts;
+neither matching npm version 0.2.1 nor a current source checkout proves the installed
+source build is current. Compare the installed source revision with upstream main.
+For Agy, bundled changelog/version alone cannot establish the online latest version:
+inspect the native update help/channel and report unknown if it cannot be checked.
+Never call an unchecked target current, including in the Slack notification.
+
 All host mutations use the generic operation envelope. Write a JSON request under
 /var/lib/update-bot/runs/RUN_ID/requests/NAME.json with exactly:
 {"run_id":"RUN_ID","target":"opencode","argv":["npm","install","-g","opencode-ai@EXACT_VERSION"],"before":"observed old version and active-work check","recovery":"established recovery or stated limits","verify_argv":["/path/to/appropriate/capability/check"]}
@@ -30,6 +38,10 @@ llama.cpp, codex, claude, opencode, agy, gemini, os. Choose commands yourself fr
 supported native procedures. The envelope is mandatory even for a source fetch
 that changes repository refs. Read-only network metadata and git ls-remote need
 no operation. Do not invoke npm/npx commands that install while pretending to read.
+In particular, `llama-cpp-update --check` is NOT read-only: it fetches Git refs and
+takes the native update lock. Use `git ls-remote` plus local `git rev-parse` for
+discovery, or run that updater through the operation envelope. Read native scripts
+before treating their check/plan/dry-run flags as observation-only.
 
 For Ubuntu OS maintenance, use argv ["systemctl","start","update-bot-os.service"].
 The fixed privileged helper refreshes metadata and applies allowed Ubuntu updates;
@@ -42,6 +54,11 @@ list also contains held third-party or database packages.
 Start no more operations once 15 minutes have elapsed. Native transactions already
 admitted drain beyond that deadline. Prefer one target at a time and leave time
 for verification and final report. Do not start a known long build near deadline.
+Check the host clock before claiming the deadline prevents work, and record elapsed
+time and the build-duration evidence. Investigate long-build targets early; admitted
+native work may safely finish after the model deadline. Process uptime alone does
+not prove a gateway is busy; inspect activity when possible, or report that safe
+activation could not be established instead of inventing active traffic.
 Never kill an active package manager when the model's budget expires. If previous
 intent lacks a result, inspect native processes and actual target state before any
 new mutation. Record reconciliation evidence in that operation's reconciled.json

@@ -84,3 +84,36 @@ uses a test executable; it is not a claim of an induced OpenRouter outage.
 units; it also reported an existing unrelated `systemd-resolved` drop-in warning.
 No verified software-update acceptance is claimed: this deployment has no such
 authority and performs discovery only.
+
+
+## Maintenance-v2 — software and OS updates
+
+Owner authority was expanded on 2026-09-27 to updates for Hermes, wigolo,
+llama.cpp, installed coding harnesses and the underlying OS. Implementation
+`f5e3925` was merged to master, pushed and installed. The model uses a separate
+root-owned Hermes snapshot at `/opt/update-bot/hermes-9904fd411587`; imports and
+CLI startup were verified against that snapshot.
+
+- 25 repository tests and the infrastructure validator passed. Added checks cover
+  target/run/deadline admission, native operation locks, the fixed OS start command,
+  the root helper remaining active after its client exits, protected package/origin
+  policy, and rejection of model verification claims lacking a native receipt.
+- A temporary service copied the installed maintenance unit's filesystem and
+  privilege controls. Writing to the infra checkout failed with EROFS (30), writing
+  policy failed with EACCES (13), an approved npm-prefix sentinel could be created
+  and removed, and `sudo -n true` exited 1. The temporary service was removed.
+- Run `563e6f35-0993-4491-8b46-8a71a866119e` admitted OS operation
+  `c27398f3-4ce9-4bf3-b44e-e5eebf927b0c` through the envelope and exact polkit grant.
+  Native execution and version/audit verification both exited zero. The helper
+  upgraded 13 Ubuntu packages, held 28 packages outside policy, and recorded the
+  existing reboot requirement. Evidence: `/var/lib/update-bot-os/1790561651538312764`.
+- Independent `dpkg --audit` was empty, the temporary `policy-rc.d` was removed,
+  and inference remained healthy at `:8081/health` with its original PID 1126876
+  and activation timestamp 2026-09-22 22:40:05 PDT. No inference restart or reboot
+  was performed. Installed binaries and live activation remain distinct.
+- During this commissioning run the model invoked `llama-cpp-update --check`
+  directly. This updated remote Git refs outside the required intent envelope;
+  it did not build/install or restart llama.cpp. The role now explicitly names
+  that misleading flag as mutating and directs discovery to `git ls-remote`.
+  The envelope rule is an agent policy within writable prefixes, not an enforced
+  per-command filesystem capability boundary. Retain this limitation visibly.
