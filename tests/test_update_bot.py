@@ -180,11 +180,14 @@ class MaintenanceBoundaryTests(unittest.TestCase):
             root = Path(directory)
             folder = root / 'operations' / 'op1'
             folder.mkdir(parents=True)
-            (folder / 'intent.json').write_text(json.dumps(request))
-            with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='activating\n')):
-                self.assertTrue(bot.operations_active(root))
-            with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='inactive\n')):
-                self.assertFalse(bot.operations_active(root))
+            for target, unit in [('os', 'update-bot-os.service'),
+                                 ('hermes', 'update-bot-hermes-activate.service')]:
+                (folder / 'intent.json').write_text(json.dumps(dict(
+                    request, target=target, argv=['systemctl', 'start', unit])))
+                with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='activating\n')):
+                    self.assertTrue(bot.operations_active(root))
+                with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='inactive\n')):
+                    self.assertFalse(bot.operations_active(root))
 
     def test_claimed_verification_requires_native_receipt(self):
         with tempfile.TemporaryDirectory() as directory:

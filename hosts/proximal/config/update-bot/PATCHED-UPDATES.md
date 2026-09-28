@@ -20,13 +20,21 @@ The gateway now selects the versioned launcher through
 `~/.config/systemd/user/hermes-gateway.service.d/50-generation.conf` (canonical
 `config/hermes/gateway-generation.conf`). Native reversible drain produced a
 fresh matching-PID status with zero chat/cron/API work before SIGUSR1. New gateway
-PID785678 reports source9b57ee21, running and Slack connected; the marker was
+PID 785678 reports source `9b57ee21`, running and Slack connected; the marker was
 removed. Receipt: `/var/lib/update-bot/hermes-gateway-activation.json`.
 The unit's pre-existing ExecStopPost cleanup still uses the old venv; retain it
-until that dependency is explicitly migrated. The maintenance sandbox cannot
-write the gateway profile or reach the user service manager, so future gateway
-activation requires this operator/native-drain procedure or a separately reviewed
-narrow activation boundary. It must not be reported as a patch-preservation hold.
+until that dependency is explicitly migrated.
+
+The maintenance model still cannot write the gateway profile or reach the user
+service manager. A fixed root-owned helper, `update-bot-hermes-activate.service`,
+runs as the owner and exposes only this native activation procedure. Polkit permits
+starting this unit, not arbitrary user-manager commands. It uses the frozen native
+drain API, verifies the selected source/launcher against the installed receipt,
+requires fresh matching-PID zero-work status, reloads once and verifies the new
+source/PID/Slack state. Busy or uncertain state refuses activation. It releases
+only its own drain, records failure, and never force-kills or automatically retries.
+The generic operation envelope records intent/outcome and retains the host lock
+while this separately managed helper drains.
 
 OpenCode's installed ELF is
 `~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe`; SHA-256

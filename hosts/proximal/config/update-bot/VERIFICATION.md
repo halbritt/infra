@@ -182,12 +182,12 @@ CLI startup were verified against that snapshot.
 
 ### Gateway activation, later in the same maintenance session
 
-The native reversible drain watcher produced a fresh status for old PID1378353
+The native reversible drain watcher produced a fresh status for old PID 1378353
 with `gateway_state=draining` and aggregate chat/cron/API `active_agents=0`.
 Installed canonical `config/hermes/gateway-generation.conf` as the user-unit
 50-generation.conf drop-in, reloaded systemd and requested native SIGUSR1 restart.
-New PID785678 reports source9b57ee21, running and Slack connected. The drain marker
-was removed and separate interactive CLI2369575 remains alive on its old source.
+New PID 785678 reports source `9b57ee21`, running and Slack connected. The drain marker
+was removed and separate interactive CLI 2369575 remains alive on its old source.
 Exact receipt: `/var/lib/update-bot/hermes-gateway-activation.json`. This supersedes
 the earlier pending-gateway status; no active turn was interrupted or force-killed.
 Native `code_version` is unknown, while the runtime's full `code_sha` is recorded.
@@ -197,3 +197,28 @@ precedence, explicit invariants and default behavior preservation. Typed evidenc
 satisfied those selected obligations. Forty-eight nonselected generic obligations
 remain outside this bounded result, including full CI-only build provenance and
 host-wide dependency/CVE qualification; neither is claimed by these checks.
+
+
+### Recurring gateway activation boundary
+
+Added the fixed `update-bot-hermes-activate.service` so the model can activate a
+verified generation without direct user-manager or profile access. The root-owned
+controller runs as halbritt with the frozen native drain API. It checks exact source
+and launcher identity, refuses existing foreign drains and stale/busy/mismatched
+status, reloads once after native zero-work confirmation, and requires a new matching
+PID/source plus a freshly written Slack connection state. Failure stays visible;
+there is no force-stop, automatic retry or silent rollback. Only its own marker is
+removed. Operation receipts retain the native result; verified no-ops are not Git
+changes, and the host lock remains held while the separate unit is active.
+
+31 repository tests pass, including gateway boundary failures and both native-unit
+drain checks; repository validation and changed-unit verification pass. The latter
+also reported an unrelated pre-existing systemd-resolved override warning. A transient
+halbritt service with NoNewPrivileges, read-only home/system and inaccessible user
+bus successfully started the approved action through polkit (invocation
+`d61de06060244810aaa374ec124028e5`). Its receipt verified current revision `9b57ee21`
+and `changed=false`; gateway PID 785678 was preserved and no drain marker remained.
+This tests the deployed permission/no-op path. The actual changed-generation drain
+and restart was observed in the preceding operator procedure, while the controller's
+failure and restart decisions are covered with external SDK/systemd fixtures.
+Receipt: `/var/lib/update-bot/hermes-activation-latest.json`.

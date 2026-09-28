@@ -121,3 +121,12 @@ artifacts, checks and rollback. The role also requires dated broader inventory
 at least weekly, including Python interpreters, tools and environment libraries;
 project-pinned libraries remain report-only. The first bounded inventory receipt
 is `/var/lib/update-bot/inventory-2026-09-28.json` and is summarized in Cairn.
+
+
+After installation and checks, the agent can activate Hermes through the fixed
+`update-bot-hermes-activate.service`. This helper runs as halbritt using the frozen
+native drain API and records `/var/lib/update-bot/hermes-activation-latest.json`.
+It requires a fresh zero chat/cron/API work count before one graceful reload,
+verifies new runtime identity and Slack connection, and releases only its own
+marker. It accepts no command/unit arguments and has no force-stop or blind-retry
+path. The model retains no direct user-service-manager or profile-write access.

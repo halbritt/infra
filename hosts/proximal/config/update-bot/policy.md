@@ -12,6 +12,10 @@ Approved targets and channels:
   updater that restarts busy gateways or interactive sessions. Stage and test an
   isolated candidate even when activation must wait. Use a versioned installation
   for new launches while retaining the files used by existing processes.
+  Once verified, use the fixed update-bot-hermes-activate.service to activate the
+  gateway. It verifies installed source/launcher identity, requires a fresh native
+  zero-work drain and issues only the gateway's supported reload. Busy/stale/foreign
+  state refuses the restart and releases only its own drain. No force-stop fallback.
 - wigolo: existing upstream-main source build -> pack -> global npm installation;
   preserve its provider configuration, data/cache and current source provenance.
   Do not replace the newer source build with an older published npm version.

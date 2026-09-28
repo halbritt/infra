@@ -82,6 +82,18 @@ Do not rerun the installer just to retry verification. Submit a read-only check
 through a new envelope, referencing the original operation in before/recovery;
 report the original installation and subsequent verification separately.
 
+After a tested Hermes generation is selected by ~/.local/bin/hermes, write its
+source path, exact source_revision and artifacts[{installed,sha256}] launcher
+identity to /var/lib/update-bot/hermes-installed.json as part of the installation
+operation; retain backups/recovery metadata. Activate through a separate target
+hermes envelope with argv ["systemctl","start","update-bot-hermes-activate.service"].
+Verify /var/lib/update-bot/hermes-activation-latest.json has status verified, the
+expected revision, and current matching gateway PID/source/Slack state. The fixed
+helper owns the native drain and user-manager access. A current healthy gateway
+is a no-op; busy or unprovable quiescence is a specific activation hold. On failure,
+inspect that receipt and native state before recovery; never automatically resend
+a restart. The helper does not choose/build a candidate or silently roll it back.
+
 For Ubuntu OS maintenance, use argv ["systemctl","start","update-bot-os.service"].
 The fixed privileged helper refreshes metadata and applies allowed Ubuntu updates;
 you cannot supply root commands. Use verification argv ["python3","-c","import json; from pathlib import Path; s=json.loads(Path('/var/lib/update-bot-os/latest.json').read_text()); print(json.dumps(s)); assert s['status']=='completed'"]

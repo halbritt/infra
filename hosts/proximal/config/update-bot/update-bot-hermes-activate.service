@@ -1,0 +1,23 @@
+[Unit]
+Description=Activate the verified Hermes generation after native zero-work drain
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=halbritt
+Group=halbritt
+Environment=HOME=/home/halbritt
+Environment=HERMES_HOME=/home/halbritt/.hermes
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/local/lib/update-bot/gateway-activate
+TimeoutStartSec=infinity
+TimeoutStopSec=20
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/update-bot /home/halbritt/.hermes
+InaccessiblePaths=-/home/halbritt/.hermes/.env -/home/halbritt/.hermes/auth.json
+PrivateTmp=yes

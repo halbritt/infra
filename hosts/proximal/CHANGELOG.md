@@ -458,7 +458,7 @@ long-context throughput not yet re-benchmarked. Prior config saved on-box as
 
 The Council chair workload exposed a severe throughput failure in the primary
 [`llama-27b`](config/llama/) endpoint. With 196608 context and llama.cpp's default automatic
-fitting, generation measured 8.317 tokens/s (about 7.6 tokens/s over a later long run), prompt
+fitting, generation measured 8. 317 tokens/s (about 7.6 tokens/s over a later long run), prompt
 processing measured 13.870 tokens/s, and the process combined about 21.1 GiB of GPU residency
 with another 6.57 GiB mapped on the host and about 4.9 GiB swapped.
 
@@ -1395,3 +1395,9 @@ preserved. Updated maintenance policy requires patch carry and broader periodic
 inventory. See config/update-bot/VERIFICATION.md for evidence and remaining gateway
 activation evidence. The gateway later transitioned through a verified idle native
 drain; the interactive CLI remained alive. No reboot or inference restart occurred.
+
+
+The bot now also has a fixed native Hermes gateway activation action, gated on a
+fresh zero-work drain and verified source/launcher identity. 31 tests and a live
+sandboxed permission/no-op probe pass; existing gateway and interactive CLI were
+not restarted for this probe. See config/update-bot/VERIFICATION.md.

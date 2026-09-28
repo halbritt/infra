@@ -87,6 +87,13 @@ def execute(request):
             if os_receipt.get('status') == 'completed':
                 result['changed'] = bool(os_receipt.get('selected', []))
                 result['native_evidence'] = os_receipt['evidence']
+        if (request['argv'] == ['systemctl', 'start', 'update-bot-hermes-activate.service']
+                and result['status'] == 'verified'):
+            native = bot.read_json(bot.STATE / 'hermes-activation-latest.json', {})
+            if native.get('status') == 'verified' and native.get('started', 0) >= result['started']:
+                bot.atomic_json(folder / 'native-result.json', native)
+                result['changed'] = native['changed']
+                result['native_evidence'] = str(folder / 'native-result.json')
         bot.atomic_json(folder / 'result.json', result)
         result_id = str(uuid.uuid4())
         bot.atomic_json(folder / 'outcome-request.json', {'request_id': result_id})

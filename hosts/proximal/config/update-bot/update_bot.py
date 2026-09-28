@@ -115,8 +115,11 @@ def record_status(run_dir, status):
 
 def operations_active(run_dir):
     for intent in (run_dir / 'operations').glob('*/intent.json'):
-        if read_json(intent, {}).get('target') == 'os':
-            service = command(['systemctl', 'show', 'update-bot-os.service', '--property=ActiveState', '--value'])
+        request = read_json(intent, {})
+        units = ('update-bot-os.service', 'update-bot-hermes-activate.service')
+        unit = next((u for u in units if request.get('argv') == ['systemctl', 'start', u]), None)
+        if unit:
+            service = command(['systemctl', 'show', unit, '--property=ActiveState', '--value'])
             if service.stdout.strip() in ('active', 'activating', 'deactivating'):
                 return True
     for path in (run_dir / 'operations').glob('*/active.lock'):

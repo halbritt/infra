@@ -39,4 +39,8 @@ wrapper = Path('/usr/local/lib/update-bot/hermes-frozen')
 wrapper.write_text('#!/bin/sh\nunset PYTHONPATH PYTHONHOME\nexec "' + str(destination / 'venv/bin/python') +
                    '" "' + str(destination / 'hermes') + '" "$@"\n')
 wrapper.chmod(0o755)
+activation = Path('/usr/local/lib/update-bot/gateway-activate')
+activation.write_text('#!/bin/sh\nunset PYTHONPATH PYTHONHOME\nexec "' + str(destination / 'venv/bin/python') +
+                      '" /usr/local/lib/update-bot/gateway_activate.py\n')
+activation.chmod(0o755)
 print(json.dumps(manifest))
