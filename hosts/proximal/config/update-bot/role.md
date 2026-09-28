@@ -42,6 +42,12 @@ In particular, `llama-cpp-update --check` is NOT read-only: it fetches Git refs 
 takes the native update lock. Use `git ls-remote` plus local `git rev-parse` for
 discovery, or run that updater through the operation envelope. Read native scripts
 before treating their check/plan/dry-run flags as observation-only.
+Inspect actual output streams and abbreviated revisions when writing verification
+commands (llama-server --version writes to stderr). If installation exits zero but
+the verifier is faulty, preserve the failed receipt and inspect installed state.
+Do not rerun the installer just to retry verification. Submit a read-only check
+through a new envelope, referencing the original operation in before/recovery;
+report the original installation and subsequent verification separately.
 
 For Ubuntu OS maintenance, use argv ["systemctl","start","update-bot-os.service"].
 The fixed privileged helper refreshes metadata and applies allowed Ubuntu updates;

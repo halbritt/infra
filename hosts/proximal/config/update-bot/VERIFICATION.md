@@ -117,3 +117,38 @@ CLI startup were verified against that snapshot.
   that misleading flag as mutating and directs discovery to `git ls-remote`.
   The envelope rule is an agent policy within writable prefixes, not an enforced
   per-command filesystem capability boundary. Retain this limitation visibly.
+
+- Cairn intent, outcome and checkpoint records were read back successfully. The
+  OS checkpoint is `777de1b7-9e92-45e7-a7a9-ab7448510cbe`; outcome is
+  `f86e3b9a-0327-4a26-b466-04179fb957c4`. The publisher ran under a copy of the
+  monitor's actual user/filesystem controls, validated the repo, committed and
+  pushed `a7ecf7f`, fast-forwarded clean master and removed its detached worktree.
+- A follow-up test ensures a native OS receipt with no selected packages does not
+  create a Git commit. The full suite now has 26 passing tests. Publication retries
+  are independent of host execution and do not replay package changes.
+
+- Follow-up run `bb791a85-0619-4356-b2ee-4a133e7a7366` completed in about seven
+  minutes. It used the canonical llama updater and native lock to install build
+  11223 (`4da6337767`), preserving inference PID 1126876/build 10210. The first
+  two verification attempts incorrectly parsed stdout; native version output is
+  on stderr. Failed receipts remain, and operation `9f620ad7-2b2a-44c3-98d2-4f551eb16953`
+  subsequently verified installed revision, source HEAD and live health. The
+  repeated native updater calls were no-ops; the role now explicitly requires
+  read-only verification recovery instead of rerunning a successful installer.
+- Independent startup checks for the new llama-server and llama-cli `--help`
+  exited zero. llama-quantize printed usage and exited 1, matching its source's
+  usage() implementation. New-model inference was not exercised: the existing
+  live server remained healthy, and activation of the new binary stays deferred.
+- The follow-up correctly distinguished wigolo's installed `c6ad4479` source build
+  from current upstream: the later delta is documentation/site/homepage metadata,
+  with no source or dependency changes, so no functional update was warranted.
+  Agy's online latest remains unknown, rather than claimed current. Hermes remains
+  deferred because safe activation of its existing gateway was not established.
+  Codex/Claude/OpenCode were current; local Cairn wrappers/patches were retained.
+- The second OS helper run selected zero packages and verified cleanly. Both runs
+  kept the 28 protected/third-party packages held and retained the reboot flag.
+- Final Cairn checkpoint: `e86fd618-b0f3-47ed-b89c-6056696f0a6a`. Automatic publication
+  committed/pushed `72beb09` and cleaned its worktree. The independent monitor sent
+  Slack message `1790562359.684729` to `D0BMCL7T2FM`; API readback confirmed its run
+  ID and Git commit link. Both timers are enabled and active again, with the next
+  daily maintenance run on 2026-09-28 shortly after 06:30 America/Los_Angeles.
