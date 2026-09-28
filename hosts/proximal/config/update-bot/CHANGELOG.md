@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-09-28 02:18 UTC — bb791a85-0619-4356-b2ee-4a133e7a7366
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **os** — verified. Before: Ubuntu 24.04.5, kernel 6.8.0-138-generic, reboot pending from a prior run; apt list --upgradable shows 28 packages, all inside the helper's held scope (pgdg PostgreSQL 16/17/18 + pgbackrest + libpq5, kubelet/kubeadm/kubectl/containerd.io, nvidia-container-toolkit/libnvidia-container1, google-cloud-cli), so no ordinary noble-updates package is pending; helper's root-owned apt/native locks are free. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/bb791a85-0619-4356-b2ee-4a133e7a7366/operations/50a8a8f8-82f6-453f-a22e-062bf47256b8`.
+
+- **llama.cpp** — failed. Before: ~/git/llama.cpp clean on master at a97cce86a; origin/master (fetched locally) is 4da6337767, exactly 1 commit ahead; updater candidate worktree at a97cce86a; running llama-server PID 1126876 is build 10210 (000547513) on :8081, health ok; on-disk binary build 11222; native update.lock free; prior end-to-end build 2026-09-27 took ~9 min (10:32-10:41 PDT). After: see operation receipt.
+  Verification: native verification exit 1.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/bb791a85-0619-4356-b2ee-4a133e7a7366/operations/561109fd-587d-4886-bac7-9453f5c883ae`.
+
+- **llama.cpp** — failed. Before: post-update confirmation pass: ~/git/llama.cpp master already at 4da6337767 and on-disk build/bin/llama-server is build 11223 commit 4da633776; the preceding operation 561109fd-587d-4886-bac7-9453f5c883ae completed its install with exit 0 but its verify_argv failed only because it asserted the full 10-char hash while llama prints a 9-char commit; live server PID 1126876 still build 10210 on :8081 health ok; this pass is idempotent and should report 'already current'. After: see operation receipt.
+  Verification: native verification exit 1.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/bb791a85-0619-4356-b2ee-4a133e7a7366/operations/6f7dc1a9-5b7c-448d-81c7-6b63a3b73249`.
+
+- **llama.cpp** — verified. Before: second post-update confirmation pass: master and on-disk binary already at 4da6337767 / build 11223 commit 4da633776; the two preceding receipts (561109fd install exit 0; 6f7dc1a9 install exit 0 'already current') failed verification only because their assertions read llama-server's version from stdout while it prints to stderr; live server PID 1126876 still build 10210 on :8081, health ok; this pass is idempotent and reports 'already current'. After: master fast-forwarded to 4da6337767f973e2b4d0797e5b323d77d8565e4a; llama-server/cli/quantize rebuilt and atomically installed, build 11223 commit 4da633776; live server unchanged (still build 10210, health ok).
+  Verification: installing op 561109fd-587d-4886-bac7-9453f5c883ae exit_code=0 (git ff + .new/mv binary install, live processes untouched); verified op 9f620ad7-2b2a-44c3-98d2-4f551eb16953 re-ran the native updater (no-op 'already current') with verification_exit_code=0 asserting on-disk binary commit 4da633776, HEAD=4da6337767f973e2b4d0797e5b323d77d8565e4a, and http://localhost:8081/health ok. Two earlier receipts (561109fd, 6f7dc1a9) had verification_exit_code=1 only because their assertions read llama-server's version from stdout while it prints to stderr; the update itself succeeded..
+  Activation: installed (on-disk binaries advanced); running process not restarted — live server keeps build 10210 until its next managed restart.
+  Evidence: `/var/lib/update-bot/runs/bb791a85-0619-4356-b2ee-4a133e7a7366/operations/9f620ad7-2b2a-44c3-98d2-4f551eb16953`.
+
 ## 2026-09-28 02:12 UTC — 563e6f35-0993-4491-8b46-8a71a866119e
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
