@@ -1,5 +1,34 @@
 # Maintenance outcomes — proximal
 
+## 2026-09-28 13:36 UTC — f3fd5201-ddc3-48d9-b33f-302b9f79548d
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **llama.cpp** — failed. Before: read-only post-install verification of the already-finished original install operation a2f0b9b0-cd3a-45e1-927d-dcf37fe4609b (install exit 0, verification_exit_code 1 only because its verifier asserted the pre-fetch upstream target d77dd0806dc while the canonical updater's own fetch saw origin/master advance to f00a64c1472fb695f40ed4fd54cbe998ac7ce6c4). No installer rerun. Installed on disk: llama-server build 11234 commit f00a64c14; master HEAD f00a64c147; live server PID 1126876 still the old build on :8081, health ok. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/f3fd5201-ddc3-48d9-b33f-302b9f79548d/operations/632d13c0-0eb0-42a5-801a-2269928b5766`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 noble; apt list --upgradable = 28 packages, all inside the held scope (postgresql-16/17 pgdg + libpq5 + pgbackrest + postgresql-common, kubelet/kubeadm/kubectl/containerd.io, google-cloud-cli, nvidia/libnvidia-container-toolkit); no ordinary noble release/security/update packages pending; reboot_required=true carried from prior helper receipt; fixed root helper is the only permitted OS path. After: python3-jwt 2.7.0-1ubuntu0.2 (observed); 28 held packages still deferred; reboot_required=true.
+  Verification: helper receipt /var/lib/update-bot-os/latest.json status=completed, selected=[python3-jwt 2.7.0-1ubuntu0.1->2.7.0-1ubuntu0.2 observed], deferred=28; operation verify exit 0.
+  Activation: installed (system package upgraded by the fixed root helper; no package-script service restart, no reboot).
+  Evidence: `/var/lib/update-bot/runs/f3fd5201-ddc3-48d9-b33f-302b9f79548d/operations/81961bc7-b41c-413f-89ee-7d73dcb42309`.
+
+- **llama.cpp** — failed. Before: ~/git/llama.cpp clean on master at 4da6337767f973e2b4d0797e5b323d77d8565e4a; on-disk build/bin/llama-server build 11223 commit 4da633776; upstream master via git ls-remote = d77dd0806dc26fc418273ef99f88da11239ca41b (fast-forwardable, ahead of local); native update.lock free; live llama-server PID 1126876 build 10210 healthy on :8081 and will not be restarted; prior end-to-end build 2026-09-27 took ~9 min. After: master fast-forwarded to f00a64c1472fb695f40ed4fd54cbe998ac7ce6c4; llama-server/cli/quantize rebuilt and atomically installed, build 11234 commit f00a64c14; live server unchanged.
+  Verification: install exit_code=0 (git ff + .new/mv binary install from the candidate worktree); verification_exit_code=1 only because the verifier asserted the pre-fetch target d77dd0806dc while the updater's own fetch saw origin/master advance to f00a64c147. Live :8081 health ok throughout; live process not restarted.
+  Activation: installed (on-disk binaries advanced to build 11234); running process not restarted, still the prior build until its next managed restart.
+  Evidence: `/var/lib/update-bot/runs/f3fd5201-ddc3-48d9-b33f-302b9f79548d/operations/a2f0b9b0-cd3a-45e1-927d-dcf37fe4609b`.
+
+- **llama.cpp** — verified. Before: read-only post-install verification (corrected) of the finished original install operation a2f0b9b0-cd3a-45e1-927d-dcf37fe4609b (install exit 0). Two earlier checks failed only on a bad assertion string: llama-server --version prints the 9-char commit abbreviation f00a64c14, but the prior checks searched for 12/9-char prefixes that do not appear verbatim. No installer rerun and no ref changes. Installed: llama-server build 11234 commit f00a64c14; master HEAD f00a64c1472fb695f40ed4fd54cbe998ac7ce6c4; live server PID 1126876 still the prior build on :8081, health ok. After: confirmed on-disk commit f00a64c14, HEAD f00a64c1472fb695f40ed4fd54cbe998ac7ce6c4, and :8081 health {"status":"ok"}.
+  Verification: read-only check exit 0 and its verifier exit 0; install.log prints build 11234 commit f00a64c14 and HEAD f00a64c1472fb695f40ed4fd54cbe998ac7ce6c4; verify.log commit=f00a64c14, HEAD=f00a64c1472fb695f40ed4fd54cbe998ac7ce6c4, health-ok.
+  Activation: installed (running inference process intentionally unchanged; new binary activates at the next managed llama-27b restart).
+  Evidence: `/var/lib/update-bot/runs/f3fd5201-ddc3-48d9-b33f-302b9f79548d/operations/b60b13c6-0fb6-444d-b0ae-b21f4dbd5ea2`.
+
+- **codex** — verified. Before: installed @openai/codex@0.157.1 (npm ls -g); npm view @openai/codex version = 0.158.0 and GitHub openai/codex latest release rust-v0.158.0 (2026-09-28); Cairn coordination wrapper ~/.local/bin/codex unchanged and points at the npm package bin/codex.js; several codex app-server/remote sessions are running (PIDs 324942/505575/929161) and keep their already-loaded files, so no session is restarted. After: @openai/codex@0.158.0.
+  Verification: install.log 'changed 2 packages in 3s'; verify.log codex=0.158.0 with wrapper-target-ok and the bin/codex.js + shim present.
+  Activation: installed (global npm package replaced on disk); already-running codex sessions kept their loaded code, launcher wrapper unchanged.
+  Evidence: `/var/lib/update-bot/runs/f3fd5201-ddc3-48d9-b33f-302b9f79548d/operations/f14095ec-3108-44cd-8090-e7c03bd9ac0e`.
+
 ## 2026-09-28 02:18 UTC — bb791a85-0619-4356-b2ee-4a133e7a7366
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
