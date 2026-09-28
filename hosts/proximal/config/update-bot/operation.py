@@ -82,6 +82,11 @@ def execute(request):
                 result['verification_exit_code'] = child.wait()
         result['finished'] = time.time()
         result['status'] = 'verified' if result['exit_code'] == 0 and result['verification_exit_code'] == 0 else 'failed'
+        if request['target'] == 'os' and result['status'] == 'verified':
+            os_receipt = bot.read_json('/var/lib/update-bot-os/latest.json', {})
+            if os_receipt.get('status') == 'completed':
+                result['changed'] = bool(os_receipt.get('selected', []))
+                result['native_evidence'] = os_receipt['evidence']
         bot.atomic_json(folder / 'result.json', result)
         result_id = str(uuid.uuid4())
         bot.atomic_json(folder / 'outcome-request.json', {'request_id': result_id})

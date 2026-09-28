@@ -21,6 +21,9 @@ OP_SPEC.loader.exec_module(operation)
 OS_SPEC = importlib.util.spec_from_file_location('maintenance_os', SOURCE.parent / 'os_update.py')
 os_update = importlib.util.module_from_spec(OS_SPEC)
 OS_SPEC.loader.exec_module(os_update)
+PUB_SPEC = importlib.util.spec_from_file_location('maintenance_publish', SOURCE.parent / 'publish.py')
+publisher = importlib.util.module_from_spec(PUB_SPEC)
+PUB_SPEC.loader.exec_module(publisher)
 
 
 class ReportTests(unittest.TestCase):
@@ -148,6 +151,22 @@ class RunnerFailureTests(unittest.TestCase):
 
 
 class MaintenanceBoundaryTests(unittest.TestCase):
+    def test_native_os_noop_does_not_create_a_git_commit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            folder = root / 'runs' / 'r1'
+            op = folder / 'operations' / 'o1'
+            op.mkdir(parents=True)
+            (folder / 'status.json').write_text(json.dumps(dict(
+                stage='maintenance-v2', status='completed', run_id='r1')))
+            (op / 'intent.json').write_text('{"target":"os"}')
+            (op / 'result.json').write_text('{"status":"verified","changed":false}')
+            with patch.object(bot, 'STATE', root), patch.object(bot, 'operations_active', return_value=False), \
+                 patch.object(publisher, 'git') as git:
+                publisher.publish()
+                git.assert_not_called()
+            self.assertEqual(json.loads((folder / 'publication.json').read_text())['status'], 'noop')
+
     def test_os_start_is_fixed_and_native_service_keeps_drain_active(self):
         status = dict(run_id='r1', status='running', started=100)
         settings = dict(stage='maintenance-v2', update_targets=['os'], agent_timeout_seconds=900)

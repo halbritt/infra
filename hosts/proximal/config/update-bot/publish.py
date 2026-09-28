@@ -25,6 +25,8 @@ def entry(folder, status):
     for path in sorted((folder / 'operations').glob('*/intent.json')):
         intent = bot.read_json(path)
         result = bot.read_json(path.parent / 'result.json', {})
+        if result.get('changed') is False:
+            continue
         change = changes.get(path.parent.name, {})
         lines.extend(['- **' + intent['target'] + '** — ' + result.get('status', 'interrupted/uncertain') +
                       '. Before: ' + intent['before'] + '. After: ' + change.get('after', 'see operation receipt') + '.',
@@ -44,9 +46,13 @@ def publish():
                 continue
             if not list((folder / 'operations').glob('*/intent.json')):
                 continue
-            if bot.read_json(folder / 'publication.json', {}).get('status') == 'pushed':
+            if bot.read_json(folder / 'publication.json', {}).get('status') in ('pushed', 'noop'):
                 continue
             if bot.operations_active(folder):
+                continue
+            if all(bot.read_json(p.parent / 'result.json', {}).get('changed') is False
+                   for p in (folder / 'operations').glob('*/intent.json')):
+                bot.atomic_json(folder / 'publication.json', {'status': 'noop'})
                 continue
             git('fetch', 'origin', 'master')
             relative = 'hosts/proximal/config/update-bot/CHANGELOG.md'
