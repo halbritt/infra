@@ -20,6 +20,7 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=/var/lib/update-bot
+ReadWritePaths=/home/halbritt/git/infra /home/halbritt/git/infra-wt
 PrivateTmp=yes
 
 [Install]

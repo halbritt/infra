@@ -1,10 +1,21 @@
 {
   "host": "proximal",
-  "stage": "discovery-v1",
+  "stage": "maintenance-v2",
   "model": "deepseek/deepseek-v4.1-flash",
   "provider": "openrouter",
   "agent_timeout_seconds": 900,
   "overdue_seconds": 108000,
   "reminder_seconds": 604800,
-  "slack_target": "slack:D0BMCL7T2FM"
+  "slack_target": "slack:D0BMCL7T2FM",
+  "update_targets": [
+    "hermes",
+    "wigolo",
+    "llama.cpp",
+    "codex",
+    "claude",
+    "opencode",
+    "agy",
+    "gemini",
+    "os"
+  ]
 }

@@ -1,5 +1,9 @@
 # Initial findings and held maintenance scope — 2026-09-27
 
+**Historical discovery-stage snapshot.** The owner subsequently authorized actual
+updates to the named software and underlying OS. Current authority is in policy.md
+(maintenance-v2); the proposals below retain their original review context.
+
 The owner authorized installation of the discovery stage. No host-update scope
 has been approved. This document records proposals, not commands to execute.
 The first completed survey is Cairn record

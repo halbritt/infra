@@ -3,9 +3,11 @@
 set -euo pipefail
 update_bot_source=$(cd -- "$(dirname -- "$0")" && pwd)
 sudo install -d -m 0755 /usr/local/lib/update-bot /etc/update-bot
-sudo install -m 0755 "$update_bot_source/update_bot.py" "$update_bot_source/cairn-mcp" /usr/local/lib/update-bot/
+sudo install -m 0755 "$update_bot_source/update_bot.py" "$update_bot_source/cairn-mcp" "$update_bot_source/operation.py" "$update_bot_source/os_update.py" "$update_bot_source/publish.py" /usr/local/lib/update-bot/
 sudo install -m 0644 "$update_bot_source/policy.md" "$update_bot_source/role.md" "$update_bot_source/hermes.yaml" "$update_bot_source/settings.json" /etc/update-bot/
 sudo install -m 0644 "$update_bot_source/"*.service "$update_bot_source/"*.timer /etc/systemd/system/
+sudo install -m 0644 "$update_bot_source/91-update-bot.rules" /etc/polkit-1/rules.d/91-update-bot.rules
+sudo python3 "$update_bot_source/freeze-runtime.py"
 sudo /home/halbritt/.hermes/hermes-agent/venv/bin/python - <<'PY'
 from pathlib import Path
 from dotenv import dotenv_values

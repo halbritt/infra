@@ -8,8 +8,8 @@ agent:
 terminal:
   backend: local
   cwd: /home/halbritt/git/infra
-  timeout: 45
-  lifetime_seconds: 900
+  timeout: 120
+  lifetime_seconds: 7200
 memory:
   memory_enabled: false
   user_profile_enabled: false

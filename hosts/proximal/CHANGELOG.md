@@ -7,6 +7,23 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-27
 
+### Update-bot: owner-authorized software and OS updates
+
+The owner clarified that discovery alone was insufficient: the job should update
+Hermes, wigolo, llama.cpp, coding harnesses and the OS. Enabled maintenance-v2
+authority for those targets, preserving active sessions, local patches and native
+update channels. An independent root-owned Hermes source/venv snapshot protects
+the maintenance agent and Slack sender from self-updates. A generic operation
+envelope records intents/results in Cairn and drains admitted native transactions
+after the 15-minute admission deadline. The publisher records meaningful outcomes
+through isolated worktrees and normal commits/pushes.
+
+Added a narrowly authorized root OS unit: routine Ubuntu packages and kernels only,
+with dependency-origin/removal guards, deferred database/cluster/container/GPU
+transitions, package-script restart suppression and no automatic reboot. Reboots,
+OS release upgrades, database migrations and disruptive inference activation remain
+outside routine scope. See config/update-bot for the installed policy and evidence.
+
 ### Daily maintenance discovery agent and independent completion monitor
 
 Deployed the owner's approved first stage of the update-bot architecture: an

@@ -1,0 +1,15 @@
+[Unit]
+Description=Approved Ubuntu package updates for maintenance agent
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/update-bot/os_update.py
+TimeoutStartSec=infinity
+TimeoutStopSec=infinity
+KillMode=mixed
+StateDirectory=update-bot-os
+StateDirectoryMode=0755
+UMask=0022
+Nice=10
+IOSchedulingClass=idle

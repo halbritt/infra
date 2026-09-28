@@ -1,5 +1,10 @@
 # Deployment verification — 2026-09-27
 
+The discovery-v1 evidence below is historical. The owner subsequently authorized
+automatic updates to Hermes, wigolo, llama.cpp, coding harnesses and the underlying
+OS. Maintenance-v2 implements that expanded authority; activation evidence is
+recorded separately below and does not rewrite the earlier scope.
+
 Host: proximal. Initial repository base: `2bded13`. Implementation branch/worktree:
 `update-bot`, `/home/halbritt/git/infra-wt/update-bot`. Deployment session:
 `85aa4960-cd05-4035-afc3-2b748e8183b3`. Authority: implement the reviewed architecture's

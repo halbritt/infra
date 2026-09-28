@@ -5,11 +5,22 @@ from pathlib import Path
 import unittest
 import tempfile
 from unittest.mock import patch
+import sys
+import subprocess
+import time
+from types import SimpleNamespace
 
 SOURCE = Path(__file__).resolve().parents[1] / 'hosts/proximal/config/update-bot/update_bot.py'
 SPEC = importlib.util.spec_from_file_location('update_bot', SOURCE)
 bot = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bot)
+sys.modules['update_bot'] = bot
+OP_SPEC = importlib.util.spec_from_file_location('maintenance_operation', SOURCE.parent / 'operation.py')
+operation = importlib.util.module_from_spec(OP_SPEC)
+OP_SPEC.loader.exec_module(operation)
+OS_SPEC = importlib.util.spec_from_file_location('maintenance_os', SOURCE.parent / 'os_update.py')
+os_update = importlib.util.module_from_spec(OS_SPEC)
+OS_SPEC.loader.exec_module(os_update)
 
 
 class ReportTests(unittest.TestCase):
@@ -134,6 +145,81 @@ class RunnerFailureTests(unittest.TestCase):
         self.assertEqual(ids[0], ids[1])
         self.assertNotEqual(ids[1], ids[2])
         self.assertIn('reconciled_checkpoint', status)
+
+
+class MaintenanceBoundaryTests(unittest.TestCase):
+    def test_os_start_is_fixed_and_native_service_keeps_drain_active(self):
+        status = dict(run_id='r1', status='running', started=100)
+        settings = dict(stage='maintenance-v2', update_targets=['os'], agent_timeout_seconds=900)
+        request = dict(run_id='r1', target='os', argv=['sudo', 'apt-get', 'upgrade'],
+                       before='old', recovery='hold restarts', verify_argv=['true'])
+        with self.assertRaises(ValueError):
+            operation.validate(request, status, settings, 200)
+        request['argv'] = ['systemctl', 'start', 'update-bot-os.service']
+        operation.validate(request, status, settings, 200)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            folder = root / 'operations' / 'op1'
+            folder.mkdir(parents=True)
+            (folder / 'intent.json').write_text(json.dumps(request))
+            with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='activating\n')):
+                self.assertTrue(bot.operations_active(root))
+            with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='inactive\n')):
+                self.assertFalse(bot.operations_active(root))
+
+    def test_claimed_verification_requires_native_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            report = ReportTests().report()
+            op_id = '0654f626-cd30-4e2a-8c8b-0bea29bdf273'
+            report['changes'] = [dict(target='codex', operation_id=op_id, before='old',
+                after='new', status='verified', verification='claimed', activation='installed')]
+            (root / 'stdout.json').write_text(json.dumps(report))
+            (root / 'usage.json').write_text('{"completed":true}')
+            folder = root / 'operations' / op_id
+            folder.mkdir(parents=True)
+            (folder / 'intent.json').write_text('{"target":"codex"}')
+            (folder / 'result.json').write_text('{"status":"failed"}')
+            with self.assertRaisesRegex(ValueError, 'disagrees'):
+                bot.finish_report(root, {})
+
+    def test_only_approved_targets_owned_by_current_run_before_deadline(self):
+        status = dict(run_id='r1', status='running', started=100)
+        settings = dict(stage='maintenance-v2', update_targets=['opencode'], agent_timeout_seconds=900)
+        request = dict(run_id='r1', target='opencode', argv=['true'], before='old',
+                       recovery='prior version retained', verify_argv=['true'])
+        operation.validate(request, status, settings, 200)
+        for bad in (dict(request, target='postgres'), dict(request, run_id='r2')):
+            with self.assertRaises(ValueError):
+                operation.validate(bad, status, settings, 200)
+        with self.assertRaises(ValueError):
+            operation.validate(request, status, settings, 1000)
+
+    def test_native_operation_lock_survives_detached_process_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            folder = root / 'operations' / 'op1'
+            folder.mkdir(parents=True)
+            child = subprocess.Popen([sys.executable, '-c',
+                'import fcntl,sys,time; f=open(sys.argv[1],"a"); fcntl.flock(f,fcntl.LOCK_EX); print("ready",flush=True); time.sleep(0.8)',
+                str(folder / 'active.lock')], stdout=subprocess.PIPE, text=True, start_new_session=True)
+            self.assertEqual(child.stdout.readline().strip(), 'ready')
+            self.assertTrue(bot.operations_active(root))
+            bot.drain_operations(root)
+            child.wait()
+            child.stdout.close()
+            self.assertFalse(bot.operations_active(root))
+
+    def test_os_scope_keeps_database_cluster_and_gpu_packages_out(self):
+        for name in ['postgresql', 'postgresql-18', 'kubelet', 'containerd.io', 'nvidia-container-toolkit']:
+            self.assertTrue(os_update.PROTECTED.match(name), name)
+        for name in ['curl', 'libaudit1', 'linux-image-generic']:
+            self.assertFalse(os_update.PROTECTED.match(name), name)
+        def version(origin, archive):
+            return SimpleNamespace(origins=[SimpleNamespace(origin=origin, archive=archive)])
+        self.assertTrue(os_update.approved_origin(version('Ubuntu', 'noble-security')))
+        self.assertFalse(os_update.approved_origin(version('Ubuntu', 'noble-proposed')))
+        self.assertFalse(os_update.approved_origin(version('PostgreSQL', 'noble-pgdg')))
 
 
 if __name__ == '__main__':

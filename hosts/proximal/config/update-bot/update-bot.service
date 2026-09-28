@@ -1,5 +1,5 @@
 [Unit]
-Description=Proximal daily maintenance discovery (Hermes, read-only host)
+Description=Proximal daily approved software and OS maintenance
 Wants=network-online.target
 After=network-online.target
 OnFailure=update-bot-monitor.service
@@ -16,13 +16,15 @@ Environment=HOME=/home/halbritt
 Environment=PATH=/home/halbritt/.local/bin:/home/halbritt/.npm-global/bin:/usr/local/cuda/bin:/usr/local/bin:/usr/bin:/bin
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONNOUSERSITE=1
+Environment=npm_config_cache=/var/lib/update-bot/cache/npm
+Environment=UV_CACHE_DIR=/var/lib/update-bot/cache/uv
 LoadCredential=openrouter:/etc/update-bot/openrouter.key
 ExecStart=/usr/bin/python3 /usr/local/lib/update-bot/update_bot.py run
-TimeoutStartSec=18min
-TimeoutStopSec=20s
-KillMode=control-group
-MemoryMax=4G
-CPUQuota=100%
+TimeoutStartSec=infinity
+TimeoutStopSec=infinity
+KillMode=mixed
+MemoryMax=12G
+CPUQuota=200%
 TasksMax=128
 Nice=10
 NoNewPrivileges=yes
@@ -30,8 +32,11 @@ CapabilityBoundingSet=
 ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=/var/lib/update-bot
+ReadWritePaths=/home/halbritt/.npm-global /home/halbritt/.local/bin /home/halbritt/.local/share/claude
+ReadWritePaths=/home/halbritt/.hermes/hermes-agent /home/halbritt/git/wigolo /home/halbritt/git/llama.cpp
+ReadWritePaths=/home/halbritt/.local/state/llama-cpp-update
 PrivateTmp=yes
-PrivateDevices=yes
+PrivateDevices=no
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
