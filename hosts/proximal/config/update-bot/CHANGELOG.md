@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-09-29 13:32 UTC — 57743817-6b0f-4ffe-b9a9-8feeb9aa28ca
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean on master at fc07d781e61f0d23764394e902b88d26a974e202 (upstream commit; on-disk llama-server build is this revision/later); git ls-remote upstream master=c85b92c69c955961621193cd51da194f3cbcedf3, GitHub compare fc07d781...c85b92c6 ahead_by=13 (tests/common/chat/vulkan/metal/ggml fixes); live inference PID 1126876 serving :8081 healthy. Canonical updater holds its native update.lock, refuses dirty/diverged trees, builds llama-server/cli/quantize in an isolated worktree and installs binaries atomically without restarting the live process.. After: master fast-forwarded to c85b92c69c955961621193cd51da194f3cbcedf3; llama-server/cli/quantize rebuilt and atomically installed, build 11256 commit c85b92c69; live server unchanged.
+  Verification: install.log prints 'version: 0.5.0-dev (build 11256, commit c85b92c69)' and 'updated=c85b92c69c95...'; verify.log (exit 0) HEAD=c85b92c69 matches and :8081 returns {"status":"ok"}.
+  Activation: installed (on-disk binaries advanced to build 11256); running inference PID 1126876 not restarted; new binary activates at the next managed llama-27b restart.
+  Evidence: `/var/lib/update-bot/runs/57743817-6b0f-4ffe-b9a9-8feeb9aa28ca/operations/408ea616-ecbd-4066-a861-6c37320fc7d6`.
+
+- **codex** — verified. Before: Global npm @openai/codex@0.158.0 (installed 2026-09-28 prior run, receipt f14095ec); npm view @openai/codex version=0.159.0; Cairn coordination shim /home/halbritt/.local/bin/codex present and unchanged; several codex app-server sessions may be running on the prior package bytes (they keep their loaded code).. After: @openai/codex@0.159.0.
+  Verification: install.log 'changed 2 packages in 3s'; verify.log (exit 0) reports codex-cli 0.159.0 via the Cairn wrapper.
+  Activation: installed (global npm package replaced on disk); already-running codex sessions keep their loaded code; launcher wrapper unchanged.
+  Evidence: `/var/lib/update-bot/runs/57743817-6b0f-4ffe-b9a9-8feeb9aa28ca/operations/ccff6619-f517-419d-a3bc-01b715e07bb0`.
+
+- **os** — verified. Before: Ubuntu noble (6.8.0-138). apt list --upgradable = 28 packages, all held-scope (pgdg postgresql-16/17 family + libpq5 + pgbackrest + postgresql-common, kubelet/kubeadm/kubectl/containerd.io, google-cloud-cli/anthoscli, nvidia/libnvidia-container-toolkit). reboot_required=true (kernels 6.8.0-139/142, libc6, linux-base). Prior helper receipt /var/lib/update-bot-os/latest.json applied python3-jwt and deferred 28 held packages. Fixed root helper refreshes metadata and applies only allowed Ubuntu updates.. After: libevent 2.1.12-stable-9ubuntu2.2 (6 packages) observed; 27 held-scope packages deferred; reboot_required=true.
+  Verification: helper receipt /var/lib/update-bot-os/latest.json status=completed, selected=6 libevent packages (before/after observed), deferred=27; operation verify exit 0.
+  Activation: installed by the fixed root helper; no package-script service restart and no reboot.
+  Evidence: `/var/lib/update-bot/runs/57743817-6b0f-4ffe-b9a9-8feeb9aa28ca/operations/efe5f69f-e0be-4c39-9bbf-afbe97353629`.
+
+- **hermes** — verified. Before: Installed Hermes generation is /var/lib/update-bot/staging/hermes-carry at 9b57ee21 (upstream base 79a6fd3e + 4 carried commits b8ae93b03/2c6121992/131e95b31/9904fd411 ported), selected by ~/.local/bin/hermes; gateway PID 785678 running from that generation. Upstream main advanced to fc042f1d67bc393bf43920e92d4eb5082eddedfb (committed 2026-09-29T13:07:11Z), 402 commits ahead of 79a6fd3e. This op only creates an isolated read-only upstream clone under /var/lib/update-bot/staging and trial-applies the carried patch; it does not touch the live install, launcher or gateway, builds nothing, and does not restart anything.. After: isolated clone /var/lib/update-bot/staging/hermes-candidate-fc042f1d pinned at fc042f1d (candidate base for the port); carried patch hermes.patch trial-apply FAILED (conflicts hermes_cli/cli_tui_runtime_mixin.py:13, tools/approval.py:22).
+  Verification: operation envelope status=verified exit 0; apply log /var/lib/update-bot/staging/hermes-candidate-fc042f1d-apply.log shows base=fc042f1d and APPLY_CONFLICTS with the two conflicting files.
+  Activation: none — preparation only; no binary built, no launcher/gateway change, existing generation and running gateway (PID 785678) untouched.
+  Evidence: `/var/lib/update-bot/runs/57743817-6b0f-4ffe-b9a9-8feeb9aa28ca/operations/f2eee55c-a4c7-40d0-9df5-81a733aab738`.
+
 ## 2026-09-28 13:36 UTC — f3fd5201-ddc3-48d9-b33f-302b9f79548d
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
