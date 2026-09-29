@@ -7,6 +7,13 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-29
 
+### Cairn consolidated into managed PostgreSQL
+
+Moved Cairn into database `cairn` on managed `17/main`, preserving all 77 tables,
+seven sequences and existing session identities. Private instance retired;
+native/remote API and managed backup checks passed. See
+[the migration report](config/cairn/MIGRATION-2026-09-29.md).
+
 ### Hermes upstream refresh with Cairn compatibility preserved
 
 Ported the reconciled carry onto upstream `16c59d0e` as `aa50456d` in its own

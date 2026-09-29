@@ -17,6 +17,12 @@ How to reach the PostgreSQL instance on **proximal**. **No passwords here** — 
 Minor update to 17.11 activated on 2026-09-29; system identifier unchanged.
 See [the execution report](reports/PG17_11_UPGRADE_2026-09-29.md).
 
+## Cairn consolidation — 2026-09-29
+
+Database `cairn` now resides in this managed cluster, owned by `halbritt` via
+peer authentication. Its private PostgreSQL service is retired. See
+[the migration report](../cairn/MIGRATION-2026-09-29.md).
+
 ## Databases (confirmed 2026-06-17, post-upgrade)
 
 `striatum_daemon` (busiest, 27 GB — down from 34 GB after the 57014 bloat reclaim),

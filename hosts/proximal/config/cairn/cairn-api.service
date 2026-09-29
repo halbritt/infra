@@ -1,0 +1,13 @@
+[Unit]
+Description=Cairn authenticated local agent API
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/cairn serve
+Restart=on-failure
+RestartSec=10
+UMask=0077
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

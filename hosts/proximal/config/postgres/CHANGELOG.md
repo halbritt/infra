@@ -8,6 +8,12 @@ entry, and `git log` for granular history.
 
 ## 2026-09-29
 
+### Cairn added to the managed cluster
+
+Owner-directed migration into database `cairn` preserved all table contents and
+sequences. Native checks and a fresh pgBackRest backup passed. See
+[the migration report](../cairn/MIGRATION-2026-09-29.md).
+
 ### PostgreSQL 17.11 installed and activated
 
 Upgraded the PG17 server/client packages and restarted `17/main` after a fresh
