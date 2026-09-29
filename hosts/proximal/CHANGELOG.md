@@ -7,6 +7,13 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-29
 
+### Jevgrep with direct TypeSafe access
+
+Installed Jevgrep 0.7.0 using existing TypeSafe credits and deployed an owned
+skillpack skill across the standard harnesses and Hermes. Synthetic API access
+and a live source-retrieval query passed. Credentials remain outside Git. See
+[installation and verification](config/jevgrep/README.md).
+
 ### Cairn consolidated into managed PostgreSQL
 
 Moved Cairn into database `cairn` on managed `17/main`, preserving all 77 tables,
