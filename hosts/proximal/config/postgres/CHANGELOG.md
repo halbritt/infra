@@ -6,6 +6,15 @@ provenance repo. Newest first. Config changes record the live cluster (`proximal
 the 2026-06-16/17 pg_upgrade); see `reports/` and `inventory/` for the evidence behind each
 entry, and `git log` for granular history.
 
+## 2026-09-28
+
+### pgvector 0.8.6 in five databases
+
+Owner-approved upgrade of the PG17 pgvector package and the five databases on
+0.8.2. Fresh backup and live query checks passed; PostgreSQL 17.10 stayed running.
+The eleven 0.6.0 SQL versions were retained. See
+[the execution report](reports/PGVECTOR_UPGRADE_2026-09-28.md).
+
 ## 2026-07-21
 
 ### Memory GUCs right-sized for the contested-RAM era

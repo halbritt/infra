@@ -5,6 +5,14 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-28
+
+### pgvector updated to 0.8.6
+
+Updated the PG17 package and five approved database extensions after a fresh
+backup, with no server restart. See the
+[PostgreSQL report](config/postgres/reports/PGVECTOR_UPGRADE_2026-09-28.md).
+
 ## 2026-09-27
 
 ### Update-bot: owner-authorized software and OS updates
