@@ -89,6 +89,38 @@ class MonitorTests(unittest.TestCase):
                             {'finished': 199900}, {'ActiveState': 'failed'})
         self.assertIn('inference unavailable', result[0][1])
 
+    def test_run_message_renders_structured_sections_not_prose(self):
+        report = dict(
+            status='partial', summary='prose ' * 250, notification='',
+            checked=[dict(target='llama.cpp', evidence='build 11256', outcome='updated'),
+                     dict(target='claude', evidence='npm view=2.1.284', outcome='current; no-op')],
+            deferred=[dict(target='hermes', reason='patch does not apply ' + 'x' * 400,
+                           proposed_action='port the carried commits', verification='tests pass',
+                           recovery='additive')],
+            unchecked=['Only host proximal was inspected'],
+            changes=[dict(target='llama.cpp', operation_id='abc', before='b' * 300,
+                          after='a' * 300, status='verified', verification='exit 0',
+                          activation='installed')])
+        message = bot.report_message({'status': 'partial', 'started': 0, 'finished': 600}, report)
+        self.assertTrue(message.startswith('*Maintenance partial* · proximal · 10 min'))
+        self.assertIn('1 change', message)
+        self.assertIn('• *llama.cpp* — verified:', message)
+        self.assertIn('    activation: installed', message)
+        self.assertIn('next: port the carried commits', message)
+        self.assertIn('*Checked, no action*', message)
+        self.assertIn('• *claude* — current; no-op', message)
+        self.assertIn('• Only host proximal was inspected', message)
+        # One clipped line per field, not the model's paragraph.
+        self.assertNotIn('prose prose prose', message)
+        self.assertLess(len(message), 4000)
+
+    def test_run_message_falls_back_to_prose_without_a_report(self):
+        latest = {'status': 'running', 'run_id': 'r3', 'error': 'launcher killed',
+                  'evidence': '/nonexistent/run'}
+        self.assertEqual(bot.run_message(latest), 'Maintenance interrupted: launcher killed')
+        self.assertIn('inference unavailable',
+                      bot.run_message({'status': 'failed', 'error': 'inference unavailable'}))
+
 
 class RunnerFailureTests(unittest.TestCase):
     def exercise(self, hermes_exit=0, record_failure=False, retry=False):

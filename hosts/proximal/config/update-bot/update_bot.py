@@ -319,6 +319,102 @@ def run():
             return 1
 
 
+def report_line(text, limit):
+    """Collapse a reported field to one clipped, scannable notification line."""
+    compact = ' '.join(str(text).split())
+    if len(compact) <= limit:
+        return compact
+    cut = compact[:limit]
+    for separator in ('. ', '; ', ', '):
+        index = cut.rfind(separator)
+        if index >= limit // 2:
+            return cut[:index + len(separator)].rstrip() + ' …'
+    return cut.rstrip() + ' …'
+
+
+def report_count(number, singular, plural=None):
+    return str(number) + ' ' + (singular if number == 1 else (plural or singular + 's'))
+
+
+# The rendered body must fit one Slack message with room for the header/footer
+# that the monitor appends.
+SLACK_BUDGET = 3800
+
+
+def report_blocks(report):
+    """Build the notification's display blocks, most consequential first."""
+    changes, deferred, unchecked = report.get('changes', []), report.get('deferred', []), report.get('unchecked', [])
+    blocks = []
+    if changes:
+        lines = []
+        for change in changes:
+            lines.append('• *' + change['target'] + '* — ' + change['status'] + ': ' +
+                         report_line(change['before'], 70) + '  →  ' + report_line(change['after'], 160))
+            lines.append('    activation: ' + report_line(change['activation'], 150))
+        blocks.append(('*Changes*', lines))
+    if deferred:
+        lines = []
+        for item in deferred:
+            lines.append('• *' + item['target'] + '* — ' + report_line(item['reason'], 170))
+            lines.append('    next: ' + report_line(item['proposed_action'], 160))
+        blocks.append(('*Deferred*', lines))
+    if unchecked:
+        blocks.append(('*Unchecked*', ['• ' + report_line(item, 150) for item in unchecked]))
+    accounted = {item['target'] for item in changes} | {item['target'] for item in deferred}
+    quiet = ['• *' + item['target'] + '* — ' + report_line(item['outcome'], 120)
+             for item in report.get('checked', []) if item['target'] not in accounted]
+    if quiet:
+        blocks.append(('*Checked, no action*', quiet))
+    return blocks
+
+
+def report_message(latest, report):
+    """Render the run notification from the report's structured fields.
+
+    The model's prose summary stays the record in latest.json and the Cairn
+    checkpoint; the Slack body is rendered here from changes/checked/deferred/
+    unchecked so every run arrives in the same scannable shape no matter how the
+    prose was written. Fields are clipped to single lines and the whole body is
+    held under SLACK_BUDGET; the receipts and the published changelog keep the
+    full text.
+    """
+    blocks = report_blocks(report)
+    minutes = int((latest.get('finished', 0) - latest.get('started', 0)) // 60)
+    header = ('*Maintenance ' + str(latest.get('status', 'unknown')) + '* · proximal · ' +
+              str(minutes) + ' min · ' + report_count(len(report.get('changes', [])), 'change') + ' · ' +
+              report_count(len(report.get('checked', [])), 'checked', 'checked') + ' · ' +
+              report_count(len(report.get('deferred', [])), 'deferred', 'deferred') + ' · ' +
+              report_count(len(report.get('unchecked', [])), 'unchecked', 'unchecked'))
+    lines = [header, '']
+    budget = SLACK_BUDGET - len(header) - 1
+    omitted = 0
+    for title, block in blocks:
+        kept = []
+        cost = len(title) + 1
+        for line in block:
+            if cost + len(line) + 1 > budget:
+                break
+            kept.append(line)
+            cost += len(line) + 1
+        omitted += len(block) - len(kept)
+        if kept:
+            lines.extend([title] + kept + [''])
+            budget -= cost + 1
+    if omitted:
+        lines.append('… ' + str(omitted) + ' further line(s) in the run receipts')
+    return '\n'.join(lines).strip() + '\n'
+
+
+def run_message(latest):
+    """Prefer the structured renderer; fall back to prose when no report exists."""
+    report = read_json(Path(latest.get('evidence') or '.') / 'report.json', {})
+    if isinstance(report, dict) and report.get('checked'):
+        return report_message(latest, report)
+    return ('Maintenance ' +
+            ('interrupted' if latest.get('status') == 'running' else str(latest.get('status', 'unknown'))) +
+            ': ' + latest.get('error', latest.get('summary', 'Inspect the run evidence.')))
+
+
 def monitor_messages(latest, completed, service, settings, now):
     messages = []
     age = now - (completed or {}).get('finished', (latest or {}).get('started', 0))
@@ -329,9 +425,7 @@ def monitor_messages(latest, completed, service, settings, now):
         messages.append(('draining:' + latest['run_id'], 'Maintenance has exceeded 30 minutes; inspect admitted native transactions. Do not kill a package manager blindly.'))
     if latest and (latest.get('status') in ('failed', 'partial') or
                    (latest.get('status') == 'running' and not active)):
-        messages.append(('run:' + latest['run_id'], 'Maintenance ' +
-                         ('interrupted' if latest['status'] == 'running' else latest['status']) +
-                         ': ' + latest.get('error', latest.get('summary', 'Inspect the run evidence.'))))
+        messages.append(('run:' + latest['run_id'], run_message(latest)))
     elif not active and service.get('Result', 'success') != 'success':
         messages.append(('service:' + service.get('InvocationID', ''),
                          'Maintenance service failed: ' + service.get('Result', 'unknown')))

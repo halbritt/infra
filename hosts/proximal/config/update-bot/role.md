@@ -115,11 +115,16 @@ intent lacks a result, inspect native processes and actual target state before a
 new mutation. Record reconciliation evidence in that operation's reconciled.json
 only after establishing its outcome; no blind retry.
 
-Return one JSON object with status (completed/partial), summary (target 1500 chars),
-checked (objects: target,evidence,outcome), deferred (objects: target,reason,
-proposed_action,verification,recovery), unchecked (strings), notification (new
-meaningful results only, empty for a no-op), and changes (objects with exactly:
-target, operation_id, before, after, status, verification, activation). Each change
+Return one JSON object with status (completed/partial), summary (target 1500 chars;
+the plain record, not the Slack text), checked (objects: target,evidence,outcome),
+deferred (objects: target,reason,proposed_action,verification,recovery), unchecked
+(strings), notification (Slack mrkdwn under 900 chars: one bold line then short
+"- " bullets, one fact per line, never restating the run's change list, empty for a
+no-op), and changes (objects with exactly:
+target, operation_id, before, after, status, verification, activation). The runtime
+renders the Slack run message from changes/checked/deferred/unchecked, so those
+fields must stand alone and stay short; the receipts and the published changelog
+carry the full text. Each change
 must name a real operations/UUID receipt. status is verified/failed/completed/
 rolled_back; activation distinguishes installed from running. Include every
 consequential attempt even on failure. A version string alone is insufficient

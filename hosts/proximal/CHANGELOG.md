@@ -5,6 +5,23 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-29
+
+### Update-bot: run reports rendered from the report's structured fields
+
+The daily maintenance report arrived as one ~1500-character paragraph written by
+the model (one wall of text, plus a second near-duplicate "finding" message), which
+is unreadable in Slack. The controller now renders the run notification itself from
+the report's `changes` / `deferred` / `unchecked` / `checked` fields: a one-line
+header with counts, then `Changes` (before → after plus activation), `Deferred`
+(reason plus next action), `Unchecked`, and `Checked, no action`, each field clipped
+to a single line and the body held under a 3800-character budget. The model's
+`summary` stays the plain record in `latest.json` and the Cairn checkpoint, and
+receipts plus the published changelog keep the untruncated text. `role.md` now
+constrains the optional `notification` field to short Slack mrkdwn that does not
+restate the change list. Rendered from run `57743817`: 3626 characters, 34 lines,
+all sections present. Covered by two new tests in `tests/test_update_bot.py`.
+
 ## 2026-09-28
 
 ### pgvector updated to 0.8.6

@@ -82,6 +82,16 @@ sends stay explicitly uncertain until reconciled. Host/systemd/Slack outages sti
 need external host monitoring. Policy and cadence are already approved: no repeated
 permission requests for routine work.
 
+A run notification is <em>rendered by the controller</em> from the report's structured
+fields (`changes`, `deferred`, `unchecked`, `checked`) as a fixed sectioned layout —
+one clipped line per field, `Changes` / `Deferred` / `Unchecked` / `Checked, no
+action`, capped at `SLACK_BUDGET` (3800) characters — so the message is scannable
+regardless of how the model wrote its prose. The model's `summary` remains the plain
+record in `latest.json` and the Cairn checkpoint, and the operation receipts plus the
+published changelog carry the untruncated text; the optional long-form `notification`
+finding is a separate, deliberately short message. Prose-writing instructions in
+`role.md` therefore describe the record, not the Slack layout.
+
 ## Installation and operations
 
 Run `bash install.sh` here. It installs canonical scripts below
