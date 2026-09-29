@@ -196,3 +196,10 @@ required dependencies, with review due 2026-10-06 or when that CLI exits.
 The three shared Cairn plugin directories were hash-pinned and tested against
 both generations, not replaced. Future plugin installs must repeat that matrix
 or introduce versioned loading. No live Slack/model round trip was performed.
+
+`install-stamp.json` installs beside the selected source (currently
+`/var/lib/update-bot/staging/hermes-gen-16c59d0e/install-stamp.json`). Its upstream
+`updateMechanism: external` setting preserves update-bot's launcher and tested
+venv. Generate a fresh stamp for every successor before its first launch using
+`scripts/write_install_stamp.py --source update-bot --update-mechanism external`.
+Verify launcher bytes and receipt again after startup.

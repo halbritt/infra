@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "commit": "aa50456dcb18e9bdb9f70c119391b39cb068a73c",
+  "commitDate": 1790696619,
+  "branch": "cairn-carry",
+  "builtAt": "2026-09-29T16:02:22.989760+00:00",
+  "dirty": false,
+  "source": "update-bot",
+  "distribution": null,
+  "updateMechanism": "external",
+  "baseVersion": null,
+  "displayVersion": "git.aa50456",
+  "distance": null,
+  "payload": "bootstrap",
+  "tag": null
+}

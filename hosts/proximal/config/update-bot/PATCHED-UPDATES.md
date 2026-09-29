@@ -140,3 +140,9 @@ installed adapters showed the same four baseline failures on both generations.
 The fixed activation helper verified new PID/source and Slack after native
 zero-work drain. See [report and recovery](../hermes/reports/HERMES_2026-09-29.md).
 Public runtime-contract work remains a separate follow-up on this baseline.
+
+Install the successor's upstream `install-stamp.json` with
+`updateMechanism: external` **before first launch**. Without that steward stamp,
+startup can publish Hermes's own PM shim over the versioned launcher and break
+receipt identity. This was caught and reconciled after activation; the source
+carry did not change. Canonical stamp and evidence live in `../hermes/`.
