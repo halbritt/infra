@@ -7,6 +7,14 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-29
 
+### Main PostgreSQL cluster upgraded to 17.11
+
+Activated the owner-requested minor update after a fresh backup. The controlled
+restart completed in 4.43 seconds; database and reconnect checks passed. See
+[the PostgreSQL report](config/postgres/reports/PG17_11_UPGRADE_2026-09-29.md).
+
+## 2026-09-29
+
 ### Update-bot: run reports rendered from the report's structured fields
 
 The daily maintenance report arrived as one ~1500-character paragraph written by

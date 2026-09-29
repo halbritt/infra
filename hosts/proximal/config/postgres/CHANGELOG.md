@@ -2,9 +2,18 @@
 
 Notable changes to the **proximal** PostgreSQL cluster's configuration and to this
 provenance repo. Newest first. Config changes record the live cluster (`proximal:5432`,
-`system_identifier 7652478211804703267`, PG 17.10 — was `7628053153555146077`/16.14 before
+`system_identifier 7652478211804703267`, PG 17.11 — was `7628053153555146077`/16.14 before
 the 2026-06-16/17 pg_upgrade); see `reports/` and `inventory/` for the evidence behind each
 entry, and `git log` for granular history.
+
+## 2026-09-29
+
+### PostgreSQL 17.11 installed and activated
+
+Upgraded the PG17 server/client packages and restarted `17/main` after a fresh
+backup and idle-transaction check. Live SQL, extension, durability, archive, and
+exporter checks passed. See [the execution report](reports/PG17_11_UPGRADE_2026-09-29.md),
+including the separate Cairn store still awaiting activation.
 
 ## 2026-09-28
 

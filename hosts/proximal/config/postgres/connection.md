@@ -7,12 +7,15 @@ How to reach the PostgreSQL instance on **proximal**. **No passwords here** — 
 |---|---|
 | host | `localhost` (proximal; also LAN `192.168.1.92`, tailnet `100.85.100.81`) |
 | port | `5432` (listening `127.0.0.1:5432` + unix socket `/var/run/postgresql/.s.PGSQL.5432`) |
-| version | PostgreSQL 17.10, cluster `17/main`, `system_identifier 7652478211804703267` |
+| version | PostgreSQL 17.11, cluster `17/main`, `system_identifier 7652478211804703267` |
 | topology | standalone primary (`pg_is_in_recovery()=false`, no slots/standbys) |
 
 > Upgraded PG 16.14 → 17.10 on 2026-06-16/17 (pg_upgrade — note the **new
 > `system_identifier`**; the old PG16 cluster was `7628053153555146077`). See
 > `reports/PG17_UPGRADE_ASRUN_2026-06-17.md`.
+
+Minor update to 17.11 activated on 2026-09-29; system identifier unchanged.
+See [the execution report](reports/PG17_11_UPGRADE_2026-09-29.md).
 
 ## Databases (confirmed 2026-06-17, post-upgrade)
 
