@@ -154,7 +154,10 @@ diff ~/.hermes/config.yaml config.yaml # drift: live vs repo desired-state (empt
 hermes --yolo -z 'run hostname via your terminal tool and reply with only its output'
 ```
 
-## Rollback
+## Original installation removal (historical; not generation rollback)
+
+For current generation rollback, use the [port report](reports/HERMES_2026-09-29.md).
+The following describes removal of the original installation.
 
 `hermes uninstall` (upstream-provided), or remove `~/.hermes/` and
 `~/.local/bin/hermes`. Nothing outside those two paths is touched except the apt-installed
@@ -179,3 +182,17 @@ reload the user manager after editing. It selects the default launcher for futur
 starts. Preserve the old venv for the active CLI and the unit's existing
 ExecStopPost cleanup. Receipt: `/var/lib/update-bot/hermes-gateway-activation.json`.
 See [patch procedure and evidence](../update-bot/PATCHED-UPDATES.md).
+
+## Current generation — 2026-09-29
+
+New CLI launches and the gateway select `aa50456d` on upstream `16c59d0e`,
+with the preserved Cairn carry and Python 3.14.6, at
+`/var/lib/update-bot/staging/hermes-gen-16c59d0e`. Native zero-work drain and
+PID/source/Slack checks passed. See [the port report](reports/HERMES_2026-09-29.md)
+for validation, baseline adapter failures and recovery. The old `hermes-carry`
+generation remains for rollback. Legacy CLI source and cleanup venv remain
+required dependencies, with review due 2026-10-06 or when that CLI exits.
+
+The three shared Cairn plugin directories were hash-pinned and tested against
+both generations, not replaced. Future plugin installs must repeat that matrix
+or introduce versioned loading. No live Slack/model round trip was performed.

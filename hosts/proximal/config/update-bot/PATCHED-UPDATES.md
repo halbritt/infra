@@ -122,3 +122,21 @@ establish latest versions or approval to rewrite project lockfiles. It excludes
 remote hosts, containers and exhaustive system/user site-package discovery.
 Recurring agents recall this dated inventory and perform broader rediscovery at
 least weekly; the named update priorities do not define discovery's boundary.
+
+## Hermes successor activated — 2026-09-29
+
+| Role | Source | Revision |
+| --- | --- | --- |
+| Selected CLI and gateway | `/var/lib/update-bot/staging/hermes-gen-16c59d0e` | `aa50456d` on `16c59d0e` |
+| Retained rollback | `/var/lib/update-bot/staging/hermes-carry` | `9b57ee21` on `79a6fd3e` |
+| Legacy CLI and ExecStopPost | `~/.hermes/hermes-agent` | `9904fd411` |
+
+The compatibility reconciliation was ported as one commit; the regenerated
+`patches/hermes.patch` applies against exact upstream `16c59d0e`. Build via
+Hermes `pm.build_env`, not a mutation of the active venv. Fresh isolated gates
+passed: 239 carry tests, 1,704 broader tests and 71 current Cairn tests, plus
+native CLI/gateway fixture paths and database rollback compatibility. Exact
+installed adapters showed the same four baseline failures on both generations.
+The fixed activation helper verified new PID/source and Slack after native
+zero-work drain. See [report and recovery](../hermes/reports/HERMES_2026-09-29.md).
+Public runtime-contract work remains a separate follow-up on this baseline.

@@ -1,26 +1,5 @@
-From 9b57ee21af407efc17478deb120dd78cfaceadba Mon Sep 17 00:00:00 2001
-From: halbritt <halbritt@gmail.com>
-Date: Sun, 20 Sep 2026 17:59:15 -0700
-Subject: [PATCH] feat(cli): carry Cairn admission and turn identity onto
- current runtime
-
-Reconciles b8ae93b03, 2c6121992, 131e95b31 and 9904fd411 onto upstream 79a6fd3e. Hooks the actual TUI loop, preserves voice/seeded envelopes, retains upstream approval context and process ownership, and binds lazy agents to the admitted turn.
----
- agent/turn_context.py                      |   2 +
- agent/turn_facade.py                       |   3 +-
- hermes_cli/cli_chat_turn_mixin.py          |   1 +
- hermes_cli/cli_init_mixin.py               |   2 +
- hermes_cli/cli_tui_runtime_mixin.py        | 144 +++++++-
- hermes_cli/plugins.py                      |  78 ++++
- tests/hermes_cli/test_cli_queue_message.py | 403 +++++++++++++++++++++
- tools/approval.py                          |   2 +
- tools/approval_context.py                  |  22 ++
- tools/process_registry.py                  |  21 +-
- 10 files changed, 670 insertions(+), 8 deletions(-)
- create mode 100644 tests/hermes_cli/test_cli_queue_message.py
-
 diff --git a/agent/turn_context.py b/agent/turn_context.py
-index 14dd74be..f135c081 100644
+index 635e7fac..16e7f4fd 100644
 --- a/agent/turn_context.py
 +++ b/agent/turn_context.py
 @@ -553,6 +553,8 @@ def _bind_turn_identity(
@@ -47,10 +26,10 @@ index 3c901a41..b6edad76 100644
          relay_parent_session_id = (
              str(getattr(self, "_parent_session_id", None) or "")
 diff --git a/hermes_cli/cli_chat_turn_mixin.py b/hermes_cli/cli_chat_turn_mixin.py
-index 9f6b27b7..9532206a 100644
+index 1a7b160e..c67040ad 100644
 --- a/hermes_cli/cli_chat_turn_mixin.py
 +++ b/hermes_cli/cli_chat_turn_mixin.py
-@@ -77,6 +77,7 @@ class CLIChatTurnMixin:
+@@ -79,6 +79,7 @@ class CLIChatTurnMixin:
          agent = self.agent
          if agent is None:
              return None
@@ -59,10 +38,10 @@ index 9f6b27b7..9532206a 100644
          message = self._chat_route_images(message, images)
  
 diff --git a/hermes_cli/cli_init_mixin.py b/hermes_cli/cli_init_mixin.py
-index bd7a7ff1..2e7ae65a 100644
+index 8c611e5c..7b727dea 100644
 --- a/hermes_cli/cli_init_mixin.py
 +++ b/hermes_cli/cli_init_mixin.py
-@@ -316,6 +316,8 @@ class CLIInitMixin:
+@@ -317,6 +317,8 @@ class CLIInitMixin:
  
          self._history_file = _hermes_home / ".hermes_history"
          self._last_invalidate: float | None = None  # throttles UI repaints (None = never; monotonic epoch is arbitrary)
@@ -72,7 +51,7 @@ index bd7a7ff1..2e7ae65a 100644
  
      def _init_session_store(self):
 diff --git a/hermes_cli/cli_tui_runtime_mixin.py b/hermes_cli/cli_tui_runtime_mixin.py
-index 10f502ea..0e3da8a7 100644
+index 43539057..11329ad9 100644
 --- a/hermes_cli/cli_tui_runtime_mixin.py
 +++ b/hermes_cli/cli_tui_runtime_mixin.py
 @@ -13,6 +13,7 @@ import shutil
@@ -80,10 +59,10 @@ index 10f502ea..0e3da8a7 100644
  import threading
  import time
 +import uuid
+ from agent.i18n import t
  from agent.interrupt_compat import request_hard_interrupt
  from agent.pet import render as pet_render
- from contextlib import suppress
-@@ -27,17 +28,150 @@ logger = logging.getLogger("cli")
+@@ -28,17 +29,150 @@ logger = logging.getLogger("cli")
  class CLITuiRuntimeMixin:
      """Classic-TUI run loop phases: input processing, after-turn bookkeeping, startup banner/prewarm/maintenance, prompt_toolkit application build, signal handlers and shutdown."""
  
@@ -236,9 +215,9 @@ index 10f502ea..0e3da8a7 100644
              except Exception as e:
                  if isinstance(e, OSError) and e.errno == errno.EIO:
                      self._mark_terminal_io_broken("process_loop")
-@@ -115,7 +249,11 @@ class CLITuiRuntimeMixin:
-             n = len(submit_images)
-             _cprint(f"  {_DIM}📎 {n} image{'s' if n > 1 else ''} attached{_RST}")
+@@ -117,7 +251,11 @@ class CLITuiRuntimeMixin:
+             _attached = t("cli.tui.images_attached_one" if n == 1 else "cli.tui.images_attached_other", count=n)
+             _cprint(f"  {_DIM}{_attached}{_RST}")
  
 -        self._agent_running = self._interactive_turn = True
 +        with self._admission_lock:
@@ -250,7 +229,7 @@ index 10f502ea..0e3da8a7 100644
          self._turn_summary_begin()
          self._app.invalidate()
 diff --git a/hermes_cli/plugins.py b/hermes_cli/plugins.py
-index 33a4b997..6b6e916c 100644
+index 6edff802..33984043 100644
 --- a/hermes_cli/plugins.py
 +++ b/hermes_cli/plugins.py
 @@ -79,6 +79,39 @@ class PluginToolOverrideError(PermissionError):
@@ -764,11 +743,11 @@ index 00000000..f098bf83
 +if __name__ == "__main__":
 +    unittest.main()
 diff --git a/tools/approval.py b/tools/approval.py
-index eec093c1..e5663cfb 100644
+index 21dc9e67..f29664d0 100644
 --- a/tools/approval.py
 +++ b/tools/approval.py
-@@ -22,6 +22,8 @@ from typing import Optional
- from utils import env_var_enabled, is_truthy_value
+@@ -23,6 +23,8 @@ from utils import env_var_enabled, is_truthy_value
+ from agent.i18n import t
  from tools import approval_context
  from tools.approval_context import (
 +    _approval_request_id, _approval_turn_id, get_current_request_id, set_current_request_id,
@@ -777,10 +756,10 @@ index eec093c1..e5663cfb 100644
      _is_gateway_approval_context, _is_interactive_cli, _is_single_query_approval_context,
      _is_unattended_platform_approval_context, _resolve_cli_approval_callback, _should_fall_through_to_cli_approval,
 diff --git a/tools/approval_context.py b/tools/approval_context.py
-index f915220f..5e0fbde2 100644
+index f71381c3..6ad01ff0 100644
 --- a/tools/approval_context.py
 +++ b/tools/approval_context.py
-@@ -21,6 +21,7 @@ def _ctx(name: str, default: "str | None" = "") -> contextvars.ContextVar:
+@@ -22,6 +22,7 @@ def _ctx(name: str, default: "str | None" = "") -> contextvars.ContextVar:
  # Per-thread/per-task gateway session identity: gateway runs agent turns concurrently in executor threads, so a
  # process-global env var is racy (the env fallback stays for legacy single-threaded callers).
  _approval_session_key: contextvars.ContextVar[str] = _ctx("approval_session_key")
@@ -788,7 +767,7 @@ index f915220f..5e0fbde2 100644
  _approval_turn_id: contextvars.ContextVar[str] = _ctx("approval_turn_id")
  _approval_tool_call_id: contextvars.ContextVar[str] = _ctx("approval_tool_call_id")
  # Hermes session id (observability identity, distinct from the gateway routing session_key), forwarded to approval
-@@ -329,3 +330,24 @@ def _get_approval_transport_config() -> tuple[str, str | None]:
+@@ -330,3 +331,24 @@ def _get_approval_transport_config() -> tuple[str, str | None]:
          # prompt on a built-in surface the operator may not be watching.
          return "config-error", None
      return selected or "builtin", "builtin" if fallback == "builtin" else None
@@ -886,6 +865,3 @@ index 6c7377a6..9a262a11 100644
                  "owner_task_id": s.owner_task_id,
                  "started_at": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(s.started_at)),
                  "uptime_seconds": int(time.time() - s.started_at),
--- 
-2.43.0
-

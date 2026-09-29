@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Versioned maintenance installation; previous runtime remains available to active sessions.
 unset PYTHONPATH PYTHONHOME
-export VIRTUAL_ENV=/var/lib/update-bot/staging/hermes-carry/.venv
+export VIRTUAL_ENV=/var/lib/update-bot/staging/hermes-gen-16c59d0e/.venv
 export PATH="$VIRTUAL_ENV/bin:$PATH"
-exec "$VIRTUAL_ENV/bin/python" /var/lib/update-bot/staging/hermes-carry/hermes "$@"
+exec "$VIRTUAL_ENV/bin/python" /var/lib/update-bot/staging/hermes-gen-16c59d0e/hermes "$@"

@@ -7,6 +7,17 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-29
 
+### Hermes upstream refresh with Cairn compatibility preserved
+
+Ported the reconciled carry onto upstream `16c59d0e` as `aa50456d` in its own
+source/venv. Selected and activated through the fixed drain helper; gateway
+PID/source/Slack checks passed and the legacy CLI stayed alive. Preserved old
+generations and private SQLite/config/plugin snapshots for recovery. The
+[port report](config/hermes/reports/HERMES_2026-09-29.md) records passing gates,
+identical installed-adapter baseline failures and the untested live round trip.
+
+## 2026-09-29
+
 ### Main PostgreSQL cluster upgraded to 17.11
 
 Activated the owner-requested minor update after a fresh backup. The controlled
