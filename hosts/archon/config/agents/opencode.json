@@ -1,0 +1,73 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "system",
+  "autoupdate": false,
+  "provider": {
+    "zai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Z.ai coding plan (GLM)",
+      "options": {
+        "baseURL": "https://api.z.ai/api/coding/paas/v4",
+        "apiKey": "{file:/home/halbritt/.config/opencode/provider-keys/zai}"
+      },
+      "models": {
+        "glm-5.3": {
+          "name": "GLM-5.3 (Z.ai coding plan)"
+        },
+        "glm-5.3-max": {
+          "name": "GLM-5.3 (Z.ai, reasoning_effort=max)",
+          "id": "glm-5.3",
+          "options": {
+            "reasoning_effort": "max"
+          }
+        }
+      }
+    },
+    "openrouter": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenRouter",
+      "options": {
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "{file:/home/halbritt/.config/opencode/provider-keys/openrouter}"
+      },
+      "models": {
+        "deepseek/deepseek-v4-pro-0813": {
+          "name": "DeepSeek V4 Pro 0813"
+        },
+        "deepseek/deepseek-v4-flash-0731": {
+          "name": "DeepSeek V4 Flash 0731"
+        },
+        "deepseek/deepseek-v4-pro-0813-high": {
+          "name": "DeepSeek V4 Pro 0813 (reasoning.effort=high)",
+          "id": "deepseek/deepseek-v4-pro-0813",
+          "options": {
+            "reasoning": {
+              "effort": "high"
+            }
+          }
+        },
+        "deepseek/deepseek-v4-flash-0731-high": {
+          "name": "DeepSeek V4 Flash 0731 (reasoning.effort=high)",
+          "id": "deepseek/deepseek-v4-flash-0731",
+          "options": {
+            "reasoning": {
+              "effort": "high"
+            }
+          }
+        },
+        "union-alpha": {
+          "name": "Union Alpha (Unbiased Pareto)",
+          "id": "unbiased/pareto"
+        },
+        "unbiased/pareto": {
+          "name": "Unbiased Pareto (Union Alpha)"
+        },
+        "stealth/union-alpha": {
+          "name": "Union Alpha (Stealth Alias)",
+          "id": "unbiased/pareto"
+        }
+      }
+    }
+  },
+  "model": "zai/glm-5.3"
+}

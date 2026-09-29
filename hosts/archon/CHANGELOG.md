@@ -1,5 +1,15 @@
 # Host changelog
 
+## Agent accounts and shared skills — 2026-09-29
+
+Replicated the owner's default and harm Codex/Claude accounts, added named harm
+launchers, configured OpenCode with the existing Z.ai/OpenRouter accounts, and
+set Hermes to DeepSeek 4.1 Flash via OpenRouter. Updated skillpack and verified
+all 52 curated skills across the requested harnesses, including Hermes through
+its external directory support. All six live inference probes passed. Jevgrep
+also has verified direct TypeSafe access. Credentials and rollback snapshots
+remain outside Git. See [agent configuration](config/agents/README.md).
+
 ## Herdr board publisher disabled — 2026-09-27
 
 The agent board showed "herdr@archon not reporting since 04:25". Herdr
