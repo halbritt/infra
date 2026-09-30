@@ -5,6 +5,29 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-09-30
+
+### Update-bot: one readable Slack report per run
+
+At the owner's request, replace the technical receipt dump plus duplicate finding
+with one human-facing brief: outcome, updates/failures, practical impact and next
+steps with an owner. The role now requests ordinary language and groups multi-step
+tool updates, keeping hashes, PIDs, commands and detailed evidence in the full
+report. The controller adds run status, failed/rolled-back targets and coverage
+limits independently; older reports without a brief retain a structured fallback.
+Successful changes now use the same run notification path; uneventful no-ops stay
+quiet. Delivery uncertainty and reminder policy remain unchanged.
+
+The Slack footer now contains a full-report link and short run reference; pending
+publication falls back to the local evidence path. Full messages fit 4000 chars.
+Offline rendering of saved run `a452705d` produced an 885-character message.
+Validation: 38 repository tests and infrastructure validation passed. Installed
+controller and role verified byte-for-byte against canonical files, with the host
+and monitor locks held; no maintenance run or gateway restart was needed. Prior
+files are retained under `/var/lib/update-bot/reporting-backups/agent224/`.
+The new writing instructions take effect on the next maintenance run; the saved
+report preview verifies rendering, not a new model-generated report or Slack send.
+
 ## 2026-09-29
 
 ### Jevgrep with direct TypeSafe access

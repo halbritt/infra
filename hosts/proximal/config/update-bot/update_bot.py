@@ -351,42 +351,49 @@ def report_blocks(report):
             lines.append('• *' + change['target'] + '* — ' + change['status'] + ': ' +
                          report_line(change['before'], 70) + '  →  ' + report_line(change['after'], 160))
             lines.append('    activation: ' + report_line(change['activation'], 150))
-        blocks.append(('*Changes*', lines))
+        blocks.append(('*Update results*', lines))
     if deferred:
         lines = []
         for item in deferred:
             lines.append('• *' + item['target'] + '* — ' + report_line(item['reason'], 170))
             lines.append('    next: ' + report_line(item['proposed_action'], 160))
-        blocks.append(('*Deferred*', lines))
+        blocks.append(('*Waiting for follow-up*', lines))
     if unchecked:
-        blocks.append(('*Unchecked*', ['• ' + report_line(item, 150) for item in unchecked]))
+        blocks.append(('*Not checked this time*', ['• ' + report_line(item, 150) for item in unchecked]))
     accounted = {item['target'] for item in changes} | {item['target'] for item in deferred}
     quiet = ['• *' + item['target'] + '* — ' + report_line(item['outcome'], 120)
              for item in report.get('checked', []) if item['target'] not in accounted]
     if quiet:
-        blocks.append(('*Checked, no action*', quiet))
+        blocks.append(('*Other checks*', quiet))
     return blocks
 
 
 def report_message(latest, report):
-    """Render the run notification from the report's structured fields.
-
-    The model's prose summary stays the record in latest.json and the Cairn
-    checkpoint; the Slack body is rendered here from changes/checked/deferred/
-    unchecked so every run arrives in the same scannable shape no matter how the
-    prose was written. Fields are clipped to single lines and the whole body is
-    held under SLACK_BUDGET; the receipts and the published changelog keep the
-    full text.
-    """
+    """Use the agent's reader-facing brief, retaining a receipt-based fallback."""
+    minutes = max(0, int((latest.get('finished', 0) - latest.get('started', 0)) // 60))
+    status = latest.get('status', 'unknown')
+    label = {'completed': 'finished', 'partial': 'finished with issues',
+             'failed': 'failed', 'running': 'interrupted'}.get(status, status)
+    header = '*Proximal maintenance — ' + label + '* · ' + str(minutes) + ' min'
+    # These facts survive even if the brief forgets a failure or coverage limit.
+    issues = []
+    failed = list(dict.fromkeys(x['target'] for x in report.get('changes', [])
+                               if x['status'] in ('failed', 'rolled_back')))
+    if failed:
+        issues.append('Failed or rolled back: ' + report_line(', '.join(failed), 180))
+    if report.get('deferred'):
+        issues.append(report_count(len(report['deferred']), 'item waiting for follow-up',
+                                   'items waiting for follow-up'))
+    if report.get('unchecked'):
+        issues.append(report_count(len(report['unchecked']), 'area not checked', 'areas not checked'))
+    if issues:
+        header += '\n' + ' · '.join(issues)
+    brief = report.get('notification', '').strip()
+    if brief and len(header) + len(brief) + 3 <= SLACK_BUDGET:
+        return header + '\n\n' + brief + '\n'
     blocks = report_blocks(report)
-    minutes = int((latest.get('finished', 0) - latest.get('started', 0)) // 60)
-    header = ('*Maintenance ' + str(latest.get('status', 'unknown')) + '* · proximal · ' +
-              str(minutes) + ' min · ' + report_count(len(report.get('changes', [])), 'change') + ' · ' +
-              report_count(len(report.get('checked', [])), 'checked', 'checked') + ' · ' +
-              report_count(len(report.get('deferred', [])), 'deferred', 'deferred') + ' · ' +
-              report_count(len(report.get('unchecked', [])), 'unchecked', 'unchecked'))
     lines = [header, '']
-    budget = SLACK_BUDGET - len(header) - 1
+    budget = SLACK_BUDGET - len(header) - 81
     omitted = 0
     for title, block in blocks:
         kept = []
@@ -401,7 +408,7 @@ def report_message(latest, report):
             lines.extend([title] + kept + [''])
             budget -= cost + 1
     if omitted:
-        lines.append('… ' + str(omitted) + ' further line(s) in the run receipts')
+        lines.append('… ' + str(omitted) + ' more detail lines in the full report')
     return '\n'.join(lines).strip() + '\n'
 
 
@@ -429,7 +436,24 @@ def monitor_messages(latest, completed, service, settings, now):
     elif not active and service.get('Result', 'success') != 'success':
         messages.append(('service:' + service.get('InvocationID', ''),
                          'Maintenance service failed: ' + service.get('Result', 'unknown')))
+    elif latest and latest.get('status') == 'completed' and latest.get('recording') == 'recorded':
+        report = read_json(Path(latest['evidence']) / 'report.json', {})
+        if report.get('changes') or report.get('deferred') or report.get('notification'):
+            messages.append(('run:' + latest['run_id'], report_message(latest, report)))
     return messages
+
+
+def slack_message(message, latest, publication):
+    """Keep technical provenance in one compact, useful footer."""
+    if publication.get('status') == 'pushed':
+        details = '<https://github.com/halbritt/infra/commit/' + publication['commit'] + '|Full report>'
+    else:
+        details = 'Details on proximal: ' + latest.get('evidence', str(STATE))
+    footer = '\n\n' + details + ' · Run ' + latest.get('run_id', 'none')[:8]
+    room = 4000 - len(footer)
+    if len(message) > room:
+        message = message[:room - 2].rstrip() + '…'
+    return message.rstrip() + footer
 
 
 def monitor():
@@ -461,11 +485,6 @@ def monitor():
         if publication_error:
             messages.append(('publication:' + latest.get('run_id', 'none'),
                              'Maintenance Git publication is pending; host operations will not be repeated. ' + publication_error))
-        if latest.get('status') in ('completed', 'partial') and latest.get('recording') == 'recorded':
-            report = read_json(Path(latest['evidence']) / 'report.json', {})
-            note = report.get('notification', '')
-            if note:
-                messages.append(('finding:' + hashlib.sha256(note.encode()).hexdigest(), note))
         delivered = read_json(STATE / 'delivery.json', {})
         uncertain = any(item.get('status') == 'sending-uncertain' for item in delivered.values())
         env = os.environ.copy()
@@ -483,11 +502,7 @@ def monitor():
             delivered[key] = {'status': 'sending-uncertain', 'at': time.time()}
             atomic_json(STATE / 'delivery.json', delivered)
             publication = read_json(Path(latest.get('evidence', str(STATE))) / 'publication.json', {})
-            message = ('[proximal update-bot / ' + settings['stage'] + ']\n' + message +
-                       '\nRun: ' + latest.get('run_id', 'none') +
-                       '\nEvidence: ' + latest.get('evidence', str(STATE)) +
-                       '\nPolicy: infra/hosts/proximal/config/update-bot/policy.md' +
-                       ('\nChangelog: https://github.com/halbritt/infra/commit/' + publication['commit'] if publication.get('status') == 'pushed' else ''))
+            message = slack_message(message, latest, publication)
             result = command([HERMES, 'send', '--to', settings['slack_target'], '--json'],
                              input=message, env=env, timeout=60)
             if result.returncode:

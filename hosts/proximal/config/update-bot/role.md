@@ -116,15 +116,13 @@ new mutation. Record reconciliation evidence in that operation's reconciled.json
 only after establishing its outcome; no blind retry.
 
 Return one JSON object with status (completed/partial), summary (target 1500 chars;
-the plain record, not the Slack text), checked (objects: target,evidence,outcome),
-deferred (objects: target,reason,proposed_action,verification,recovery), unchecked
-(strings), notification (Slack mrkdwn under 900 chars: one bold line then short
-"- " bullets, one fact per line, never restating the run's change list, empty for a
-no-op), and changes (objects with exactly:
-target, operation_id, before, after, status, verification, activation). The runtime
-renders the Slack run message from changes/checked/deferred/unchecked, so those
-fields must stand alone and stay short; the receipts and the published changelog
-carry the full text. Each change
+the detailed record), checked (objects: target,evidence,outcome), deferred
+(objects: target,reason,proposed_action,verification,recovery), unchecked (strings),
+notification (the human-facing Slack report described below), and changes (objects
+with exactly: target, operation_id, before, after, status, verification, activation).
+The controller sends ONE run message, using notification as its body and adding
+status, failure/coverage counts and a link to the full report. Do not write a
+second technical summary for Slack. Each change
 must name a real operations/UUID receipt. status is verified/failed/completed/
 rolled_back; activation distinguishes installed from running. Include every
 consequential attempt even on failure. A version string alone is insufficient
@@ -133,3 +131,28 @@ The runtime records Cairn checkpoints and the publisher commits meaningful outco
 and sends Slack; do not write Git history or send Slack yourself. Do not copy secrets
 or raw transcripts. Do not repeat unchanged requests or ask to confirm already
 approved cadence/provider/channel/scope. Leave specific genuine blockers visible.
+
+## Write the Slack report for the owner
+
+Use `notification` for a short, useful report, usually 600–1200 characters and
+never more than 1800. Leave it empty for an uneventful no-op. The controller adds
+the heading: do not repeat the host, date, run ID or status banner.
+
+- Lead with the outcome in one plain sentence, then 3–6 short bullets as needed.
+- Group preparation, installation and activation of one tool into one outcome.
+  Say whether the new version is running or only ready for new sessions. Use
+  familiar tool names and useful version numbers; omit commit hashes, PIDs,
+  receipt UUIDs, file paths, commands, test counts and internal policy labels.
+- Include every failed/rolled-back attempt and its practical impact. Explain the
+  cause simply when known. Do not imply failed work installed an update, or that
+  an installed update has been activated.
+- Explain important holds, pending restarts/reboots and significant checks not
+  completed. Unknown is not current. Do not turn a limited check into “all good.”
+- End with the next step and who owns it: what the bot will retry, and any specific
+  decision the owner needs to make. Say “No action needed from you” only when the
+  receipts support that. A proposed retry is not a completed repair or a new
+  authorization. Do not request approval again for routine authorized updates.
+- Use ordinary language: “waiting for a restart,” not “activation deferred”;
+  “the build ran out of available processes,” not “fork exhaustion in the cgroup.”
+  Keep full diagnostics, evidence and recovery commands in structured fields and
+  receipts, which remain the source for the detailed changelog.

@@ -102,17 +102,65 @@ class MonitorTests(unittest.TestCase):
                           after='a' * 300, status='verified', verification='exit 0',
                           activation='installed')])
         message = bot.report_message({'status': 'partial', 'started': 0, 'finished': 600}, report)
-        self.assertTrue(message.startswith('*Maintenance partial* · proximal · 10 min'))
-        self.assertIn('1 change', message)
+        self.assertTrue(message.startswith('*Proximal maintenance — finished with issues* · 10 min'))
+        self.assertIn('1 item waiting for follow-up', message)
         self.assertIn('• *llama.cpp* — verified:', message)
         self.assertIn('    activation: installed', message)
         self.assertIn('next: port the carried commits', message)
-        self.assertIn('*Checked, no action*', message)
+        self.assertIn('*Other checks*', message)
         self.assertIn('• *claude* — current; no-op', message)
         self.assertIn('• Only host proximal was inspected', message)
         # One clipped line per field, not the model's paragraph.
         self.assertNotIn('prose prose prose', message)
         self.assertLess(len(message), 4000)
+
+    def test_brief_keeps_failures_and_coverage_visible_without_dumping_receipts(self):
+        report = ReportTests().report()
+        report.update(notification='Codex is ready for new sessions.\n• I will retry the model build next run.',
+                      changes=[dict(target='llama.cpp', status='failed', before='private diagnostic',
+                                    after='diagnostic', activation='not installed')])
+        message = bot.report_message({'status': 'partial', 'started': 0, 'finished': 60}, report)
+        self.assertIn(report['notification'], message)
+        self.assertIn('Failed or rolled back: llama.cpp', message)
+        self.assertIn('1 area not checked', message)
+        self.assertNotIn('private diagnostic', message)
+        self.assertNotIn(report['summary'], message)
+
+    def test_successful_change_gets_one_run_report_but_noop_stays_quiet(self):
+        report = ReportTests().report()
+        report['notification'] = 'Codex updated. No action needed from you.'
+        latest = dict(status='completed', recording='recorded', evidence='/fixture', run_id='r4')
+        with patch.object(bot, 'read_json', return_value=report):
+            messages = self.check(latest, {'finished': 199900}, {'ActiveState': 'inactive'})
+            self.assertEqual([key for key, _ in messages], ['run:r4'])
+            self.assertIn(report['notification'], messages[0][1])
+            report['notification'] = ''
+            self.assertEqual(self.check(latest, {'finished': 199900}, {'ActiveState': 'inactive'}), [])
+
+    def test_old_successful_report_does_not_hide_new_service_failure(self):
+        latest = dict(status='completed', recording='recorded', evidence='/fixture', run_id='r4')
+        messages = self.check(latest, {'finished': 199900},
+                              {'ActiveState': 'failed', 'Result': 'signal', 'InvocationID': 'i5'})
+        self.assertEqual(messages, [('service:i5', 'Maintenance service failed: signal')])
+
+    def test_slack_envelope_has_details_link_and_bounded_fallback(self):
+        latest = dict(run_id='12345678-aaaa', evidence='/var/lib/update-bot/runs/example')
+        for publication in ({'status': 'pushed', 'commit': 'abc123'}, {}):
+            message = bot.slack_message('Long diagnostic ' * 1000, latest, publication)
+            self.assertLessEqual(len(message), 4000)
+            self.assertIn('Run 12345678', message)
+            self.assertNotIn('Policy:', message)
+            if publication:
+                self.assertIn('<https://github.com/halbritt/infra/commit/abc123|Full report>', message)
+            else:
+                self.assertIn(latest['evidence'], message)
+
+    def test_large_legacy_report_leaves_room_for_omission_notice(self):
+        report = ReportTests().report()
+        report['unchecked'] = ['Long coverage limitation ' * 30] * 80
+        message = bot.report_message({'status': 'partial'}, report)
+        self.assertLessEqual(len(message), bot.SLACK_BUDGET)
+        self.assertIn('more detail lines in the full report', message)
 
     def test_run_message_falls_back_to_prose_without_a_report(self):
         latest = {'status': 'running', 'run_id': 'r3', 'error': 'launcher killed',

@@ -82,15 +82,26 @@ sends stay explicitly uncertain until reconciled. Host/systemd/Slack outages sti
 need external host monitoring. Policy and cadence are already approved: no repeated
 permission requests for routine work.
 
-A run notification is <em>rendered by the controller</em> from the report's structured
-fields (`changes`, `deferred`, `unchecked`, `checked`) as a fixed sectioned layout —
-one clipped line per field, `Changes` / `Deferred` / `Unchecked` / `Checked, no
-action`, capped at `SLACK_BUDGET` (3800) characters — so the message is scannable
-regardless of how the model wrote its prose. The model's `summary` remains the plain
-record in `latest.json` and the Cairn checkpoint, and the operation receipts plus the
-published changelog carry the untruncated text; the optional long-form `notification`
-finding is a separate, deliberately short message. Prose-writing instructions in
-`role.md` therefore describe the record, not the Slack layout.
+Each meaningful run produces one Slack report: a plain-language outcome, short
+bullets about updates and failures, and the next step (including who needs to act).
+The agent writes this brief in `notification`; the controller adds the actual run
+status, failed/rolled-back targets and counts of deferred or incomplete checks.
+The brief groups multi-step updates by tool and distinguishes installed software
+from running software. It should normally fit in 600–1200 characters, without
+commit hashes, PIDs, commands or receipt paths. Empty briefs fall back to the
+structured report so older runs and incomplete reporting remain visible.
+
+The footer links to the published changelog, or gives the local evidence directory
+when publication is pending. Full run IDs, policy details and operation evidence
+remain in the run records. The complete message is capped at 4000 characters;
+there is no second near-duplicate “finding” message. Uneventful no-op runs remain
+quiet. Delivery uncertainty, deduplication and reminder intervals are unchanged.
+
+For a reporting-only deployment with the runner and monitor idle, atomically
+install `update_bot.py` to `/usr/local/lib/update-bot/update_bot.py` (root:root,
+0755) and `role.md` to `/etc/update-bot/role.md` (root:root, 0644), holding the host
+and monitor locks. No runtime refresh or unit restart is required; each scheduled
+invocation reads the installed files. Preserve the prior copies for rollback.
 
 ## Installation and operations
 
