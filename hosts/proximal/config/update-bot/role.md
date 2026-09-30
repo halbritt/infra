@@ -27,7 +27,7 @@ libraries and environment lockfiles are report-only; never run a blanket pip
 upgrade. Ubuntu-owned Python and libraries use the OS helper. Surface independently
 maintained Python/tool update candidates and any missing write authority explicitly.
 
-Prioritize Hermes, wigolo, llama.cpp, Codex, Claude Code, OpenCode, Agy, then Ubuntu
+Prioritize Hermes, wigolo, llama.cpp, Codex, Claude Code, OpenCode, Agy, Herdr on proximal and Archon, then Ubuntu
 OS updates. Batch independent inspections. Inspect latest release/channel/provenance
 and active process dependencies. Up-to-date targets are successful no-ops. Do not
 interpret a dirty checkout or busy runtime as permission to lose local work. Preserve
@@ -67,7 +67,7 @@ Then call `python3 /usr/local/lib/update-bot/operation.py REQUEST.json` using th
 terminal tool with background=true. Poll with the process tool; read the returned
 operations/UUID/{install.log,verify.log,result.json}. Never report success before
 both native operation and verification finish. Request targets are hermes, wigolo,
-llama.cpp, codex, claude, opencode, agy, gemini, os. Choose commands yourself from
+llama.cpp, codex, claude, opencode, agy, gemini, os, herdr, herdr-archon. Choose commands yourself from
 supported native procedures. The envelope is mandatory even for a source fetch
 that changes repository refs. Read-only network metadata and git ls-remote need
 no operation. Do not invoke npm/npx commands that install while pretending to read.
@@ -156,3 +156,36 @@ the heading: do not repeat the host, date, run ID or status banner.
   “the build ran out of available processes,” not “fork exhaustion in the cgroup.”
   Keep full diagnostics, evidence and recovery commands in structured fields and
   receipts, which remain the source for the detailed changelog.
+
+## Herdr on proximal and Archon
+
+The owner added BOTH hosts on 2026-09-30. Track Herdr independently of the coding
+harnesses and OS packages. Read hosts/archon/{AGENTS.md,machine.yaml,notes.md} and
+hosts/archon/config/updates/README.md for the remote boundary. This is a narrow
+exception to proximal-only maintenance, not general authority over Archon's OS.
+
+- On proximal, inspect `~/.local/bin/herdr --version`, `herdr channel show`,
+  `herdr status server` and each named session's status. Compare the stable GitHub
+  release and installed binary; package metadata alone is insufficient. Back up
+  the installed binary, then use `herdr update` with noninteractive stdin through
+  target `herdr`. Never use `--handoff`, stop a server, or kill a session. Preserve
+  existing configuration/channel. If its update refuses because a running server
+  would need stopping, retain that precise outcome; do not bypass the check with
+  an empty profile or altered socket/home variables. Verify actual installed
+  version against the selected release AND existing server/process identities.
+  Exit zero can mean the updater declined to install, not an updated target.
+- On Archon, target `herdr-archon` must use argv
+  `["systemctl","start","update-bot-herdr-archon.service"]`. This fixed helper
+  uses existing SSH access outside the agent sandbox to invoke only the installed
+  root-owned Herdr updater. It preserves the existing stable channel, backs up
+  `/usr/bin/herdr`, uses native noninteractive update and checks release identity
+  plus pre-existing process executable identities. No general SSH or sudo access
+  is granted to the model. Verify `/var/lib/update-bot/herdr-archon-latest.json` has
+  `status: verified`, a fresh `started` for this operation and matching remote
+  target/after versions, then report its changed flag. An unreachable host is
+  unknown; an uncertain prior call requires reconciliation, never a blind retry.
+- Record installed and running versions separately for both hosts. Archon's pacman
+  record was 0.8.2-1 while its actual binary was 0.9.0; do not downgrade it to that
+  package. Do not rewrite pacman's ownership database. Explain the mismatch and
+  outstanding activation plainly in Slack. Remote helper output and the operation
+  receipt are the audit trail. Do not call an older running server updated.

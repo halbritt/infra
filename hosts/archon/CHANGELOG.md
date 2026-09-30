@@ -1,5 +1,19 @@
 # Host changelog
 
+## Herdr 0.9.3 and daily maintenance coverage — 2026-09-30
+
+Added owner-authorized Herdr-only maintenance from proximal through a fixed
+root-owned helper. Native stable update replaced the existing 0.9.0 binary with
+0.9.3; its SHA-256 matches proximal's verified binary. Existing server and client
+process start times and executable inodes were preserved. The live server remains
+0.9.0 with compatible endpoint/private protocol; no handoff or desktop restart.
+
+Pacman still records the original 0.8.2-1 installation; this mismatch existed
+before the update and is now documented. Daily checks use binary and server
+versions, not that stale package version. Root-only before/after receipts,
+updater log, lock and old binary are under `/var/lib/update-bot-herdr/`.
+See [update procedure](config/updates/README.md) for deployment and rollback.
+
 ## Agent accounts and shared skills — 2026-09-29
 
 Replicated the owner's default and harm Codex/Claude accounts, added named harm

@@ -31,6 +31,8 @@ def validate(request, status, settings, now):
             raise ValueError('Before-state and recovery limits are required')
     if bot.SECRET.search(json.dumps(request)):
         raise ValueError('Credential-shaped command rejected')
+    if request['target'] == 'herdr-archon' and request['argv'] != ['systemctl', 'start', 'update-bot-herdr-archon.service']:
+        raise ValueError('Archon Herdr changes must use the fixed remote helper')
     if request['target'] == 'os' and request['argv'] != ['systemctl', 'start', 'update-bot-os.service']:
         raise ValueError('OS changes must use the fixed root helper')
 
@@ -87,6 +89,14 @@ def execute(request):
             if os_receipt.get('status') == 'completed':
                 result['changed'] = bool(os_receipt.get('selected', []))
                 result['native_evidence'] = os_receipt['evidence']
+        if request['target'] == 'herdr-archon' and result['status'] == 'verified':
+            native = bot.read_json(bot.STATE / 'herdr-archon-latest.json', {})
+            if native.get('status') != 'verified' or native.get('started', 0) < result['started']:
+                result['status'] = 'failed'
+            else:
+                bot.atomic_json(folder / 'native-result.json', native)
+                result['changed'] = native['changed']
+                result['native_evidence'] = str(folder / 'native-result.json')
         if (request['argv'] == ['systemctl', 'start', 'update-bot-hermes-activate.service']
                 and result['status'] == 'verified'):
             native = bot.read_json(bot.STATE / 'hermes-activation-latest.json', {})

@@ -28,6 +28,14 @@ Approved targets and channels:
   use native/package-manager updates. Gemini CLI is included if already installed;
   installing a new harness is not implied. Preserve Cairn launch wrappers, native
   integration patches, credentials, selected models and active session stores.
+- Herdr: on proximal AND Archon (owner extension, 2026-09-30), maintain the
+  existing stable binary installation without stopping live clients/servers or
+  opting into handoff. Preserve configuration, sessions and old executable
+  resources. Verify installed versus running versions; native exit zero alone
+  does not establish installation. Proximal uses its native user updater. Archon
+  uses only the fixed update-bot-herdr-archon.service, whose installed remote
+  helper updates /usr/bin/herdr with its native updater and retains rollback.
+  This does not authorize Archon OS updates, broad remote shell work or reboots.
 - OS: ordinary Ubuntu noble release/security/update packages and kernel packages
   through update-bot-os.service. That fixed root helper rejects package removals,
   third-party/dependency scope expansion and managed database, Kubernetes,

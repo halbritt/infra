@@ -261,13 +261,24 @@ class MaintenanceBoundaryTests(unittest.TestCase):
             folder = root / 'operations' / 'op1'
             folder.mkdir(parents=True)
             for target, unit in [('os', 'update-bot-os.service'),
-                                 ('hermes', 'update-bot-hermes-activate.service')]:
+                                 ('hermes', 'update-bot-hermes-activate.service'),
+                                 ('herdr-archon', 'update-bot-herdr-archon.service')]:
                 (folder / 'intent.json').write_text(json.dumps(dict(
                     request, target=target, argv=['systemctl', 'start', unit])))
                 with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='activating\n')):
                     self.assertTrue(bot.operations_active(root))
                 with patch.object(bot, 'command', return_value=SimpleNamespace(stdout='inactive\n')):
                     self.assertFalse(bot.operations_active(root))
+
+    def test_archon_herdr_only_accepts_fixed_service(self):
+        status = dict(run_id='r1', status='running', started=100)
+        settings = dict(stage='maintenance-v2', update_targets=['herdr-archon'], agent_timeout_seconds=900)
+        request = dict(run_id='r1', target='herdr-archon', argv=['ssh', 'archon', 'reboot'],
+                       before='old', recovery='backup', verify_argv=['true'])
+        with self.assertRaises(ValueError):
+            operation.validate(request, status, settings, 200)
+        request['argv'] = ['systemctl', 'start', 'update-bot-herdr-archon.service']
+        operation.validate(request, status, settings, 200)
 
     def test_claimed_verification_requires_native_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -326,3 +337,66 @@ class MaintenanceBoundaryTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class HerdrRemoteTests(unittest.TestCase):
+    @staticmethod
+    def module(path, name):
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def remote_run(self, after='herdr 0.9.3', preserved=True):
+        import io
+        remote = self.module(SOURCE.parents[3] / 'archon/config/updates/herdr_update.py', 'remote_herdr')
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            binary = root / 'herdr'
+            binary.write_bytes(b'old binary')
+            before = {'123': ['100', 1, 44]}
+            live = before if preserved else {'123': ['100', 1, 55]}
+            def native_update(argv, **kwargs):
+                if after == 'herdr 0.9.3':
+                    Path(argv[4]).write_bytes(b'new binary')
+                return SimpleNamespace(returncode=0)
+            with patch.multiple(remote, STATE=root / 'state', BINARY=str(binary)), \
+                 patch.object(remote.sys, 'argv', ['herdr_update.py']), \
+                 patch.object(remote.os, 'geteuid', return_value=0), \
+                 patch.object(remote.os, 'chown'), \
+                 patch.object(remote, 'command', side_effect=['stable', 'stable', 'herdr 0.9.0', after, after]), \
+                 patch.object(remote, 'processes', side_effect=[before, live, live]), \
+                 patch.object(remote.urllib.request, 'urlopen', return_value=io.StringIO('{"tag_name":"v0.9.3"}')), \
+                 patch.object(remote.subprocess, 'run', side_effect=native_update) as native:
+                code = remote.run()
+            self.assertEqual(binary.read_bytes(), b'new binary' if preserved and after == 'herdr 0.9.3' else b'old binary')
+            receipt = json.loads((root / 'state/latest.json').read_text())
+            self.assertEqual(Path(receipt['backup']).read_bytes(), b'old binary')
+            self.assertEqual(native.call_args.args[0][:4], ['runuser', '-u', 'halbritt', '--'])
+            self.assertEqual(native.call_args.args[0][-1], 'update')
+            self.assertNotIn('--handoff', native.call_args.args[0])
+            self.assertEqual(native.call_args.kwargs['stdin'], subprocess.DEVNULL)
+            return code, receipt
+
+    def test_native_zero_exit_without_install_is_not_verified(self):
+        code, receipt = self.remote_run(after='herdr 0.9.0')
+        self.assertEqual((code, receipt['status']), (1, 'failed'))
+
+    def test_target_version_and_retained_processes_are_required(self):
+        code, receipt = self.remote_run()
+        self.assertEqual((code, receipt['status']), (0, 'verified'))
+        code, receipt = self.remote_run(preserved=False)
+        self.assertEqual((code, receipt['status']), (1, 'failed'))
+
+    def test_uncertain_ssh_is_never_repeated_automatically(self):
+        helper = self.module(SOURCE.parent / 'herdr_archon.py', 'herdr_archon')
+        with tempfile.TemporaryDirectory() as folder, \
+             patch.object(bot, 'STATE', Path(folder)), \
+             patch.object(helper.sys, 'argv', ['herdr_archon.py']), \
+             patch.object(helper.subprocess, 'run', return_value=SimpleNamespace(
+                 returncode=255, stdout='', stderr='connection lost')) as ssh:
+            self.assertEqual(helper.run(), 1)
+            with self.assertRaisesRegex(RuntimeError, 'no automatic retry'):
+                helper.run()
+            self.assertEqual(ssh.call_count, 1)
+            self.assertEqual(json.loads((Path(folder) / 'herdr-archon-latest.json').read_text())['status'], 'uncertain')

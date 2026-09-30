@@ -7,6 +7,45 @@ history. **Values and config, never credentials.**
 
 ## 2026-09-30
 
+### Herdr maintained on proximal and Archon
+
+The owner asked whether Herdr had been updated and added it to routine coverage
+on both machines. Observed proximal binary 0.9.1 (file timestamp September 28)
+and Archon binary 0.9.0, although Archon's package database still recorded 0.8.2-1.
+Neither was an approved named bot target. Added `herdr` and `herdr-archon` to the
+installed policy, role and target allowlist. The broader discovery requirement
+remains in force; named examples are not the inventory boundary.
+
+Updated both binaries with native stable updaters to 0.9.3. Proximal used a
+one-shot owner-run system unit outside Herdr; Archon used the new fixed
+`update-bot-herdr-archon.service`, invoked by the ordinary user through its narrow
+polkit grant. The agent sandbox still cannot read SSH credentials or perform
+arbitrary remote administration. Canonical remote helper is under
+`hosts/archon/config/updates/`; native result and process identity evidence are
+retained on both hosts. Matching installed SHA-256 on both:
+`18a8dc65f1c2fa485884344356dea1cfd911c6f06cf46fa78e193f4087f4dba7`.
+
+Existing servers (proximal default/named session and Archon default) remain 0.9.0;
+endpoint/private protocol compatibility checks pass. All four observed proximal
+and two Archon Herdr processes retain their start times and executable inodes.
+No server handoff, stop, desktop restart or reboot was performed. Proximal's
+updater noted newer Claude/OpenCode integration assets; those config changes were
+not bundled into this binary update and should be reviewed separately.
+
+Receipts/backups: proximal `/var/lib/update-bot/manual-herdr-agent224/` and
+`herdr-archon-latest.json`; Archon `/var/lib/update-bot-herdr/`. Deployment rollback
+copies are in `/var/lib/update-bot/herdr-deployment-backup-agent224/`. Installed
+controller/role/policy/settings/helper/unit/polkit files match canonical source.
+Forty-two repository tests and infrastructure validation pass, including native
+zero-exit/no-install rejection, process continuity, remote uncertainty blocking,
+fixed-command admission and service draining. Unit validation reported only a
+pre-existing unrelated `systemd-resolved` override-section warning. The daily
+model loop has not yet run with these targets; the Archon action was tested live.
+The finalized helper also passed a live staged native no-op with `changed: false`;
+initial update receipts were preserved before that check.
+
+## 2026-09-30
+
 ### Update-bot: one readable Slack report per run
 
 At the owner's request, replace the technical receipt dump plus duplicate finding

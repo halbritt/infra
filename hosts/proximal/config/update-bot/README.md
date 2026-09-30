@@ -14,6 +14,7 @@ held without stopping unrelated updates.
 | wigolo | Follow its existing upstream-main build/pack/npm installation; preserve configuration and data. Never downgrade to stale npm latest. |
 | llama.cpp | Invoke the existing canonical updater under its native lock when warranted; its existing timer stays authoritative. Install binaries without restarting inference. |
 | Codex, Claude Code, OpenCode, Agy | Update existing installations on their current stable channels, with native methods. Preserve wrappers, configuration and live session resources. Gemini CLI is covered only if installed. |
+| Herdr (proximal and Archon) | Maintain stable binaries, inspect installed and running versions separately, retain live sessions. Archon uses a fixed remote helper; no broad SSH access for the agent. |
 | Ubuntu | Refresh metadata and install routine noble/security/updates packages through the fixed root helper. Preserve config files; no removals, release upgrade or reboot. |
 
 The OS helper also checks simulated dependencies. Database, Kubernetes,
@@ -151,3 +152,25 @@ It requires a fresh zero chat/cron/API work count before one graceful reload,
 verifies new runtime identity and Slack connection, and releases only its own
 marker. It accepts no command/unit arguments and has no force-stop or blind-retry
 path. The model retains no direct user-service-manager or profile-write access.
+
+## Herdr coverage — added 2026-09-30
+
+Targets `herdr` and `herdr-archon` are included in daily priority coverage, not
+only the weekly inventory. Proximal uses the native updater in its ordinary
+operation envelope; its existing `~/.local/bin` write permission is sufficient.
+Archon uses the fixed `update-bot-herdr-archon.service` and `herdr_archon.py`,
+installed to `/etc/systemd/system/` and `/usr/local/lib/update-bot/` respectively.
+The polkit rule allows only starting this named unit. The model's SSH directory
+remains inaccessible. The service uses the owner's existing SSH alias/host key,
+and calls only `sudo -n /usr/local/lib/update-bot/herdr_update.py` on Archon.
+Install that root-owned, no-argument remote helper from
+`hosts/archon/config/updates/herdr_update.py` before enabling this action; see its
+subsystem README for remote receipt and rollback paths. No remote credentials
+are copied into Git or exposed to the model.
+
+The controller retains `herdr-archon-latest.json` and a private error log under
+`/var/lib/update-bot`. An interrupted/uncertain call blocks automatic retries;
+inspect Archon's root-owned receipt and processes before explicitly reconciling.
+The remote service participates in operation draining even if its initiating
+client exits. A normal no-change receipt must not produce a maintenance commit.
+Native self-update is binary installation, not permission to restart sessions.

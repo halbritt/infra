@@ -1,0 +1,19 @@
+[Unit]
+Description=Update only Archon Herdr without restarting its sessions
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=halbritt
+Group=halbritt
+Environment=HOME=/home/halbritt
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /usr/local/lib/update-bot/herdr_archon.py
+TimeoutStartSec=infinity
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/update-bot
+PrivateTmp=yes
