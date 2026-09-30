@@ -1,5 +1,39 @@
 # Maintenance outcomes — proximal
 
+## 2026-09-30 13:32 UTC — a452705d-df7f-40bb-b4ea-b9daf4cf4dc7
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **hermes** — verified. Before: Installed/selected Hermes generation is /var/lib/update-bot/staging/hermes-gen-16c59d0e (source_revision aa50456d), launcher ~/.local/bin/hermes sha256 32cffdc341c0...; running gateway PID 1571154 from that generation, Slack connected, active_agents 0. A tested candidate was prepared this run at /var/lib/update-bot/staging/hermes-candidate-f42f579c (upstream base f42f579cf8ba + carried commit 27ee8cd52493) with 239 focused tests passing and an import smoke. This op writes the candidate install-stamp (updateMechanism external), atomically points ~/.local/bin/hermes at the candidate venv, and writes /var/lib/update-bot/hermes-installed.json with launcher/artifact hashes and a rollback backup. It does not restart the gateway.. After: launcher sha 7c87561a4fbe -> hermes-candidate-f42f579c/.venv; hermes-installed.json records source_revision 27ee8cd52493, upstream f42f579c, launcher backup.
+  Verification: operation exit 0/0; verify.log prints the new hermes-installed.json and launcher sha 7c87561a4fbe; candidate install-stamp updateMechanism=external written before first launch.
+  Activation: installed - selected for new launches; running gateway not yet restarted.
+  Evidence: `/var/lib/update-bot/runs/a452705d-df7f-40bb-b4ea-b9daf4cf4dc7/operations/05e5ae5a-1df0-4850-8276-5d8768093653`.
+
+- **hermes** — verified. Before: New generation selected for new launches: /var/lib/update-bot/staging/hermes-candidate-f42f579c at carry 27ee8cd52493 (upstream base f42f579c); launcher ~/.local/bin/hermes rewritten and recorded in /var/lib/update-bot/hermes-installed.json with backups. Running gateway is still PID 1571154 from the prior generation aa50456d, Slack connected, active_agents 0 (idle). Fixed root helper update-bot-hermes-activate.service performs the native zero-work drain, one graceful gateway reload and identity/Slack verification.. After: gateway PID 998176 from hermes-candidate-f42f579c, source 27ee8cd52493, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=27ee8cd52493 old_pid=1571154 pid=998176 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json agrees.
+  Activation: running - native zero-work drain + single graceful reload via fixed update-bot-hermes-activate.service; prior generation retained for rollback.
+  Evidence: `/var/lib/update-bot/runs/a452705d-df7f-40bb-b4ea-b9daf4cf4dc7/operations/3503e167-4cae-447c-80c7-68cc65c9c0b9`.
+
+- **codex** — verified. Before: Global npm @openai/codex@0.159.0 (installed 2026-09-29 prior run, receipt ccff6619); npm view @openai/codex version=0.159.2 observed 2026-09-30; Cairn coordination shim /home/halbritt/.local/bin/codex present and unchanged; running codex app-server sessions keep their loaded code.. After: @openai/codex@0.159.2.
+  Verification: install.log 'changed 2 packages in 3s'; verify.log exit 0 reports 'codex-cli 0.159.2' via the Cairn wrapper.
+  Activation: installed (global npm package replaced on disk); already-running codex sessions keep loaded code; wrapper unchanged.
+  Evidence: `/var/lib/update-bot/runs/a452705d-df7f-40bb-b4ea-b9daf4cf4dc7/operations/8911632d-9d18-4d20-8f34-faa0c167b947`.
+
+- **llama.cpp** — failed. Before: ~/git/llama.cpp clean on master at 931351ea50dfdd3ee249606f655eef2e9a629daf; git ls-remote upstream master=bdeb855b30dfe7f6e695cba98445a7ba09e6416e, GitHub compare 931351ea...bdeb855b ahead_by=18 (fast-forward available; tests/common/core fixes). Live inference: check :8081 health; the canonical updater holds its native update.lock, refuses dirty/diverged trees, builds llama-server/cli/quantize in an isolated worktree and installs binaries atomically without restarting the live process.. After: build FAILED at 30% (gmake ggml-cuda sum.cu.o: 'sh: 1: Cannot fork'); repo still 931351ea, no binaries installed, live server unchanged.
+  Verification: result.json exit_code=2 verification_exit_code=null; install.log Error 2 chain; git rev-parse HEAD=931351ea; curl localhost:8081/health={status:ok}.
+  Activation: not installed - build aborted on fork/process-limit exhaustion; running inference PID untouched.
+  Evidence: `/var/lib/update-bot/runs/a452705d-df7f-40bb-b4ea-b9daf4cf4dc7/operations/9893a1a1-8479-4a34-8102-525de6cdf8c7`.
+
+- **hermes** — verified. Before: Installed Hermes generation /var/lib/update-bot/staging/hermes-gen-16c59d0e at aa50456d (upstream base 16c59d0e + carried Cairn admission/turn-identity commit), selected by ~/.local/bin/hermes (sha256 32cffdc341c0...); gateway PID 1571154 running that generation, source aa50456d, Slack connected, active_agents 0. Upstream main advanced to f42f579cf8bac4918ac9599bece71618afadd846 (ls-remote); stored patches/hermes.patch is the regenerated carry against base 16c59d0e. This op clones an isolated candidate at f42f579c, applies the carry, commits it, builds its venv via uv sync --frozen and runs focused CLI/admission/turn/process-registry tests; it does not touch the live install, launcher, venv or gateway.. After: isolated candidate /var/lib/update-bot/staging/hermes-candidate-f42f579c, carry commit 27ee8cd52493, venv built (uv sync --frozen), 239 tests passed.
+  Verification: operation status=verified exit 0/0; run log shows APPLY_CLEAN_3WAY, carry_commit=27ee8cd52493, '239 tests passed, 0 failed', IMPORT_OK.
+  Activation: none - preparation only; live install/launcher/gateway untouched by this op.
+  Evidence: `/var/lib/update-bot/runs/a452705d-df7f-40bb-b4ea-b9daf4cf4dc7/operations/9a9fe76f-6431-455e-bf12-01fa9d407182`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 noble kernel 6.8.0-138; apt list --upgradable=34 (noble-updates/security: openssl/libssl3t64/libssl-dev 3.0.13-0ubuntu3.16, freeipmi-common/libfreeipmi17, libheif1 + 3 plugin pkgs; held-scope: pgdg postgresql/16/17 family + postgresql-common 293 + libpq5 + pgbackrest, kubelet/kubeadm/kubectl/containerd.io, google-cloud-cli/anthoscli, nvidia/libnvidia-container-toolkit); reboot_required=true (kernels 6.8.0-139/142, libc6). Fixed privileged helper applies only allowed Ubuntu updates; rejects removals/third-party/db/k8s/container/NVIDIA transitions; no reboot.. After: 19 packages at ...3.16/...0.3/1.17.6-...4.9; 27 held-scope deferred; reboot_required=true.
+  Verification: operation exit 0/0; helper /var/lib/update-bot-os/latest.json status=completed with before/after observed for all 19 selected; deferred=27.
+  Activation: installed by the fixed root helper; no package-script service restart and no reboot.
+  Evidence: `/var/lib/update-bot/runs/a452705d-df7f-40bb-b4ea-b9daf4cf4dc7/operations/bdd1d157-5c7b-4800-a3ec-93c5e3c93181`.
+
 ## 2026-09-29 13:32 UTC — 57743817-6b0f-4ffe-b9a9-8feeb9aa28ca
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
