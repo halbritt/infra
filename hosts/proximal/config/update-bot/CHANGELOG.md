@@ -1,5 +1,44 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-01 13:40 UTC — 0580478e-d4a8-4e54-a18a-dd80f47c0a63
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **codex** — verified. Before: Global npm @openai/codex@0.159.2 (verified via `codex --version` = codex-cli 0.159.2); Cairn coordination wrapper /home/halbritt/.local/bin/codex is a separate shim and is untouched by npm. No codex install in progress.. After: @openai/codex@0.159.3.
+  Verification: install.log 'changed 2 packages in 3s'; verify.log exit 0 reports 'codex-cli 0.159.3' through the Cairn wrapper.
+  Activation: installed (global npm package replaced on disk); already-running codex sessions keep loaded code; wrapper unchanged.
+  Evidence: `/var/lib/update-bot/runs/0580478e-d4a8-4e54-a18a-dd80f47c0a63/operations/0a27a5ce-4d70-49b2-b016-40ae6146610a`.
+
+- **herdr** — verified. Before: ~/.local/bin/herdr --version = herdr 0.9.3; channel=stable; GitHub stable release v0.9.3; client 0.9.3 but running server reports 0.9.0 (server_binary_stale=yes). Two live sessions: `default` (running) and `cairn-v1-native` (running), plus servers PID 1878770 and 1597429. Installed binary backed up to /var/lib/update-bot/backups/herdr-0.9.3-pre-update. No --handoff, no server stop.. After: unchanged 0.9.3 (stable release v0.9.3); binary sha 18a8dc65 unchanged; running server still 0.9.0.
+  Verification: install.log 'already up to date (0.9.3)'; verify.log herdr 0.9.3, channel stable, server status running 0.9.0; sessions default and cairn-v1-native preserved.
+  Activation: no-op - client already current; running server binary not updated (no restart permitted).
+  Evidence: `/var/lib/update-bot/runs/0580478e-d4a8-4e54-a18a-dd80f47c0a63/operations/25064bdc-05c2-4e7f-abd3-6777f3e510a7`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master at 0c1e5709 (built 0.5.0-dev build 11312, installed build/bin/llama-server from that commit); upstream master advanced to 42d958167 (2026-10-01T13:21Z), i.e. local is behind. Live inference PID 3663740 on :8081 (health ok) serves qwen3.8-27b; the updater installs binaries without restarting it. Prior op 9893a1a1 failed on fork exhaustion at -j8, so jobs reduced to 2.. After: master 42d958167, build 11335 commit 42d958167 installed; live inference process untouched.
+  Verification: operation exit 0/0; install.log 'updated=42d958167...' and 'Live processes were not restarted'; verify.log HEAD==origin==42d958167, llama-server --version 42d958167, localhost:8081/health={status:ok}.
+  Activation: installed - new binaries in place; running server keeps its current build until its next managed restart.
+  Evidence: `/var/lib/update-bot/runs/0580478e-d4a8-4e54-a18a-dd80f47c0a63/operations/3ecaf416-1b09-4829-b9e3-499ffeace941`.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes (sha 7c87561a4fbe) points at /var/lib/update-bot/staging/hermes-candidate-f42f579c/.venv (carried 27ee8cd524, upstream f42f579c); hermes-installed.json records that generation. The tested new generation is /var/lib/update-bot/staging/hermes-candidate-666b9f04 (carry 80067aaa on upstream 666b9f04, 239 tests passed, import smoke ok via op c285b109). This op rewrites the launcher for NEW launches only and reads/writes provenance; it does not restart the running gateway.. After: launcher sha 085c24c96778 -> hermes-candidate-666b9f04/.venv; hermes-installed.json source_revision 80067aaa, upstream 666b9f04, install-stamp updateMechanism=external, launcher backup retained.
+  Verification: operation exit 0/0; verify.log asserts source_revision=80067aaa and launcher references hermes-candidate-666b9f04, sha 085c24c9677821cb57e617737edb31deddf5322963720541aa4eef13de241362.
+  Activation: installed - selected for new launches; running gateway not yet restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/0580478e-d4a8-4e54-a18a-dd80f47c0a63/operations/45a42406-be75-472d-86a5-62b8531cc8e9`.
+
+- **hermes** — verified. Before: Launcher now selects the tested generation hermes-candidate-666b9f04 (carry 80067aaa) for new launches; hermes-installed.json records it. The running gateway still serves the previous generation f42f579c (carry 27ee8cd524). The fixed helper requires a fresh native zero chat/cron/API-work drain and issues one graceful reload; it refuses busy/uncertain state and never force-kills or blind-retries.. After: gateway PID 3931074 from hermes-candidate-666b9f04, source 80067aaa, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=80067aaa old_pid=998176 pid=3931074 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json agrees.
+  Activation: running - native zero-work drain + single graceful reload via fixed update-bot-hermes-activate.service; prior generation retained for rollback.
+  Evidence: `/var/lib/update-bot/runs/0580478e-d4a8-4e54-a18a-dd80f47c0a63/operations/4ba39b2a-5aea-4334-b743-b2c30a09a60e`.
+
+- **hermes** — verified. Before: Installed generation hermes-candidate-f42f579c at carried 27ee8cd524 (upstream base f42f579c), selected by ~/.local/bin/hermes and running as the gateway. Upstream main advanced to 666b9f04 (442 commits ahead of f42f579c). The stored carry patch config/update-bot/patches/hermes.patch is based on 16c59d0e and applied cleanly to f42f579c. This op only clones/refreshes an isolated staging clone and applies/builds/tests it; it does not touch the live launcher, gateway or running sessions.. After: tested candidate /var/lib/update-bot/staging/hermes-candidate-666b9f04, carry commit 80067aaa on upstream 666b9f04, venv built, 239 tests passed + import smoke.
+  Verification: operation status=verified exit 0/0; log APPLY_CLEAN_3WAY, carry_commit=80067aaa499a8014b01e5e4e69877b8800a92b93, '239 tests passed, 0 failed', IMPORT_OK.
+  Activation: none - preparation only; live install/launcher/gateway untouched by this op.
+  Evidence: `/var/lib/update-bot/runs/0580478e-d4a8-4e54-a18a-dd80f47c0a63/operations/c285b109-bf44-4fdd-9ef8-de61fda5799e`.
+
+- **os** — verified. Before: Ubuntu 24.04 noble, kernel 6.8.0-138 running; prior helper run 2026-09-30 applied 19 routine packages, deferred 27 held-scope packages (pgdg PG16/17 family, kubelet/kubeadm/kubectl/containerd.io, google-cloud-cli/anthoscli, nvidia/libnvidia-container-toolkit, gh, grafana) and reported reboot_required=true (kernels 6.8.0-139/142, libc6). No apt/dpkg transaction in progress.. After: 8 packages applied (alsa-ucm-conf, libauthen-sasl-perl, linux-generic/headers-generic/image-generic/linux-libc-dev/linux-tools-common 6.8.0-142->6.8.0-146, sosreport); 30 held-scope deferred; reboot_required=true.
+  Verification: operation exit 0/0 (changed=true); /var/lib/update-bot-os/latest.json status=completed with before/after for all 8 selected and reboot_required=true.
+  Activation: installed by the fixed root helper; no package-script service restart and no reboot.
+  Evidence: `/var/lib/update-bot/runs/0580478e-d4a8-4e54-a18a-dd80f47c0a63/operations/cd8d8eae-9e4c-44d0-9ce9-7b6743322d00`.
+
 ## 2026-09-30 13:32 UTC — a452705d-df7f-40bb-b4ea-b9daf4cf4dc7
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
