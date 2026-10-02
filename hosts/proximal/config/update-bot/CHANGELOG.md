@@ -1,5 +1,49 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-02 13:38 UTC — 1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master at 5fc4f3c8 (installed llama-server reports 0.5.0-dev build 11347 commit 5fc4f3c8c, mtime 2026-10-01T22:02); upstream master advanced to 46ca246d (17 commits ahead), i.e. local is behind. The updater installs binaries without restarting the live llama-27b inference service on :8081. No apt/other package lock involved; native update.lock held by this updater.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/2c0afdb3-f081-409b-8cd7-144fba1ab90d`.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes points at /var/lib/update-bot/staging/hermes-candidate-666b9f04/.venv (carried 80067aaa, upstream 666b9f04); hermes-installed.json records that generation. The tested new generation is /var/lib/update-bot/staging/hermes-candidate-0a374d16 (carry on upstream 0a374d16, focused tests + import smoke passed via prep op b06d63ee). This op rewrites the launcher for NEW launches only and writes provenance; it does not restart the running gateway.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/2e92c3c6-692f-425e-95b7-0fe8c306ef4c`.
+
+- **opencode** — failed. Before: Installed patched native ELF ~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe = 1.18.33+cairn.9797966 (sha 6ab47df2), matching opencode-installed.json; npm opencode-ai latest = 1.18.34; upstream tag v1.18.34 = aec0b9a6. Staging currently holds an isolated v1.18.33 clone only. This op fetches upstream refs into that clone, materializes an isolated v1.18.34 tree and ports the 3 stored patches; it does not modify the live ELF or running opencode processes.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/552cb295-5f16-47b0-a8f3-55ce58b79452`.
+
+- **herdr** — verified. Before: ~/.local/bin/herdr --version = herdr 0.9.3; channel=stable; GitHub stable release v0.9.3 (published 2026-09-29) so the installed client is already current. Running server reports 0.9.0 (older server binary, intentionally not restarted). Sessions `default` and `cairn-v1-native`; no --handoff, no server stop. Binary backed up to /var/lib/update-bot/backups/herdr-0.9.3-pre-1c1b2ef0 (sha 18a8dc65).. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/6b41025c-5a73-4f4e-9ce4-2466455f039c`.
+
+- **hermes** — verified. Before: Gateway runs generation hermes-candidate-666b9f04 (source 80067aaa), healthy with Slack connected. Launcher now selects the tested generation hermes-candidate-0a374d16 (carry acf92f7e on upstream 0a374d16; 239 tests passed + import smoke). This fixed helper owns the native zero-work drain and one graceful reload.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/740cba33-7ded-4ccd-9432-1c62870ff3be`.
+
+- **hermes** — verified. Before: Installed generation hermes-candidate-666b9f04 at carried 80067aaa (upstream 666b9f04), selected by ~/.local/bin/hermes and running as the gateway. Upstream main advanced to 0a374d16 (431 commits ahead of 666b9f04). The stored carry patch config/update-bot/patches/hermes.patch is based on 16c59d0e and applied cleanly to 666b9f04. This op only clones/refreshes an isolated staging clone and applies/builds/tests it; it does not touch the live launcher, gateway or running sessions.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/b06d63ee-672a-4b25-80fd-e1cf3200a13c`.
+
+- **codex** — verified. Before: Global npm @openai/codex@0.159.3 (verified via Cairn wrapper codex --version = codex-cli 0.159.3); npm view @openai/codex version = 0.160.0. Cairn coordination wrapper /home/halbritt/.local/bin/codex is a separate shim, untouched by npm. No codex install in progress.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/cdccb267-65f8-43fd-b9ea-cd5fdcc642e2`.
+
+- **os** — verified. Before: Ubuntu 24.04 noble, kernel 6.8.0-138 running; prior helper run 2026-10-01 applied 8 routine packages (incl. linux-generic/headers/image 6.8.0-142->6.8.0-146, sosreport) and deferred 30 held-scope packages (pgdg PG16/17 family + pgbackrest + postgresql-common/libpq5, kubelet/kubeadm/kubectl/containerd.io/docker-ce, google-cloud-cli/anthoscli, nvidia/libnvidia-container-toolkit, gh, grafana) with reboot_required=true. No apt/dpkg transaction in progress.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b/operations/de462172-1608-48d1-9697-2b23cb3257fa`.
+
 ## 2026-10-01 13:40 UTC — 0580478e-d4a8-4e54-a18a-dd80f47c0a63
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
