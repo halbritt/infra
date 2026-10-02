@@ -140,6 +140,20 @@ Credentials are **not** in either file. `OPENROUTER_API_KEY` is already exported
   wanted here, point it at the existing `:8910` / shim `:8082` path in
   [`whisper/`](../whisper/README.md) instead of loading another model.
 
+## Slack reply display — 2026-10-02
+
+At the owner's request, `display.platforms.slack` disables `tool_progress`,
+`interim_assistant_messages`, and `live_status` tool details. Final replies remain
+enabled. The static Slack working indicator can still appear.
+
+Install these three keys from the canonical `config.yaml` into the same mapping
+in `~/.hermes/config.yaml`, preserving unrelated live settings. The live file has
+independent model and plugin changes, so do not overwrite it with this older
+full snapshot. The running `hermes-candidate-0a374d16` gateway loads config and
+resolves these settings on each turn; this change needs no restart and applies
+to subsequent turns. Verified with that runtime's display resolver; no Slack
+test message was sent.
+
 ## Verify
 
 ```bash

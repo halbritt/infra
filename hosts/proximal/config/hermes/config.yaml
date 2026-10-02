@@ -138,6 +138,11 @@ code_execution:
 delegation:
   max_iterations: 50
 display:
+  platforms:
+    slack:
+      tool_progress: "off"
+      interim_assistant_messages: false
+      live_status: "off"
   compact: false
   tool_progress: all
   cleanup_progress: false

@@ -5,6 +5,18 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-10-02
+
+### Hermes: hide tool activity in Slack
+
+The owner reported tool calls appearing in Slack and authorized quiet replies.
+Set the Slack-only display overrides to `tool_progress: "off"`,
+`interim_assistant_messages: false`, and `live_status: "off"` in canonical and
+installed configuration, preserving unrelated live settings. The running
+gateway resolves these settings on each turn, so no restart was required.
+Verified all three values through its installed display resolver and retained
+the existing gateway PID. No Slack test message was sent.
+
 ## 2026-09-30
 
 ### Herdr maintained on proximal and Archon
