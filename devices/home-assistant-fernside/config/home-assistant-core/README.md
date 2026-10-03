@@ -109,3 +109,9 @@ verified room-to-speaker mapping, deployment source, and recovery procedure.
 
 [Stream Deck webhooks](stream-deck.md) records the local-only webhook
 automation and the Movie mode and Goodnight scripts behind peecee's Stream Deck.
+
+## Doorbell notification bridge
+
+[Moto G notification setup](doorbell-notification-bridge.md) records Google Home
+and Companion app permissions and the pending named-face delivery test. It does
+not enable automatic unlocking.

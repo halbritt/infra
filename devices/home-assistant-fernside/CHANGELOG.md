@@ -1,5 +1,15 @@
 # Home Assistant at Fernside changelog
 
+## 2026-10-02 — Moto G doorbell notification setup
+
+Enabled Google Home's Android notification permission and Home Assistant's
+notification-listener access on the Moto G; HA's own notification permission
+was already enabled. Completed Google Home initial account setup and verified
+doorbell People/familiar-face push alerts are enabled without away-only filtering.
+Enabled the Companion app Last notification sensor for the Google Home bridge.
+See [configuration and verification limits](config/home-assistant-core/doorbell-notification-bridge.md).
+Named-face delivery and lock automation remain unverified; no unlock action ran.
+
 
 ## 2026-09-26 — Stream Deck webhooks
 
