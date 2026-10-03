@@ -6,7 +6,10 @@ curates its own memory, searches past sessions, and can run headless behind a me
 gateway. Installed on `proximal` **2026-07-28** as a third local agent harness alongside
 `opencode` and `openclaw`.
 
-- **Version installed:** `0.19.0` (`2026.7.20`), upstream commit `30526baa` (see `SOURCE_COMMIT`).
+Current CLI/gateway: upstream `d795726f` plus Cairn carry `fbfcb659`; see
+[current generation and gateway repair](#current-generation-and-gateway-repair--2026-10-03).
+
+- **Original version installed:** `0.19.0` (`2026.7.20`), upstream commit `30526baa` (see `SOURCE_COMMIT`).
 - **Install method:** official `install.sh` → git clone + **uv-managed private venv**
   (Python 3.11.15, deps hash-verified against the repo's `uv.lock`). Not npm-global — this
   is the one agent tool on the box that does *not* follow the global-npm convention,
@@ -154,7 +157,7 @@ resolves these settings on each turn; this change needs no restart and applies
 to subsequent turns. Verified with that runtime's display resolver; no Slack
 test message was sent.
 
-## Verify
+## Original installation verification — historical
 
 ```bash
 hermes --version                      # 0.19.0, upstream commit
@@ -197,7 +200,7 @@ starts. Preserve the old venv for the active CLI and the unit's existing
 ExecStopPost cleanup. Receipt: `/var/lib/update-bot/hermes-gateway-activation.json`.
 See [patch procedure and evidence](../update-bot/PATCHED-UPDATES.md).
 
-## Current generation — 2026-09-29
+## Previous generation — 2026-09-29
 
 New CLI launches and the gateway select `aa50456d` on upstream `16c59d0e`,
 with the preserved Cairn carry and Python 3.14.6, at
@@ -211,9 +214,46 @@ The three shared Cairn plugin directories were hash-pinned and tested against
 both generations, not replaced. Future plugin installs must repeat that matrix
 or introduce versioned loading. No live Slack/model round trip was performed.
 
-`install-stamp.json` installs beside the selected source (currently
+`install-stamp.json` installs beside the selected source (on September 29,
 `/var/lib/update-bot/staging/hermes-gen-16c59d0e/install-stamp.json`). Its upstream
 `updateMechanism: external` setting preserves update-bot's launcher and tested
 venv. Generate a fresh stamp for every successor before its first launch using
 `scripts/write_install_stamp.py --source update-bot --update-mechanism external`.
 Verify launcher bytes and receipt again after startup.
+
+
+## Current generation and gateway repair — 2026-10-03
+
+CLI and gateway run `fbfcb659eb7c041be697e9d7e3704d08e58848b7` on upstream
+`d795726f78e532ca31655f74656b4be63a907581`, the upstream main observed for this
+update, at `/var/lib/update-bot/staging/hermes-candidate-d795726f` with Python
+3.14.6. The Cairn carry was cherry-picked intact from the prior live generation,
+`acf92f7e` on `0a374d16`. Retain that prior generation for rollback and existing
+consumers. `SOURCE_COMMIT`, `hermes-launcher`, and `install-stamp.json` now name
+the current generation.
+
+Install `gateway-generation.conf` as
+`~/.config/systemd/user/hermes-gateway.service.d/50-generation.conf`, then run
+`systemctl --user daemon-reload`. It overrides **all three** runtime commands:
+start through the canonical launcher; stop marking and cgroup cleanup through
+the tested generation's `.venv/bin/python -m gateway.<module>`. Upstream's
+source-local `.hermes/bin/hermes` PM shim could not resolve a committed
+dependency environment on this externally managed installation. Both shutdown
+helpers previously failed with `no dependency environment is committed`.
+Future generation selections must update these helper paths together with the
+launcher and retain the old source until its consumers exit. Upstream may refresh
+the base unit at startup; the canonical drop-in preserves these overrides.
+
+The earlier outage coincided with the entire user manager shutting down at
+19:26 PDT on October 2. Systemd also recorded an OOM-killed process in
+`user-1000.slice`; the initiating cause of the manager shutdown is not established.
+The gateway had already recovered at 14:26 PDT October 3 before this repair.
+Linger is enabled. This update does not claim to prevent a host/user-manager outage.
+
+Validation: 497 Hermes tests passed, four skipped; 43 Cairn queue/cancellation
+tests passed; two fixture gateway turns with a local HTTP provider and synthetic
+Slack transport passed. A copy of the session database passed candidate open,
+quick-check, and reopening with the previous generation (schema 31 unchanged).
+Native zero-work drain, new PID/source, Slack connection, healthy session store,
+and launcher/stamp/drop-in hashes were verified. No live Slack message was sent.
+See [the repair report](reports/HERMES_2026-10-03.md) for evidence and recovery.

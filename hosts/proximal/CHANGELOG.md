@@ -5,6 +5,19 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-10-03
+
+### Hermes gateway update and shutdown helper repair
+
+Owner requested repair after an outage and an update if needed. Activated upstream
+`d795726f` plus preserved Cairn carry `fbfcb659` using the native zero-work drain.
+Repaired stop-marker and cgroup-cleanup commands to use the tested venv instead of
+unusable PM shims. Verified running source, Slack connection, session store and
+installed hashes; 497 Hermes and 43 Cairn tests passed (four Hermes skips), plus
+fixture gateway turns and copied database compatibility. The earlier outage was
+part of a user-manager shutdown, not an established Hermes crash. Prior generation
+and online database backups retained. [Report](config/hermes/reports/HERMES_2026-10-03.md).
+
 ## 2026-10-02
 
 ### Hermes: hide tool activity in Slack
