@@ -57,6 +57,30 @@
 >
 > The rest of this file is preserved as historical record of how it was wired.
 
+## Live Striatum-next exchange retention
+
+The user-scope `striatum-exchange-gc.timer` belongs to **Striatum-next**, not the
+retired daemon. Its installed service and timer originate in
+`~/git/striatum-next/tools/systemd/`. This host's canonical override is
+[`striatum-exchange-gc.service.d-override.conf`](striatum-exchange-gc.service.d-override.conf),
+installed at `~/.config/systemd/user/striatum-exchange-gc.service.d/override.conf`.
+
+The override retains the standing six-hour window and sets
+`Environment=GOMEMLIMIT=12GiB` within the base unit's `MemoryMax=16G`.
+Repeated OOM kills had prevented cleanup through 2026-10-03. With this setting,
+both a dry run and the installed service completed at 13.6 GiB peak; the latter
+removed 2,982 entries and reported 15.0 GiB reclaimed. The native command protects
+open dispatches and unconsumed submissions. Graph objects and provenance remain
+outside its deletion scope.
+
+After changing the override, install it, run `systemctl --user daemon-reload`,
+and start `striatum-exchange-gc.service`. Verify `Result=success`,
+`ExecMainStatus=0`, and the journal's removed/freed line. The enabled daily timer
+remains responsible for subsequent runs. A soft Go memory limit is not a bound on
+all process memory; future growth can still exceed the unchanged cgroup cap.
+
+## Historical daemon configuration
+
 Desired-state for **`striatumd`**, the Striatum local workflow daemon — the Go
 service that drives multi-agent committee/refactoring runs against registered
 repositories on this box. Upstream + docs: `github.com/halbritt/striatum`

@@ -7,6 +7,32 @@ history. **Values and config, never credentials.**
 
 ## 2026-10-03
 
+### Reclaim disk space and restore Striatum-next exchange cleanup
+
+Owner requested disk cleanup, pointing to Striatum-next exhaust. Root initially
+reported 95% use with about 90 GiB available. The exchange GC service had repeatedly
+failed with `Result=oom-kill` under its 16 GiB cgroup cap. Added
+`GOMEMLIMIT=12GiB` to the canonical and installed host override, retaining the
+standing six-hour retention window. A dry run and the installed service both
+completed at 13.6 GiB peak. The service removed 2,982 closed-run transport entries,
+reporting 15.0 GiB freed, while protecting the open dispatch. The daily timer
+remains enabled; graph objects and provenance were preserved.
+
+Removed 945 temporary Go build directories (78.18 GiB) and 7,368 Go test/build-cache
+directories (32.98 GiB), all under `/tmp`, owned by the user, with no descendant
+modified in the preceding seven days and no references found in process command
+lines, mappings, working directories, executables, or open descriptors. Retained
+recent or active directories and source/research artifacts. Local deletion
+manifests are `~/.local/state/infra-disk-cleanup-20261003.json` and
+`~/.local/state/infra-disk-cleanup-tests-20261003.json`.
+
+Final root usage: 88%, with 216 GiB available, a net gain of about 126 GiB.
+
+Verification: installed override matches canonical bytes; service exit 0 and
+`Result=success`; 42 repository tests and infrastructure validation passed.
+See [Striatum retention](config/striatum/README.md#live-striatum-next-exchange-retention)
+for the installation mapping and operational checks.
+
 ### Hermes gateway update and shutdown helper repair
 
 Owner requested repair after an outage and an update if needed. Activated upstream
