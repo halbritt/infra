@@ -1,5 +1,54 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-04 13:34 UTC — 5dcac0b6-147b-47b7-9739-65c6bdb8a3ee
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes points at /var/lib/update-bot/staging/hermes-candidate-d795726f/.venv (carried fbfcb659, upstream d795726f); hermes-installed.json records that generation and the gateway runs it (PID 1699425). The tested new generation is /var/lib/update-bot/staging/hermes-candidate-1298c8e7 (carry b3519a45 on upstream 1298c8e7; patch APPLY_CLEAN_3WAY, focused tests + import smoke passed via prep op 3ea2857f). This op rewrites the launcher for NEW launches only and writes provenance; it does not restart the running gateway.. After: launcher -> hermes-candidate-1298c8e7/.venv; hermes-installed.json source_revision b3519a45, upstream 1298c8e7, install-stamp updateMechanism=external; launcher backup retained.
+  Verification: operation exit 0/0; verify.log asserts upstream_revision=1298c8e7 and launcher references hermes-candidate-1298c8e7.
+  Activation: installed - selected for new launches; running gateway not restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/05fa8b20-af85-44f5-a1b1-cac739f96f79`.
+
+- **opencode** — failed. Before: Corrected build attempt after op 58c05f52 failed at exit 3 (INSTALL_FAIL): bun install --frozen-lockfile died because the tree-sitter-powershell postinstall could not spawn node-gyp (ENOENT). node-gyp exists bundled inside the global npm (/home/halbritt/.npm-global/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js, v12.4.0) but is not on PATH; this op adds a staging shim /var/lib/update-bot/staging/bin/node-gyp and npm_config_node_gyp. Carried v1.18.34 tree at /var/lib/update-bot/staging/opencode-1.18.34 (HEAD aec0b9a6d8) with the 3 patches intact; live ELF still 1.18.33+cairn.9797966 (sha 6ab47df2); no opencode process running.. After: no install (dependency install failed); live ELF unchanged.
+  Verification: operation exit 3 (INSTALL_FAIL); build log: opencode postinstall 'bun run --cwd packages/core fix-node-pty' -> 'bun: command not found' (staged bun not on PATH).
+  Activation: none - install not reached.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/1c232166-097c-42b9-b0b3-30b24e514edd`.
+
+- **hermes** — verified. Before: Installed generation hermes-candidate-d795726f at carried fbfcb659 (upstream d795726f), selected by ~/.local/bin/hermes and running as the gateway (PID 1699425, Slack connected, active_agents 0). Upstream main advanced to 1298c8e74b. The carried patch config/update-bot/patches/hermes.patch (Cairn admission + turn identity) is based on an earlier upstream and applied cleanly through 0a374d16. This op only clones/refreshes an isolated staging clone and applies/builds/tests it; it does not touch the live launcher, gateway or running sessions.. After: tested candidate /var/lib/update-bot/staging/hermes-candidate-1298c8e7, carry b3519a45 on upstream 1298c8e7, venv built, focused tests + import smoke passed.
+  Verification: operation exit 0/0; log APPLY_CLEAN_3WAY, carry_commit=b3519a45d823e724d61eed73cb1d2541bf17f367, RESULT: PORT_OK.
+  Activation: none - preparation only; live launcher/gateway untouched by this op.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/3ea2857f-851d-47a9-8a41-c2bfc4a9ed1c`.
+
+- **hermes** — verified. Before: Gateway PID 1699425 runs generation hermes-candidate-d795726f (source fbfcb659), Slack connected, active_agents 0. Launcher now selects the tested generation hermes-candidate-1298c8e7 (carry b3519a45 on upstream 1298c8e7; focused tests + import smoke passed via prep op 3ea2857f; launcher installed via op 05fa8b20). This fixed helper owns the native zero-work drain and one graceful reload.. After: gateway PID 2948447 from hermes-candidate-1298c8e7, source b3519a45, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=b3519a45 old_pid=1699425 pid=2948447 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json agrees code_sha=b3519a45.
+  Activation: running - native zero-work drain + one graceful reload via fixed update-bot-hermes-activate.service; prior generation retained.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/5272477e-fbbc-490f-b1bd-fe71cd1e8b46`.
+
+- **opencode** — failed. Before: Carried v1.18.34 tree materialized at /var/lib/update-bot/staging/opencode-1.18.34 (HEAD aec0b9a6d8 'release: v1.18.34') by port op 6985057d with the 3 stored patches applied (sdk client + generated types, session admission test, prompt test). Live ELF is still 1.18.33+cairn.9797966 (sha 6ab47df2), matching opencode-installed.json; no opencode process is running. The repo's declared packageManager bun@1.3.14 is absent, so this op stages bun 1.3.14 under staging, runs bun install --frozen-lockfile, the four focused session/project/httpapi/prompt tests, builds the single native ELF and atomically replaces the npm ELF.. After: no install (dependency install failed); live ELF unchanged.
+  Verification: operation exit 3 (INSTALL_FAIL); build log: bun install postinstall 'tree-sitter-powershell' -> 'spawn node-gyp ENOENT' (node-gyp not on PATH).
+  Activation: none - install is the final step and was not reached.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/58c05f52-d3e8-43ab-986e-47d08b62d630`.
+
+- **claude** — verified. Before: Installed Claude Code 2.1.287 (native versioned install; ~/.local/bin/claude -> ~/.local/share/claude/versions/2.1.287); npm @anthropic-ai/claude-code latest = 2.1.289. Prior versions 2.1.285/2.1.286 retained on disk. No claude update in progress; active sessions keep their loaded binary.. After: Claude Code 2.1.289 (versions/2.1.289); prior versions retained.
+  Verification: operation exit 0/0; install.log 'Successfully updated from 2.1.287 to version 2.1.289'; verify.log claude --version=2.1.289.
+  Activation: installed - new launches use 2.1.289; running sessions keep their loaded binary.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/65fa811b-3df3-4a48-847c-6e4a05f8f328`.
+
+- **opencode** — verified. Before: Installed patched native ELF ~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe = 1.18.33+cairn.9797966 (sha 6ab47df20cf7, matches opencode-installed.json); opencode --version reports that. npm opencode-ai latest = 1.18.34; upstream tag v1.18.34 = aec0b9a6d889. The prior port attempt (op 552cb295) failed with FETCH_FAIL because the old staging clone opencode-1.18.33 had a corrupt object store ('pack has 2781 unresolved deltas'). No opencode process is running and the live ELF is untouched by this op.. After: fresh clone at upstream tag v1.18.34 (aec0b9a6d8) with the 3 stored patches applied; staging tree dirty; live ELF untouched.
+  Verification: operation exit 0/0; log RESULT: PORT_PATCH_OK base=aec0b9a6; HEAD aec0b9a6d8.
+  Activation: none - staging source materialized only.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/6985057d-8f55-43eb-9e8a-166ae1dfc359`.
+
+- **os** — verified. Before: Ubuntu 24.04 noble, running kernel 6.8.0-138-generic (6.8.0-146 installed, reboot pending since 2026-10-01). apt list --upgradable shows 39 packages: 9 ordinary noble-updates mesa stack (libegl-mesa0/libgbm1/libgl1-mesa-dri/libglx-mesa0/mesa-libgallium/mesa-va-drivers/mesa-vdpau-drivers/mesa-vulkan-drivers 25.2.8-0ubuntu0.24.04.3->.4) plus held-scope third-party (pgdg PG16/17/18 family + pgbackrest + postgresql-common/libpq5, docker/containerd, kubelet/kubeadm/kubectl, nvidia-container-toolkit, google-cloud-cli, gh, grafana). No apt/dpkg transaction in progress; unattended-upgrade-shutdown is idle.. After: 8 packages applied (libegl-mesa0/libgbm1/libgl1-mesa-dri/libglx-mesa0/mesa-libgallium/mesa-va-drivers/mesa-vdpau-drivers/mesa-vulkan-drivers 25.2.8-0ubuntu0.24.04.3->.4); 30 held-scope deferred; reboot_required=true.
+  Verification: operation exit 0/0 (changed=true); /var/lib/update-bot-os/latest.json status=completed listing all 8 selected with observed target versions and reboot_required=true.
+  Activation: installed by the fixed root helper; no package-script service restart and no reboot.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/bd3f06c9-d4d2-47d5-ba3f-06184fb2a0fe`.
+
+- **opencode** — verified. Before: Third build attempt. Op 58c05f52 failed (INSTALL_FAIL, node-gyp ENOENT) and op 1c232166 failed (INSTALL_FAIL: opencode postinstall 'bun run --cwd packages/core fix-node-pty' could not find bun on PATH). Fixes now in the script: staging node-gyp shim + npm_config_node_gyp, and the staged bun 1.3.14 dir on PATH. Carried v1.18.34 tree at /var/lib/update-bot/staging/opencode-1.18.34 (HEAD aec0b9a6d8) with the 3 patches intact; live ELF still 1.18.33+cairn.9797966 (sha 6ab47df2); no opencode process running.. After: live ELF 1.18.34+cairn.aec0b9a (sha db0d870b8cb1a759d7a2efa2f1390e7704d813fd88f08f0858f65d91d335213b); prior ELF backed up.
+  Verification: operation exit 0/0; opencode --version=1.18.34+cairn.aec0b9a; log RESULT: BUILD_OK, 4 focused session tests passed, build smoke test passed; opencode-installed.json updated with new sha and backup.
+  Activation: installed - new launches use the new binary; existing inode mappings preserved; no restart.
+  Evidence: `/var/lib/update-bot/runs/5dcac0b6-147b-47b7-9739-65c6bdb8a3ee/operations/e229b2f5-f121-42d9-940a-c71f5ac6a909`.
+
 ## 2026-10-02 13:38 UTC — 1c1b2ef0-22e8-41a8-9e93-5ccc03ec022b
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
