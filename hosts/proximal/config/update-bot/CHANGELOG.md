@@ -1,5 +1,24 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-05 13:32 UTC — 2a0efa97-4db7-40de-98b2-fd5a90a0806d
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **hermes** — verified. Before: tested candidate carry 23fe67ac on upstream e473f5a9 built (241 focused tests passed, import smoke OK); live launcher still selects hermes-candidate-1298c8e7/.venv; running gateway PID 2948447 source b3519a45. Launcher backup is taken by this operation first.. After: launcher -> hermes-candidate-e473f5a9/.venv; hermes-installed.json source_revision 23fe67ac, upstream e473f5a9; prior launcher backed up.
+  Verification: operation exit 0/0; verify.log 'launcher-ok'; receipt launcher sha256 5f54a05d3063ccc2ea04f781040a84571e47fca14c2898a6ec3ae2c137e82e0d, backup sha256 e88fa7d691a12aaf20940acb06f4b25bdff689e07659d2e01b8480b71d1a6671.
+  Activation: installed - selected for new launches; running gateway not restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/2a0efa97-4db7-40de-98b2-fd5a90a0806d/operations/28e7c3bf-4fb6-42e8-8bdf-109b141e92da`.
+
+- **hermes** — verified. Before: launcher now selects /var/lib/update-bot/staging/hermes-candidate-e473f5a9 (carry 23fe67ac on upstream e473f5a9); running gateway PID 2948447 source b3519a45 (generation 1298c8e7); previous generation retained.. After: gateway PID 2222240 from hermes-candidate-e473f5a9, source 23fe67ac, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=23fe67ac pid=2222240 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json pid=2222240 code_sha=23fe67ac session_store ok.
+  Activation: running - native zero-work drain + one graceful reload via fixed update-bot-hermes-activate.service; prior generation retained for consumers/rollback.
+  Evidence: `/var/lib/update-bot/runs/2a0efa97-4db7-40de-98b2-fd5a90a0806d/operations/356aa1e0-646d-445a-a911-f3ad6452592f`.
+
+- **hermes** — verified. Before: installed generation hermes-candidate-1298c8e7 (carry b3519a45 on upstream 1298c8e7), running gateway PID 2948447; upstream main advanced to e473f5a9 (289 commits); live launcher/gateway untouched by this prep. After: tested candidate /var/lib/update-bot/staging/hermes-candidate-e473f5a9, carry 23fe67ac on upstream e473f5a9, venv built, 241 focused tests + import smoke passed.
+  Verification: operation exit 0/0; log APPLY_CLEAN_3WAY, carry_commit=23fe67acbb77aab76c6cfe4f0f0397610bf049ea, RESULT: PORT_OK; 241 tests passed, 0 failed.
+  Activation: none - preparation only; live launcher/gateway untouched by this op.
+  Evidence: `/var/lib/update-bot/runs/2a0efa97-4db7-40de-98b2-fd5a90a0806d/operations/73c9fb63-cba8-437f-8d00-717c7e31fc17`.
+
 ## 2026-10-04 13:34 UTC — 5dcac0b6-147b-47b7-9739-65c6bdb8a3ee
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
