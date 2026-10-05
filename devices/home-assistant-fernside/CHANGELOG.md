@@ -1,5 +1,14 @@
 # Home Assistant at Fernside changelog
 
+## 2026-10-05 — Enable Myra front-door unlock automation
+
+Under explicit owner authorization, installed and enabled the Google Home
+notification-triggered Myra unlock automation. Verified config readback, HA
+state `on`, Core validation and 24 matcher fixtures. Real notification delivery
+and recognition-to-unlock verification remain unresolved; Moto USB access now
+requires authorization. No test unlock was issued. See
+[current status and rollback](config/home-assistant-core/doorbell-notification-bridge.md).
+
 ## 2026-10-02 — Moto G doorbell notification setup
 
 Enabled Google Home's Android notification permission and Home Assistant's

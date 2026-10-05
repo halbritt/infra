@@ -1,0 +1,46 @@
+id: front_door_myra_google_home
+alias: Front door unlock for Myra
+description: >-
+  Owner-authorized unlock from a fresh Google Home front-door camera notification
+  naming Myra, forwarded by the Moto Companion app. Notification delivery and
+  the exact Google alert wording still require a real-event verification.
+triggers:
+  - trigger: state
+    entity_id: sensor.moto_g_power_5g_2024_last_notification
+    id: google_home_notification
+conditions:
+  - condition: trigger
+    id: google_home_notification
+  - alias: Require a fresh named front-door alert, not a replay or restored state
+    condition: template
+    value_template: >-
+      {% if trigger is not defined or trigger.from_state is none or trigger.to_state is none %}
+        {{ false }}
+      {% else %}
+        {% set a = trigger.to_state.attributes %}
+        {% set posted = a.get('post_time', 0) | float(0) / 1000 %}
+        {% set previous_run = as_timestamp(this.attributes.get('last_triggered'), 0) %}
+        {% set title = a.get('android.title', '') | string %}
+        {% set text = a.get('android.text', '') | string %}
+        {{ a.get('package') == 'com.google.android.apps.chromecast.app'
+           and a.get('channel_id') in ['CameraChannel', 'DoorbellChannel']
+           and title | regex_search('^front door(?: doorbell)?(?:$|[ :·•–—-])', ignorecase=true)
+           and text | regex_search('(?<!\\w)myra(?!\\w)', ignorecase=true)
+           and not text | regex_search('(?i)\\bnot\\b')
+           and 0 <= as_timestamp(now()) - posted <= 60
+           and posted > previous_run
+           and as_timestamp(now()) - previous_run >= 60 }}
+      {% endif %}
+  - condition: state
+    entity_id: lock.aqara_smart_lock_u200
+    state: locked
+actions:
+  - alias: Manual Run actions must not unlock the door
+    condition: trigger
+    id: google_home_notification
+  - action: lock.unlock
+    target:
+      entity_id: lock.aqara_smart_lock_u200
+mode: single
+trace:
+  stored_traces: 20
