@@ -1,5 +1,49 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-06 13:38 UTC — 6f37a998-91fb-47ac-8a11-8159155f53f3
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **os** — verified. Before: Ubuntu 24.04 noble, kernel 6.8.0-146-generic running; prior helper run found 0 ordinary noble updates and 17 held-scope packages (postgres/pgbackrest, kubelet/kubeadm/kubectl); reboot_required=false. Standing-approved OS maintenance via the fixed root helper; no apt/sudo by the model.. After: 23 ordinary packages upgraded and observed at target versions; 21 held-scope deferred; reboot_required=false.
+  Verification: operation exit 0/0 (changed=true); /var/lib/update-bot-os/latest.json status=completed selected=23 observed==after deferred=21 reboot_required=false.
+  Activation: installed - package-script service restarts suppressed; no reboot.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/18b33e3d-4412-4a26-8bcc-cf74b8f446d6`.
+
+- **hermes** — failed. Before: installed generation hermes-candidate-e473f5a9 (carry 23fe67ac on upstream e473f5a9), running gateway PID 2222240; upstream main advanced to f16cbcde; live launcher/gateway untouched by this prep. After: candidate clone at f16cbcde with 9 of 10 patch files applied; hermes_cli/plugins.py left unmerged (APPLY_CONFLICTS); no venv built.
+  Verification: operation exit 4; run log APPLY_CONFLICTS, git status shows 'UU hermes_cli/plugins.py'; result.json written.
+  Activation: none - preparation failed; live launcher/gateway untouched.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/5f9c1da1-3cca-4582-b749-1fe4dafff6e7`.
+
+- **hermes** — verified. Before: prep op 5f9c1da1 exited 4 (APPLY_CONFLICTS): patch applied cleanly to 9 files but hermes_cli/plugins.py conflicted because upstream f16cbcde refactored inject_message to delegate to hermes_cli/plugins_injection.inject_plugin_message; candidate tree left with an unmerged plugins.py; live launcher/gateway untouched. After: resolved carry 9cec60abd08a1d52e8167154bdeba1b2480cc9ce on upstream f16cbcde; venv built; 241 focused tests + import smoke passed.
+  Verification: operation exit 0/0; RESOLVE_OK, carry_commit=9cec60ab..., 241 tests passed/0 failed, RESULT: PORT_OK.
+  Activation: none - preparation only.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/84ee71a2-4cee-40f6-ab7d-e6e218e4b098`.
+
+- **hermes** — verified. Before: tested candidate carry on upstream f16cbcde built (focused tests + import smoke per run log); live launcher still selects hermes-candidate-e473f5a9/.venv; running gateway PID 2222240 source 23fe67ac. Launcher backup is taken by this operation first.. After: launcher -> hermes-candidate-f16cbcde/.venv; hermes-installed.json source_revision 9cec60ab, upstream f16cbcde; prior launcher backed up.
+  Verification: operation exit 0/0; verify.log launcher-ok; receipt launcher sha256 d8ab890d16190b9c4ef9e53267df12985b3afc95eda28d52360863e6850774a1, backup sha256 5f54a05d3063ccc2ea04f781040a84571e47fca14c2898a6ec3ae2c137e82e0d.
+  Activation: installed - selected for new launches; gateway not restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/8b0ce8ae-6b86-4ada-a814-06998391bbd3`.
+
+- **claude** — verified. Before: claude 2.1.290 native install (~/.local/share/claude/versions/2.1.290, symlink ~/.local/bin/claude); npm registry latest @anthropic-ai/claude-code 2.1.291; no active claude session observed. After: claude 2.1.291.
+  Verification: operation exit 0/0; verify `claude --version`=2.1.291 (Claude Code); prior version retained.
+  Activation: installed - symlink repointed; new sessions use 2.1.291.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/d5f58ae1-29ec-4bfa-b570-6a35551b8e5c`.
+
+- **agy** — verified. Before: agy 1.3.0 installed (~/.local/bin/agy); bundled changelog newest entry is 1.3.0; the native `agy update` subcommand exposes no check/plan/channel output, so the online latest cannot be established from the host. Running the native updater is the only host-side way to attempt a channel reference. `timeout 75` guards against an interactive hang.. After: agy 1.3.0; native updater reports 'already on the latest version'.
+  Verification: operation exit 0/0; install.log 'Checking for updates... (current version 1.3.0) / You are already on the latest version'; verify `agy --version`=1.3.0.
+  Activation: no-op - native channel check confirms installed 1.3.0 is latest.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/ddddecd9-d8c8-48ea-b95f-c5dcc6d28ffb`.
+
+- **hermes** — verified. Before: launcher now selects /var/lib/update-bot/staging/hermes-candidate-f16cbcde (carry on upstream f16cbcde); running gateway PID 2222240 source 23fe67ac (generation e473f5a9); previous generation retained.. After: gateway PID 2405134 from hermes-candidate-f16cbcde, source 9cec60ab, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=9cec60ab old_pid=2222240 pid=2405134 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json pid=2405134 code_sha=9cec60ab active_agents=0.
+  Activation: running - native zero-work drain + one graceful reload via fixed update-bot-hermes-activate.service; prior generation retained for consumers/rollback.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/f87b48ac-c572-462c-9b24-7d8b33b11979`.
+
+- **codex** — verified. Before: codex-cli 0.160.0 installed via npm global @openai/codex (~/.npm-global); npm registry latest 0.160.1; Cairn coordination wrapper ~/.local/bin/codex points at ~/.npm-global/lib/node_modules/@openai/codex/bin/codex.js and is not modified by npm; no active codex session observed. After: codex-cli 0.160.1.
+  Verification: operation exit 0/0; verify `codex --version`=codex-cli 0.160.1.
+  Activation: installed - active for new invocations; Cairn wrapper preserved.
+  Evidence: `/var/lib/update-bot/runs/6f37a998-91fb-47ac-8a11-8159155f53f3/operations/fadb7f3e-5fde-46ec-958d-b9923d9e3e40`.
+
 ## 2026-10-05 13:32 UTC — 2a0efa97-4db7-40de-98b2-fd5a90a0806d
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
