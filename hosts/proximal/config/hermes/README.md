@@ -157,6 +157,36 @@ resolves these settings on each turn; this change needs no restart and applies
 to subsequent turns. Verified with that runtime's display resolver; no Slack
 test message was sent.
 
+### Suppress diagnostic preambles — 2026-10-06
+
+The owner's screenshot showed a detailed working heartbeat and a final reply
+prefixed with Cairn identity, inbox and memory diagnostics. The original three
+quiet settings were still installed. Global `long_running_notifications: true`
+and `busy_ack_detail: true` overrode Slack's quiet defaults; explicitly disable
+both under `display.platforms.slack` as well.
+
+The diagnostic paragraph was model-authored final-answer content, so display
+controls cannot remove it. `agent.system_prompt` now adds Slack-specific guidance
+to answer the request directly, perform required coordination silently, and omit
+internal bookkeeping unless the user asks or needs to act on a concrete blocker.
+Required approval requests and result-affecting failures remain visible. This is
+model guidance, not a deterministic output filter.
+
+Install the five Slack display keys and `agent.system_prompt` from the canonical
+config into `~/.hermes/config.yaml`, preserving all unrelated live values. Before
+installation, check for an existing custom prompt, personality or channel prompt
+override; merge deliberately rather than replacing one. Backup for this change:
+`~/.hermes/config.yaml.before-slack-diagnostics-agent288`.
+
+Verified against the active `hermes-candidate-f16cbcde` source: its display resolver
+returns all five quiet values, other platform display values are unchanged, the
+prompt resolver includes the instruction, and the changed ephemeral prompt changes
+the agent-cache signature. These settings apply on the next turn without restart.
+Used the runtime's `hermes_yaml` parser (this generation no longer provides the
+`yaml` import). No live Slack message or model-compliance test was sent.
+All 42 infrastructure tests and repository validation passed. The tests required
+an unsandboxed rerun because two fixtures create scratch directories in `/var/tmp`.
+
 ## Original installation verification — historical
 
 ```bash

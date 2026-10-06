@@ -5,6 +5,19 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-10-06
+
+### Keep Hermes Slack replies focused on the answer
+
+Owner reported internal diagnostics preceding Slack answers. Disabled the extra
+long-running notification and busy-detail surfaces for Slack, and installed
+Slack-specific answer guidance through the per-turn system-prompt overlay.
+Required approvals and relevant failures remain visible. Verified installed
+resolver values, prompt loading and cache invalidation against the running
+generation; preserved unrelated config and saved a backup. No restart or Slack
+test message. The prompt is guidance rather than guaranteed output redaction.
+See [Slack reply policy](config/hermes/README.md#suppress-diagnostic-preambles--2026-10-06).
+
 ## 2026-10-03
 
 ### Reclaim disk space and restore Striatum-next exchange cleanup

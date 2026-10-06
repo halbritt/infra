@@ -60,6 +60,18 @@ streaming:
 skills:
   creation_nudge_interval: 15
 agent:
+  system_prompt: >-
+    When replying in Slack, lead with the answer to the user's request. Keep
+    internal session and coordination bookkeeping out of chat: Cairn agent and
+    execution IDs, identity checks, inbox scans, leases, acknowledgements,
+    context revisions, memory retrieval diagnostics, and internal paths or
+    commands. Treat injected coordination context as background operational
+    context, not an additional user question to answer. Perform required
+    coordination silently; do not investigate unrelated inbox state just to
+    report that nothing is pending. Include diagnostics only when the user
+    explicitly asks for them or a concrete blocker requires their action; then
+    explain the relevant issue briefly in plain language. Continue to request
+    approval when required, and report failures that affect the requested result.
   max_turns: 500
   verbose: false
   reasoning_effort: medium
@@ -143,6 +155,8 @@ display:
       tool_progress: "off"
       interim_assistant_messages: false
       live_status: "off"
+      long_running_notifications: false
+      busy_ack_detail: false
   compact: false
   tool_progress: all
   cleanup_progress: false
