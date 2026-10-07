@@ -1,5 +1,54 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-07 13:32 UTC — 9f718cbc-38a1-435d-bb98-4c5268ada152
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **os** — verified. Before: Ubuntu 24.04 noble; ~9 ordinary noble-updates/security packages upgradable (bluez/libbluetooth3, dnsmasq-base, librsvg2-2/common, redis-server/redis-tools) plus held-scope google-cloud-cli, kube*, libpq5, pgbackrest, postgresql 16/17 family, tailscale; kernel 6.8.0-146 running; no reboot-required flag. After: 3 ordinary packages upgraded and observed (bluez/libbluetooth3, dnsmasq-base); 21 held-scope deferred; reboot_required=false.
+  Verification: operation exit 0/0 (changed=true); /var/lib/update-bot-os/1791380280365165939 latest.json status=completed selected=3 observed==after deferred=21 reboot_required=false.
+  Activation: installed by the fixed root helper; no package-script service restart and no reboot.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/28d34d56-f0fc-42bb-af8f-cfe836effb5d`.
+
+- **opencode** — verified. Before: installed patched ELF ~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe = 1.18.34+cairn.aec0b9a sha db0d870b; upstream npm latest opencode-ai 1.18.35 (tag 53d1eab); Cairn coordination wrapper and running processes untouched. After: patched ELF 1.18.35+cairn.53d1eab sha d3f5220d, up from upstream tag 53d1eab; old inode preserved.
+  Verification: operation exit 0/0; APPLY_CLEAN_3WAY, focused tests + build smoke passed, receipt version 1.18.35+cairn.53d1eab and sha match; live --version 1.18.35+cairn.53d1eab; backup db0d870b retained.
+  Activation: installed - atomic ELF replacement; running processes keep their mapped inode, new launches use the new binary.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/39d54f55-03a0-43d7-9b1b-6e9facf64919`.
+
+- **agy** — verified. Before: agy 1.3.1 installed; native 'agy update' exposes no check/plan/channel flag, so the online latest is established by running the native updater. After: agy 1.3.1; native updater reports already latest.
+  Verification: operation exit 0/0; install.log 'current version 1.3.1 / You are already on the latest version'; verify.log 1.3.1.
+  Activation: no-op - native channel check confirms 1.3.1 is latest.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/3d052dcd-fdd2-4f99-85a8-8dee1b35c08c`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master f498f864; upstream master b9acf138; live inference on :8081 healthy and not restarted. After: master b9acf138 (build 11474); llama-server/cli/quantize installed atomically; live inference process untouched.
+  Verification: operation exit 0/0; install.log 'updated=b9acf138...', verify.log HEAD==origin==b9acf138, llama-server --version b9acf138, localhost:8081/health={status:ok}.
+  Activation: installed - new binaries in place; running server keeps its current build until its next managed restart.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/4149fadf-3ea7-45b2-a023-14dca9c35c75`.
+
+- **herdr** — verified. Before: ~/.local/bin/herdr 0.9.3; channel stable; running server 0.9.3 endpoint_compatible yes; GitHub stable release v0.9.3. After: unchanged 0.9.3 (stable release v0.9.3).
+  Verification: operation exit 0/0; install.log 'already up to date (0.9.3)'; verify.log herdr 0.9.3, channel stable, server running 0.9.3 endpoint_compatible yes.
+  Activation: no-op - already current; no restart.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/5f62abfb-4e75-46ea-ae0c-2fdcee754cb3`.
+
+- **hermes** — failed. Before: installed generation hermes-candidate-f16cbcde (carry 9cec60ab on upstream f16cbcde); live launcher/gateway running that generation; upstream main advanced to ed2dd0b35. After: staging clone hermes-candidate-ed2dd0b35 at base ed2dd0b35 with the carried patch 3way-applied except hermes_cli/plugins.py left unmerged; no venv built.
+  Verification: operation exit 4; run log APPLY_CONFLICTS, git status 'UU hermes_cli/plugins.py'; result.json written; live launcher/gateway untouched.
+  Activation: none - preparation failed; live launcher/gateway untouched.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/69af9193-79d5-46af-b356-700ff0c193c7`.
+
+- **hermes** — verified. Before: staging candidate /var/lib/update-bot/staging/hermes-candidate-ed2dd0b35 at base ed2dd0b35 with the carried patch 3way-applied and hermes_cli/plugins.py left unmerged; live launcher/gateway untouched. After: resolved carry 4ee165cb5da3f91da0fde88a47b965ea72e4d1f6 on upstream ed2dd0b35; venv built; 241 focused tests + import smoke passed.
+  Verification: operation exit 0/0; RESOLVE_OK, carry_commit=4ee165cb..., 241 tests passed/0 failed, RESULT: PORT_OK.
+  Activation: none - preparation only.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/6fd5b502-fd16-4b06-a078-1597fbfaf732`.
+
+- **hermes** — verified. Before: launcher /home/halbritt/.local/bin/hermes -> hermes-candidate-f16cbcde/.venv (carry 9cec60ab on upstream f16cbcde); hermes-installed.json source_revision 9cec60ab; tested candidate hermes-candidate-ed2dd0b35 carry 4ee165cb ready. After: launcher -> hermes-candidate-ed2dd0b35/.venv; hermes-installed.json source_revision 4ee165cb, upstream ed2dd0b35; install-stamp updateMechanism=external; prior launcher backed up.
+  Verification: operation exit 0/0; verify.log asserted source_revision=4ee165cb, upstream=ed2dd0b35, launcher references hermes-candidate-ed2dd0b35.
+  Activation: installed - selected for new launches; gateway not restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/a557e25b-4370-426b-a7eb-9c366565a9f2`.
+
+- **hermes** — verified. Before: launcher ~/.local/bin/hermes -> hermes-candidate-ed2dd0b35/.venv (carry 4ee165cb on upstream ed2dd0b35); gateway still running the prior generation f16cbcde (source 9cec60ab), PID 2405134. After: gateway PID 1572801 from hermes-candidate-ed2dd0b35, source 4ee165cb, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=4ee165cb pid=1572801 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json pid=1572801 code_sha=4ee165cb active_agents=0.
+  Activation: running - native zero-work drain + one graceful reload via fixed update-bot-hermes-activate.service; prior generation retained for rollback.
+  Evidence: `/var/lib/update-bot/runs/9f718cbc-38a1-435d-bb98-4c5268ada152/operations/bb7315ff-54fe-49d4-a073-4e9e38d0ef71`.
+
 ## 2026-10-06 13:38 UTC — 6f37a998-91fb-47ac-8a11-8159155f53f3
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
