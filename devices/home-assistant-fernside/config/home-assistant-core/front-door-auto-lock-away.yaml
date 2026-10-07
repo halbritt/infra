@@ -1,0 +1,37 @@
+id: '1779281607573'
+alias: Auto-lock door when away
+description: Locks the door when it becomes unlocked while Heath is away, or when
+  Heath leaves and the door is already unlocked.
+triggers:
+- entity_id: lock.aqara_smart_lock_u200
+  to: unlocked
+  id: lock_opened
+  trigger: state
+- entity_id: person.heath_albritton
+  to: not_home
+  id: left_home
+  trigger: state
+conditions:
+- condition: state
+  entity_id: person.heath_albritton
+  state: not_home
+- condition: state
+  entity_id: lock.aqara_smart_lock_u200
+  state: unlocked
+- alias: Keep unlocked for Adam until midnight October 7, 2026
+  condition: template
+  value_template: '{{ now() >= as_datetime(''2026-10-08T00:00:00-07:00'') }}'
+actions:
+- delay:
+    minutes: 5
+- condition: state
+  entity_id: person.heath_albritton
+  state: not_home
+- condition: state
+  entity_id: lock.aqara_smart_lock_u200
+  state: unlocked
+- action: lock.lock
+  target:
+    entity_id: lock.aqara_smart_lock_u200
+mode: restart
+max_exceeded: silent

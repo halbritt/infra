@@ -1,9 +1,9 @@
 id: front_door_myra_google_home
-alias: Front door unlock for Myra
+alias: Front door unlock for Myra and Adam
 description: >-
   Owner-authorized unlock from a fresh Google Home front-door camera notification
-  naming Myra, forwarded by the Moto Companion app. Notification delivery and
-  the exact Google alert wording still require a real-event verification.
+  naming Myra or Adam, forwarded by the Moto Companion app. Field mapping was
+  verified against recorded Adam alerts; physical arrival unlock is unverified.
 triggers:
   - trigger: state
     entity_id: sensor.moto_g_power_5g_2024_last_notification
@@ -23,10 +23,9 @@ conditions:
         {% set title = a.get('android.title', '') | string %}
         {% set text = a.get('android.text', '') | string %}
         {{ a.get('package') == 'com.google.android.apps.chromecast.app'
-           and a.get('channel_id') in ['CameraChannel', 'DoorbellChannel']
-           and title | regex_search('^front door(?: doorbell)?(?:$|[ :·•–—-])', ignorecase=true)
-           and text | regex_search('(?<!\\w)myra(?!\\w)', ignorecase=true)
-           and not text | regex_search('(?i)\\bnot\\b')
+           and (a.get('channel_id', '') | string).startswith('CameraChannel-')
+           and text == 'Front door doorbell'
+           and title | lower in ['myra seen', 'adam seen']
            and 0 <= as_timestamp(now()) - posted <= 60
            and posted > previous_run
            and as_timestamp(now()) - previous_run >= 60 }}

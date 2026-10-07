@@ -1,6 +1,83 @@
 # Doorbell notification bridge on Moto G
 
-## Current status — 2026-10-05
+## Current status — 2026-10-07
+
+The owner requested the same recognized-person unlock for Adam, and separately
+requested that the front door remain unlocked until midnight tonight.
+
+The notification bridge is delivering alerts. HA history for the preceding
+seven days returned 137 records, including three **Adam seen** alerts on
+October 5 and nine **Heath seen** alerts. No Myra alert appeared in that sample.
+The earlier `unknown` state ended on October 5. This establishes delivery and
+Google's labels, not an independent identification of the people pictured.
+
+The observed fields differ from the October 5 provisional matcher:
+
+| Attribute | Observed value |
+|---|---|
+| `package` | `com.google.android.apps.chromecast.app` |
+| `channel_id` | `CameraChannel-<account>` |
+| `android.title` | `Adam seen` |
+| `android.text` | `Front door doorbell` |
+| `post_time` | Millisecond Unix timestamp |
+
+[`front-door-myra-unlock.yaml`](front-door-myra-unlock.yaml) now has the display
+name **Front door unlock for Myra and Adam**. Its existing unique ID and entity
+ID remain unchanged. One shared matcher accepts exactly `Adam seen` or
+`Myra seen` (case-insensitive), the exact observed camera text, the Google Home
+package, and a `CameraChannel-` prefix. Generic people, partial names, negation,
+and unobserved multi-person or doorbell-press wording do not match. The 60-second
+freshness, replay and cooldown checks, locked-state prerequisite, single mode,
+and manual-action guard remain in place.
+
+Installed config readback equals the canonical file and the automation is on.
+Thirty strict, read-only fixture evaluations passed in HA, plus the manual-action
+guard and three midnight boundary cases. The old matcher rejected the observed
+field layout. The fixture suite covered valid names, case variation, other and
+partial names, wrong source/camera/channel, swapped or null fields, stale/future
+or invalid timestamps, wrong timestamp units, replay, cooldown, restored state,
+and a missing trigger. These evaluations did not operate the lock. A fresh
+named arrival followed by an automation trace and lock-state transition remains
+unverified. ADB still reports `unauthorized` from proximal; ADB is not part of
+the running notification path and is no longer blocking this field correction.
+
+### October 7 hold through midnight
+
+The lock was already `unlocked` when checked at about 16:06 PDT, following the
+existing Heath-arrival automation. No manual unlock or test lock was sent.
+The five-minute relock came from **Auto-lock door when away**. Both it and
+**Lock front door when Heath leaves home** now reject runs before
+`2026-10-08T00:00:00-07:00`. The absolute deadline survives reloads and does not
+repeat tomorrow. Their other behavior is preserved. Canonical copies:
+
+- [`front-door-auto-lock-away.yaml`](front-door-auto-lock-away.yaml), unique ID `1779281607573`.
+- [`front-door-lock-on-departure.yaml`](front-door-lock-on-departure.yaml), unique ID `lock_on_heath_leave`.
+
+The existing **Lock front door at midnight** automation remains on and unchanged.
+At midnight the exceptions expire and normal locking resumes. This change
+suppresses the two identified automatic relock paths; it does not override a
+person deliberately locking the door. Rollback removes the dated condition from
+these two automations through the config API with a fresh config hash.
+
+### Phone-free API investigation
+
+The existing path is Google Home notification → Moto Companion notification
+listener → HA sensor → unlock automation. The Moto needs connectivity and the
+notification listener; its USB debugging connection is only diagnostic access.
+
+Google's older [SDM CameraPerson schema](https://developers.google.com/nest/device-access/traits/device/camera-person)
+reports person events without a familiar name. Google's newer, early-access
+[Home MCP documentation](https://developers.home.google.com/mcp/home), checked
+October 7, explicitly supports separately consented familiar-face data. It
+requires Home Premium Advanced, a Cloud project and OAuth setup. The
+[history API](https://developers.home.google.com/reference/home/mcp/tools_list/list_home_history)
+provides timestamped event queries. No account authorization or migration was
+performed here. Access eligibility, the actual face-event payload and arrival
+latency still need verification before replacing the Moto path. Google Home MCP
+itself prohibits unlocking doors; it is only a candidate recognition source,
+with authorized lock control remaining in HA.
+
+## Historical status — 2026-10-05
 
 The owner explicitly authorized completing and enabling front-door unlocking
 when Google Home recognizes Myra. This supersedes the earlier decision to leave

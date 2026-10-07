@@ -1,0 +1,17 @@
+id: lock_on_heath_leave
+alias: Lock front door when Heath leaves home
+description: Locks the Aqara Smart Lock U200 when Heath Albritton's presence changes
+  to not_home
+triggers:
+- entity_id: person.heath_albritton
+  to: not_home
+  trigger: state
+conditions:
+- alias: Keep unlocked for Adam until midnight October 7, 2026
+  condition: template
+  value_template: '{{ now() >= as_datetime(''2026-10-08T00:00:00-07:00'') }}'
+actions:
+- action: lock.lock
+  target:
+    entity_id: lock.aqara_smart_lock_u200
+mode: single

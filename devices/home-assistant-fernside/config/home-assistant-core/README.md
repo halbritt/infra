@@ -9,7 +9,9 @@ Canonical, non-secret configuration for Home Assistant Core on
 |---|---|
 | `configuration.yaml` | `/config/configuration.yaml` |
 | `plant-watering-daily.yaml` | One automation in `/config/automations.yaml`, unique ID `1788880838740` |
-| `front-door-myra-unlock.yaml` | One automation in `/config/automations.yaml`, unique ID `front_door_myra_google_home` |
+| `front-door-myra-unlock.yaml` | Myra and Adam unlock automation in `/config/automations.yaml`, unique ID `front_door_myra_google_home` |
+| `front-door-auto-lock-away.yaml` | Existing automation `1779281607573`, with October 7 hold |
+| `front-door-lock-on-departure.yaml` | Existing automation `lock_on_heath_leave`, with October 7 hold |
 
 Install the canonical file through the authenticated Terminal & SSH add-on,
 then validate before restarting Core:
@@ -114,6 +116,6 @@ automation and the Movie mode and Goodnight scripts behind peecee's Stream Deck.
 ## Doorbell notification bridge
 
 [Moto G notification setup](doorbell-notification-bridge.md) records Google Home
-and Companion app permissions, the enabled Myra unlock automation, and the
-unresolved notification delivery test. The automation is installed, but the
-complete recognition-to-unlock path has not been verified.
+and Companion app permissions, the enabled Myra/Adam unlock automation, and the
+October 7 midnight hold. Real named notification delivery is verified; a fresh
+recognition-to-unlock trace remains pending.

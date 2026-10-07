@@ -1,5 +1,21 @@
 # Home Assistant at Fernside changelog
 
+## 2026-10-07 — Add Adam recognition and hold the door unlocked until midnight
+
+At the owner's request, added Adam to the existing Myra unlock rule. Recorded
+Google Home alerts proved that the name is in `android.title`, the camera is in
+`android.text`, and the channel carries an account suffix; corrected all three
+assumptions. Preserved freshness, replay, cooldown and manual-action guards.
+Thirty strict HA template fixtures passed; installed config readback matched.
+Real notification delivery is now proven, but physical arrival unlock is not.
+
+Added an absolute October 8 midnight PDT exception to the two existing
+away/departure lock automations. The door was already unlocked; no test lock or
+manual unlock was issued. The midnight lock remains enabled and unchanged.
+HA Core configuration check, infrastructure unit tests and validation passed.
+See [current status and rollback](config/home-assistant-core/doorbell-notification-bridge.md).
+
+
 ## 2026-10-05 — Enable Myra front-door unlock automation
 
 Under explicit owner authorization, installed and enabled the Google Home
