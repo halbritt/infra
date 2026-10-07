@@ -5,6 +5,19 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-10-07
+
+### Enforce outbreak-watch evidence, review and one-time alerts
+
+Replaced the prompt-only alert gate with an installed cron script after independent
+review and the owner's implementation request. Source passages are fetched and
+matched before the Relay panel reviews them. All members and synthesis must affirm
+evidence and novelty; unresolved or partial results remain silent. SQLite owns
+persistent fact identity and claims alerts before delivery. Pending reviews can
+complete, and source-supported closure is silent and terminal. Preserved historical
+observations/suppressions, the daily schedule and Slack destination. See
+[the watch's runbook](config/hermes/outbreak_watch/README.md).
+
 ## 2026-10-06
 
 ### Keep Hermes Slack replies focused on the answer

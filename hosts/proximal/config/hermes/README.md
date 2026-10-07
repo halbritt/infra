@@ -287,3 +287,11 @@ quick-check, and reopening with the previous generation (schema 31 unchanged).
 Native zero-work drain, new PID/source, Slack connection, healthy session store,
 and launcher/stamp/drop-in hashes were verified. No live Slack message was sent.
 See [the repair report](reports/HERMES_2026-10-03.md) for evidence and recovery.
+
+## Outbreak-watch gate — 2026-10-07
+
+The daily watch now has an executable source/review/identity gate, following the
+owner-requested independent review. Hermes proposes facts; fetched primary passages
+and a complete Relay panel must affirm them before a durable one-time claim can
+produce an alert. Closure is silent and stops later scans. The existing 07:00 Pacific
+schedule and Slack thread are preserved. See [operation, installation and verification](outbreak_watch/README.md).
