@@ -3,7 +3,11 @@
 Read-only client for the owner's October 7 request to test Google's familiar-face
 API with a Heath doorbell ring. The client rejects all device-control tools before
 loading credentials. The existing [Myra/Adam notification automation](../../../../devices/home-assistant-fernside/config/home-assistant-core/doorbell-notification-bridge.md)
-remains the active unlock path. No API-to-lock automation is installed.
+was the original unlock path. The October 8 [HA integration](../../../../devices/home-assistant-fernside/config/home-assistant-core/google-home-faces.md)
+now subscribes to Nest Pub/Sub and queries this API on demand for the Myra/Adam
+rule. This proximal probe remains read-only and is not a runtime subscriber.
+The project is now In production and the Home grant was renewed; private client
+files contain the rotated current secret.
 
 ## Physical recognition test — 2026-10-08
 

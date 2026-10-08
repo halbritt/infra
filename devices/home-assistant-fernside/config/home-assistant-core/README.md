@@ -113,7 +113,14 @@ verified room-to-speaker mapping, deployment source, and recovery procedure.
 [Stream Deck webhooks](stream-deck.md) records the local-only webhook
 automation and the Movie mode and Goodnight scripts behind peecee's Stream Deck.
 
-## Doorbell notification bridge
+## Doorbell familiar-face automation
+
+[Google Home familiar faces](google-home-faces.md) records the native Nest
+Pub/Sub subscriber, custom event-triggered face lookup, Myra/Adam unlock rule,
+OAuth renewal and physical push-to-name test. No continuous history poll or
+phone is required by this path.
+
+## Historical doorbell notification bridge
 
 [Moto G notification setup](doorbell-notification-bridge.md) records Google Home
 and Companion app permissions, the enabled Myra/Adam unlock automation, and the

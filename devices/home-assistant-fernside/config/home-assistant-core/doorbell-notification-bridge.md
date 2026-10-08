@@ -1,6 +1,14 @@
 # Doorbell notification bridge on Moto G
 
-## Current status — 2026-10-07
+## Migration — 2026-10-08
+
+The owner authorized replacing polling and phone notifications with native HA
+Nest Pub/Sub plus an event-triggered Google Home face lookup. A physical Heath
+ring verified the complete push-to-name path. The existing Myra/Adam automation
+now consumes that face event. The Moto configuration is retained for rollback.
+See [current architecture, timing and validation](google-home-faces.md).
+
+## Historical status — 2026-10-07
 
 The owner requested the same recognized-person unlock for Adam, and separately
 requested that the front door remain unlocked until midnight tonight.

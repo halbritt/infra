@@ -5,6 +5,14 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-10-08 — Renew Home OAuth for HA event-driven familiar faces
+
+Google Cloud audience is now In production after adding real app-information
+pages under harm.org/home-assistant. Renewed the Home grant and rotated its
+client secret; revoked obsolete secrets after diagnostic exposure. The probe
+stays read-only. Runtime subscription and targeted lookup live inside HA;
+see the [HA runbook](../../devices/home-assistant-fernside/config/home-assistant-core/google-home-faces.md).
+
 ## 2026-10-08
 
 ### Verify a physical doorbell recognition through Google Home

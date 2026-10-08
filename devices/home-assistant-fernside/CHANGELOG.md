@@ -1,5 +1,15 @@
 # Home Assistant at Fernside changelog
 
+## 2026-10-08 — Subscribe to Nest events and resolve familiar faces inside HA
+
+Installed native Nest Pub/Sub and the custom `google_home_faces` integration.
+The owner's ring reached HA in 1.920 seconds; Heath's name was emitted 28.185
+seconds after the ring, with the duplicate person/chime visit suppressed. The
+Myra/Adam rule now consumes fresh named API events and retains its allowlist,
+cooldown, replay, locked-state and manual-action guards. Physical Myra/Adam
+unlock remains unverified. Published the OAuth app and renewed both grants to
+remove Testing expiry. See [runbook and evidence](config/home-assistant-core/google-home-faces.md).
+
 ## 2026-10-08 — Confirm Heath recognition through the Google Home API
 
 After charging, the owner rang the doorbell. The same API history event contained

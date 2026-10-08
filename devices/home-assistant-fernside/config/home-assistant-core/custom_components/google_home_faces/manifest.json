@@ -1,0 +1,11 @@
+{
+  "domain": "google_home_faces",
+  "name": "Google Home familiar faces",
+  "version": "0.1.0",
+  "config_flow": true,
+  "dependencies": ["nest"],
+  "documentation": "https://github.com/halbritt/infra/tree/master/devices/home-assistant-fernside/config/home-assistant-core",
+  "codeowners": ["@halbritt"],
+  "iot_class": "cloud_push",
+  "requirements": ["mcp==1.26.0"]
+}

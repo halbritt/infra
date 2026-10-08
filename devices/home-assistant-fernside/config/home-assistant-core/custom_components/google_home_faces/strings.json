@@ -1,0 +1,34 @@
+{
+  "title": "Google Home familiar faces",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect familiar-face lookup",
+        "description": "Use a separately authorized Google Home familiar-face grant for this Nest camera.",
+        "data": {
+          "device_id": "Nest device ID in Home Assistant",
+          "structure_id": "Google Home structure ID",
+          "resource_id": "Google Home camera resource ID",
+          "client_id": "Google Home OAuth client ID",
+          "client_secret": "Google Home OAuth client secret",
+          "refresh_token": "Google Home refresh token"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Renew Google Home authorization",
+        "data": {
+          "client_id": "Google Home OAuth client ID",
+          "client_secret": "Google Home OAuth client secret",
+          "refresh_token": "Google Home refresh token"
+        }
+      }
+    },
+    "error": {
+      "invalid_device": "Select a device from the Nest integration.",
+      "invalid_resource": "The camera resource ID must start with device@."
+    },
+    "abort": {
+      "already_configured": "This camera is already configured."
+    }
+  }
+}
