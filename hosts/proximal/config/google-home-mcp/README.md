@@ -5,7 +5,31 @@ API with a Heath doorbell ring. The client rejects all device-control tools befo
 loading credentials. The existing [Myra/Adam notification automation](../../../../devices/home-assistant-fernside/config/home-assistant-core/doorbell-notification-bridge.md)
 remains the active unlock path. No API-to-lock automation is installed.
 
-## Verified state — 2026-10-07
+## Physical recognition test — 2026-10-08
+
+After charging, live state at 10:32 PDT reported the doorbell online, attached,
+fully charged and unplugged. The owner then rang the bell and confirmed "rang".
+The API returned event `76515d74-aa7a-409f-8002-4bef92120ff6` with both a doorbell
+track and a familiar-face track named **Heath**, category `FACE_CATEGORY_KNOWN`.
+
+- Familiar-face track began at 11:02:23.403 PDT.
+- Doorbell track began at 11:02:33.842 PDT.
+- The containing history entry timestamp was 11:02:55.875 PDT.
+- The successful retrieval was recorded at 11:03:28.632 PDT, 54.790 seconds after
+  the ring. This is an upper bound on availability, not measured delivery latency.
+
+The ten-minute capture at 10:32–10:42 PDT completed 53 successful polls without
+events, before the owner rang at 11:02. A subsequent history query found the ring
+and name together. This establishes fresh physical recognition through the API;
+continuous-poll latency and recognition-to-unlock behavior remain unverified.
+No device action was issued. The Myra/Adam Moto bridge remains the active unlock
+source; the API probe has no connection to HA actions.
+
+Private evidence is `~/.config/google-home-mcp/ring-recent.json` and
+`ring-test-20261008T173227Z/summary.json`. Raw histories contain signed media URLs;
+only the limited event/timing evidence above belongs in the repository.
+
+## Setup evidence — 2026-10-07
 
 - Enabled `home.googleapis.com` in existing Cloud project `heath-stuff`.
 - Created Web OAuth client **Home doorbell test**, preserving existing `homeass`.
@@ -19,11 +43,11 @@ remains the active unlock path. No API-to-lock automation is installed.
   Nest Doorbell (battery), supporting `CameraHistory`.
 - The initial six-hour history contained 16 entries, including named Heath and
   Adam events. This establishes named historical access, not fresh delivery speed
-  or successful unlocking. A new owner-ring test remains outstanding.
+  or successful unlocking. The next day's owner-ring test is recorded above.
 - At 23:49 PDT, after the owner completed Google's account re-verification,
   familiar-face sharing read back enabled. Confirm completed and redirected to
   the Fernside devices page without another challenge. Account setup is complete.
-- Fresh camera testing is deferred for charging: the owner reported an exhausted
+- Fresh camera testing was deferred for charging: the owner reported an exhausted
   battery, and the API reported critical charge, not charging and not plugged in.
   The device remained online. After loading, the web UI showed Camera idle (its
   initial Camera off placeholder was not the settled state). Recent history calls

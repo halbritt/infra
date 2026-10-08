@@ -5,6 +5,16 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-10-08
+
+### Verify a physical doorbell recognition through Google Home
+
+After the owner charged and rang the doorbell, the read-only API probe retrieved
+a single event containing the ring and a familiar-face track named Heath. The
+query completed 54.790 seconds after the ring; the original capture window had
+already ended, so exact arrival latency remains unmeasured. No lock actions or
+automation migration. [Evidence](config/google-home-mcp/README.md#physical-recognition-test--2026-10-08).
+
 ## 2026-10-07
 
 ### Connect a read-only Google Home familiar-face probe

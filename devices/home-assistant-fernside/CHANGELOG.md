@@ -1,5 +1,13 @@
 # Home Assistant at Fernside changelog
 
+## 2026-10-08 — Confirm Heath recognition through the Google Home API
+
+After charging, the owner rang the doorbell. The same API history event contained
+the ring and a familiar-face track named Heath. The query retrieved it 54.790
+seconds after the ring; the earlier capture had ended, so this is only an upper
+bound on availability. No lock action ran and the phone bridge remains active.
+See [physical test evidence](../../hosts/proximal/config/google-home-mcp/README.md#physical-recognition-test--2026-10-08).
+
 ## 2026-10-07 — Verify named history through Google Home's API
 
 Authorized a separate read-only Google Home MCP probe on proximal. Live history

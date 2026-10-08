@@ -87,6 +87,13 @@ ring-to-event latency measurement is deferred until charging is complete.
 The API probe does not call HA or device-control tools. The existing
 Moto bridge remains the active unlock source; Heath was not added to its allowlist.
 
+On October 8, after charging, the owner rang the doorbell. The API returned the
+ring and a familiar-face track named Heath in the same event. Retrieval completed
+54.790 seconds after the ring; the earlier capture had expired, so this is an
+availability upper bound rather than exact latency. Fresh physical recognition
+through the API is now established. No lock action or API migration occurred.
+See [timestamps and private evidence locations](../../../../hosts/proximal/config/google-home-mcp/README.md#physical-recognition-test--2026-10-08).
+
 ## Historical status — 2026-10-05
 
 The owner explicitly authorized completing and enabling front-door unlocking
