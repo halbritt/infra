@@ -1,5 +1,44 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-08 13:39 UTC — 6b795776-ade9-480d-8d8b-1c853f6ee898
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: launcher ~/.local/bin/hermes -> hermes-candidate-25a71a74/.venv (carry 90de44a4 on upstream 25a71a74); gateway still running the prior generation ed2dd0b35 (source 4ee165cb), PID 2237598, Slack connected. After: gateway PID 1531262 from hermes-candidate-25a71a74, source 90de44a4, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=90de44a4 old_pid=2237598 pid=1531262 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json pid 1531262 code_sha 90de44a4 active_agents 0.
+  Activation: running - native zero-work drain + one graceful reload via fixed update-bot-hermes-activate.service; prior generation retained for rollback.
+  Evidence: `/var/lib/update-bot/runs/6b795776-ade9-480d-8d8b-1c853f6ee898/operations/089e577a-508c-4983-8f34-c29ed9d95c5c`.
+
+- **hermes** — failed. Before: installed generation hermes-candidate-ed2dd0b35 (carry 4ee165cb on upstream ed2dd0b35), selected by ~/.local/bin/hermes; live gateway running that generation (PID 2237598, source 4ee165cb); upstream main advanced to 25a71a744cb9ef06950a91638e6229b4f808d461. After: isolated staging clone hermes-candidate-25a71a74 at base 25a71a74 with the carried patch 3way-applied except hermes_cli/plugins.py left unmerged; no venv built.
+  Verification: operation exit 4; run log APPLY_CONFLICTS, git status 'UU hermes_cli/plugins.py'; live launcher/gateway untouched.
+  Activation: none - preparation failed; live launcher/gateway untouched.
+  Evidence: `/var/lib/update-bot/runs/6b795776-ade9-480d-8d8b-1c853f6ee898/operations/54fa388a-5da6-43a3-9212-c4a421a0e221`.
+
+- **herdr** — verified. Before: ~/.local/bin/herdr 0.9.3; channel stable; running server 0.9.3 endpoint_compatible yes; GitHub stable release v0.9.3. After: unchanged 0.9.3 (stable release v0.9.3).
+  Verification: operation exit 0/0; install.log 'already up to date (0.9.3)'; verify.log herdr 0.9.3, channel stable, server running 0.9.3 endpoint_compatible yes.
+  Activation: no-op - already current; no restart, sessions preserved.
+  Evidence: `/var/lib/update-bot/runs/6b795776-ade9-480d-8d8b-1c853f6ee898/operations/6b5ca781-b0ae-4c2d-801d-e120d3eb9ba9`.
+
+- **hermes** — verified. Before: launcher /home/halbritt/.local/bin/hermes -> hermes-candidate-ed2dd0b35/.venv (carry 4ee165cb on upstream ed2dd0b35); hermes-installed.json source_revision 4ee165cb; tested candidate hermes-candidate-25a71a74 carry 90de44a4 ready (241 tests passed). After: launcher -> hermes-candidate-25a71a74/.venv; hermes-installed.json source_revision 90de44a4, upstream 25a71a74; install-stamp updateMechanism=external; prior launcher backed up.
+  Verification: operation exit 0/0; verify.log asserted source_revision=90de44a4, upstream=25a71a74, launcher references hermes-candidate-25a71a74.
+  Activation: installed - selected for new launches; gateway not restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/6b795776-ade9-480d-8d8b-1c853f6ee898/operations/704c48e1-2642-4a99-bb15-0347929c5c22`.
+
+- **hermes** — verified. Before: staging candidate /var/lib/update-bot/staging/hermes-candidate-25a71a74 at base 25a71a74 with the carried patch 3way-applied and hermes_cli/plugins.py left unmerged; live launcher/gateway untouched. After: resolved carry 90de44a44f6f6f17bb75792bf45e8b75b3d7269b on upstream 25a71a74; venv built; 241 focused tests + import smoke passed.
+  Verification: operation exit 0/0; RESULT: PORT_OK carry_commit=90de44a4..., '241 tests passed, 0 failed'; plugins.py resolved from the byte-identical carry file.
+  Activation: none - preparation only.
+  Evidence: `/var/lib/update-bot/runs/6b795776-ade9-480d-8d8b-1c853f6ee898/operations/8d707012-beeb-46b6-9427-1dfafcc857db`.
+
+- **agy** — verified. Before: agy 1.3.1 installed; native 'agy update' exposes no check/plan/channel flag, so the online latest is established by running the native updater. After: agy 1.3.1; native updater reports already latest.
+  Verification: operation exit 0/0; install.log 'Checking for updates... (current version 1.3.1) / You are already on the latest version'; verify.log 1.3.1.
+  Activation: no-op - native channel check confirms 1.3.1 is latest.
+  Evidence: `/var/lib/update-bot/runs/6b795776-ade9-480d-8d8b-1c853f6ee898/operations/a38748da-331e-49cf-bdcc-c6c603bc838d`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master 9c2e0e49 (build 11490 installed); upstream master c35b66744f13cb0dcc476af063e112122eee9355; live inference on :8081 healthy and not restarted. After: master c35b6674 (build 11510); llama-server/cli/quantize installed atomically; live inference process untouched.
+  Verification: operation exit 0/0; install.log 'updated=c35b6674...' and 'Live processes were not restarted'; verify.log HEAD==origin==c35b6674, llama-server --version build 11510 commit c35b6674, localhost:8081/health={status:ok}.
+  Activation: installed - new binaries in place; running server keeps its current build until its next managed restart.
+  Evidence: `/var/lib/update-bot/runs/6b795776-ade9-480d-8d8b-1c853f6ee898/operations/f6e64c3e-7213-4bf0-9eee-6444ec26b475`.
+
 ## 2026-10-07 13:32 UTC — 9f718cbc-38a1-435d-bb98-4c5268ada152
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
