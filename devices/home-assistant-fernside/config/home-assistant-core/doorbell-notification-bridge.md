@@ -71,11 +71,19 @@ reports person events without a familiar name. Google's newer, early-access
 October 7, explicitly supports separately consented familiar-face data. It
 requires Home Premium Advanced, a Cloud project and OAuth setup. The
 [history API](https://developers.home.google.com/reference/home/mcp/tools_list/list_home_history)
-provides timestamped event queries. No account authorization or migration was
-performed here. Access eligibility, the actual face-event payload and arrival
-latency still need verification before replacing the Moto path. Google Home MCP
-itself prohibits unlocking doors; it is only a candidate recognition source,
-with authorized lock control remaining in HA.
+provides timestamped event queries. At this initial investigation no account
+authorization or migration had been performed. Google Home MCP itself prohibits
+unlocking doors; authorized lock control remains in HA.
+
+Later on October 7, the owner requested setup and a Heath doorbell-ring test.
+The [read-only probe on proximal](../../../../hosts/proximal/config/google-home-mcp/README.md)
+now has a separate OAuth client, a verified refresh grant and successful live
+home/resource/history calls. Doorbell history includes named Heath and Adam
+tracks at `CameraHistory.HistoryItem.eventTracks[].face.name`. This establishes
+actual named API access. Google's separate face-consent flow still requests
+account re-verification, and a fresh ring-to-event latency measurement remains
+outstanding. The API probe does not call HA or device-control tools. The existing
+Moto bridge remains the active unlock source; Heath was not added to its allowlist.
 
 ## Historical status — 2026-10-05
 

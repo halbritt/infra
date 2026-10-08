@@ -7,6 +7,17 @@ history. **Values and config, never credentials.**
 
 ## 2026-10-07
 
+### Connect a read-only Google Home familiar-face probe
+
+At the owner's request, enabled the Home API in `heath-stuff`, created a separate
+Web OAuth client through the owner's signed-in browser, authorized Fernside and
+verified token refresh. Live resource discovery identified the Nest doorbell;
+history returned named Heath and Adam tracks. Installed a read-only CLI and an
+on-demand, owner-only Tailscale OAuth callback; credentials and camera responses
+remain outside Git. Separate face-consent account re-verification and a fresh
+doorbell latency test remain pending. Existing Myra/Adam HA unlocking still uses
+the Moto notification bridge. See [probe runbook](config/google-home-mcp/README.md).
+
 ### Enforce outbreak-watch evidence, review and one-time alerts
 
 Replaced the prompt-only alert gate with an installed cron script after independent
