@@ -80,9 +80,11 @@ The [read-only probe on proximal](../../../../hosts/proximal/config/google-home-
 now has a separate OAuth client, a verified refresh grant and successful live
 home/resource/history calls. Doorbell history includes named Heath and Adam
 tracks at `CameraHistory.HistoryItem.eventTracks[].face.name`. This establishes
-actual named API access. Google's separate face-consent flow still requests
-account re-verification, and a fresh ring-to-event latency measurement remains
-outstanding. The API probe does not call HA or device-control tools. The existing
+actual named API access. At 23:49 PDT Google's separate face-consent flow completed
+after owner account re-verification. The owner reported an exhausted doorbell
+battery; live API state confirmed critical charge and no charging. A fresh
+ring-to-event latency measurement is deferred until charging is complete.
+The API probe does not call HA or device-control tools. The existing
 Moto bridge remains the active unlock source; Heath was not added to its allowlist.
 
 ## Historical status — 2026-10-05

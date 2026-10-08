@@ -20,20 +20,23 @@ remains the active unlock path. No API-to-lock automation is installed.
 - The initial six-hour history contained 16 entries, including named Heath and
   Adam events. This establishes named historical access, not fresh delivery speed
   or successful unlocking. A new owner-ring test remains outstanding.
-- The separate familiar-face consent flow reached Google's account re-verification
-  screen. Its completion remains pending even though names were returned by the
-  history call; do not infer completed consent from that response.
+- At 23:49 PDT, after the owner completed Google's account re-verification,
+  familiar-face sharing read back enabled. Confirm completed and redirected to
+  the Fernside devices page without another challenge. Account setup is complete.
+- Fresh camera testing is deferred for charging: the owner reported an exhausted
+  battery, and the API reported critical charge, not charging and not plugged in.
+  The device remained online. After loading, the web UI showed Camera idle (its
+  initial Camera off placeholder was not the settled state). Recent history calls
+  still succeeded, but no fresh named-ring latency test was performed.
 - The callback unit exited successfully after token storage; its temporary
   Tailscale Serve route has been removed. It is needed only for OAuth renewal.
 
-The pending verification is open in a dedicated Chrome profile on peecee,
+The setup used a dedicated Chrome profile on peecee,
 `C:\Users\halbr\AppData\Local\GoogleHomeSetupAgent307`, launched by the on-demand
-scheduled task `InfraGoogleHomeSetupAgent307`. Browser automation reaches its
-loopback CDP port 9227 through the proximal SSH tunnel on 19227 (control socket
-`/tmp/infra-google-home-browser-agent307.sock`). Keep this window available for
-the owner's challenge. After consent, close only this dedicated Chrome session,
-remove its scheduled task and close the SSH tunnel; preserve ordinary Chrome
-windows and profiles. Do not expose the signed-in profile or download directory.
+scheduled task `InfraGoogleHomeSetupAgent307`. After consent the dedicated browser
+was closed, its task removed and its SSH tunnel stopped; CDP port 9227 no longer
+listens. Ordinary Chrome windows were preserved. The signed-in setup profile
+remains local for renewal; do not expose it or its download directory.
 
 Google's [Home MCP guide](https://developers.home.google.com/mcp/home) documents
 Home Premium Advanced eligibility, separate familiar-face consent, early-access

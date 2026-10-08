@@ -14,8 +14,10 @@ Web OAuth client through the owner's signed-in browser, authorized Fernside and
 verified token refresh. Live resource discovery identified the Nest doorbell;
 history returned named Heath and Adam tracks. Installed a read-only CLI and an
 on-demand, owner-only Tailscale OAuth callback; credentials and camera responses
-remain outside Git. Separate face-consent account re-verification and a fresh
-doorbell latency test remain pending. Existing Myra/Adam HA unlocking still uses
+remain outside Git. At 23:49 PDT the owner completed account re-verification and
+familiar-face consent completed. The fresh doorbell test is deferred until its
+critically low battery is charged. Removed the temporary browser task and tunnel.
+Existing Myra/Adam HA unlocking still uses
 the Moto notification bridge. See [probe runbook](config/google-home-mcp/README.md).
 
 ### Enforce outbreak-watch evidence, review and one-time alerts

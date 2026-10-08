@@ -4,8 +4,9 @@
 
 Authorized a separate read-only Google Home MCP probe on proximal. Live history
 returned Heath and Adam face names for the front-door doorbell. Separate consent
-re-verification and fresh ring-to-event timing remain outstanding; no API event
-is connected to a lock action. The active notification bridge and midnight
+was completed at 23:49 PDT after owner account re-verification. Fresh ring-to-event
+timing is deferred until the critically low doorbell battery is charged; no API
+event is connected to a lock action. The active notification bridge and midnight
 exception were preserved. See the [probe runbook](../../hosts/proximal/config/google-home-mcp/README.md).
 
 ## 2026-10-07 — Add Adam recognition and hold the door unlocked until midnight
