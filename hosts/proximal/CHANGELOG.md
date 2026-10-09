@@ -18,6 +18,10 @@ with a root-only tar archive for rollback. The Docker `moby` namespace,
 packages, binaries, unit, apt source, and Kubernetes state files are absent
 from active paths. Containerd recreated an empty `/etc/cni/net.d/` directory.
 
+Later the same day, the owner requested removal of the unnecessary rollback.
+Deleted `/var/backups/kubernetes-retired-2026-10-08/`, including the archive and
+displaced cluster state; verified the directory is absent.
+
 ## 2026-10-08 — Renew Home OAuth for HA event-driven familiar faces
 
 Google Cloud audience is now In production after adding real app-information
