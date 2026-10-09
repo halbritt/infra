@@ -1,5 +1,49 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-09 13:38 UTC — e70857e7-a612-4144-8a51-da52c491fba1
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes selects /var/lib/update-bot/staging/hermes-candidate-25a71a74/.venv (carry 90de44a4 on upstream 25a71a74); tested candidate at /var/lib/update-bot/staging/hermes-candidate-0670ba45 carries the patch on upstream 0670ba45 with focused tests green; gateway PID 1531262 running 90de44a4.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/17cf0ad6-02cc-45b5-a9dd-658fa11ec1be`.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes and hermes-installed.json now select the tested generation hermes-candidate-0670ba45 (carry 5e97a7fe41 on upstream 0670ba45); the gateway is still running the prior generation 90de44a4 as PID 1531262 with active_agents 0.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/3620570e-fb6b-4ff2-9540-56c313463583`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 noble, kernel 6.8.0-146-generic; apt list --upgradable shows 25 packages - 2 ordinary noble-updates (libopeniscsiusr, open-iscsi 2.1.9-3ubuntu5.5) plus 23 held-scope (docker-ce/cli/buildx/rootless/containerd, google-cloud-cli/anthoscli, pgdg libpq5/postgresql-16/17 + extensions/pgbackrest, tailscale). No reboot-required flag.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/8aac7e62-b307-413a-b7e2-928fb55fae2f`.
+
+- **hermes** — failed. Before: staging candidate hermes-candidate-0670ba45 at upstream 0670ba45 has a partial carry patch: hermes_cli/plugins.py and tools/process_registry.py conflicted because upstream 0670ba45 rewrote type annotations (Dict/List/Set/Optional -> PEP 585/604) while the carried change is additive. Live launcher still selects 25a71a74.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/952093f4-d381-4800-99df-c3e9dd00a9be`.
+
+- **hermes** — failed. Before: installed generation hermes-candidate-25a71a74 carries 90de44a4 on upstream 25a71a74 and is selected by ~/.local/bin/hermes; gateway PID 1531262 running it; upstream NousResearch/hermes-agent main advanced to 0670ba45 by ls-remote. No candidate for 0670ba45 exists yet.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/bc8edb1b-1855-41cb-b27f-52bb600d2c17`.
+
+- **hermes** — failed. Before: staging candidate hermes-candidate-0670ba45 at upstream 0670ba45 has a partial carry patch: hermes_cli/plugins.py and tools/process_registry.py conflicted because upstream 0670ba45 rewrote type annotations (Dict/List/Set/Optional -> PEP 585/604) while the carried change is additive. Live launcher still selects 25a71a74.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/cb9e51df-9d07-499f-aca6-83c0e9dbcb64`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master 3d65c90d0 (installed build 11515, commit 3d65c90d0); origin/master ref 3d65c90d0; upstream ggml-org master e60eff95fda7b6e46bf402a8e9f1e86d88ab29c8 per git ls-remote; live inference on :8081 healthy and not restarted. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/daa8e0b5-ee75-49e2-b117-10ec5019e643`.
+
+- **hermes** — verified. Before: staging candidate hermes-candidate-0670ba45 at upstream 0670ba45 has a partial carry patch: hermes_cli/plugins.py and tools/process_registry.py conflicted because upstream 0670ba45 rewrote type annotations (Dict/List/Set/Optional -> PEP 585/604) while the carried change is additive. Live launcher still selects 25a71a74.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/e70857e7-a612-4144-8a51-da52c491fba1/operations/f7e31962-5363-4280-8f43-534e3e826e13`.
+
 ## 2026-10-08 13:39 UTC — 6b795776-ade9-480d-8d8b-1c853f6ee898
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
