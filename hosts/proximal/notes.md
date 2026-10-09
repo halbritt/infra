@@ -32,6 +32,11 @@ guidance remains in [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md).
 - Retired subsystems remain in the host record when their rollback path and
   incident history are still useful. Retirement is not permission to erase
   provenance.
+- Kubernetes is retired on this host. Do not reinstall kubeadm, kubelet,
+  kubectl, CNI packages, or the Kubernetes apt source without a new owner decision.
+  Docker and its `containerd.io` runtime remain in service. The root-only
+  rollback archive and displaced 2025 cluster state are under
+  `/var/backups/kubernetes-retired-2026-10-08/`.
 
 ## Sensitive metadata
 

@@ -5,6 +5,19 @@ subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular
 history. **Values and config, never credentials.**
 
+## 2026-10-08 — Retire the unused Kubernetes installation
+
+The owner confirmed that `proximal` should not have Kubernetes. `kubelet` was
+masked and inactive; no Kubernetes tasks or control-plane processes were running.
+Purged `kubeadm`, `kubectl`, `kubelet`, `kubernetes-cni`, and `cri-tools`, removed
+their apt holds and the Kubernetes apt source/key, and cleared the inactive
+`k8s.io` containerd namespace. Moved old kubeadm, etcd, CNI, kubelet, and user
+Kubeconfig state to root-only `/var/backups/kubernetes-retired-2026-10-08/`,
+with a root-only tar archive for rollback. The Docker `moby` namespace,
+`containerd.io`, and running Docker containers stayed active. Verified the
+packages, binaries, unit, apt source, and Kubernetes state files are absent
+from active paths. Containerd recreated an empty `/etc/cni/net.d/` directory.
+
 ## 2026-10-08 — Renew Home OAuth for HA event-driven familiar faces
 
 Google Cloud audience is now In production after adding real app-information
