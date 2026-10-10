@@ -1,5 +1,54 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-10 13:37 UTC — 9f3c49ed-15c9-4ce7-82d4-df52cc6890cb
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **codex** — verified. Before: Cairn-coordinated Codex launcher ~/.local/bin/codex -> npm global @openai/codex@0.162.0 (codex-cli 0.162.0); npm registry latest @openai/codex=0.162.1; the Cairn wrapper and its coordination launcher are separate files and are not modified by the npm package update.. After: npm global @openai/codex@0.162.1 (codex-cli 0.162.1).
+  Verification: operation exit 0/0; install.log 'changed 2 packages'; verify.log 'codex-cli 0.162.1'; Cairn wrapper untouched.
+  Activation: installed - new launches use 0.162.1; no running session stopped.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/0b67efca-8318-43e6-a602-80ee85263685`.
+
+- **hermes** — failed. Before: installed generation hermes-candidate-0670ba45 carries 5e97a7fe on upstream 0670ba45 and is selected by ~/.local/bin/hermes; gateway PID 2419046 running it; upstream NousResearch/hermes-agent main advanced to f925b017 by git ls-remote. No candidate for f925b017 exists yet.. After: staging clone hermes-candidate-f925b017 at f925b017 with the carried patch 3way-applied; hermes_cli/plugins.py and tools/process_registry.py merged clean; commit deferred.
+  Verification: operation exit 4 MARKERS_REMAIN - a tree-wide grep matched pre-existing '=======' lines in unrelated upstream test files; the two carried files themselves had no markers (false positive).
+  Activation: none - preparation step; superseded by the finish operation.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/14c137c1-c9f3-447a-b4f5-be41d482879d`.
+
+- **hermes** — interrupted/uncertain. Before: installed generation hermes-candidate-0670ba45 carries 5e97a7fe on upstream 0670ba45 and is selected by ~/.local/bin/hermes; gateway PID 2419046 running it; upstream NousResearch/hermes-agent main advanced to f925b017 by git ls-remote. No candidate for f925b017 exists yet.. After: unchanged; the operation aborted at spawn because the prep script lacked the execute bit - no clone, no patch, no build.
+  Verification: operation.py raised PermissionError at subprocess.Popen before any native command; reconciled.json recorded; live launcher/gateway untouched.
+  Activation: none - bootstrap failure, no target change.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/2b226999-e6bb-4e9e-84fa-d1a8f5e29731`.
+
+- **claude** — verified. Before: native Claude Code installation, launcher ~/.local/bin/claude (ELF), versioned payloads under ~/.local/share/claude/versions (2.1.295 current); npm registry @anthropic-ai/claude-code=2.1.296 but the native installer tracks its own stable channel.. After: native Claude Code 2.1.296.
+  Verification: operation exit 0/0; 'Successfully updated from 2.1.295 to version 2.1.296'; verify.log '2.1.296 (Claude Code)'.
+  Activation: installed - new launches use 2.1.296; no session stopped.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/330e567a-db2a-4a58-a8db-4f312c85fc50`.
+
+- **hermes** — verified. Before: staging candidate hermes-candidate-f925b017 at upstream f925b017 has the carried patch 3way-applied with hermes_cli/plugins.py and tools/process_registry.py resolved by clean file merges (base=prev upstream 0670ba45, ours=prev carried file, theirs=f925b017); no markers remain in the carried files. Live launcher still selects 0670ba45.. After: carry b5207921664b2dd0b96ff4d2efe994eec7d4e829 on upstream f925b017; venv built; 241 focused tests passed, 0 failed; import smoke OK.
+  Verification: operation exit 0/0; RESULT: PORT_OK carry_commit=b5207921; marker check limited to the carried files.
+  Activation: none - preparation only.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/33f3f23d-9417-4d40-bf45-4ad32dcaed8d`.
+
+- **agy** — verified. Before: agy 1.3.3 installed at ~/.local/bin/agy; native 'agy update' exposes no check/plan/channel flag (a --check flag is rejected), so the online latest is established by running the native updater noninteractively.. After: agy 1.3.3 (unchanged).
+  Verification: operation exit 0/0; native updater 'You are already on the latest version'; verify.log 1.3.3.
+  Activation: no-op - native channel check confirms 1.3.3 is latest.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/570c5a23-089f-4215-8ca7-fdd6240670d5`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master f2918cabb (installed build 11541, commit f2918cab); origin/master ref f2918cabb; upstream ggml-org master aa94f2086147cd4bfbcff818ce998dffce5fcb39 per git ls-remote; live inference on :8081 healthy ({"status":"ok"}) and not restarted. After: master aa94f208 (build 11549); llama-server/cli/quantize installed atomically; live inference process untouched.
+  Verification: operation exit 0/0; install.log 'updated=aa94f208...' and 'Live processes were not restarted'; verify.log HEAD==origin==aa94f208, llama-server --version build 11549 commit aa94f2086, localhost:8081/health={status:ok}.
+  Activation: installed - new binaries in place; running server keeps its current build until its next managed restart.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/b0b7557e-9147-4bc6-a574-8c38ad89203d`.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes selects /var/lib/update-bot/staging/hermes-candidate-0670ba45/.venv (carry 5e97a7fe on upstream 0670ba45); tested candidate /var/lib/update-bot/staging/hermes-candidate-f925b017 carries the patch on upstream f925b017 with focused tests green; gateway PID 2419046 running 5e97a7fe.. After: launcher -> hermes-candidate-f925b017/.venv; hermes-installed.json source_revision b5207921 upstream f925b017; install-stamp updateMechanism=external; prior launcher backed up.
+  Verification: operation exit 0/0; verify.log asserted source_revision==candidate HEAD, upstream==f925b017 and launcher references hermes-candidate-f925b017.
+  Activation: installed - selected for new launches; gateway not restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/c43b49d5-336f-4010-9200-5d08f6eaf44a`.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes and hermes-installed.json now select the tested generation hermes-candidate-f925b017; the gateway is still running the prior generation 5e97a7fe on 0670ba45 as PID 2419046 with active_agents 0.. After: gateway PID 1520611 from hermes-candidate-f925b017, source b5207921, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=b5207921 old_pid=2419046 pid=1520611 drain='fresh zero chat/cron/API work' slack=connected; gateway_state.json pid 1520611 code_sha b5207921 active_agents 0.
+  Activation: running - native zero-work drain + one graceful reload via fixed update-bot-hermes-activate.service; prior generations retained.
+  Evidence: `/var/lib/update-bot/runs/9f3c49ed-15c9-4ce7-82d4-df52cc6890cb/operations/ced0df74-2608-4b77-b093-d489cf5b6cba`.
+
 ## 2026-10-09 13:38 UTC — e70857e7-a612-4144-8a51-da52c491fba1
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
