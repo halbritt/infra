@@ -1,5 +1,54 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-11 13:36 UTC — 5d144349-c11d-4898-ab8e-a1fa533cccf2
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: gateway PID 1520611 running prior generation hermes-candidate-f925b017 (carry b5207921), Slack connected, active_agents 0; ~/.local/bin/hermes and hermes-installed.json now select hermes-candidate-97a9ae8e (carry 2ffc41b9 on upstream 97a9ae8e); activation op c0a9cc9d install verified.. After: gateway PID 3609080 from hermes-candidate-97a9ae8e, source 2ffc41b9, Slack connected, active_agents 0.
+  Verification: hermes-activation-latest.json status=verified changed=true revision=2ffc41b9 old_pid=1520611 pid=3609080 drain='fresh zero chat/cron/API work' slack=connected; running gateway process confirmed on hermes-candidate-97a9ae8e.
+  Activation: running - native zero-work drain + one graceful reload via fixed update-bot-hermes-activate.service; prior generations retained.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/17f53e39-3914-487e-ac84-13a3428b04f8`.
+
+- **opencode** — verified. Before: installed patched ELF ~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe reports 1.18.35+cairn.53d1eab, sha256 d3f5220de5a87c38ef0b0c96d061ac14cc90ac3a8e3eb1c33dc75a7ebebc4d5a (matches opencode-installed.json); upstream tag v1.19.0 = 733b2c627e5aec39cb33cc22373bdce33053ef2c (git ls-remote anomalyco/opencode, npm opencode-ai=1.19.0). No running process holds the npm ELF open.. After: patched ELF 1.19.0+cairn.733b2c6 sha 4369fe3a installed at ~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe.
+  Verification: operation exit 0/0; stored patch applied cleanly at v1.19.0; focused session/project/httpapi/prompt tests passed; ELF smoke 1.19.0+cairn.733b2c6; verify.log OPENCODE_VERIFY_OK; old ELF backed up.
+  Activation: installed - new launches use the new binary; existing process inode mappings preserved; no restart.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/213c8a03-e30d-48e4-be25-a98c5d77a199`.
+
+- **claude** — verified. Before: native Claude Code 2.1.296 installed; npm dist-tag @anthropic-ai/claude-code=2.1.296 (re-checked this run). Running the native updater noninteractively to confirm the stable channel; no interactive session is stopped.. After: native Claude Code 2.1.296 (unchanged).
+  Verification: operation exit 0/0; 'Claude Code is up to date (2.1.296)'; verify.log '2.1.296 (Claude Code)'.
+  Activation: no-op - already latest; no session stopped.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/267b4722-b3d7-4de7-b035-12ba83f2664c`.
+
+- **agy** — verified. Before: agy 1.3.3 installed; its own native updater reported 1.3.3 as the latest on the prior run. Running the native updater noninteractively to re-establish the online channel state; no session is stopped.. After: agy 1.3.3 (unchanged).
+  Verification: operation exit 0/0; native updater 'You are already on the latest version'; verify.log 1.3.3.
+  Activation: no-op - native channel check confirms 1.3.3 is latest.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/27323ccc-032b-4452-aca3-17f3b4e18dd7`.
+
+- **codex** — verified. Before: codex-cli 0.162.1 installed via npm global; npm registry latest @openai/codex=0.162.1 (re-checked this run). Running the native npm install to confirm/complete the stable-channel state; Cairn wrapper ~/.local/bin/codex must remain untouched.. After: npm global @openai/codex@0.162.1 (unchanged).
+  Verification: operation exit 0/0; install.log 'changed 2 packages'; verify.log 'codex-cli 0.162.1'; Cairn wrapper untouched.
+  Activation: no-op - already at npm latest; new launches use 0.162.1.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/44b55b37-2c6d-4be8-8aa8-ef0c3f8ac44e`.
+
+- **hermes** — failed. Before: installed generation hermes-candidate-f925b017 carries b5207921 on upstream f925b017 and is selected by ~/.local/bin/hermes; gateway PID 1520611 running it, Slack connected, active_agents 0; upstream NousResearch/hermes-agent main advanced to 97a9ae8ee55d31bebce49f1fb6b5ef775323976a (git ls-remote). No candidate for 97a9ae8e exists yet.. After: staging clone hermes-candidate-97a9ae8e at 97a9ae8e with the carried patch 3way-applied; hermes_cli/plugins.py and tools/process_registry.py merged clean; commit deferred.
+  Verification: operation exit 4 MARKERS_REMAIN - the tree-wide grep matched pre-existing '=======' lines in unrelated upstream test files; both carried files had no markers (false positive).
+  Activation: none - preparation step; superseded by the finish operation.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/90aa5c6d-95f0-4e4b-b0f6-55f8e896869c`.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes selects /var/lib/update-bot/staging/hermes-candidate-f925b017/.venv (carry b5207921 on upstream f925b017); tested candidate /var/lib/update-bot/staging/hermes-candidate-97a9ae8e carries the patch (carry 2ffc41b9 on upstream 97a9ae8e) with 241 focused tests passed, 0 failed and import smoke OK; gateway PID 1520611 running b5207921.. After: launcher -> hermes-candidate-97a9ae8e/.venv; hermes-installed.json source_revision 2ffc41b9 upstream 97a9ae8e; install-stamp updateMechanism=external; prior launcher backed up (sha 9454f0ee).
+  Verification: operation exit 0/0; verify.log 'launcher-ok 2ffc41b9' asserted source_revision==candidate HEAD, upstream==97a9ae8e and launcher references hermes-candidate-97a9ae8e.
+  Activation: installed - selected for new launches; gateway not restarted by this op.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/c0a9cc9d-eaa7-4473-a834-f02ec2d8928c`.
+
+- **hermes** — verified. Before: staging candidate hermes-candidate-97a9ae8e at upstream 97a9ae8e has the carried patch 3way-applied with hermes_cli/plugins.py and tools/process_registry.py resolved by clean file merges (base=f925b017, ours=prev carried file, theirs=97a9ae8e); the prep op 90aa5c6d exited 4 only because the tree-wide marker grep matched pre-existing '=======' lines in unrelated upstream test files (false positive). Live launcher still selects f925b017; gateway PID 1520611.. After: carry 2ffc41b990215dab6375e2c22512e128b1d8e2b3 on upstream 97a9ae8e; venv built; 241 focused tests passed, 0 failed; import smoke OK.
+  Verification: operation exit 0/0; RESULT: PORT_OK carry_commit=2ffc41b9; marker check limited to the carried files.
+  Activation: none - preparation only.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/e4c55aa7-f850-4f4a-bdac-72b6f40675f6`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master at 23b0202a189c44a54625aadcb37a946dd1d6278d (build 11552, commit 23b0202a1; autonomous updater ran 2026-10-10 21:55); installed llama-server --version build 11552; upstream ggml-org/llama.cpp master advanced to a9d27ac693ff0a1d3cba449c912c2b891904a4c7 (git ls-remote). Live inference on :8081 not restarted.. After: master a9d27ac6 (build 11556); llama-server/cli/quantize installed atomically; live inference process untouched.
+  Verification: operation exit 0/0; install.log 'updated=a9d27ac6...' and 'Live processes were not restarted'; verify.log HEAD==origin==a9d27ac6, llama-server --version build 11556 commit a9d27ac69, localhost:8081/health={status:ok}.
+  Activation: installed - new binaries in place; running server keeps its current build until its next managed restart.
+  Evidence: `/var/lib/update-bot/runs/5d144349-c11d-4898-ab8e-a1fa533cccf2/operations/ef4cce3d-3ba3-486d-8d29-ac3ba2b6c8fe`.
+
 ## 2026-10-10 13:37 UTC — 9f3c49ed-15c9-4ce7-82d4-df52cc6890cb
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
