@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-12 13:32 UTC — df8b65ab-265b-47e1-9329-49b490c37c71
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **hermes** — verified. Before: gateway PID 3609080 running prior generation hermes-candidate-97a9ae8e (carry 2ffc41b9), Slack connected; ~/.local/bin/hermes and hermes-installed.json now select hermes-candidate-eefdfe06 (carry on upstream eefdfe06); install operation verified.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/df8b65ab-265b-47e1-9329-49b490c37c71/operations/6461b99d-43e5-4e50-a374-3aba4b4f0b94`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master at e937b17a2df081e9c7ae380f0dab4341c1585bce (build 11561, installed binary commit e937b17a2; autonomous updater ran 2026-10-11 21:50); installed llama-server --version build 11561; upstream ggml-org/llama.cpp master advanced to efe3626b119ff81033e309c3ba07a770bef2c546 (git ls-remote). Live inference on :8081 not restarted.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/df8b65ab-265b-47e1-9329-49b490c37c71/operations/68804d2a-5a56-41b7-9cd2-783b4091c9b4`.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes selects /var/lib/update-bot/staging/hermes-candidate-97a9ae8e/.venv (carry 2ffc41b9 on upstream 97a9ae8e); tested candidate /var/lib/update-bot/staging/hermes-candidate-eefdfe06 carries the patch (carry on upstream eefdfe06) with focused tests passed and import smoke OK; gateway PID 3609080 running 2ffc41b9.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/df8b65ab-265b-47e1-9329-49b490c37c71/operations/8fa34aca-9595-404d-a526-9029a3dcb670`.
+
+- **hermes** — verified. Before: installed generation hermes-candidate-97a9ae8e carries 2ffc41b9 on upstream 97a9ae8e and is selected by ~/.local/bin/hermes; gateway PID 3609080 running it, Slack connected; upstream NousResearch/hermes-agent main advanced to eefdfe0692207a7520b3a8c764fe510024f552a1 (git ls-remote). No candidate for eefdfe06 exists yet.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/df8b65ab-265b-47e1-9329-49b490c37c71/operations/a26343cc-dcd9-4992-b157-f8f83058ffb5`.
+
 ## 2026-10-11 13:36 UTC — 5d144349-c11d-4898-ab8e-a1fa533cccf2
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
