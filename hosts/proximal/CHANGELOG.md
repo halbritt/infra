@@ -1,5 +1,23 @@
 # Changelog — proximal (system)
 
+## 2026-10-13 — Tailscale expiry recovery and warnings
+
+Owner reauthentication restored proximal after the daemon reported an expired
+node key; original tailnet address retained, no WezTerm mux restart. Verified
+SSH from peecee to proximal and back. The new hourly user timer
+`tailscale-expiry-alert` checks the current key expiry and sends SMS at 14 days,
+7 days, and daily in the last 3 days. Its first live run succeeded with the new
+April 11, 2027 expiry outside the warning window. Seven focused boundary/failure
+checks, 42 repository tests, unit verification, and repository validation passed.
+A setup confirmation was submitted by the local modem (gateway journal ID
+`e8b5e8db9e0245a6b3e8e0a560533648`); handset receipt is not asserted.
+See `config/tailscale/README.md` for installation and uncertain-send handling.
+
+Added the explicit `proximal-local` mDNS backup to the canonical WezTerm client
+profile and peecee's installed profile; existing Windows Ctrl-click bindings
+were preserved. SSH to that alias read the original mux panes 0 and 1. No
+automatic failover or user GUI reconnect is claimed.
+
 System-level and cross-subsystem changes to host **proximal**, newest first. Each
 subsystem's `README.md` is its current-state reference; dense PostgreSQL cluster-config
 history lives in [`config/postgres/CHANGELOG.md`](config/postgres/CHANGELOG.md). See `git log` for granular

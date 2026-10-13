@@ -1,5 +1,23 @@
 # Changelog — peecee
 
+## 2026-10-13 — Audio driver recheck
+
+Read-only checks found Realtek USB Audio `6.3.9600.2342` (`oem94.inf`) still
+installed and best ranked, with device/endpoint reporting no PnP problems and
+both audio services running. The newer Microsoft generic driver remains
+outranked. No driver replacement regression found; audible playback and default
+output selection remain untested. See `config/audio/README.md`.
+
+## 2026-10-13 — WezTerm LAN backup
+
+Added `Host proximal-local` / `HostName proximal.local` / `User halbritt` to
+`C:\Users\halbr\.ssh\config`, and the matching explicit SSH mux domain in
+`C:\Users\halbr\.wezterm.lua`. Dated pre-change backups sit beside both files.
+Preserved the default proximal connection and local Ctrl-click bindings.
+Verified mDNS returned proximal's LAN addresses, the SSH alias reached proximal,
+WezTerm parsed the config, and mux panes 0 and 1 were visible through the alias.
+Use `wezterm connect proximal-local` while on the home LAN if Tailscale is down.
+
 Machine-level changes for `peecee`, newest first. The exporter README and its Git
 history contain the original 2026-06-20 deployment record.
 

@@ -42,6 +42,18 @@ config.ssh_domains = {
   },
 }
 
+-- Requires an SSH alias proximal-local with HostName proximal.local.
+-- Select this connection explicitly when the tailnet is unavailable.
+table.insert(config.ssh_domains, {
+  name = 'proximal-local',
+  remote_address = 'proximal-local',
+  username = 'halbritt',
+  remote_wezterm_path = '/home/halbritt/.local/bin/wezterm',
+  multiplexing = 'WezTerm',
+  assume_shell = 'Posix',
+  local_echo_threshold_ms = 20,
+})
+
 config.default_gui_startup_args = { 'connect', 'proximal' }
 
 return config

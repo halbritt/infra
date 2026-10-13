@@ -83,6 +83,24 @@ Start or attach:
 wezterm connect proximal
 ```
 
+### LAN backup through mDNS
+
+The client also exposes `proximal-local`. Add this alias to the client's private
+SSH configuration (`%USERPROFILE%/.ssh/config` on Windows):
+
+```sshconfig
+Host proximal-local
+    HostName proximal.local
+    User halbritt
+```
+
+Use `wezterm connect proximal-local` on the home LAN when Tailscale is unavailable.
+This is an explicit backup connection; the default `proximal` connection is
+unchanged. Avahi on proximal publishes `proximal.local`. On October 13, 2026,
+peecee resolved it to proximal's LAN addresses and successfully ran SSH through
+the alias. The installed Windows profile was amended in place to retain its
+local Ctrl-click bindings; both SSH and WezTerm files have dated backup copies.
+
 `Command-T` on macOS creates another tab in the current remote domain. Quitting
 the GUI disconnects the client while leaving remote panes alive. Closing an
 individual tab or pane intentionally terminates that remote pane's process.

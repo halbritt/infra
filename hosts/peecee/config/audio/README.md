@@ -30,3 +30,18 @@ driver and Windows audio services are separate from this base driver.
 The ASUS archive also contains `install.bat`, which deletes DTS state, adds a
 virtual audio device, installs optional apps, and creates an on-logon task.
 Those effects are outside the base-driver repair and were not applied here.
+
+## Live recheck — October 13, 2026
+
+After the owner suspected another Windows Update regression, a read-only SSH
+inspection found the same Realtek base driver `6.3.9600.2342` bound through
+`oem94.inf`, with extension `oem45.inf` still present. `pnputil` reported
+**Best Ranked / Installed** and device **Started**. Microsoft's newer
+`usbaudio2.inf` version `10.0.26100.9549` was available but **Outranked**, not
+bound to this device. PnP reported `OK` / `CM_PROB_NONE` for the Realtek device
+and its SPDIF endpoint. `Audiosrv` and `AudioEndpointBuilder` were running.
+The latest installed hotfix returned by `Get-HotFix` was `KB5121794`, October 10.
+
+This establishes that the previous generic-driver replacement had not recurred.
+It does not verify default output selection, volume/mute state, cable/speaker
+state, or audible playback. No audio driver, service, or endpoint was changed.

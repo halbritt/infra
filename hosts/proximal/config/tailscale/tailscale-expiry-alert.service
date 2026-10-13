@@ -1,0 +1,13 @@
+[Unit]
+Description=Tailscale key expiry SMS warning
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=PYTHONPATH=%h/git/praxis/src
+EnvironmentFile=%h/.config/praxis/praxisd.env
+ExecStart=/usr/bin/python3 %h/.local/lib/tailscale-expiry-alert/expiry_alert.py
+UMask=0077
+TimeoutStartSec=60
+NoNewPrivileges=true
+
