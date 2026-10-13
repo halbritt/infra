@@ -1,5 +1,44 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-13 13:34 UTC — 71841960-8655-4c13-8fa8-648313603bc6
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes selects /var/lib/update-bot/staging/hermes-candidate-eefdfe06/.venv (carry 71f1c929 on upstream eefdfe06); tested candidate /var/lib/update-bot/staging/hermes-candidate-6e7b83a2 carries the patch (carry on upstream 6e7b83a2) with focused tests passed and import smoke OK.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/71841960-8655-4c13-8fa8-648313603bc6/operations/02f22acf-b4f9-4ac8-9417-65fe4788171a`.
+
+- **herdr-archon** — failed. Before: Archon /usr/bin/herdr 0.9.3 on stable channel (pacman metadata not authoritative, must not be downgraded); prior receipt /var/lib/update-bot/herdr-archon-latest.json status=verified changed=false, remote processes preserved. Re-running the fixed helper to re-check the stable release and preserve running processes.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/71841960-8655-4c13-8fa8-648313603bc6/operations/5f6245c3-6699-4a1f-9b5b-a2e7e9e1aa9d`.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean master at 4413a192410fad1f054e9216114087a3e01527a0 (build 11580, installed binary commit 4413a1924); local is an ancestor of upstream; upstream ggml-org/llama.cpp master advanced to a17e94d229fc7fed1567a799baebd11b771fe5af (git ls-remote). Live inference on :8081 healthy and not restarted.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/71841960-8655-4c13-8fa8-648313603bc6/operations/5ff6020e-6d34-4f97-be92-8991347eb21f`.
+
+- **hermes** — verified. Before: gateway running prior generation hermes-candidate-eefdfe06 (carry 71f1c929), Slack connected; ~/.local/bin/hermes and hermes-installed.json now select hermes-candidate-6e7b83a2 (carry on upstream 6e7b83a2); install operation verified.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/71841960-8655-4c13-8fa8-648313603bc6/operations/89772dec-3f9b-4500-9b7f-edde7145b581`.
+
+- **hermes** — verified. Before: installed generation hermes-candidate-eefdfe06 carries 71f1c929 on upstream eefdfe06 and is selected by ~/.local/bin/hermes; gateway running it, Slack connected; upstream NousResearch/hermes-agent main advanced to 6e7b83a2f1c093e992a8d838ed77ea320fbd8e51 (git ls-remote). No candidate for 6e7b83a2 exists yet.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/71841960-8655-4c13-8fa8-648313603bc6/operations/9c8bb0cc-ade3-4629-868a-b113fc5bb801`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 noble; apt list --upgradable shows 26 packages: 4 ordinary noble-security libx11 packages (libx11-6/data/dev/xcb1) plus held-scope docker-ce/cli/rootless/buildx/containerd.io, google-cloud-cli(+anthoscli), pgdg libpq5/pgbackrest/postgresql 16/17 + extensions/clients/common and tailscale. Prior helper receipt deferred 23 held-scope.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/71841960-8655-4c13-8fa8-648313603bc6/operations/ee6d69f2-9d15-4043-b8f4-7331e52035fa`.
+
+- **agy** — verified. Before: agy 1.3.4 installed (advanced autonomously from 1.3.3 since the prior run); its native update help exposes only 'Usage of update:' and cannot report the online latest read-only, so the native updater is run noninteractively to establish channel state. No session is stopped.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/71841960-8655-4c13-8fa8-648313603bc6/operations/f74bb132-bbf9-451c-979d-4a6f400e1634`.
+
 ## 2026-10-12 13:32 UTC — df8b65ab-265b-47e1-9329-49b490c37c71
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
