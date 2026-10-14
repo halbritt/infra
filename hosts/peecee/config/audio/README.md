@@ -76,3 +76,17 @@ For future read-only per-app inspection, run the sound inventory in the logged-i
 interactive Windows session: an SSH session alone did not expose Chrome's audio
 session. Temporary NirSoft `svcl` / `SoundVolumeView` utilities were fetched from
 nirsoft.net; temporary diagnostic scheduled tasks were removed after each use.
+
+### Owner-approved reboot and verification
+
+The owner approved a full peecee reboot to complete the pending device reset.
+Windows reported a new boot time of October 13, 17:17:43 PDT, and the owner's
+console session returned at 17:19. After reboot the Realtek device reported
+`OK` / problem 0, with the same `6.3.9600.2342` driver bound through `oem94.inf`.
+Both audio services were running. SPDIF remained the default console and
+multimedia output, unmuted at 100%, stereo 24-bit/48 kHz.
+
+The WiiM's direct API then changed from `stop` to `play` on Optical input
+(mode 43), unmuted, at volume 34. The diagnostic did not change its volume.
+This is evidence of recovered playback state after the reboot; audible output
+still needs the owner's confirmation. The underlying cause remains unproven.
