@@ -45,3 +45,34 @@ The latest installed hotfix returned by `Get-HotFix` was `KB5121794`, October 10
 This establishes that the previous generic-driver replacement had not recurred.
 It does not verify default output selection, volume/mute state, cable/speaker
 state, or audible playback. No audio driver, service, or endpoint was changed.
+
+### Follow-up: Chrome silent through WiiM Amp Ultra
+
+The owner reported no sound after the driver recheck. Further live inspection
+on October 13 found Chrome's interactive-session audio routed to Realtek USB
+Audio, unmuted at 100%; the default console and multimedia output was SPDIF.
+The format was stereo 24-bit/48 kHz. Thirty Windows endpoint-meter samples
+contained a nonzero signal (peak 0.438). This proves a signal in the Windows
+mixer, not optical transmission or audible output.
+
+The WiiM Amp Ultra at `192.168.1.119` reported Optical input, volume 21, mute 0,
+and playback status `stop`. Its duplicate HA integrations differed in playback
+state, so the direct device API was used. A resume command returned `OK` without
+changing `stop`. An Optical reselect request failed while the owner was
+power-cycling the amplifier; the owner confirmed that the restart did not fix
+sound and that the optical connection to peecee had been checked.
+
+`pnputil /restart-device` on Realtek returned 3010 (reboot required). A System
+Kernel-PnP event at 17:13:39 PDT identified `audiodg.exe` as blocking removal of
+the device. Stopping `Audiosrv` and retrying the device restart then returned
+50: the device was pending a reboot to complete the previous operation. The
+service was restored in a finally block; `Audiosrv` and `AudioEndpointBuilder`
+were running and the device still reported `OK` / `CM_PROB_NONE` afterwards.
+A full PC reboot requires owner coordination because Windows apps will close.
+This does not establish that Windows Update caused the silence or that the
+optical link and amplifier are working. No driver package was replaced.
+
+For future read-only per-app inspection, run the sound inventory in the logged-in
+interactive Windows session: an SSH session alone did not expose Chrome's audio
+session. Temporary NirSoft `svcl` / `SoundVolumeView` utilities were fetched from
+nirsoft.net; temporary diagnostic scheduled tasks were removed after each use.
