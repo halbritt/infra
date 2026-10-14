@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-14 13:35 UTC — 0e7bed94-d361-47c8-99b1-58be0d9db84b
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **llama.cpp** — verified. Before: ~/git/llama.cpp clean on master at 091b6a7fc561b78da90a0ed2d524ec995458c657 (installed build 11610, commit 091b6a7fc); upstream ggml-org/llama.cpp master advanced to 37d6d653e49aa73c947cc9631a5d499869a21cca (git ls-remote), so an update is warranted. Live inference llama-27b on :8081 healthy ({"status":"ok"}) and is not restarted by this updater.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0e7bed94-d361-47c8-99b1-58be0d9db84b/operations/032128cf-1791-4689-875d-61f67694e5c1`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 noble. Running kernel 6.8.0-146; the 2026-10-13 OS run already installed linux-image-generic/headers/tools 6.8.0-147.147 and reported reboot_required=true (reboot still pending; the bot never reboots). Held-scope deferred after that run: docker-ce/containerd.io/docker-buildx/cli/rootless, google-cloud-cli(+anthoscli), libpq5, pgbackrest and the postgresql/postgresql-16/-17 extension stack (23 packages) - these remain out of scope. Standing-approved routine noble release/security/update refresh.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0e7bed94-d361-47c8-99b1-58be0d9db84b/operations/45bc99cf-fcb1-4c83-bf59-9d24bb3283c1`.
+
+- **herdr** — verified. Before: herdr client+server 0.9.3, channel stable. Server running pid 38124 (/home/halbritt/.local/bin/herdr server); agent process 3423988; sessions: 'default' running, 'cairn-v1-native' stopped. Latest stable GitHub release v0.9.4 (published 2026-10-13T15:41:22Z), so an update is warranted. Installed binary backed up to /var/lib/update-bot/backups/herdr-18a8dc65f1c2fa48.bak (sha256 18a8dc65f1c2fa485884344356dea1cfd911c6f06cf46fa78e193f4087f4dba7). Native 'herdr update' installs the stable binary without stopping the server/sessions and preserves config.toml and the stable channel; no --handoff is used.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0e7bed94-d361-47c8-99b1-58be0d9db84b/operations/4842cde3-877e-4e5b-b219-d03ec236e300`.
+
+- **claude** — verified. Before: Claude Code 2.1.296 installed via the native versioned installer: /home/halbritt/.local/bin/claude is a symlink -> /home/halbritt/.local/share/claude/versions/2.1.296. npm @anthropic-ai/claude-code latest is 2.1.299, so an update is warranted. Config (~/.claude.json, ~/.claude/) and session stores are preserved by the native updater, which installs a new versioned directory and repoints the launcher symlink.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0e7bed94-d361-47c8-99b1-58be0d9db84b/operations/528c7a67-0a19-447a-a8f7-1041729fa129`.
+
 ## 2026-10-13 13:34 UTC — 71841960-8655-4c13-8fa8-648313603bc6
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
