@@ -1,5 +1,19 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-15 13:37 UTC — aa137e07-0597-4890-b54a-0a4b837b9a96
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **herdr** — verified. Before: herdr installed 0.9.4 (sha256 493304fbefb0ed0ea0455f373b47f48d24e8774bc7974f4c916ad2e937675b23), channel stable; running server 0.9.3 (endpoint_compatible yes); sessions: 'default' running, 'cairn-v1-native' stopped; update.restart_needed no, server_binary_stale yes. GitHub herdrdev/herdr latest stable release v0.9.5, so an update is warranted. Native 'herdr update' installs the stable binary without stopping server/sessions and preserves config.toml and the stable channel; no --handoff is used. Installed binary backed up to /var/lib/update-bot/backups/herdr-493304fbefb0ed0e.bak.. After: herdr installed 0.9.5; channel stable preserved; running server unchanged at 0.9.3; prior binary backed up to /var/lib/update-bot/backups/herdr-493304fbefb0ed0e.bak.
+  Verification: operation exit 0/0; install.log 'installed 0.9.5'; verify.log 'installed: herdr 0.9.5', channel stable, status running version 0.9.3 endpoint_compatible yes; HERDR_VERIFY_OK.
+  Activation: installed for new clients; running server not restarted (owner-controlled) - v0.9.5 server fixes apply only after its next restart; no session/server stopped.
+  Evidence: `/var/lib/update-bot/runs/aa137e07-0597-4890-b54a-0a4b837b9a96/operations/99843193-94f7-48a7-aee4-354607943e6f`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 noble. Running kernel 6.8.0-146; linux-image/headers/tools 6.8.0-147.147 already installed by the 2026-10-13 run and report reboot_required=true (reboot still pending; the bot never reboots). The 2026-10-14 OS run applied ordinary noble packages (apparmor, bind9, bluez, systemd 255.4-1ubuntu8.18, openssh 9.16p1-3ubuntu13.20, open-vm-tools, python3-jwt, python3-urllib3) and deferred 22 held-scope packages (containerd.io, docker-ce/cli/rootless/buildx, google-cloud-cli(+anthoscli), libpq5, pgbackrest, postgresql 16/17 + extensions/clients/common). Standing-approved routine noble release/security/update refresh.. After: curl/libcurl 8.5.0-2ubuntu10.16, tzdata 2026e-0ubuntu0.24.04.1 applied; 23 held-scope packages deferred; reboot_required=true.
+  Verification: operation exit 0/0 changed=true; /var/lib/update-bot-os/1792071632655915093 status=completed selected=[curl,libcurl3t64-gnutls,libcurl4-openssl-dev,libcurl4t64,tzdata] deferred=23 reboot_required=true.
+  Activation: applied; no package-script service restart (policy-rc.d hold), no reboot. Kernel 6.8.0-147 installed earlier still requires a reboot to take effect..
+  Evidence: `/var/lib/update-bot/runs/aa137e07-0597-4890-b54a-0a4b837b9a96/operations/dad85c0b-15e3-487d-86f2-3eabb115058c`.
+
 ## 2026-10-14 13:35 UTC — 0e7bed94-d361-47c8-99b1-58be0d9db84b
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
