@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-16 13:35 UTC — a96a4863-ca86-42a0-84bc-338dc7e6a8a1
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes selects installed generation /var/lib/update-bot/staging/hermes-candidate-6e7b83a2 (source_revision 920b3e37, upstream base 6e7b83a2); gateway pid 3495557 running that generation, Slack connected. Upstream main is now b65e078c (was 73b9f2af at the prior run). This is a source fetch/carry into an isolated staging clone; the live install, launcher and gateway are untouched. No venv build or activation in this step.. After: isolated staging candidate /var/lib/update-bot/staging/hermes-candidate-b65e078c at upstream base b65e078c with carry commit 9c314e6819b47237633b64e5ef8639e2eb9c6c90; no install/launcher/gateway change.
+  Verification: operation exit 0/0; prep log RESOLVE_OK (hermes_cli/plugins.py and tools/process_registry.py resolved by clean 3-way file merge), no_markers_in_carried_files, carry_commit=9c314e68; live install receipt and running gateway unchanged.
+  Activation: staging only - NOT built, tested, installed or activated; running gateway remains on the tested generation 6e7b83a2/920b3e37.
+  Evidence: `/var/lib/update-bot/runs/a96a4863-ca86-42a0-84bc-338dc7e6a8a1/operations/5855acec-a282-45e6-820f-50b17a069db4`.
+
+- **opencode** — verified. Before: Installed ELF ~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe version 1.19.0+cairn.733b2c6 sha256 4369fe3a45b90c6a73bc30dc0dd034305c0dbb47812d0b8f33fb33e5c59551fe; npm opencode-ai latest 1.19.3 (upstream tag v1.19.3 = e3c4eb242585dcd77be1a867391b7c25fd47ce52). No opencode process currently running. Carries the stored 3-patch cairn series onto the 1.19.3 tag; existing ELF backup retained.. After: installed ELF version 1.19.3+cairn.e3c4eb2 sha256 d2c0d843687126ee956b92714b616ee2caf00e897669811a338d7df77c9461e8; prior ELF backed up.
+  Verification: operation exit 0/0; build log APPLY_CLEAN_3WAY + version=1.19.3+cairn.e3c4eb2 + smoke test passed; verify.log prints 1.19.3+cairn.e3c4eb2.
+  Activation: installed for new launches; running process inode mappings preserved; no restart of any process.
+  Evidence: `/var/lib/update-bot/runs/a96a4863-ca86-42a0-84bc-338dc7e6a8a1/operations/b464a4e9-0355-4547-b397-f9520925fc5f`.
+
+- **herdr-archon** — failed. Before: Prior receipt /var/lib/update-bot/herdr-archon-latest.json status=uncertain (started 1791898904, run aa137e07; error log 'ssh: connect to host 100.100.42.51 port 22: Connection timed out'). That uncertain call was reconciled as a pure connection timeout with NO remote mutation. Last fully verified remote state: herdr 0.9.3 (op 94d81182, run 5d144349). Now tailscale shows archon peer active with a direct path. Fixed helper only; the model has no SSH/sudo. Fresh deliberate attempt, not a blind retry.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/a96a4863-ca86-42a0-84bc-338dc7e6a8a1/operations/b7a9e603-692a-4fcc-bc0c-32c16b478f43`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 noble; previous helper run 1792071632655915093 applied curl/libcurl/tzdata and deferred 23 held-scope packages; reboot pending (kernel 6.8.0-147). No new OS helper run since. Fixed root helper owns apt metadata refresh + allowed updates.. After: snapd 2.77.1+ubuntu24.04 applied; 23 held-scope packages deferred; reboot_required=true.
+  Verification: operation exit 0/0 changed=true; /var/lib/update-bot-os/latest.json status=completed, selected snapd 2.76.3->2.77.1 observed 2.77.1, deferred=23, reboot_required=true.
+  Activation: applied; no package-script service restart (policy-rc.d hold); no reboot. Kernel 6.8.0-147 still requires a reboot to take effect..
+  Evidence: `/var/lib/update-bot/runs/a96a4863-ca86-42a0-84bc-338dc7e6a8a1/operations/d84f0518-d7a3-4b76-b671-0582077e5d1b`.
+
 ## 2026-10-15 13:37 UTC — aa137e07-0597-4890-b54a-0a4b837b9a96
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
