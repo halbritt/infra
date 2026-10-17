@@ -1,5 +1,19 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-17 13:36 UTC — 2f2a85e6-2664-431c-a38c-4ea835d5926a
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: ~/.local/bin/hermes selects installed generation /var/lib/update-bot/staging/hermes-candidate-6e7b83a2 (source_revision 920b3e37, launcher sha256 8a3427643..., receipt observed 2026-10-13); gateway pid 3495557 runs that generation, Slack connected. Candidate /var/lib/update-bot/staging/hermes-candidate-b65e078c is the previous run's clean carry commit 9c314e6819 (upstream base b65e078c), tree clean, no venv yet. Upstream main has since advanced to 6ed6120c; this operation resumes the staged candidate rather than repeating the port. Live install/launcher/gateway unchanged until tests pass.. After: venv built (Python 3.14.6); 241 focused tests passed (0 failed, 4 skipped); import/launcher smoke ok; versioned launcher installed for hermes-candidate-b65e078c and hermes-installed.json records source_revision 9c314e68 with launcher/backup hashes.
+  Verification: operation exit 0/0; finish.log 'RESULT: INSTALL_OK carry=9c314e68'; launcher --version Python 3.14.6; receipt assertion passed.
+  Activation: installed for new launches; prior generation and venv preserved.
+  Evidence: `/var/lib/update-bot/runs/2f2a85e6-2664-431c-a38c-4ea835d5926a/operations/a7f51855-605c-4ace-b401-9d42cd09a8dc`.
+
+- **hermes** — verified. Before: Installed generation /var/lib/update-bot/staging/hermes-candidate-b65e078c (source_revision 9c314e6819, upstream base b65e078c) is selected by ~/.local/bin/hermes and recorded in /var/lib/update-bot/hermes-installed.json by operation a7f51855-605c-4ace-b401-9d42cd09a8dc after 241 focused tests passed and the launcher/import smoke succeeded. Running gateway pid 3495557 still executes the previous generation hermes-candidate-6e7b83a2 (920b3e37) with Slack connected; its files and venv remain intact. Activation is the fixed helper's native drain + single reload; busy or unprovable state must refuse.. After: fresh zero-work drain, single supported reload; gateway pid 1318685 running revision 9c314e68, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified, revision 9c314e68, old_pid 3495557, pid 1318685, slack connected; process list confirms new generation.
+  Activation: running; gateway serves new sessions on the updated build.
+  Evidence: `/var/lib/update-bot/runs/2f2a85e6-2664-431c-a38c-4ea835d5926a/operations/da9c5923-1b24-4b06-ac29-5bab0cf5ddf5`.
+
 ## 2026-10-16 13:35 UTC — a96a4863-ca86-42a0-84bc-338dc7e6a8a1
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
