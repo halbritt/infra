@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-10-17 — Disk cleanup, /tmp age-out, ZFS archive
+
+`/` was at 98% (38G free). `/tmp` (root LV, not tmpfs) held 377G under Ubuntu's
+30-day tmpfiles rule. `/etc/tmpfiles.d/tmp.conf` now ages `/tmp` out at
+`amM:2d`: files neither read nor written for 2 days, ctime ignored. A timer
+override runs the cleaner every 6h. See `config/tmp-groom/README.md`.
+
+Cold data (no writes in 3+ days) moved to a new `nvr/archive` ZFS dataset (zstd),
+with a symlink left at each old path: surveyor `runs/`, striatum-tuner outputs,
+council-artifacts, cairn backups, runpod-jobrunner state, and one dead Claude
+scratchpad. Locally built Docker images were saved to a tar there before
+pruning unused images older than 14 days (48G). Go, npm and apt caches were
+cleared. The restic backup script now includes `/nvr/archive`, so off-site
+coverage stays the same. See `config/archive/README.md`. Postgres (177G) and
+the live striatum data were not touched.
+
 ## 2026-10-13 — Tailscale expiry recovery and warnings
 
 Owner reauthentication restored proximal after the daemon reported an expired
