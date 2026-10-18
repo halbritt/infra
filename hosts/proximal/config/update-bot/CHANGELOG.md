@@ -1,5 +1,19 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-18 13:35 UTC — b9eca6d3-06d6-47a5-805d-108699753b12
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **hermes** — verified. Before: Candidate /var/lib/update-bot/staging/hermes-candidate-9e01b44d is a clean clone at carry commit b9468d38bb557dd08df063fcdd4bcee85f3126bb on upstream base 9e01b44dd23978f9ff40b7837467f3a9f1582130 (prep op 587a106c verified: patch applied 3-way, two conflicts resolved, no markers). No venv yet. Current installed generation hermes-candidate-b65e078c (carry 9c314e68) is selected by ~/.local/bin/hermes and its gateway pid 1318685 runs it with Slack connected; those files stay intact. This operation builds the candidate venv, runs focused behavior tests and install smoke, then installs the versioned launcher and provenance receipt. No gateway restart here.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/b9eca6d3-06d6-47a5-805d-108699753b12/operations/4365e5e6-19f3-433a-b72a-cb661e46ae64`.
+
+- **hermes** — verified. Before: Installed generation /var/lib/update-bot/staging/hermes-candidate-b65e078c (carry 9c314e6819, upstream base b65e078c) is selected by ~/.local/bin/hermes and is the running gateway generation (pid 1318685, Slack connected), per /var/lib/update-bot/hermes-installed.json and hermes-activation-latest.json. Upstream main has advanced to 9e01b44dd23978f9ff40b7837467f3a9f1582130. Candidate dir hermes-candidate-9e01b44d does not yet exist. This operation only clones/fetches upstream and carries the stored patch onto the new base in an isolated staging clone; no venv build, tests, launcher change or gateway restart here. Live install/launcher/gateway unchanged.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/b9eca6d3-06d6-47a5-805d-108699753b12/operations/587a106c-ded9-4884-9173-5b230e4ffbc4`.
+
 ## 2026-10-17 13:36 UTC — 2f2a85e6-2664-431c-a38c-4ea835d5926a
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
