@@ -11,3 +11,11 @@ are not installed.
 
 The proximal `archon-lan` SSH alias pointed at `192.168.1.167`; the host
 reported `192.168.1.179` on `wlo1`. The alias was updated to match.
+
+## TPM root unlock prepared — 2026-10-19
+
+Owner chose TPM2 auto-unlock (passphrase kept as fallback) so archon and the
+imessage-vm survive unattended reboots. The initramfs moved to systemd hooks
+via a drop-in; cmdline carries both `cryptdevice=` and `rd.luks.*`. Snapper
+snapshot 3 is the boot fallback. TPM enrollment and the first reboot need the
+owner at the keyboard. See [tpm-unlock](config/tpm-unlock/README.md).
