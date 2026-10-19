@@ -1,5 +1,24 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-19 13:39 UTC — d32002e1-4f21-45e0-966e-43a12d2a06ca
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **agy** — verified. Before: Installed Agy reports 1.4.2 via /home/halbritt/.local/bin/agy --version; its bundled changelog top entry is 1.4.2. The only native channel check is the built-in updater 'agy update' (subcommand 'Update CLI'); no read-only version channel is exposed, so the online latest can only be established by running it. No agy interactive session is being interrupted by a CLI update; stdin is closed.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/d32002e1-4f21-45e0-966e-43a12d2a06ca/operations/1ba11961-f5ad-4e29-b124-79397bd35a9a`.
+
+- **hermes** — verified. Before: Run b9eca6d3 installed generation /var/lib/update-bot/staging/hermes-candidate-9e01b44d (carry b9468d38bb557dd08df063fcdd4bcee85f3126bb on upstream base 9e01b44dd23978f9ff40b7837467f3a9f1582130); that install op 4365e5e6 finished verified (exit 0/0) and /var/lib/update-bot/hermes-installed.json records source_revision b9468d38; ~/.local/bin/hermes now selects it (launcher sha b718f3a4). The gateway pid 1318685 still runs the previous generation hermes-candidate-b65e078c (9c314e68) with Slack connected. Activation was never attempted (prior run stopped after install). This operation starts the fixed root-owned helper that verifies installed source/launcher identity, requires a fresh native zero-work drain, reloads once and verifies the new source/PID/Slack state.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/d32002e1-4f21-45e0-966e-43a12d2a06ca/operations/b4cb462b-0fc3-446b-91c6-d28c0154b988`.
+
+- **llama.cpp** — failed. Before: /home/halbritt/git/llama.cpp is on master, clean (git status --porcelain empty), HEAD=31288c9c66e59377f7788d920678a565bb89dd37, origin/master=31288c9c (same). Upstream refs/heads/master via git ls-remote = 7951f601e89494f2ed12dbd4eb52e254b8401197, i.e. a fast-forward is available. No llama-cpp-update process running; native update.lock present. Live inference llama-server pid 138108 serving :8081 and reports healthy; this updater builds in a detached worktree and installs binaries without restarting live processes.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/d32002e1-4f21-45e0-966e-43a12d2a06ca/operations/f8ba213a-bbbf-4fb3-949c-0b9d21023aba`.
+
 ## 2026-10-18 13:35 UTC — b9eca6d3-06d6-47a5-805d-108699753b12
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
