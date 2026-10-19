@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- ~/Library/LaunchAgents/org.halbritt.imessage-vm-watchdog.plist (user imessage). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.halbritt.imessage-vm-watchdog</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/imessage-vm/bin/session-watchdog</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>60</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/imessage/Library/Logs/imessage-vm-watchdog.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/imessage/Library/Logs/imessage-vm-watchdog.log</string>
+</dict>
+</plist>

@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""Call one imessage-mcp tool over the tailnet endpoint and print its JSON result.
+
+usage: imessage-mcp-call TOOL ['{"arg": "value"}']
+Token: $IMESSAGE_MCP_TOKEN_FILE or ~/.config/imessage-mcp/token (0600).
+URL:   $IMESSAGE_MCP_URL or https://archon.tail0ecc2e.ts.net:8765/mcp
+"""
+import json
+import os
+import sys
+import urllib.request
+
+URL = os.environ.get("IMESSAGE_MCP_URL", "https://archon.tail0ecc2e.ts.net:8765/mcp")
+TOKEN_FILE = os.environ.get("IMESSAGE_MCP_TOKEN_FILE", os.path.expanduser("~/.config/imessage-mcp/token"))
+
+
+def rpc(method, params, token, ident):
+    body = json.dumps({"jsonrpc": "2.0", "id": ident, "method": method, "params": params}).encode()
+    req = urllib.request.Request(URL, data=body, headers={
+        "Authorization": f"Bearer {token}", "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream"})
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        raw = resp.read().decode()
+    data = [line[5:] for line in raw.splitlines() if line.startswith("data:")]
+    return json.loads(data[-1] if data else raw)
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    token = open(TOKEN_FILE).read().strip()
+    rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
+                       "clientInfo": {"name": "imessage-mcp-call", "version": "1"}}, token, 1)
+    args = json.loads(sys.argv[2]) if len(sys.argv) > 2 else {}
+    reply = rpc("tools/call", {"name": sys.argv[1], "arguments": args}, token, 2)
+    if "error" in reply:
+        sys.exit(json.dumps(reply["error"]))
+    content = reply["result"]["content"][0]["text"]
+    try:
+        print(json.dumps(json.loads(content), indent=1))
+    except ValueError:
+        print(content)
+    sys.exit(1 if reply["result"].get("isError") else 0)
+
+
+if __name__ == "__main__":
+    main()

@@ -18,4 +18,9 @@ install -m 0644 /tmp/imessage-vm-guest/launchd/org.halbritt.imessage-mcp.plist "
 plutil -lint "$plist"
 launchctl bootout "gui/$(id -u)/org.halbritt.imessage-mcp" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$plist"
+wd=~/Library/LaunchAgents/org.halbritt.imessage-vm-watchdog.plist
+install -m 0644 /tmp/imessage-vm-guest/launchd/org.halbritt.imessage-vm-watchdog.plist "$wd"
+plutil -lint "$wd"
+launchctl bootout "gui/$(id -u)/org.halbritt.imessage-vm-watchdog" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$wd"
 echo "user bootstrap complete"

@@ -1,0 +1,9 @@
+#!/bin/bash
+# /opt/imessage-vm/bin/session-watchdog — run by the org.halbritt.imessage-vm-watchdog
+# LaunchAgent at login and every 60 s in the imessage GUI session. The single
+# start/recovery mechanism for BlueBubbles and Messages: BlueBubbles relaunches
+# itself detached, so its own "crash persistent" LaunchAgent never sees a crash.
+# `open` is a no-op for an app that is already running.
+pgrep -qx Messages || open -g -a /System/Applications/Messages.app
+pgrep -qx BlueBubbles || open -g -a /Applications/BlueBubbles.app
+exit 0

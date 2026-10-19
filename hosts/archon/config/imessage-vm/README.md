@@ -36,7 +36,7 @@ archon (Omarchy/Arch, i7-1360P, 62 GiB)                                      ▼
 | OSX-KVM | 4c378a4 | OVMF (Debian edk2 2025.11), CPU line `Skylake-Client,-hle,-rtm,…` for Sequoia/Tahoe. |
 | OpenCore | 1.0.8 | Config base: LongQT-sea/OpenCore-ISO v0.7 (the config OSX-KVM adopted). Changes in `opencore/render-config.py`: VMHide after Lilu, no VoodooPS2, builtin picker, `HideVerbose` keys, identity. `ocvalidate` clean. OSX-KVM's own `OpenCore.qcow2` was inconsistent (config references kexts absent from the image; Lilu 1.6.8), so it is unused. |
 | Kexts | Lilu 1.7.2, VirtualSMC 1.3.8, WhateverGreen 1.7.1, VMHide 2.0.0, AppleMCEReporterDisabler | VMHide hides `kern.hv_vmm_present` from Apple Account processes (needed on 15+; OSX-KVM's kernel patch was dropped in its Tahoe config). |
-| BlueBubbles server | 1.9.9 (Intel DMG, sha256 in `guest/bootstrap-root.sh`) | Developer ID signed (team WPV275H8W7) but **not notarized** upstream; verified by codesign plus team ID. Private API off. |
+| BlueBubbles server | 1.9.9 (Intel DMG, sha256 in `guest/bootstrap-root.sh`) | Developer ID signed (team WPV275H8W7) but **not notarized** upstream; codesign plus team ID verified at install. Afterwards the app writes `cloudflare.pid` into its own bundle, which breaks the seal. Private API off; Automation (control Messages) granted. |
 | BlueBubbles Windows | 2.1.3 (`bluebubbles_installer.exe`, sha256 e61e3493…, Authenticode SignPath Foundation) | Installed per-user on peecee. |
 | Node.js | 24.22.0 LTS at `/opt/imessage-mcp/node` | SHASUMS256-verified; signed by the Node.js Foundation (HX7739G8FX). |
 | imessage-mcp | 3.2.0 at `/opt/imessage-mcp/app` | Pinned, not `@latest`. HTTP transport, `IMESSAGE_UPDATE_CHECK=0`, privacy `full` (attachments). |
@@ -62,9 +62,10 @@ All artifact hashes are in `upstream.lock` or the bootstrap scripts.
   `sudo ./install.sh` from this directory.
 - Guest: `/opt/imessage-mcp/{node,app}` (root-owned), the LaunchAgent at
   `~imessage/Library/LaunchAgents/org.halbritt.imessage-mcp.plist`, its log at
-  `~imessage/Library/Logs/imessage-mcp.log`, BlueBubbles' LaunchAgent
-  `com.bluebubbles.server`, and the token at `~/.config/imessage-mcp/token`
-  (0600).
+  `~imessage/Library/Logs/imessage-mcp.log`, the session watchdog
+  `/opt/imessage-vm/bin/session-watchdog` with its LaunchAgent
+  `org.halbritt.imessage-vm-watchdog`, and the token at
+  `~/.config/imessage-mcp/token` (0600).
 
 ### Identity
 
@@ -159,7 +160,7 @@ imessage-vm-guest ssh [cmd]                                 # shell in the guest
 launchctl print gui/501/org.halbritt.imessage-mcp | grep -E 'state|pid'
 launchctl kickstart -k gui/501/org.halbritt.imessage-mcp    # restart MCP
 tail -f ~/Library/Logs/imessage-mcp.log
-launchctl kickstart -k gui/501/com.bluebubbles.server       # restart BlueBubbles
+pkill -x BlueBubbles   # the watchdog restarts it within 60 s (log: ~/Library/Logs/imessage-vm-watchdog.log)
 # Edge
 sudo tailscale serve status                                 # 8443 → BB, 8765 → MCP
 ```
@@ -171,9 +172,13 @@ Startup chain (each piece has one mechanism):
 3. OpenCore boots macOS (its own volume is hidden via `.contentVisibility`).
 4. macOS auto-logs-in `imessage` (FileVault off; the disk image sits on
    archon's LUKS volume).
-5. LaunchAgents start BlueBubbles (KeepAlive, BlueBubbles' own) and
-   imessage-mcp (KeepAlive, ThrottleInterval 30).
-6. Messages runs in that session.
+5. LaunchAgents start imessage-mcp (KeepAlive, ThrottleInterval 30) and the
+   session watchdog (RunAtLoad + every 60 s). The watchdog starts Messages and
+   BlueBubbles if they are missing; `open` does nothing to a running app.
+   BlueBubbles' own auto-start is set to "Do Not Auto Start", with "Start
+   Minimized" on. Its "Launch Agent (Crash Persistent)" mode does not
+   restart it: the app relaunches itself detached, the launchd job exits 0,
+   and a `kill -9` was never recovered (tested 2026-10-19).
 
 The guest never sleeps (`pmset sleep 0 displaysleep 0 disksleep 0 standby 0
 hibernatemode 0`, screen saver off, screen lock off, QEMU `disable_s3`, plus

@@ -81,10 +81,15 @@ if [[ "$(defaults read /Applications/BlueBubbles.app/Contents/Info CFBundleShort
   rm -rf /Applications/BlueBubbles.app
   ditto "$mnt/BlueBubbles.app" /Applications/BlueBubbles.app
   hdiutil detach "$mnt" >/dev/null
+  # Upstream 1.9.9 is Developer ID signed but not notarized, so spctl rejects it;
+  # verify the signature and team ID of the fresh copy. Checked only here: the
+  # running app writes files into its own bundle (cloudflared pidfile), which
+  # breaks the seal afterwards.
+  codesign --verify --deep --strict /Applications/BlueBubbles.app
+  codesign -dv /Applications/BlueBubbles.app 2>&1 | grep -qx 'TeamIdentifier=WPV275H8W7'
+  xattr -dr com.apple.quarantine /Applications/BlueBubbles.app 2>/dev/null || true
 fi
-# Upstream 1.9.9 is Developer ID signed but not notarized, so spctl rejects it;
-# verify the signature and the BlueBubbles team ID instead.
-codesign --verify --deep --strict /Applications/BlueBubbles.app
-codesign -dv /Applications/BlueBubbles.app 2>&1 | grep -qx 'TeamIdentifier=WPV275H8W7'
-xattr -dr com.apple.quarantine /Applications/BlueBubbles.app 2>/dev/null || true
+# Session watchdog (BlueBubbles/Messages start and crash recovery).
+install -d -o root -g wheel -m 0755 /opt/imessage-vm/bin
+install -o root -g wheel -m 0755 /tmp/imessage-vm-guest/session-watchdog /opt/imessage-vm/bin/session-watchdog
 echo "root bootstrap complete"
