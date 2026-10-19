@@ -6,15 +6,19 @@
   imessage-vm-ctl screendump OUT.png
   imessage-vm-ctl key meta_l-space     one key combo (QEMU qcodes joined by -)
   imessage-vm-ctl type 'text'          type text (US layout); \\n is Return
+  imessage-vm-ctl type -               type one line read from stdin (secrets; no escapes, no Return)
   imessage-vm-ctl click X Y [W H]      left click at pixel X,Y of a WxH screen (default 1280x800, the OVMF/macOS mode here)
   imessage-vm-ctl move X Y [W H]       move pointer
 """
 import json
+import os
 import socket
 import sys
 import time
 
 SOCK = "/run/imessage-vm/qmp.sock"
+# macOS UI (notably Setup Assistant) drops keys sent faster than this.
+KEY_DELAY = float(os.environ.get("IMSGVM_KEY_DELAY", "0.12"))
 PLAIN = {"-": "minus", "=": "equal", "[": "bracket_left", "]": "bracket_right", "\\": "backslash",
          ";": "semicolon", "'": "apostrophe", ",": "comma", ".": "dot", "/": "slash",
          "`": "grave_accent", " ": "spc", "\n": "ret", "\t": "tab"}
@@ -59,8 +63,18 @@ def qcodes_for(ch):
 
 
 def send_combo(q, codes):
-    q.cmd("send-key", keys=[{"type": "qcode", "data": c} for c in codes], **{"hold-time": 60})
-    time.sleep(0.07)
+    # Explicit ordered down/up events: send-key presses modifiers and the key
+    # simultaneously, and macOS then sometimes reads Shift+x as x.
+    def ev(code, down):
+        return {"type": "key", "data": {"down": down, "key": {"type": "qcode", "data": code}}}
+    for code in codes:
+        q.cmd("input-send-event", events=[ev(code, True)])
+        time.sleep(0.03)
+    time.sleep(0.05)
+    for code in reversed(codes):
+        q.cmd("input-send-event", events=[ev(code, False)])
+        time.sleep(0.03)
+    time.sleep(KEY_DELAY)
 
 
 def pointer(q, x, y, w, h, click):
@@ -89,7 +103,8 @@ def main(argv):
         for combo in rest:
             send_combo(q, combo.split("-"))
     elif op == "type":
-        for ch in " ".join(rest).encode().decode("unicode_escape"):
+        text = sys.stdin.readline().rstrip("\n") if rest == ["-"] else " ".join(rest).encode().decode("unicode_escape")
+        for ch in text:
             send_combo(q, qcodes_for(ch))
     elif op in ("click", "move"):
         w, h = (rest[2], rest[3]) if len(rest) >= 4 else (1280, 800)

@@ -36,12 +36,13 @@ defaults write $SU ConfigDataInstall -bool true
 defaults write $SU CriticalUpdateInstall -bool true
 defaults write /Library/Preferences/com.apple.commerce AutoUpdate -bool false
 
-# Automatic login (FileVault stays off; archon's LUKS volume protects the disk image).
+# Automatic login is set in System Settings > Users & Groups (sysadminctl
+# -autologin fails with error 22 on 15.8.1). It needs FileVault off; archon's
+# LUKS volume protects the disk image at rest.
 if [[ "$(fdesetup status)" != "FileVault is Off." ]]; then
   echo "FileVault is on; automatic login is impossible" >&2
   exit 1
 fi
-sysadminctl -autologin set -userName "$U" -password "$PW"
 
 # Node.js LTS at a stable path (Full Disk Access is granted to this binary).
 work=$(mktemp -d)
@@ -81,5 +82,9 @@ if [[ "$(defaults read /Applications/BlueBubbles.app/Contents/Info CFBundleShort
   ditto "$mnt/BlueBubbles.app" /Applications/BlueBubbles.app
   hdiutil detach "$mnt" >/dev/null
 fi
-spctl --assess --type execute -vv /Applications/BlueBubbles.app
+# Upstream 1.9.9 is Developer ID signed but not notarized, so spctl rejects it;
+# verify the signature and the BlueBubbles team ID instead.
+codesign --verify --deep --strict /Applications/BlueBubbles.app
+codesign -dv /Applications/BlueBubbles.app 2>&1 | grep -qx 'TeamIdentifier=WPV275H8W7'
+xattr -dr com.apple.quarantine /Applications/BlueBubbles.app 2>/dev/null || true
 echo "root bootstrap complete"

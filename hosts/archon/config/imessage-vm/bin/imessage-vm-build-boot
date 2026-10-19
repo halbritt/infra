@@ -41,6 +41,9 @@ assemble_esp() {
   rm -rf "$esp"
   install -d "$esp/EFI/BOOT" "$esp/EFI/OC/ACPI" "$esp/EFI/OC/Drivers" "$esp/EFI/OC/Kexts" "$esp/EFI/OC/Tools" "$esp/EFI/OC/Resources"
   cp "$oc/BOOT/BOOTx64.efi" "$esp/EFI/BOOT/"
+  # Hide the OpenCore volume itself from the picker so macOS is the default entry.
+  printf Disabled > "$esp/EFI/BOOT/.contentVisibility"
+  printf Disabled > "$esp/EFI/OC/.contentVisibility"
   cp "$oc/OC/OpenCore.efi" "$esp/EFI/OC/"
   for d in OpenHfsPlus OpenRuntime ResetNvramEntry ToggleSipEntry; do cp "$oc/OC/Drivers/$d.efi" "$esp/EFI/OC/Drivers/"; done
   cp "$CACHE/SSDT-EC.aml" "$CACHE/SSDT-USBX.aml" "$esp/EFI/OC/ACPI/"
