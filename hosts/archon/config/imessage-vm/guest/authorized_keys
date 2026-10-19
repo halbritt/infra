@@ -1,0 +1,8 @@
+# ~imessage/.ssh/authorized_keys in the imessage-vm guest (public keys only).
+# archon stop hook: may only shut the guest down.
+restrict,command="sudo -n /sbin/shutdown -h now" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILBxszPI1s6H6VD8QxG7+c3PuLp8h3j9UqmskBP5UWRP imsgvm@archon
+# archon MCP tunnel: may only forward to the guest's loopback imessage-mcp port.
+restrict,port-forwarding,permitopen="127.0.0.1:8765",command="/usr/bin/false" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICNxZOsrBeu4oOP3sxL+irNGb2D8t2yAAn9swQjeu2Y imsgvm-tunnel@archon
+# Owner administration (via archon: ssh -J archon -p 10022 imessage@127.0.0.1).
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICLESmflQ/Ml261RSx2KHwLroUfQW//LHZWt6qwf4RMO halbritt@proximal
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGBtCCDiyYntzOEB6NHsl2fK+TCIWrzldW9urEU5Js7 halbritt@archon

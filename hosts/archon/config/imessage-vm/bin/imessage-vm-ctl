@@ -6,7 +6,7 @@
   imessage-vm-ctl screendump OUT.png
   imessage-vm-ctl key meta_l-space     one key combo (QEMU qcodes joined by -)
   imessage-vm-ctl type 'text'          type text (US layout); \\n is Return
-  imessage-vm-ctl click X Y [W H]      left click at pixel X,Y of a WxH screen (default 1920x1080)
+  imessage-vm-ctl click X Y [W H]      left click at pixel X,Y of a WxH screen (default 1280x800, the OVMF/macOS mode here)
   imessage-vm-ctl move X Y [W H]       move pointer
 """
 import json
@@ -92,7 +92,7 @@ def main(argv):
         for ch in " ".join(rest).encode().decode("unicode_escape"):
             send_combo(q, qcodes_for(ch))
     elif op in ("click", "move"):
-        w, h = (rest[2], rest[3]) if len(rest) >= 4 else (1920, 1080)
+        w, h = (rest[2], rest[3]) if len(rest) >= 4 else (1280, 800)
         pointer(q, rest[0], rest[1], w, h, op == "click")
     else:
         raise SystemExit(__doc__)

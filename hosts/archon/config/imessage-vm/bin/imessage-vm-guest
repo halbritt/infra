@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Owner-side guest administration, run on archon as halbritt.
+#   imessage-vm-guest ssh [CMD...]   shell in the guest as imessage
+#   imessage-vm-guest bootstrap      push guest/ files and run both bootstrap phases
+# Secrets are read with sudo from /var/lib/imessage-vm/identity and passed on stdin only.
+set -euo pipefail
+ID=/var/lib/imessage-vm/identity
+SHARE=/usr/local/share/imessage-vm/guest
+SSH=(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/imessage-vm_known_hosts"
+     -o HostKeyAlias=imessage-vm -p 10022 imessage@127.0.0.1)
+secret() { sudo cat "$ID/$1"; }
+
+case "${1:-}" in
+  ssh) shift; exec "${SSH[@]}" "$@" ;;
+  bootstrap)
+    tar -C "$SHARE" -cf - . | "${SSH[@]}" 'rm -rf /tmp/imessage-vm-guest && mkdir -p /tmp/imessage-vm-guest && tar -C /tmp/imessage-vm-guest -xf -'
+    pw=$(secret macos-imessage-password)
+    printf '%s\n%s\n' "$pw" "$pw" | "${SSH[@]}" 'sudo -S -p "" bash /tmp/imessage-vm-guest/bootstrap-root.sh'
+    printf '%s\n%s\n' "$pw" "$(secret imessage-mcp-token)" | "${SSH[@]}" 'bash /tmp/imessage-vm-guest/bootstrap-user.sh'
+    unset pw
+    ;;
+  *) echo "usage: $0 ssh [CMD...] | bootstrap" >&2; exit 2 ;;
+esac
