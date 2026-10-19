@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# One-time generation of the VM's persistent Apple-platform identity.
+# Refuses to run if an identity already exists: regenerating it changes the
+# serial/MLB/ROM that iMessage registered and must be a deliberate decision.
+set -euo pipefail
+STATE=/var/lib/imessage-vm
+ID="$STATE/identity/identity.env"
+MODEL="${1:-iMac19,1}"
+MACSERIAL="$STATE/src/build/OpenCore/Utilities/macserial/macserial.linux"
+
+[[ $EUID -eq 0 ]] || { echo "run as root" >&2; exit 1; }
+if [[ -e "$ID" ]]; then
+  echo "identity already exists at $ID; not regenerating" >&2
+  exit 1
+fi
+[[ -x "$MACSERIAL" ]] || { echo "missing $MACSERIAL; run imessage-vm-build-boot --fetch first" >&2; exit 1; }
+
+read -r SERIAL _ MLB < <("$MACSERIAL" -m "$MODEL" -g -n 1)
+[[ -n "$SERIAL" && -n "$MLB" ]] || { echo "macserial produced no serial" >&2; exit 1; }
+UUID=$(python3 -I -c 'import uuid; print(str(uuid.uuid4()).upper())')
+# QEMU OUI prefix, random NIC suffix; ROM mirrors the en0 MAC as on real Macs.
+SUFFIX=$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')
+MAC="52:54:00:${SUFFIX:0:2}:${SUFFIX:2:2}:${SUFFIX:4:2}"
+ROM="525400${SUFFIX}"
+
+umask 077
+tmp=$(mktemp "$ID.XXXX")
+cat > "$tmp" <<ENV
+# imessage-vm persistent identity, generated $(date -u +%Y-%m-%dT%H:%M:%SZ).
+# Back up with the macOS disk and OVMF vars. Never regenerate casually.
+SMBIOS_MODEL=$MODEL
+SERIAL=$SERIAL
+MLB=$MLB
+SYSTEM_UUID=$UUID
+ROM=$ROM
+MAC=$MAC
+ENV
+chown imsgvm:imsgvm "$tmp"
+mv -n "$tmp" "$ID"
+echo "identity written to $ID (model $MODEL, MAC $MAC)"

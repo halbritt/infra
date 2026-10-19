@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# ExecStop for imessage-vm.service: shut macOS down cleanly, then fall back to
+# the ACPI power button. systemd's TimeoutStopSec bounds the whole sequence.
+set -u
+STATE=/var/lib/imessage-vm
+PID="${MAINPID:-}"
+source /etc/imessage-vm/vm.conf
+
+alive() { [[ -n "$PID" ]] && kill -0 "$PID" 2>/dev/null; }
+wait_exit() { local t=$1; while (( t-- > 0 )); do alive || return 0; sleep 1; done; return 1; }
+
+alive || exit 0
+ssh -o BatchMode=yes -o ConnectTimeout=5 -o UserKnownHostsFile="$STATE/identity/guest_known_hosts" \
+    -i "$STATE/identity/host_ed25519" -p "${GUEST_SSH_FWD##*:}" imessage@127.0.0.1 \
+    'sudo -n /sbin/shutdown -h now' >/dev/null 2>&1 && wait_exit 150 && exit 0
+/usr/local/lib/imessage-vm/imessage-vm-ctl powerdown >/dev/null 2>&1
+wait_exit 25 && exit 0
+echo "guest did not shut down; systemd will terminate QEMU" >&2
+exit 0

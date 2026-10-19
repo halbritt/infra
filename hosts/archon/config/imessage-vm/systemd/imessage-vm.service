@@ -1,0 +1,41 @@
+[Unit]
+Description=macOS (Sequoia) guest for iMessage, BlueBubbles and imessage-mcp
+Documentation=file:///home/halbritt/git/infra/hosts/archon/config/imessage-vm/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=imsgvm
+Group=imsgvm
+UMask=0007
+RuntimeDirectory=imessage-vm
+RuntimeDirectoryMode=0750
+# macOS reads MSRs KVM does not model; OSX-KVM requires ignore_msrs. Host-wide
+# kvm parameter, set at runtime only (no other KVM guests run on archon).
+ExecStartPre=+/bin/sh -c 'echo 1 > /sys/module/kvm/parameters/ignore_msrs; echo 0 > /sys/module/kvm/parameters/report_ignored_msrs'
+ExecStart=/usr/local/lib/imessage-vm/imessage-vm-run
+ExecStop=/usr/local/lib/imessage-vm/imessage-vm-stop
+TimeoutStopSec=200
+KillMode=mixed
+Restart=on-failure
+RestartSec=30
+# Desktop sessions keep priority over the VM under contention.
+CPUWeight=50
+IOWeight=50
+OOMScoreAdjust=-300
+ManagedOOMPreference=avoid
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/imessage-vm
+DevicePolicy=closed
+DeviceAllow=/dev/kvm rw
+ProtectKernelTunables=no
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

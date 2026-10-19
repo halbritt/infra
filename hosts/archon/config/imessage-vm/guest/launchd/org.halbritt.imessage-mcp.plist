@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- ~/Library/LaunchAgents/org.halbritt.imessage-mcp.plist (user imessage).
+     Read-only imessage-mcp over authenticated loopback HTTP. Full Disk Access is
+     granted to /opt/imessage-mcp/node/bin/node, the process launchd starts. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.halbritt.imessage-mcp</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/imessage-mcp/node/bin/node</string>
+    <string>/opt/imessage-mcp/app/node_modules/imessage-mcp/bin/imessage-mcp.js</string>
+    <string>--transport</string>
+    <string>http</string>
+    <string>--port</string>
+    <string>8765</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/imessage-mcp/node/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key>
+    <string>/Users/imessage</string>
+    <key>IMESSAGE_API_TOKEN_FILE</key>
+    <string>/Users/imessage/.config/imessage-mcp/token</string>
+    <key>IMESSAGE_ALLOWED_HOSTS</key>
+    <string>localhost,127.0.0.1,archon.tail0ecc2e.ts.net</string>
+    <key>IMESSAGE_ALLOWED_ORIGINS</key>
+    <string>localhost,127.0.0.1,archon.tail0ecc2e.ts.net</string>
+    <key>IMESSAGE_PRIVACY</key>
+    <string>full</string>
+    <key>IMESSAGE_UPDATE_CHECK</key>
+    <string>0</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/imessage/Library/Logs/imessage-mcp.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/imessage/Library/Logs/imessage-mcp.log</string>
+</dict>
+</plist>

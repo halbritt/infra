@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# QEMU launcher for the imessage-vm macOS guest. Run by imessage-vm.service as imsgvm.
+# Derived from OSX-KVM 4c378a4 OpenCore-Boot.sh (Sequoia/Tahoe CPU line).
+set -euo pipefail
+STATE=/var/lib/imessage-vm
+RUN=/run/imessage-vm
+# shellcheck source=/dev/null
+source /etc/imessage-vm/vm.conf
+# shellcheck source=/dev/null
+source "$STATE/identity/identity.env"
+
+for f in "$STATE/boot/OpenCore.img" "$STATE/firmware/OVMF_CODE_4M.fd" "$STATE/firmware/OVMF_VARS.fd" "$STATE/disks/macos.qcow2"; do
+  [[ -f "$f" ]] || { echo "missing $f" >&2; exit 1; }
+done
+
+args=(
+  -name imessage-vm,process=imessage-vm
+  -machine q35,accel=kvm
+  -m "$VM_RAM_MIB"
+  -cpu Skylake-Client,-hle,-rtm,kvm=on,vendor=GenuineIntel,+invtsc,vmware-cpuid-freq=on,+ssse3,+sse4.2,+popcnt,+avx,+aes,+xsave,+xsaveopt,check
+  -smp "$VM_SMP",sockets=1,cores="$VM_CORES",threads="$VM_THREADS"
+  -uuid "$SYSTEM_UUID"
+  -global ICH9-LPC.disable_s3=1
+  -device qemu-xhci,id=xhci
+  -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0
+  -device isa-applesmc,osk="ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+  -drive if=pflash,format=raw,readonly=on,file="$STATE/firmware/OVMF_CODE_4M.fd"
+  -drive if=pflash,format=raw,file="$STATE/firmware/OVMF_VARS.fd"
+  -smbios type=2
+  -device ich9-ahci,id=sata
+  -drive id=OpenCoreBoot,if=none,format=raw,snapshot=on,file="$STATE/boot/OpenCore.img"
+  -device ide-hd,bus=sata.2,drive=OpenCoreBoot,bootindex=0
+  -drive id=MacHDD,if=none,format=qcow2,cache=none,aio=threads,discard=unmap,detect-zeroes=unmap,file="$STATE/disks/macos.qcow2"
+  -device ide-hd,bus=sata.4,drive=MacHDD,rotation_rate=1
+  # NIC at 00:12.0 so the base config's built-in DeviceProperty makes en0 built-in (iMessage).
+  -netdev user,id=net0,hostfwd=tcp:"$GUEST_SSH_FWD"-:22,hostfwd=tcp:"$GUEST_BLUEBUBBLES_FWD"-:"$GUEST_BLUEBUBBLES_PORT"
+  -device virtio-net-pci,netdev=net0,id=net0,mac="$MAC",bus=pcie.0,addr=0x12
+  -device vmware-svga
+  -display none
+  -vnc unix:"$RUN/vnc.sock"
+  -qmp unix:"$RUN/qmp.sock",server=on,wait=off
+  -monitor none
+  -serial none
+  -sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny
+)
+if [[ "${ATTACH_RECOVERY:-no}" == yes && -f "$STATE/boot/recovery.img" ]]; then
+  args+=(
+    -drive id=Recovery,if=none,format=raw,snapshot=on,file="$STATE/boot/recovery.img"
+    -device ide-hd,bus=sata.3,drive=Recovery
+  )
+fi
+
+exec /usr/bin/qemu-system-x86_64 "${args[@]}"

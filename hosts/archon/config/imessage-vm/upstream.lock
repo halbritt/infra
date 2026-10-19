@@ -1,0 +1,15 @@
+# Pinned upstream artifacts for the imessage-vm boot disk. Fields:
+# name  sha256  url
+# Hashes were checked against the GitHub release digests on 2026-10-19.
+OpenCore-1.0.8-RELEASE.zip      2011e8b7216ecb2645d97ea710df965947edd406846e92050b9bc4190be6d27b  https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenCore-1.0.8-RELEASE.zip
+Lilu-1.7.2-RELEASE.zip          53967d7dcfaab01023a33df2e969a89522f13d6654a6a56ac4711b62dabf3ab8  https://github.com/acidanthera/Lilu/releases/download/1.7.2/Lilu-1.7.2-RELEASE.zip
+VirtualSMC-1.3.8-RELEASE.zip    2e29a8aaf91b4eb0bcdf5913ed17e70f5cf76531122acd4132eff7813a54de8b  https://github.com/acidanthera/VirtualSMC/releases/download/1.3.8/VirtualSMC-1.3.8-RELEASE.zip
+WhateverGreen-1.7.1-RELEASE.zip 1bfdd2d40290ecce237606db121cbc01d7041179f03394bd59660a2ed52e5c95  https://github.com/acidanthera/WhateverGreen/releases/download/1.7.1/WhateverGreen-1.7.1-RELEASE.zip
+VMHide-2.0.0-RELEASE.zip        31ffb861192eea52ad166fc0629b411ae48d8507c75935ab875bc61aebaa8dbb  https://github.com/Carnations-Botanica/VMHide/releases/download/2.0.0/VMHide-2.0.0-RELEASE.zip
+# LongQT-sea/OpenCore-ISO v0.7 (commit 6dc3c1d0ba0a), the QEMU config OSX-KVM 4c378a4 adopted.
+lqt-config.plist                e33f7986e0efbc952686f5a1911b766f631e51919061ccb3d04acd6bf8bdb302  https://raw.githubusercontent.com/LongQT-sea/OpenCore-ISO/6dc3c1d0ba0aafde6163f6e9d220ca7686bf0850/EFI_RELEASE/EFI/OC/config.plist
+SSDT-EC.aml                     df5f58f708aaba7a6e8899a38aa174ea6051a7c8bf0c0009472572b4bb9aafbb  https://raw.githubusercontent.com/LongQT-sea/OpenCore-ISO/6dc3c1d0ba0aafde6163f6e9d220ca7686bf0850/EFI_RELEASE/EFI/OC/ACPI/SSDT-EC.aml
+SSDT-USBX.aml                   7aa5bdfafa063d4a3636d938505811ff72542d558188cb48062bbccb9fce47ad  https://raw.githubusercontent.com/LongQT-sea/OpenCore-ISO/6dc3c1d0ba0aafde6163f6e9d220ca7686bf0850/EFI_RELEASE/EFI/OC/ACPI/SSDT-USBX.aml
+AppleMCEReporterDisabler.plist  597ee9b2c34ef29bc6b9c2774c2e0c41e2a7847e6a99bdad595072c0961f4253  https://raw.githubusercontent.com/LongQT-sea/OpenCore-ISO/6dc3c1d0ba0aafde6163f6e9d220ca7686bf0850/EFI_RELEASE/EFI/OC/Kexts/AppleMCEReporterDisabler.kext/Contents/Info.plist
+# OSX-KVM firmware (OVMF from Debian edk2 2025.11-3) and fetch tooling.
+OSX-KVM                         4c378a4b5e0b219783683012bec680325eb40719  https://github.com/kholia/OSX-KVM.git

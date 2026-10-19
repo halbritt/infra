@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Build the imessage-vm OpenCore boot disk (and optionally the recovery disk).
+#   imessage-vm-build-boot fetch      download and verify pinned artifacts
+#   imessage-vm-build-boot opencore   render config, ocvalidate, write boot/OpenCore.img
+#   imessage-vm-build-boot recovery   wrap recovery/com.apple.recovery.boot into boot/recovery.img
+# The previous OpenCore.img is kept as OpenCore.img.prev for rollback.
+set -euo pipefail
+STATE=/var/lib/imessage-vm
+LIB=/usr/local/lib/imessage-vm
+CACHE="$STATE/src/cache"
+BUILD="$STATE/src/build"
+BOOT="$STATE/boot"
+
+[[ $EUID -eq 0 ]] || { echo "run as root" >&2; exit 1; }
+umask 027
+
+as_vm() { setpriv --reuid=imsgvm --regid=imsgvm --init-groups -- "$@"; }
+
+fetch() {
+  install -d -o imsgvm -g imsgvm -m 0750 "$CACHE" "$BUILD"
+  while read -r name sha url; do
+    [[ -z "$name" || "$name" == \#* || "$name" == OSX-KVM ]] && continue
+    if [[ ! -f "$CACHE/$name" ]] || ! echo "$sha  $CACHE/$name" | sha256sum -c --quiet - 2>/dev/null; then
+      as_vm curl -fsSL -o "$CACHE/$name.part" "$url"
+      mv "$CACHE/$name.part" "$CACHE/$name"
+    fi
+    echo "$sha  $CACHE/$name" | sha256sum -c --quiet - || { echo "checksum mismatch: $name" >&2; exit 1; }
+  done < "$LIB/upstream.lock"
+  rm -rf "$BUILD/OpenCore" "$BUILD/kexts"
+  as_vm unzip -q "$CACHE/OpenCore-1.0.8-RELEASE.zip" -d "$BUILD/OpenCore"
+  as_vm mkdir -p "$BUILD/kexts"
+  for z in Lilu-1.7.2 VirtualSMC-1.3.8 WhateverGreen-1.7.1 VMHide-2.0.0; do
+    as_vm unzip -q -o "$CACHE/$z-RELEASE.zip" -d "$BUILD/kexts/$z"
+  done
+  chmod 0755 "$BUILD/OpenCore/Utilities/macserial/macserial.linux" "$BUILD/OpenCore/Utilities/ocvalidate/ocvalidate.linux"
+  echo "fetched and verified"
+}
+
+assemble_esp() {
+  local esp="$BUILD/esp" oc="$BUILD/OpenCore/X64/EFI"
+  rm -rf "$esp"
+  install -d "$esp/EFI/BOOT" "$esp/EFI/OC/ACPI" "$esp/EFI/OC/Drivers" "$esp/EFI/OC/Kexts" "$esp/EFI/OC/Tools" "$esp/EFI/OC/Resources"
+  cp "$oc/BOOT/BOOTx64.efi" "$esp/EFI/BOOT/"
+  cp "$oc/OC/OpenCore.efi" "$esp/EFI/OC/"
+  for d in OpenHfsPlus OpenRuntime ResetNvramEntry ToggleSipEntry; do cp "$oc/OC/Drivers/$d.efi" "$esp/EFI/OC/Drivers/"; done
+  cp "$CACHE/SSDT-EC.aml" "$CACHE/SSDT-USBX.aml" "$esp/EFI/OC/ACPI/"
+  cp -r "$BUILD/kexts/Lilu-1.7.2/Lilu.kext" "$BUILD/kexts/VMHide-2.0.0/VMHide.kext" \
+        "$BUILD/kexts/VirtualSMC-1.3.8/Kexts/VirtualSMC.kext" \
+        "$BUILD/kexts/WhateverGreen-1.7.1/WhateverGreen.kext" "$esp/EFI/OC/Kexts/"
+  install -D -m 0644 "$CACHE/AppleMCEReporterDisabler.plist" "$esp/EFI/OC/Kexts/AppleMCEReporterDisabler.kext/Contents/Info.plist"
+  python3 -I "$LIB/render-config.py" "$CACHE/lqt-config.plist" "$STATE/identity/identity.env" "$esp/EFI/OC/config.plist"
+  chmod 0600 "$esp/EFI/OC/config.plist"
+  "$BUILD/OpenCore/Utilities/ocvalidate/ocvalidate.linux" "$esp/EFI/OC/config.plist"
+}
+
+# make_fat_image IMAGE SIZE_MIB LABEL SRC_DIR: GPT disk with one FAT32 ESP holding SRC_DIR.
+make_fat_image() {
+  local img="$1" size="$2" label="$3" src="$4" mnt
+  rm -f "$img"
+  truncate -s "${size}M" "$img"
+  printf 'label: gpt\nstart=2048, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI"\n' | sfdisk -q "$img"
+  local sectors=$(( size * 2048 - 2048 - 34 ))
+  mkfs.fat -F 32 -n "$label" --offset 2048 "$img" $(( sectors / 2 )) >/dev/null
+  mnt=$(mktemp -d)
+  mount -o loop,offset=$((2048 * 512)) "$img" "$mnt"
+  cp -r "$src"/. "$mnt"/
+  sync
+  umount "$mnt"
+  rmdir "$mnt"
+  chown imsgvm:imsgvm "$img"
+  chmod 0640 "$img"
+}
+
+opencore() {
+  [[ -f "$STATE/identity/identity.env" ]] || { echo "no identity; run imessage-vm-init-identity" >&2; exit 1; }
+  assemble_esp
+  make_fat_image "$BOOT/OpenCore.img.new" 256 OPENCORE "$BUILD/esp"
+  rm -rf "$BUILD/esp"
+  [[ -f "$BOOT/OpenCore.img" ]] && mv -f "$BOOT/OpenCore.img" "$BOOT/OpenCore.img.prev"
+  mv "$BOOT/OpenCore.img.new" "$BOOT/OpenCore.img"
+  echo "wrote $BOOT/OpenCore.img"
+}
+
+recovery() {
+  python3 -I "$LIB/verify-chunklist.py" "$STATE/recovery/com.apple.recovery.boot/BaseSystem.chunklist" \
+    "$STATE/recovery/com.apple.recovery.boot/BaseSystem.dmg"
+  make_fat_image "$BOOT/recovery.img" 1200 RECOVERY "$STATE/recovery"
+  echo "wrote $BOOT/recovery.img"
+}
+
+case "${1:-}" in
+  fetch) fetch ;;
+  opencore) opencore ;;
+  recovery) recovery ;;
+  *) echo "usage: $0 fetch|opencore|recovery" >&2; exit 2 ;;
+esac

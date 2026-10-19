@@ -1,0 +1,24 @@
+[Unit]
+Description=Loopback tunnel to the imessage-vm guest's imessage-mcp (127.0.0.1:18765 -> guest 127.0.0.1:8765)
+After=imessage-vm.service
+PartOf=imessage-vm.service
+
+[Service]
+Type=simple
+User=imsgvm
+Group=imsgvm
+# The guest key is restricted to this one forward (see guest/bootstrap.sh).
+ExecStart=/usr/bin/ssh -N -T -o BatchMode=yes -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ConnectTimeout=10 \
+  -o UserKnownHostsFile=/var/lib/imessage-vm/identity/guest_known_hosts -o StrictHostKeyChecking=yes \
+  -i /var/lib/imessage-vm/identity/tunnel_ed25519 -p 10022 \
+  -L 127.0.0.1:18765:127.0.0.1:8765 imessage@127.0.0.1
+Restart=always
+RestartSec=15
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=imessage-vm.service
