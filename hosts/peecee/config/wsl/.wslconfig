@@ -1,0 +1,8 @@
+# C:\Users\halbr\.wslconfig — WSL2 VM-level settings (applies after `wsl --shutdown`).
+# Provenance: infra/hosts/peecee/config/wsl/.wslconfig
+[wsl2]
+memory=48GB
+processors=24
+swap=0
+networkingMode=mirrored
+vmIdleTimeout=-1

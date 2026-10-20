@@ -1,5 +1,18 @@
 # Changelog — peecee
 
+## 2026-10-20 — WSL2 Ubuntu as a Linux build node (sshd on :2222)
+
+Stood up the existing (idle) WSL2 Ubuntu 26.04.1 distro as an SSH-reachable
+Linux build host to offload builds from proximal. Inside the distro:
+`openssh-server` + `build-essential`, sshd on port 2222 key-only, proximal's
+key authorized for `halbritt`, passwordless sudo, hostname `peecee-wsl`.
+Windows side: `C:\Users\halbr\.wslconfig` (48 GB / 24 CPUs / mirrored
+networking / no idle timeout), Scheduled Task `WslKeepalive` (At startup, as
+`halbr`) holding the distro open without a login session, Windows + Hyper-V
+firewall rules for TCP 2222. Verified `ssh peecee-wsl` from proximal over
+tailnet and LAN; distro survives the launching session ending. Full-reboot
+survival not yet tested. Provenance and operate notes in `config/wsl/README.md`.
+
 ## 2026-10-13 — Audio driver recheck
 
 Read-only checks found Realtek USB Audio `6.3.9600.2342` (`oem94.inf`) still

@@ -8,7 +8,8 @@ desired state belong here; credentials do not.
 ## This box
 
 - **Host:** `peecee` · Windows 11 Pro build `26200` · user `halbr` (SSH from proximal:
-  `ssh peecee`, key auth, elevated admin session)
+  `ssh peecee`, key auth, elevated admin session; Linux side: `ssh peecee-wsl` →
+  WSL2 Ubuntu sshd on :2222, see [`config/wsl/README.md`](config/wsl/README.md))
 - **GPU:** NVIDIA **RTX 3090 Ti, 24 GiB**
 - **LAN:** `192.168.1.118` · **Tailscale:** `100.113.63.58` (tailnet `peecee`)
 - **Role:** pull-observed GPU fleet node (see `halbritt/gpu-fleet`). Serves LLM
