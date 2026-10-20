@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-10-20 — User-level Rust toolchain
+
+Owner-approved rustup install for `halbritt` only: stable 1.99.1, minimal
+profile, under `~/.rustup` and `~/.cargo`; nothing system-wide, no sudo.
+rustup appended `. "$HOME/.cargo/env"` to `~/.profile` and `~/.bashrc`.
+Reason: agent-ee's kicad-route now pins the owner's fork
+`halbritt/KiCadRoutingTools` (KICADROUTE-65). The fork has no release assets,
+so the `grid_router` Rust core must be built from source. Verified: the
+fork's `rust_router` at 295f9ee1 (v0.23.1) built with `cargo build --release`
+in 39 s. Remove with `rustup self uninstall`.
+
 ## 2026-10-17 — Disk cleanup, /tmp age-out, ZFS archive
 
 `/` was at 98% (38G free). `/tmp` (root LV, not tmpfs) held 377G under Ubuntu's
