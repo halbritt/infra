@@ -12,6 +12,10 @@ networking / no idle timeout), Scheduled Task `WslKeepalive` (At startup, as
 firewall rules for TCP 2222. Verified `ssh peecee-wsl` from proximal over
 tailnet and LAN; distro survives the launching session ending. Full-reboot
 survival not yet tested. Provenance and operate notes in `config/wsl/README.md`.
+Same day: `apt full-upgrade` in the distro (77 packages, no reboot required,
+cloud-init held back by phasing), WSL runtime already current at 3.0.3.0,
+kernel 6.18.54.1-microsoft-standard-WSL2. Windows Update itself left alone
+(pending: ASUS firmware, Intel net + Bluetooth drivers — all need a reboot).
 
 ## 2026-10-13 — Audio driver recheck
 
