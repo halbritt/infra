@@ -248,11 +248,25 @@ Passed and observed:
   Done by curl and by a headless Claude Code agent on archon over the tailnet
   endpoint.
 
-Configured but not yet observed (see the handoff in the host changelog): a
-post-sign-in guest restart with the Windows client reconnecting, a
-newly-arrived message through `sync_messages` after restart, the Windows
-client's send/receive, a host reboot with TPM unlock and VM autostart, and
-behaviour with the MacBook asleep.
+- Windows client (peecee): history synced; a received message appeared; a
+  send was delivered in 0.75 s once Automation (control Messages) was
+  allowed. The first two sends hung on that prompt (-1712). BlueBubbles' main
+  AppleScript can't look up chats by ID on 15.8.1 (-1728), so sends go
+  through its fallback script; 1:1 chats work, group sends are untested.
+  The Focus-status lookup returns 500 (Private API), which is harmless.
+- Post-sign-in controlled restarts (16:18 and 16:28, VNC clients 0, no
+  terminal attached): graceful stop in 8–9 s, all services back about 54 s
+  after start, identity fingerprint unchanged. The watchdog recovered
+  BlueBubbles 47 s after a `kill -9`.
+- After the restart, with the MacBook (`liminal`) offline on the tailnet:
+  `vm-after-restart-b08392` from the iPhone arrived (message 7833) and was
+  returned by `sync_messages` from a cursor taken before both restarts, by
+  `search_messages`, and by `get_conversation`.
+
+Configured but not yet observed: an archon host reboot with TPM unlock (the
+token is enrolled and test-unseals) and VM autostart from boot, the Windows
+client reconnecting after a VM restart (owner confirmation pending), and a
+group-chat send.
 
 ## Known limitations
 

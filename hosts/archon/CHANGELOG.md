@@ -1,5 +1,27 @@
 # Host changelog
 
+## imessage-vm and TPM root unlock — 2026-10-19
+
+Owner-requested always-on iMessage host. Installed QEMU 11.1.1 (exact
+archived versions, no system upgrade), a dedicated `imsgvm` user and btrfs
+subvolume `/var/lib/imessage-vm`, and the enabled units `imessage-vm.service`
+and `imessage-vm-mcp-tunnel.service`. Guest: macOS 15.8.1 with OpenCore 1.0.8,
+VMHide, BlueBubbles 1.9.9 and imessage-mcp 3.2.0. Tailscale Serve (tailnet
+only): `:8443` → BlueBubbles, `:8765` → MCP. The runtime kvm `ignore_msrs=1`
+is set by the unit. Added peecee's forwarding-only key to `authorized_keys`
+(backup `.bak-20261019`). The owner signed in to the Apple Account; native
+iMessage, the BlueBubbles Windows client and the read-only MCP were verified,
+including after controlled VM restarts. See
+[imessage-vm](config/imessage-vm/README.md).
+
+Incident: VNC key tracing while debugging console input logged the owner's
+typed Apple credentials to the system journal. The journal file covering
+Oct 17 19:30 to Oct 19 14:55 was deleted, and the owner was advised to change
+the Apple Account password. Never enable input tracing.
+
+TPM2 unlock prepared and enrolled (PCR 7, passphrase kept); first reboot
+pending with the owner present. See [tpm-unlock](config/tpm-unlock/README.md).
+
 ## Herdr 0.9.3 and daily maintenance coverage — 2026-09-30
 
 Added owner-authorized Herdr-only maintenance from proximal through a fixed
