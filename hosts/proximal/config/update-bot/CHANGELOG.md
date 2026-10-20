@@ -1,5 +1,24 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-20 13:32 UTC — c6f8ebe7-a6d1-4b8a-b937-d03ed428beed
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **os** — verified. Before: Ubuntu 24.04.5 LTS, running kernel 6.8.0-146-generic (6.8.0-147 installed, reboot pending). apt list --upgradable shows ordinary noble/security candidates now available: git & git-man 2.43.0-1ubuntu7.4 (noble-security), libxtst6 1.2.3-1.1ubuntu0.1, python3-jwt 2.7.0-1ubuntu0.4, xserver-common/xserver-xorg-core/xvfb 21.1.12-1ubuntu1.9 (noble-updates). Held out-of-scope set unchanged (docker*, google-cloud-cli, grafana, libpq/postgres stack, nodejs, NVIDIA/CUDA driver stack). No package manager currently running (no apt/dpkg lock held).. After: 7 packages installed and observed at their new versions (selected=[] now); 42 held-scope packages still deferred; reboot_required=true.
+  Verification: operation exit 0/0, changed=true; /var/lib/update-bot-os/latest.json status=completed with the 7 selected packages and their observed versions; native evidence /var/lib/update-bot-os/1792503234363233185.
+  Activation: active on disk; package-script service restarts suppressed; no reboot.
+  Evidence: `/var/lib/update-bot/runs/c6f8ebe7-a6d1-4b8a-b937-d03ed428beed/operations/40ac1076-2d8c-4207-a366-9c1453f9fea5`.
+
+- **hermes** — failed. Before: Installed generation /var/lib/update-bot/staging/hermes-candidate-9e01b44d (carry b9468d38, upstream base 9e01b44d) is selected by ~/.local/bin/hermes and is the running gateway generation (pid 1140877, Slack connected), per /var/lib/update-bot/hermes-installed.json and hermes-activation-latest.json. Upstream main has advanced to 54455f3ec177395aad4bbb6770925e198cad216a (git ls-remote refs/heads/main). Candidate dir hermes-candidate-54455f3e does not yet exist. This operation only clones/fetches upstream and carries the stored patch (config/update-bot/patches/hermes.patch) onto the new base in an isolated staging clone; no venv build, tests, launcher change or gateway restart here. Live install/launcher/gateway unchanged.. After: isolated candidate /var/lib/update-bot/staging/hermes-candidate-54455f3e cloned at 54455f3e; stored patch applied 3-way with 7 files clean and 2 auto-merged, but hermes_cli/cli_tui_runtime_mixin.py left unresolved (markers lines 177-188); no carry commit, no venv build, no tests, no install.
+  Verification: operation exit_code 4, status failed, verification not run; prep.log RESULT: PATCH_CONFLICT; candidate HEAD=54455f3e with the conflicted file dirty; live gateway unchanged and healthy.
+  Activation: none; running gateway pid 1140877 still serves 9e01b44d.
+  Evidence: `/var/lib/update-bot/runs/c6f8ebe7-a6d1-4b8a-b937-d03ed428beed/operations/8b966160-d380-47f4-b667-438425b0b263`.
+
+- **agy** — verified. Before: Installed Agy reports 1.4.3 via /home/halbritt/.local/bin/agy --version (self-updated from 1.4.2 since the previous run). Its bundled changelog/version cannot establish the online latest; the only native channel check is the built-in updater subcommand 'agy update' (stdin closed, noninteractive). No agy interactive session is being interrupted by a CLI update.. After: native updater reports 'You are already on the latest version'; version still 1.4.3.
+  Verification: operation exit 0/0; install.log 'Checking for updates... (current version 1.4.3) / You are already on the latest version'; verify.log 1.4.3.
+  Activation: no change; existing installation in use.
+  Evidence: `/var/lib/update-bot/runs/c6f8ebe7-a6d1-4b8a-b937-d03ed428beed/operations/98e1db93-c4c9-4416-88ce-efa9ec8c761c`.
+
 ## 2026-10-19 13:39 UTC — d32002e1-4f21-45e0-966e-43a12d2a06ca
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
