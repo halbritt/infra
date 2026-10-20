@@ -263,8 +263,11 @@ Passed and observed:
   returned by `sync_messages` from a cursor taken before both restarts, by
   `search_messages`, and by `get_conversation`.
 
-Configured but not yet observed: an archon host reboot with TPM unlock (the
-token is enrolled and test-unseals) and VM autostart from boot, the Windows
+- archon host reboot 2026-10-20 02:50: TPM unlock, then the VM autostarted
+  with no owner action. Identity unchanged; Messages and BlueBubbles started
+  by the watchdog; BlueBubbles ping and an MCP search over tailnet HTTPS both OK.
+
+Configured but not yet observed: the Windows
 client reconnecting after a VM restart (owner confirmation pending), and a
 group-chat send.
 

@@ -48,3 +48,20 @@ are byte-identical to the pre-change ones.
   `cmdline` from the backup directory, `limine-mkinitcpio`.
 - Remove TPM unlock: `systemd-cryptenroll --wipe-slot=tpm2 /dev/nvme0n1p2` and
   the revert above.
+
+## First reboot — 2026-10-20
+
+Verified on boot `b4f00d05` (02:50): the main Limine entry (linux-omarchy
+7.2.5) unlocked root by TPM with no prompt. "Cryptography Setup for root"
+took 1.1 s, and `imessage-vm.service` started 7 s into boot.
+
+Before that, the first restart attempt (shutdown logged cleanly at 01:45:23)
+and one boot of the old "linux" entry (7.2.3) gave a blank screen. They left
+no journal, so the cause is **not established**. The 7.2.3 UKI contains the
+same TPM, GPU, plymouth and cryptsetup pieces as the default one. If a blank
+screen recurs:
+- type the disk passphrase blindly and press Enter (plymouth may be hiding
+  the prompt);
+- else press `e` on the Limine entry and drop `quiet splash loglevel=0
+  systemd.show_status=false` to see the messages;
+- else boot Snapshots → 3.
