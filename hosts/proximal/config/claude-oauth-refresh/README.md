@@ -41,6 +41,11 @@ for each profile (`~/.claude`, `~/.claude-harm` by default):
    so the profile reports the account its token actually belongs to.
    `--no-mirror` renews only.
 
+6. Pushes the same access-token-only copy of `~/.claude` and `~/.claude-harm`
+   to the same paths on every host in `REMOTE_HOSTS` (`peecee-wsl`, `archon`)
+   over ssh, on every run. See [Remote worker hosts](#remote-worker-hosts-2026-10-21).
+   `--no-remote` skips this step.
+
 Nothing is logged but the profile path and minutes-to-expiry. No token material
 reaches the journal or this repo.
 
@@ -69,6 +74,54 @@ authoritative check is the token itself —
 `GET https://api.anthropic.com/api/oauth/profile` with
 `Authorization: Bearer <accessToken>` and `anthropic-beta: oauth-2025-04-20`
 returns `account.uuid` and `organization.name`.
+
+## Remote worker hosts (2026-10-21)
+
+Agent workers also run on `peecee-wsl` and `archon` (same user, `halbritt`) on
+the owner's subscription logins. Earlier on 2026-10-21 full credential files,
+refresh tokens included, were copied there from proximal. With rotating refresh
+tokens that makes three holders of one lineage: whichever host renews first
+signs the other two out. Remote hosts are now mirrors in the sense above.
+proximal is the only refresh-token holder, and every other host gets an
+access token it can use but cannot rotate.
+
+| Account files | What each remote gets | Mechanism |
+|---|---|---|
+| `~/.claude/.credentials.json`, `~/.claude-harm/.credentials.json` | `claudeAiOauth` reduced to `MIRRORED_FIELDS`; `refreshToken`/`refreshTokenExpiresAt` dropped; other keys kept. The source `oauthAccount` block goes into `~/.claude.json` / `~/.claude-harm/.claude.json` when that file already exists there. | this timer, every run |
+| `~/.codex/auth.json`, `~/.codex-harm/auth.json`, `~/.codex-3/auth.json` | proximal's file with `tokens.refresh_token` set to `""` | [`codex-auth-mirror/`](../codex-auth-mirror/README.md), sibling 15-minute timer |
+| `~/.gemini/oauth_creds.json` (+ `google_accounts.json`, `settings.json`) | the full copy, left as is | none needed: Google refresh tokens do not rotate (see the codex-auth-mirror README) |
+
+How a run reaches a remote: one `ssh -o BatchMode=yes <host> python3 -I -c
+<writer>` per host, with the job list on stdin, so no token material is in any
+argv or in the journal. The writer reads the remote file, drops any refresh
+fields, overlays the mirrored fields, and writes only when something changed
+(temp file in the same directory, `fsync`, mode `0600`, `rename`). The journal
+line is per host: `~/.claude mirrored|current[+account]`. A host that is
+unreachable, times out (60 s) or fails logs `<host>: remote mirror failed;
+retrying next tick` and nothing else. It never fails the unit or blocks the
+local refresh.
+
+A remote copy stays valid without a refresh token because this timer renews
+45 minutes before expiry and pushes in the same run. The remote CLI's own
+refresh window (five minutes before expiry) is therefore never reached while
+proximal and the host are both up. If a host is offline for longer than a
+token lifetime (eight hours), the token there lapses. Any refresh attempt on
+that host fails harmlessly (it has nothing to rotate), and the first tick after
+it comes back restores it. A login done on a remote host is overwritten by the
+next push: remote hosts do not keep their own Claude logins.
+
+Verified 2026-10-21 11:42 PDT after the first run (both hosts reported
+`mirrored`): on both hosts and both profiles the credentials file is mode
+`0600`, contains no key matching `refresh` anywhere (checked with `jq paths`,
+values never printed), and `CLAUDE_CONFIG_DIR=<dir> claude auth status`
+reports `loggedIn: true`, `authMethod: claude.ai`, on the account of the
+matching proximal profile. The second run reported `current` for every
+profile. A deliberately unreachable host logged one warning line and returned
+normally.
+
+To add a host, append it to `REMOTE_HOSTS` here and in `codex-auth-mirror.py`.
+It needs key-based `ssh <host>` from proximal without a prompt (BatchMode) and
+`python3` on its PATH.
 
 ## Units
 

@@ -1,5 +1,16 @@
 # Changelog — peecee
 
+## 2026-10-21 — Claude and Codex logins on peecee-wsl are mirrors of proximal
+
+`~/.claude*/.credentials.json` and `~/.codex*/auth.json` here are now written by
+proximal's `claude-oauth-refresh` and `codex-auth-mirror` timers every 15
+minutes. They hold access tokens only (Claude refresh fields removed, Codex
+`refresh_token` blanked), so this host can never rotate, or invalidate, the
+owner's logins. Do not run `claude auth login` or `codex login` here: the next
+push overwrites it. `~/.gemini/oauth_creds.json` remains a plain copy, which is
+safe because Google refresh tokens do not rotate. See
+[proximal codex-auth-mirror](../proximal/config/codex-auth-mirror/README.md).
+
 ## 2026-10-21 — council ldconfig portability bug filed as COUNCIL-1
 
 The two council `npm test` failures on the WSL build node (Ubuntu 26.04 ships the

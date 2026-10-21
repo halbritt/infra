@@ -22,6 +22,8 @@ import argparse
 import json
 import logging
 import os
+import shlex
+import subprocess
 import sys
 import tempfile
 import time
@@ -48,6 +50,68 @@ SOURCE_CONFIGS = {
 # Copied into a mirror's credentials; everything else (refreshToken above all)
 # stays behind.
 MIRRORED_FIELDS = ("accessToken", "expiresAt", "scopes", "subscriptionType", "rateLimitTier")
+# Remote hosts that run agent workers on the owner's subscription logins. Each
+# gets an access-token-only copy of every source profile at the same path, plus
+# the source's `oauthAccount` block in the matching config file when that file
+# exists there. proximal stays the only holder of the refresh token.
+REMOTE_HOSTS = ("peecee-wsl", "archon")
+REMOTE_SSH = ("ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+              "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3")
+REMOTE_TIMEOUT = 60  # seconds per host; a hung host must not hold the timer
+# Runs on the remote under `python3 -I -c`; the job list (token material
+# included) arrives on stdin, never in argv. Prints only profile names and
+# states. Mirrors write_mirror()/mirror_account() below.
+REMOTE_WRITER = r"""
+import json, os, sys, tempfile
+
+def read(path):
+    try:
+        with open(path) as stream:
+            return json.load(stream)
+    except FileNotFoundError:
+        return None
+
+def write(path, payload):
+    directory = os.path.dirname(path)
+    os.makedirs(directory, mode=0o700, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix="." + os.path.basename(path) + "-", dir=directory)
+    try:
+        with os.fdopen(fd, "w") as stream:
+            json.dump(payload, stream)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(name, 0o600)
+        os.replace(name, path)
+    finally:
+        if os.path.exists(name):
+            os.unlink(name)
+
+for job in json.load(sys.stdin):
+    path = os.path.expanduser(job["credentials"])
+    current = read(path) or {}
+    old = current.get("claudeAiOauth") or {}
+    block = dict(old)
+    block.pop("refreshToken", None)
+    block.pop("refreshTokenExpiresAt", None)
+    block.update(job["fields"])
+    state = "current"
+    if block != old:
+        current["claudeAiOauth"] = block
+        write(path, current)
+        state = "mirrored"
+    account = job.get("account")
+    if account:
+        config_path = os.path.expanduser(job["config"])
+        try:
+            config = read(config_path)
+        except ValueError:
+            config = None
+        if config is not None and config.get("oauthAccount") != account:
+            config["oauthAccount"] = account
+            write(config_path, config)
+            state += "+account"
+    print(job["profile"], state)
+"""
 LEAD_SECONDS = 45 * 60  # refresh when this close to expiry (CLI itself uses 5 min)
 LOG = logging.getLogger("claude-oauth-refresh")
 
@@ -277,6 +341,68 @@ def mirror_account(directory, account):
     return True
 
 
+def remote_job(source, now_ms):
+    """The access-token-only payload one source profile sends to each remote.
+
+    Only the default profiles go remote, under their `~`-relative names, so the
+    remote expands them against its own home whatever spelling was passed here.
+    """
+    canonical = {Path(profile).expanduser(): profile for profile in DEFAULT_PROFILES}
+    key = canonical.get(source.directory)
+    if key is None:
+        return None
+    try:
+        oauth = (read(source.credentials).get("claudeAiOauth") or {})
+    except FileNotFoundError:
+        return None
+    if not oauth.get("accessToken") or (oauth.get("expiresAt") or 0) <= now_ms:
+        LOG.error("%s: no live access token; not mirroring to remote hosts", key)
+        return None
+    try:
+        account = read(source.config).get("oauthAccount")
+    except (FileNotFoundError, ValueError):
+        account = None
+    return {
+        "profile": key,
+        "credentials": f"{key}/.credentials.json",
+        "config": SOURCE_CONFIGS[key],
+        "fields": {field: oauth[field] for field in MIRRORED_FIELDS if oauth.get(field) is not None},
+        "account": account,
+    }
+
+
+def mirror_remotes(sources, now_ms, hosts, dry_run):
+    """Push access-token-only copies of every source profile to the remote hosts.
+
+    The remote paths are the source paths (`~/.claude`, `~/.claude-harm`), so
+    worker CLIs there run unmodified. Any refresh token a remote holds is
+    dropped: the provider rotates on every renewal, so a second holder either
+    dies at proximal's next renewal or, if it renews first, logs proximal out.
+    An unreachable or failing host is logged by name only (stderr can carry
+    remote paths or tracebacks) and never fails the unit; the next tick retries.
+    """
+    jobs = [job for job in (remote_job(source, now_ms) for source in sources) if job]
+    if not jobs:
+        return
+    payload = json.dumps(jobs)
+    for host in hosts:
+        if dry_run:
+            LOG.info("%s: would mirror %s", host, ", ".join(job["profile"] for job in jobs))
+            continue
+        command = [*REMOTE_SSH, host, f"python3 -I -c {shlex.quote(REMOTE_WRITER)}"]
+        try:
+            result = subprocess.run(command, input=payload, capture_output=True,
+                                    text=True, timeout=REMOTE_TIMEOUT, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            LOG.warning("%s: remote mirror failed; retrying next tick", host)
+            continue
+        if result.returncode != 0:
+            LOG.warning("%s: remote mirror failed; retrying next tick", host)
+            continue
+        states = " ".join(result.stdout.split())
+        LOG.info("%s: %s", host, states)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("profiles", nargs="*", default=list(DEFAULT_PROFILES),
@@ -286,16 +412,20 @@ def main():
     parser.add_argument("--force", action="store_true", help="refresh regardless of expiry")
     parser.add_argument("--dry-run", action="store_true", help="report without contacting the token endpoint")
     parser.add_argument("--no-mirror", action="store_true",
-                        help="renew only; do not update the consumer profiles in MIRRORS")
+                        help="renew only; do not update the consumer profiles in MIRRORS or remote hosts")
+    parser.add_argument("--no-remote", action="store_true",
+                        help="do not push access-token copies to REMOTE_HOSTS")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s", stream=sys.stderr)
     now_ms = int(time.time() * 1000)
     ok = True
-    for profile in args.profiles:
-        source = Source(profile)
+    sources = [Source(profile) for profile in args.profiles]
+    for source in sources:
         ok &= refresh_profile(source.directory, now_ms, args.lead_minutes * 60000, args.force, args.dry_run)
         if not args.no_mirror:
             ok &= mirror_profile(source, now_ms, args.dry_run)
+    if not (args.no_mirror or args.no_remote):
+        mirror_remotes(sources, int(time.time() * 1000), REMOTE_HOSTS, args.dry_run)
     return 0 if ok else 1
 
 

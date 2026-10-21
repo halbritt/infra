@@ -1,5 +1,28 @@
 # Changelog — proximal (system)
 
+## 2026-10-21 — Remote worker hosts get access tokens, never refresh tokens
+
+Owner-requested: agent workers on `peecee-wsl` and `archon` use the owner's
+Claude and Codex subscription logins without the hosts signing each other out.
+Earlier on 2026-10-21 full credential files (refresh tokens included) were
+copied from proximal to both hosts. Claude and Codex both rotate refresh tokens
+on renewal, and Codex reports reuse as `refresh_token_reused`. Three holders of
+one lineage mean the first host to renew signs out the other two.
+
+- [`claude-oauth-refresh`](config/claude-oauth-refresh/README.md#remote-worker-hosts-2026-10-21):
+  each run now also pushes the access-token-only copy of `~/.claude` and
+  `~/.claude-harm` (plus `oauthAccount`) to both hosts over ssh. First run
+  11:41 PDT. Both hosts and both profiles: no `refresh*` key left, `claude auth
+  status` reports `loggedIn: true`.
+- New [`codex-auth-mirror`](config/codex-auth-mirror/README.md) user timer
+  (`*:0/15`): the CLI renews each Codex home 72 h before its 10-day expiry
+  (`app-server` `account/read` `refreshToken: true`), and `auth.json` is pushed
+  with `tokens.refresh_token = ""`. All six host × profile pairs report `Logged
+  in using ChatGPT`. A forced renewal of `~/.codex` confirmed the rotation.
+- Gemini `oauth_creds.json` copies are left as they are. Google refresh tokens
+  do not rotate, and gemini-cli always keeps the original one (evidence in the
+  codex-auth-mirror README).
+
 ## 2026-10-21 — Add third Codex account to both dashboards
 
 Owner requested that `tokens.harm.org` and `usage.harm.org` include the new

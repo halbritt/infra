@@ -1,0 +1,10 @@
+[Unit]
+Description=Renew Codex logins through the CLI and mirror refresh-free copies to remote hosts
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/.local/bin/codex-auth-mirror
+UMask=0077
+TimeoutStartSec=10min
