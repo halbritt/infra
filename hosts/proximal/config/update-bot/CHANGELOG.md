@@ -1,5 +1,34 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-21 13:37 UTC — 0ff6ed03-e969-4809-9b43-ad1930aeb745
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **hermes** — verified. Before: Install operation cbd91473-2446-4caf-bebe-3ad79ca8e0a0 verified the new generation /var/lib/update-bot/staging/hermes-candidate-54455f3e (carry 98065f845f6a630cec62c15da8d2643a3673075a on current upstream main 7dcb1b4cfdb88fe870aab3b4fe13041a11207d15) and ~/.local/bin/hermes now selects it for new launches. The running gateway pid 1140877 still serves the preserved previous generation hermes-candidate-9e01b44d with Slack connected. The fixed helper requires a fresh native zero-work drain and refuses if the gateway is busy or quiescence cannot be proven.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0ff6ed03-e969-4809-9b43-ad1930aeb745/operations/0368f50e-87d2-476f-a188-66eb26768450`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 LTS, running kernel 6.8.0-146-generic (6.8.0-147 installed, reboot pending/owner-controlled). apt list --upgradable now shows only out-of-scope held packages (containerd.io/docker-ce*, google-cloud-cli, grafana, the postgresql 16/17 + pgdg common/client stack, libpq5/pgbackrest, nodejs, and the NVIDIA/CUDA driver stack) - no ordinary noble release/security candidates remain after the 2026-10-20 run applied 7 of them. No package manager currently running (no apt/dpkg lock held). Standing-approved; the fixed helper refreshes metadata and applies only allowed Ubuntu updates.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0ff6ed03-e969-4809-9b43-ad1930aeb745/operations/606de988-1e9b-499b-917c-73ceae9530ec`.
+
+- **agy** — verified. Before: Installed Agy reports 1.4.4 via /home/halbritt/.local/bin/agy --version (self-updated from 1.4.3 since the previous run). Its bundled changelog/version cannot establish the online latest; the only native channel check is the built-in updater subcommand 'agy update' (stdin closed, noninteractive). No agy interactive session is being interrupted by a CLI update.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0ff6ed03-e969-4809-9b43-ad1930aeb745/operations/77d75a9c-eada-481e-ad02-d4bc45613eef`.
+
+- **hermes** — verified. Before: Installed generation /var/lib/update-bot/staging/hermes-candidate-9e01b44d (carry b9468d38, base 9e01b44d) is selected by ~/.local/bin/hermes and is the running gateway generation (pid 1140877, Slack connected). Upstream main has advanced (git ls-remote refs/heads/main = 7dcb1b4c). The preserved candidate /var/lib/update-bot/staging/hermes-candidate-54455f3e has the stored patch carried onto 54455f3e with the one run-loop conflict in hermes_cli/cli_tui_runtime_mixin.py now manually reconciled (upstream's OwnQueueHold hold combined with the carry's _dequeue_pending_input admission tracking), uncommitted. No venv built yet. No package manager running.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0ff6ed03-e969-4809-9b43-ad1930aeb745/operations/cbd91473-2446-4caf-bebe-3ad79ca8e0a0`.
+
+- **wigolo** — verified. Before: Global npm wigolo@0.2.1 is installed; the installed source build records config/wigolo/SOURCE_COMMIT c6ad4479 (2026-08-19), which is an ancestor of the local upstream-main checkout ~/git/wigolo (origin/main d69bf773, 2026-09-21) and of the current remote upstream main da59eee7 (2026-09-27, 20+ commits ahead of c6ad4479). The ~/git/wigolo checkout is clean (no local work). Published npm latest is still 0.2.1. So the installed source build is NOT current and a rebuild from upstream main is warranted. No npm install currently running.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/0ff6ed03-e969-4809-9b43-ad1930aeb745/operations/e3edaf73-7512-49bf-bd98-9e57ad1d9eb6`.
+
 ## 2026-10-20 13:32 UTC — c6f8ebe7-a6d1-4b8a-b937-d03ed428beed
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
