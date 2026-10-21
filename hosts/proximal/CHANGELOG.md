@@ -43,9 +43,13 @@ owner). `CODEX_HOME=~/.codex-3`, launched with the `codex-3` alias in
 - Cairn: coordination binding `codex-three`, installed with
   `install-agent-coordination.py --native-delivery --idle-wakeup`. The memory
   lifecycle and `git-stop-hygiene-hook` hooks copy `codex-harm`'s live commands
-  (rollout engine `05f7aae-agent489`). `install-codex-hooks.py` was deliberately
-  not run: it would reinstall an older engine and could rewrite the shared
-  `codex-hooks/config.json` that the inbox-recall manifest pins. All 11 hooks
+  (rollout engine `05f7aae-agent489`, byte-identical to the checkout's
+  `integrations/lifecycle/memory.py` at the time). `install-codex-hooks.py` was
+  deliberately not run, for two reasons. First, it rebuilds the shared
+  `codex-hooks/config.json` without `context_bytes` and `inbox_recall_binding`,
+  which breaks the inbox-recall manifest's SHA pin and validation for every
+  Codex account. Second, it adds a second set of memory hooks
+  (`codex-hooks/lifecycle.py`) alongside the rollout-engine ones. All 11 hooks
   were trusted through Codex's app-server. `codex-three` was appended to the
   Codex inbox-recall manifest (`inbox-recall-codex-4b0757a-20260930/binding.json`,
   backup `.before-codex-3`), and codex-one, codex-two and codex-three all
