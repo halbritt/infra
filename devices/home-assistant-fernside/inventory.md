@@ -94,3 +94,37 @@ update. One persistent notification (not captured).
   ESPHome Device Builder → 2026.7.1, Matter Server → 9.1.0.
 - HA core restarted at 08:49 UTC; recorder history now starts 2026-07-11
   (older runs purged).
+
+## Re-capture — 2026-10-21 (versions only)
+
+Versions refreshed from the appliance over the Terminal & SSH add-on
+(`ha os info`, `ha supervisor info`, `ha core info`, `ha apps`). Everything
+above this section remains the 2026-07-22 point-in-time snapshot for entities,
+integrations and hardware; only the version rows were re-read.
+
+| fact | value |
+|---|---|
+| HAOS | 18.3 (kernel 6.18.x, aarch64) |
+| Supervisor | 2026.10.3 (OS agent 1.14.0) |
+| HA core | 2026.10.2 |
+| Disk | 468.7 GB total, 27.6 GB used · 422 GB free |
+| Network | LAN 192.168.1.64 · tailnet 100.105.145.26 (back in the tailnet as of this capture) |
+
+Add-ons — 10 installed, all `started`:
+
+| add-on | slug | version |
+|---|---|---|
+| OpenThread Border Router | `core_openthread_border_router` | 3.3.0 |
+| Grafana | `a0d7b954_grafana` | 13.0.3 |
+| Studio Code Server | `a0d7b954_vscode` | 7.2.0 |
+| ESPHome Device Builder | `5c53de3b_esphome` | 2026.10.0 |
+| Matter Server | `core_matter_server` | 9.2.0 |
+| Claude Terminal Pro | `cf2feb56_claude_terminal_pro` | 2.0.10 |
+| Home Assistant MCP Server | `81f33d0f_ha_mcp` | 8.7.0 |
+| Nabu Casa Webhook Proxy for HA MCP | `81f33d0f_ha_mcp_webhook_proxy` | 3.0.4 |
+| Tailscale | `a0d7b954_tailscale` | 0.30.2 |
+| Terminal & SSH | `core_ssh` | 10.5.0 |
+
+InfluxDB (listed above at 5.0.2) is no longer installed — hence 10 add-ons,
+not 11. No update was pending on any add-on or on OS/Supervisor after the
+2026-10-21 maintenance.

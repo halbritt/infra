@@ -271,3 +271,28 @@ kid-bedroom Mini.
 Final voice choice: after hearing Aria, Jenny and Luna sequentially on the bedroom
 Nest Audio, the owner chose Luna. Set `en-US` / `LunaNeural` in Announce and
 verified the live script matches its source.
+
+## 2026-10-21 — Overdue maintenance: core, add-ons, tailnet
+
+The appliance had not been updated since the 2026-07 period and had dropped off
+the tailnet; tailnet reachability was restored before this pass. Work done over
+the Terminal & SSH add-on (`ha` CLI) rather than ha-mcp, because the update path
+is Supervisor-side.
+
+- Took a **full backup** first: `pre-core-2026.10.2` (full, 2026-10-21T18:33Z).
+  The rolling automatic backups are `partial` and would not have restored core.
+- **HA core 2026.10.1 → 2026.10.2**; `ha core check` OK, core `boot`/`watchdog`
+  true, `:8123` answers 200.
+- **Add-ons:** OpenThread Border Router 3.1.0 → 3.3.0, Grafana 13.0.2 → 13.0.3,
+  Studio Code Server 6.0.1 → 7.2.0, ESPHome Device Builder 2026.9.0 → 2026.10.0.
+  All ten add-ons `started` afterwards.
+- **OS 18.3 and Supervisor 2026.10.3 were already current** — no OS update was
+  pending, so no reboot was required.
+- Post-update Supervisor log is clean apart from two pre-existing benign
+  warnings: stale `enable_skills`/`enable_skills_as_tools` options left in the
+  ha-mcp add-on configuration (not in its current schema), and ESPHome's
+  discovery for the `mcp` service, which it does not declare (maintainer bug,
+  upstream). Neither affects operation; the stale ha-mcp options are cosmetic
+  leftovers that can be pruned on the add-on's configuration page.
+
+Versions re-captured in `inventory.md` (new "Re-capture — 2026-10-21" section).
