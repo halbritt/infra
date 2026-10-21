@@ -1,5 +1,33 @@
 # Changelog — proximal (system)
 
+## 2026-10-21 — Third Codex account `codex-3`
+
+Owner-requested third Codex profile, for codex-3@harm.org (login left to the
+owner). `CODEX_HOME=~/.codex-3`, launched with the `codex-3` alias in
+`~/.bash_aliases` (same coordinated launcher and `--yolo` as `codex-harm`).
+
+- `config.toml` and `AGENTS.md` copied from `~/.codex-harm`, minus other homes'
+  hook-trust entries and `/tmp` project trusts. It has its own copy of the
+  code-mode model catalog
+  (`~/.local/share/cairn/deployments/codex-tool-search-route-agent470-20261020/codex-3.models-code-mode-only.json`).
+- Skills: skillpack `install.sh` now targets `~/.codex-3/skills`. The
+  agent-ee and kicad-route `krt-*` symlinks were copied from `codex-harm`.
+- Cairn: coordination binding `codex-three`, installed with
+  `install-agent-coordination.py --native-delivery --idle-wakeup`. The memory
+  lifecycle and `git-stop-hygiene-hook` hooks copy `codex-harm`'s live commands
+  (rollout engine `05f7aae-agent489`). `install-codex-hooks.py` was deliberately
+  not run: it would reinstall an older engine and could rewrite the shared
+  `codex-hooks/config.json` that the inbox-recall manifest pins. All 11 hooks
+  were trusted through Codex's app-server. `codex-three` was appended to the
+  Codex inbox-recall manifest (`inbox-recall-codex-4b0757a-20260930/binding.json`,
+  backup `.before-codex-3`), and codex-one, codex-two and codex-three all
+  pass `validate_binding`.
+- The installer rewrote the shared launcher shim and `cairn-presence.service`
+  byte-identically. All the engine files it copies matched the live ones.
+- Rollback: remove the alias, `~/.codex-3`, the `codex-three` binding and its
+  state, and restore the manifest from `.before-codex-3`. Then restart
+  `cairn-presence.service`.
+
 ## 2026-10-20 — User-level Rust toolchain
 
 Owner-approved rustup install for `halbritt` only: stable 1.99.1, minimal
