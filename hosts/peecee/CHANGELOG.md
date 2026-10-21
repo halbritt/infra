@@ -1,5 +1,18 @@
 # Changelog — peecee
 
+## 2026-10-20 — WSL build node: toolchains + local postgres, agent build/test proven
+
+`config/wsl/provision-toolchains.sh`: gcc/cmake/ninja, Python 3.14 + uv, Node 24,
+Go 1.27, Rust stable, docker + compose v2, gh, rg/jq/tmux/shellcheck, bubblewrap/
+slirp4netns, claude/codex/opencode CLIs, git-wt/git-land (cairn clone). PATH via
+`/etc/environment` for non-interactive SSH. `gh` authenticated with proximal's
+token (`gh auth login --with-token`). `config/wsl/provision-postgres.sh`: PostgreSQL
+18 + pgvector on the peer-auth socket, role `halbritt`, dbs engram/engram_test/hippo.
+Proven over `ssh peecee-wsl`: cairn `go test ./...` all ok; council `npm test`
+890 pass / 2 fail (council hardcodes `/sbin/ldconfig.real`, absent on 26.04 — repo
+bug); engram full suite 2528 pass / 5 fail → all 5 pass after local postgres +
+migrate (1 was a load flake); cargo, docker hello-world, git-wt worktree ok.
+
 ## 2026-10-20 — WSL2 Ubuntu as a Linux build node (sshd on :2222)
 
 Stood up the existing (idle) WSL2 Ubuntu 26.04.1 distro as an SSH-reachable

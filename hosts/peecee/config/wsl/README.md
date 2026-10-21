@@ -24,6 +24,7 @@ Key-only auth (proximal's `id_ed25519`), password auth off, root login off.
 | `wsl.conf` | `/etc/wsl.conf` | systemd on, hostname `peecee-wsl`, metadata automount |
 | `setup-sshd.sh` | run once as root in the distro | installs `openssh-server` + `build-essential`, sshd on 2222 (`/etc/ssh/sshd_config.d/10-wsl.conf`), authorized key, sudoers drop-in |
 | `provision-toolchains.sh` | run as `halbritt` over `ssh peecee-wsl` (idempotent) | everything an agent needs to build and test: see **Toolchains** |
+| `provision-postgres.sh` | run as `halbritt` over `ssh peecee-wsl` (idempotent) | local PostgreSQL 18 + pgvector, peer-auth socket, role `halbritt` (CREATEDB, CREATEROLE), dbs `engram` / `engram_test` / `hippo` with `vector` + `pgcrypto` — what engram/hippo tests assume from proximal |
 | `install-wsl-keepalive.ps1` | run once, elevated, on Windows | installs `.wslconfig`; Scheduled Task **`WslKeepalive`** (At startup, as `halbr`, S4U, no time limit) that holds the distro open so sshd is up with no login session; Windows Firewall + Hyper-V firewall rules for TCP 2222 |
 
 Staging copy of all of these lives at `C:\Users\halbr\wsl-setup\` on peecee.
@@ -59,8 +60,13 @@ Revoke/rotate on GitHub if peecee is ever considered compromised.
 ### Proven 2026-10-20 (over non-interactive `ssh peecee-wsl`)
 
 - **Go:** `halbritt/cairn` — `go build ./...` + `go test ./...` all packages `ok`.
-- **Python + docker:** `halbritt/engram` (private) — `HIPPO_REPO=~/git/hippo make test-docker`
-  (uv/venv install, `docker compose` postgres, pytest). See CHANGELOG for result.
+- **Python + docker + local postgres:** `halbritt/engram` (private) — `HIPPO_REPO=~/git/hippo make test-docker`
+  (venv install, `docker compose` postgres on :54329, pytest): **2528 passed, 5 failed,
+  1h39m** on the first full run. 4 failures were tests that use engram's default
+  `postgresql:///engram` socket URL (proximal has a local cluster, WSL had none) →
+  fixed by `provision-postgres.sh` + `make migrate`; the 5th (`test_restore_smoke_cleans_up_after_signal`)
+  passed 3/3 in isolation — a signal-timing flake under full-suite load. All 5 pass
+  after provisioning. The suite is slow here mainly because it is serial; expect ~1.5 h.
 - **Node:** `halbritt/council` — `npm ci && npm test` (build + vitest): 890 passed,
   2 failed. Both failures are council hardcoding `/sbin/ldconfig.real`
   (`src/v3/runtime-resolver.ts` `DEFAULT_LDCONFIG`); Ubuntu 26.04 ships the real
