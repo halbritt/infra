@@ -1,5 +1,29 @@
 # Changelog — proximal (system)
 
+## 2026-10-21 — Add third Codex account to both dashboards
+
+Owner requested that `tokens.harm.org` and `usage.harm.org` include the new
+`~/.codex-3` profile. Its authenticated account is distinct from both existing
+Codex profiles; credentials remain in the CLI home and outside Git.
+
+- `~/git/agent-usage` commit `e855530`: register `codex-3` with the existing
+  read-only Codex quota collector and update the account count. Restarted
+  `agent-usage.service`; the public `/api/usage` reports `codex-3` as live with
+  a provider quota window.
+- `~/git/token-dashboard` commit `c1bc13f`: collect the third profile's sessions
+  and optional archives into `codex_3`, displayed as `codex-3` in filters,
+  charts and tables. Preserve existing request deduplication, privacy projection
+  and unknown-model pricing. Restarted `token-dashboard.service` (which builds
+  and scans its production assets) and `token-dashboard-ingest.service`.
+- Validation: 55 quota-dashboard tests, Ruff, 159 token-dashboard tests and the
+  production build/privacy scan pass. Synthetic UIPass desktop/phone screenshots
+  show the new account on both pages, with no overflow or script errors. Its
+  existing heatmap-label contrast findings remain outside this account addition.
+  Review bundle: `~/.cache/codex3-dashboard-review/run2/`.
+
+The source repositories remain canonical and are served directly by their
+existing user units; no Cloudflare routing or credential changes were needed.
+
 ## 2026-10-21 — Third Codex account `codex-3`
 
 Owner-requested third Codex profile, for codex-3@harm.org (login left to the
