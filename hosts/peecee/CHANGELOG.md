@@ -1,5 +1,29 @@
 # Changelog — peecee
 
+## 2026-10-21 — peecee-wsl: KiCad stock 3D model library (kicad-packages3d 10.0.7)
+
+Owner-requested, because agent-ee workers, reviewers and the release gate run
+here and placement-candidate renders should show component bodies.
+
+- Installed `kicad-packages3d 10.0.7~ubuntu26.04.1` (upstream tag `10.0.7`). It
+  comes from the same `kicad-10.0-releases` PPA (resolute) as the installed
+  `kicad 10.0.7~ubuntu26.04.1`. It was the only package changed, with no
+  dependencies.
+- How: the main PPA host was returning 503s, so the `.deb` was downloaded with
+  resume from `snapshot.ppa.launchpadcontent.net` (same pool path). Its SHA-256
+  `4c5eaac20b86445b4f9926cccb83f163d5037e37ec5277fccea10b1352cf154e` matches the
+  apt index. It was then installed with `sudo dpkg -i` and is dpkg-tracked. The
+  downloaded file was deleted.
+- Path `/usr/share/kicad/3dmodels`: 105 dirs, 7252 `.step`, 3.2 GiB
+  (3,368,023,638 bytes, the same as proximal's). This is the path that kicad-cli
+  resolves `${KICAD10_3DMODEL_DIR}` to when `KICAD_CONFIG_HOME` is empty, as in
+  agent-ee's sandbox. A user path would not reach that sandbox.
+- Verified on a copy of the pod candidate: kicad-cli opened all 27 unique stock
+  files (0 ENOENT) that the 281 `${KICAD10_3DMODEL_DIR}` references cite. The
+  top and bottom renders show bodies (J3 microSD on the bottom). See the
+  [proximal entry](../proximal/CHANGELOG.md) for why agent-ee's `model_coverage`
+  inventory still reports `unresolved`.
+
 ## 2026-10-21 — Claude and Codex logins on peecee-wsl are mirrors of proximal
 
 `~/.claude*/.credentials.json` and `~/.codex*/auth.json` here are now written by

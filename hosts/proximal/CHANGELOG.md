@@ -1,5 +1,47 @@
 # Changelog — proximal (system)
 
+## 2026-10-21 — KiCad stock 3D model library (kicad-packages3d 10.0.7)
+
+Owner-requested, so that agent-ee's placement-candidate renders show component
+bodies. On the pod board all 281 `${KICAD10_3DMODEL_DIR}` references rendered as
+bare pads.
+
+- Installed `kicad-packages3d 10.0.7~ubuntu24.04.1` (source
+  `kicad-library-packages3d`, upstream tag `10.0.7` =
+  `8d4070daa0fa3f7a7f3c176f4ca7bffc4df392be`). It comes from the same
+  `ppa:kicad/kicad-10.0-releases` as the installed `kicad 10.0.7~ubuntu24.04.1`.
+  It was the only package changed, with no dependencies.
+- How: the main PPA host returned intermittent 503s, so `apt-get install` timed
+  out. The `.deb` was downloaded with resume from
+  `snapshot.ppa.launchpadcontent.net` (same pool path). Its SHA-256
+  `935fec1427cc41126ae224596ae43146f54e1c822f1467e0679a16f77fc768da` matches the
+  signed PPA index (`apt-cache show`). It was then installed with
+  `sudo dpkg -i` and is dpkg-tracked: remove with `sudo apt remove kicad-packages3d`.
+- Path `/usr/share/kicad/3dmodels`: 105 `*.3dshapes` dirs, 7252 `.step`, 0
+  `.wrl`, 3.2 GiB (3,368,023,638 bytes).
+- Why a system path: kicad-cli with an empty `KICAD_CONFIG_HOME` resolves
+  `${KICAD10_3DMODEL_DIR}` to `/usr/share/kicad/3dmodels` (strace). The empty
+  `~/.local/share/kicad/10.0/3dmodels` is never searched. agent-ee's imaging
+  sandbox uses `--clearenv`, a throwaway `KICAD_CONFIG_HOME` and a read-only host
+  `/usr`. A user-path library or a `kicad_common.json` variable would therefore
+  never reach it.
+- Verified on a scratch copy of the pod candidate (iter8n): kicad-cli opened all
+  27 unique stock files that the 281 references cite, with 0 ENOENT, and the
+  renders now show bodies (J3 microSD cage, ESP32-S3 module, SMA, ICs, passives).
+  J1's project-local AMPSEAL model (`${KIPRJMOD}/inputs/models/…`) is still
+  missing. agent-ee's own `model_coverage` inventory still reports 281
+  `unresolved`, because it expands only variables present in the process
+  environment and does not know KiCad's built-in default. With
+  `KICAD10_3DMODEL_DIR=/usr/share/kicad/3dmodels` set, it reports 281 resolved.
+  `tests.test_candidate_visuals` and `tests.test_render3d` pass both before and
+  after the install (25 OK).
+- Also: [peecee-wsl](../peecee/CHANGELOG.md) got the matching
+  `10.0.7~ubuntu26.04.1` package the same way and verified the same way.
+  [archon](../archon/CHANGELOG.md) already had Arch `kicad-library-3d 10.0.7-1`.
+  The agent-ee CI image (`~/git/agent-ee/Dockerfile`) installs `kicad`,
+  `-symbols`, `-footprints` and `-templates` but not `kicad-packages3d`, so CI
+  renders still have no bodies.
+
 ## 2026-10-21 — Remote worker hosts get access tokens, never refresh tokens
 
 Owner-requested: agent workers on `peecee-wsl` and `archon` use the owner's

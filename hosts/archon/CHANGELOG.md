@@ -1,5 +1,21 @@
 # Host changelog
 
+## 2026-10-21 — KiCad 10.0.7 with the stock 3D model library
+
+KiCad was installed at 01:00 PDT with `pacman -S --needed kicad kicad-library
+kicad-library-3d ngspice` (pacman.log). This entry records it after the fact.
+Packages: `kicad 10.0.7-2`, `kicad-library 10.0.7-1`, `kicad-library-3d 10.0.7-1`
+(Arch extra, explicitly installed). The 3D library is the same upstream release
+(10.0.7) as proximal's and peecee-wsl's `kicad-packages3d`.
+
+- Path `/usr/share/kicad/3dmodels`: 7252 `.step`, 3.14 GiB. `pacman -Qkk`
+  reports 0 altered files.
+- Verified 2026-10-21 for agent-ee's placement renders. With an empty
+  `KICAD_CONFIG_HOME`, `kicad-cli pcb render` of the pod candidate shows
+  component bodies (J3 microSD on the bottom). All 27 unique stock files that the
+  pod board's 281 `${KICAD10_3DMODEL_DIR}` references cite are present. No
+  install was needed. See the [proximal entry](../proximal/CHANGELOG.md).
+
 ## 2026-10-21 — Claude and Codex logins are mirrors of proximal
 
 `~/.claude*/.credentials.json` and `~/.codex*/auth.json` here are now written by
