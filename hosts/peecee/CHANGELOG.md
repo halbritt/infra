@@ -1,5 +1,15 @@
 # Changelog — peecee
 
+## 2026-10-21 — council ldconfig portability bug filed as COUNCIL-1
+
+The two council `npm test` failures on the WSL build node (Ubuntu 26.04 ships the
+real ELF at `/sbin/ldconfig`; council's `src/v3/runtime-resolver.ts` hardcodes
+`/sbin/ldconfig.real`, an Ubuntu 22.04/24.04 wrapper quirk) are tracked as Plane
+work item **COUNCIL-1** on the work instance. A Council project (identifier
+`COUNCIL`) was created in Plane for it, following the one-project-per-repo
+convention. Suggested fix recorded there: prefer `.real` when present, else
+`/sbin/ldconfig`, ELF-verified via the existing readelf probe. No change to council.
+
 ## 2026-10-20 — WSL build node: toolchains + local postgres, agent build/test proven
 
 `config/wsl/provision-toolchains.sh`: gcc/cmake/ninja, Python 3.14 + uv, Node 24,

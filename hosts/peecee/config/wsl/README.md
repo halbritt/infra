@@ -70,7 +70,8 @@ Revoke/rotate on GitHub if peecee is ever considered compromised.
 - **Node:** `halbritt/council` — `npm ci && npm test` (build + vitest): 890 passed,
   2 failed. Both failures are council hardcoding `/sbin/ldconfig.real`
   (`src/v3/runtime-resolver.ts` `DEFAULT_LDCONFIG`); Ubuntu 26.04 ships the real
-  ELF at `/sbin/ldconfig` with no `.real` wrapper. Council bug, not a host gap.
+  ELF at `/sbin/ldconfig` with no `.real` wrapper. Council bug, not a host gap —
+  filed as Plane **COUNCIL-1** (work instance, project Council created 2026-10-21 for it).
 - **Rust:** `cargo init && cargo test` ok. **docker:** `hello-world` ok.
 - **git-wt:** `git-wt create` placed the worktree under `~/.cache/agent-worktrees/cairn/`.
 - A pytest run kept running after the launching SSH session was killed (10-min
