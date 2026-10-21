@@ -14,7 +14,11 @@ Codex profiles; credentials remain in the CLI home and outside Git.
   and optional archives into `codex_3`, displayed as `codex-3` in filters,
   charts and tables. Preserve existing request deduplication, privacy projection
   and unknown-model pricing. Restarted `token-dashboard.service` (which builds
-  and scans its production assets) and `token-dashboard-ingest.service`.
+  and scans its production assets), `token-dashboard-ingest.service` and
+  `token-dashboard-api.service`. The API also projects through its imported
+  account list, so it must restart when that list changes. The first accepted
+  public snapshot (`2026-10-21T14:54:50.956Z`) includes 137 `codex_3` events and
+  9,956,133 tokens. Its 51 dead letters match the pre-change count.
 - Validation: 55 quota-dashboard tests, Ruff, 159 token-dashboard tests and the
   production build/privacy scan pass. Synthetic UIPass desktop/phone screenshots
   show the new account on both pages, with no overflow or script errors. Its
