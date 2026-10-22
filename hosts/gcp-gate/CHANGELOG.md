@@ -1,5 +1,18 @@
 # Host changelog
 
+## 2026-10-22 — `ci-run.sh` fails closed without `native-admit`
+
+A missing or non-executable `~/.local/bin/native-admit` used to skip admission
+silently. Now `ci-run.sh` exits 2 before any context, network, build or
+container work. The exception is explicit: `run-gate.sh` passes
+`CI_RUN_EPHEMERAL_VM=1` to its one-VM gates. The flag only excuses the missing
+helper; where `native-admit` exists the gate is always admitted. The image
+build pin (`build-image.sh` `CI_RUN_SHA256`) now matches the new script
+(`2c4d75fd49b2b215…`). The current image (`agent-ee-gate-20261022-0352`) still holds
+the older, admission-free `2c5c20f8…`, which these one-VM gates run until the
+image is rebuilt. Installed on agent-ee-gate-c4 and peecee-wsl. Evidence:
+`evidence-20261022/ci-run-admission/output-v2.txt`.
+
 ## 2026-10-22 — `ci-run.sh` admits itself
 
 Correction requested in agent-522's audit. `ci-run.sh` used to read only optional

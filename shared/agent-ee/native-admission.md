@@ -73,12 +73,12 @@ PSI 53 to 77, and tens of thousands of zombies.
   | Entry point | Admission | Container bounds | Owner of remaining wiring |
   |---|---|---|---|
   | `ae-ci-exec` (all 5 hosts) | yes | yes | — |
-  | `ci-run.sh` (agent-ee-gate-c4, peecee-wsl) | yes, self-admitting | yes | — |
+  | `ci-run.sh` (agent-ee-gate-c4, peecee-wsl) | yes, self-admitting; a missing `native-admit` fails closed (exit 2) unless `CI_RUN_EPHEMERAL_VM=1` | yes | — |
   | `native-admit run -- CMD` (direct) | yes | only if CMD uses `ae-ci-exec` or passes the lease label/`$NATIVE_ADMISSION_CPUS`/`$NATIVE_ADMISSION_PIDS`/`--init` itself | caller |
   | raw `docker run` of an agent-ee image | no; counted as unleased usage | no | agent-449 (review lanes, e.g. `sleepy_galileo`) |
   | kicad-route lanes run natively (`kicad-route run`, pytest on the host) | no | n/a (no container) | agent-449 / agent-507 |
   | fome-mc gates on proximal (native KiCad, `make analyze`) | no | n/a | agent-449 / fome-mc lane |
-  | `run-gate.sh` throwaway Spot VMs | no (no `native-admit` on those VMs) | n/a | by design: one VM per gate |
+  | `run-gate.sh` throwaway Spot VMs | no: `run-gate.sh` passes `CI_RUN_EPHEMERAL_VM=1` explicitly (one VM per gate, nothing else on it) | n/a | by design. Anywhere else, `ci-run.sh` without `native-admit` refuses (exit 2) before any work |
   | owner-directed Rust scorer (agent-524) | its own choice; not commandeered | — | owner |
 
   Model sessions are not leases. State is per user (`halbritt`), which runs all
@@ -128,7 +128,7 @@ run unadmitted, and the event `unenforced` is logged.
 
 Deployed to all five hosts at about 21:55Z. Current hashes (23:1xZ): `native-admit`
 `2228099e0649b094…` and `ae-ci-exec` `2d653097fa422f19…`, identical on all five
-hosts; `ci-run.sh` `edc1fe8a4a43d713…` on agent-ee-gate-c4 and peecee-wsl. Raw evidence:
+hosts; `ci-run.sh` `2c4d75fd49b2b215…` on agent-ee-gate-c4 and peecee-wsl. Raw evidence:
 `proximal:~/.local/share/infra/native-admission/evidence-20261022/` (README
 inside).
 
@@ -199,3 +199,19 @@ indefinitely.
     - `JOBS=8` unreserved: refused.
   - The real container bindings of the first post-change c4 gate are captured
     by `~/.local/state/native-admission/handoff/first-ci-run-watch.sh` on c4.
+- **Third correction round (agent-522 response 3b9b7f03, 23:3xZ).**
+  - `ownership-fdinfo/` v2: the negative now provably passes a reopened
+    descriptor. The child holds fd 3 on the same live lease file (same inode),
+    with no `lock:` line in its fdinfo, and `verify` refuses it. Meanwhile the
+    admitted parent's fd 5 still owns the FLOCK. v1 is kept
+    (`run-v1.sh`, `output-v1.txt`); its case 3 never passed the descriptor.
+  - `ci-run-admission/output-v2.txt`, with `ci-run.sh` `2c4d75fd49b2b215…`:
+    - helper missing on a shared host: exit 2 before any log, context or
+      container;
+    - helper missing with `CI_RUN_EPHEMERAL_VM=1`: runs unadmitted, as
+      announced;
+    - helper present: admitted (suite w4);
+    - helper present with the flag set: still admitted.
+
+    `output-v2-regression.txt` repeats the earlier drain, idle, nested, forged
+    and `JOBS=8` cases on the new script.

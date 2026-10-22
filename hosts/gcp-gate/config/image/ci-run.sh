@@ -31,9 +31,19 @@ MODULES=${2:-}
 # (`native-admit verify`), so it is never charged twice. JOBS above the host's
 # max_weight needs a gate reservation made with --allow-weight, exported as
 # NATIVE_ADMISSION_RESERVATION. CI_RUN_MAX_WAIT (seconds) gives up with exit 75.
-# Hosts without native-admit (throwaway run-gate.sh VMs) run unadmitted.
+# A missing native-admit is an error (exit 2, before any context, network, build or
+# container work), except for the one-VM gates run-gate.sh launches: it passes
+# CI_RUN_EPHEMERAL_VM=1, and that VM runs nothing else. The flag only excuses a
+# missing helper; where native-admit exists the gate is always admitted.
 NA=$HOME/.local/bin/native-admit
-if [ -x "$NA" ]; then
+if [ ! -x "$NA" ]; then
+  if [ "${CI_RUN_EPHEMERAL_VM:-}" = 1 ]; then
+    echo "ci-run: no native-admit; running unadmitted as a one-VM gate (CI_RUN_EPHEMERAL_VM=1, run-gate.sh)" >&2
+  else
+    echo "ci-run: $NA is missing or not executable; refusing to run unadmitted. Shared hosts need native-admit (infra shared/agent-ee); one-VM gates come from run-gate.sh with CI_RUN_EPHEMERAL_VM=1" >&2
+    exit 2
+  fi
+else
   if [ "${CI_RUN_ADMITTED:-}" = 1 ]; then
     "$NA" verify >/dev/null || { echo "CI_RUN_ADMITTED set without an inherited live lease" >&2; exit 2; }
   elif ! "$NA" verify >/dev/null 2>&1; then

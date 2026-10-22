@@ -32,7 +32,7 @@ LABELS=purpose=agent-ee-gate,owner=halbritt
 
 # Pins: ci-run.sh is byte-identical to peecee-wsl ~/agent-ee-gate/ci-run.sh;
 # ae-ci-exec is the installed wrapper (infra shared/agent-ee).
-export CI_RUN_SHA256=2c5c20f80838a26e49a21fecce0af5c64a14609ef7cc4d69215c7b4ec3eea3e5
+export CI_RUN_SHA256=2c4d75fd49b2b2153490bde072ca7a122d61e4988665c9145c11185272b27ae2
 export AE_CI_EXEC_SHA256=0e8cb9d2cd030755859932a52bcbbe3d1207039f195385aa5e20cf2d61015290
 J1_SHA256=14bd5c3bb2ca16bfcf01918b678eab1aa19df10001c17735dd1f11356a6e4fe8
 

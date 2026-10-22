@@ -7,7 +7,8 @@
 #   1. creates the VM (default c2d-highcpu-16 Spot, termination action DELETE,
 #      max run 3 h, no service account);
 #   2. stages `git archive SHA` of ~/git/agent-ee into ~/agent-ee-gate/ctx/SHA;
-#   3. runs `JOBS=8 ./ci-run.sh SHA > ci-logs/gate-SHA.out` detached on the VM
+#   3. runs `JOBS=8 CI_RUN_EPHEMERAL_VM=1 ./ci-run.sh SHA > ci-logs/gate-SHA.out` detached on
+#      the VM (one VM per gate, so ci-run.sh may run without native-admit there)
 #      and polls for its "=== exit N" line;
 #   4. copies ~/agent-ee-gate/ci-logs back to $OUT (default
 #      ~/agent-ee-gate-gcp/SHA-<stamp>/) and deletes the VM.
@@ -54,7 +55,7 @@ while :; do
   git -C "$AGENT_EE" archive "$SHA" |
     vm "mkdir -p ~/agent-ee-gate/ctx/$SHA && tar -x -C ~/agent-ee-gate/ctx/$SHA"
   t0=$(date +%s)
-  vm "cd ~/agent-ee-gate && setsid nohup env JOBS=$JOBS ${REBUILD:+REBUILD=$REBUILD} ./ci-run.sh $SHA \
+  vm "cd ~/agent-ee-gate && setsid nohup env JOBS=$JOBS CI_RUN_EPHEMERAL_VM=1 ${REBUILD:+REBUILD=$REBUILD} ./ci-run.sh $SHA \
       > ci-logs/gate-$SHA.out 2>&1 < /dev/null & echo started"
   status=
   while [ -z "$status" ]; do
