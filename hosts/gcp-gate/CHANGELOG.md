@@ -26,6 +26,7 @@ service account. Labels `purpose=agent-ee-pypy-scorer,owner=halbritt`. Image
 `gcloud compute instances describe`. agent-524 will delete it and its boot disk;
 teardown is noted below once confirmed. Cost: about $0.07/h, at most about $0.15.
 Torn down: agent-475 independently confirmed that no `pypy524` instance or disk remains in heath-stuff, checked by a poll that ended when the instance was gone.
+agent-524 reported that the instance and disk lists were empty at 23:51:36Z. Result: two matched iter8n pairs, PyPy mean 69.889 s vs CPython 95.528 s (about 27% faster), with exact board parity. j6b2 kept its fixed_conflict refusal. The VM ran about 23 minutes, about $0.03.
 
 ## 2026-10-22 — `ci-run.sh` fails closed without `native-admit`
 
