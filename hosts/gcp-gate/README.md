@@ -130,6 +130,7 @@ standard quotas.
 | Image | family `agent-ee-gate` (`agent-ee-gate-20261022-0352`) |
 | Access | `ssh agent-ee-gate-c4` from proximal (`~/.ssh/config.d/agent-ee-gate-c4`, below) |
 | Tailnet | `agent-ee-gate-c4` / `agent-ee-gate-c4.tail0ecc2e.ts.net`, `100.122.93.61` and `fd7a:115c:a1e0::552c:5d3e` (joined 2026-10-22; see [Tailnet](#tailnet-2026-10-22)) |
+| Root fs | ext4 without online `discard` since 2026-10-22: the image's fstab default stalled the Hyperdisk (I/O PSI about 90 while idle). Weekly `fstrim.timer`. See CHANGELOG |
 | Idle stop | Powers off (stops) after 30 idle minutes; usage logged every minute. `config/idle-stop/c4-usage` reports run hours and cost. See [idle stop](config/idle-stop/README.md) (since 2026-10-22) |
 | Spot price | $1.22/h compute (48 × $0.02074 + 96 GiB × $0.002357) + $0.086/h disk ($16 capacity + $35 IOPS above 3000 + $12 throughput above 140 MiB/s, per month) = **about $1.31/h, about $955/month if left running**. It no longer stays up when idle; see [idle stop](config/idle-stop/README.md). Stopped, it costs the disk only (about $63/month). |
 

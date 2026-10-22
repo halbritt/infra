@@ -135,3 +135,8 @@ inside).
     descriptor fails `verify`.
   - In a real run on peecee-wsl, the Docker client (child of `ae-ci-exec`) holds
     the lease file as fd 5 (`fd-inheritance-peecee.txt`).
+- **c4 storage.** The stall was ext4 online discard. c4 now runs without it:
+  I/O PSI went from about 90 idle to under about 13 under load (see the gcp-gate
+  CHANGELOG). `AE_CI_TMPFS` exists as an opt-in for nondurable `/tmp` scratch,
+  but it is not adopted. The measured runs were CPU-quota-bound, so no storage
+  benefit was shown.

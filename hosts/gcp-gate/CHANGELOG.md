@@ -1,5 +1,26 @@
 # Host changelog
 
+## 2026-10-22 — `agent-ee-gate-c4`: root filesystem without online discard
+
+The I/O stall agent-522 found (`jbd2_log_wait_commit`) is ext4 online
+`discard`, which comes from the GCE Ubuntu image's fstab. Deleting trees such as
+worktrees and per-run scratch queues discards on the Hyperdisk.
+
+- Measured: with the filesystem idle, I/O PSI was 89–97 for about an hour, and
+  the device sat at 90–99% utilization on about 100 discards/s at about 10 ms
+  each. It also blocked admission of new work, since c4's `io_psi_max` is 20.
+- Live `mount -o remount,nodiscard /` at 22:28:48Z cut PSI from 28–34 to 6–13
+  within a minute, while a 4-worker suite started. The discard backlog already
+  queued kept draining at about 100/s.
+- Made persistent: `discard` removed from the root line in `/etc/fstab`
+  (backup `/etc/fstab.bak-20261022-discard`). `fstrim.timer` (weekly) is
+  enabled. `findmnt --verify` is clean.
+- tmpfs scratch (`AE_CI_TMPFS`) was measured but is not adopted. Runs were
+  CPU-quota-bound, and the matched pair was not completed. Evidence:
+  `proximal:~/.local/share/infra/native-admission/evidence-20261022/`.
+- The `agent-ee-gate` image still has `discard` in its fstab. A VM created from
+  it needs the same fstab edit until the image is rebuilt.
+
 ## 2026-10-22 — `agent-ee-gate-c4`: idle stop and usage tracking
 
 Owner request: "track its use, we should shut it down if it goes idle."
