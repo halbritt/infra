@@ -24,7 +24,7 @@
     "changelog": "CHANGELOG.md"
   },
   "hardware": {
-    "machine_type": "c2d-highcpu-16 (Spot)",
+    "machine_type": "c2d-highcpu-16 Spot per gate (run-gate.sh); agent-ee-gate-c4 is a standing c4-highcpu-48 Spot",
     "logical_cpus": 16,
     "memory_gib": 32,
     "boot_disk": "100 GB pd-balanced"

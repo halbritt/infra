@@ -1,5 +1,19 @@
 # Host changelog
 
+## 2026-10-22 — `agent-ee-gate-c4` (c4-highcpu-48 Spot) launched as the 96-vCPU stand-in
+
+Owner request (via coordinator agent-449). The C4 quota is at most 48 vCPUs in
+us-*, so a c4-highcpu-48 stands in for the c4-highcpu-96. No quota request filed.
+
+- `agent-ee-gate-c4` in us-central1-a: Spot, STOP on preemption, 200 GB
+  hyperdisk-balanced at 10000 IOPS / 440 MiB/s, image family agent-ee-gate, no
+  service account. It stays RUNNING. Spot about $1.31/h including the disk.
+- `ssh agent-ee-gate-c4` from proximal via `~/.ssh/config.d/agent-ee-gate-c4`
+  (address looked up through gcloud per connection).
+- agent-ee 9d57124d: JOBS=16 458 s, JOBS=32 378 s (best). Two concurrent gates:
+  2 × 16 took 591 s, with one load-sensitive failure in test_concurrent_reviews
+  for 14ef7275; 2 × 12 took 625 s and both passed. Details in README.md.
+
 ## 2026-10-22 — agent-ee-gate image built and validated; C4 work host blocked by quota
 
 Owner request (via coordinator agent-449): a GCE image for the agent-ee release

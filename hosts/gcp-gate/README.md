@@ -110,18 +110,29 @@ prices change):
 The image build and validation (two builds, two gate runs, about 70 Spot
 VM-minutes) cost about $0.40.
 
-## Long-running C4 work host (blocked by quota)
+## Long-running work host: `agent-ee-gate-c4` (c4-highcpu-48 stand-in)
 
-Owner request 2026-10-21: one Spot `c4-highcpu-96` host that stays running.
-Not launched. Every us-* region lacks the C4 quota for 96 vCPUs
-(`CPUS-PER-VM-FAMILY-per-project-region`, `vm_family=C4`): 0 in us-west1 and
-us-west2 (create refused: "Quota 'CPUS_PER_VM_FAMILY' exceeded. Limit: 0.0"),
-48 in us-central1, 24 in us-east1, us-east4, us-east5, us-south1, us-west3 and
-us-west4. `PREEMPTIBLE_CPUS` is 0 everywhere, so Spot VMs use the standard quotas.
-The recipe, once the owner raises the quota:
+Owner request 2026-10-21: one Spot C4 host that stays RUNNING for gates and
+tests. The requested `c4-highcpu-96` is blocked by quota, so a `c4-highcpu-48`
+(the largest that fits) stands in until the owner raises it. No quota request
+was filed.
+
+Quota (2026-10-22): `CPUS-PER-VM-FAMILY-per-project-region`, `vm_family=C4`, is
+0 in us-west1 and us-west2 (create refused: "Quota 'CPUS_PER_VM_FAMILY' exceeded.
+Limit: 0.0"), 48 in us-central1, and 24 in us-east1, us-east4, us-east5, us-south1,
+us-west3 and us-west4. `PREEMPTIBLE_CPUS` is 0 everywhere, so Spot VMs use the
+standard quotas.
+
+| | |
+|---|---|
+| Instance | `agent-ee-gate-c4`, zone `us-central1-a`, `c4-highcpu-48` (48 vCPU, 96 GiB), Spot, termination action STOP |
+| Disk | 200 GB `hyperdisk-balanced`, 10000 IOPS, 440 MiB/s (the default throughput for 200 GiB; Hyperdisk needs both set). The root filesystem grew to 193 GB at boot. |
+| Image | family `agent-ee-gate` (`agent-ee-gate-20261022-0352`) |
+| Access | `ssh agent-ee-gate-c4` from proximal (`~/.ssh/config.d/agent-ee-gate-c4`, below) |
+| Spot price | $1.22/h compute (48 × $0.02074 + 96 GiB × $0.002357) + $0.086/h disk ($16 capacity + $35 IOPS above 3000 + $12 throughput above 140 MiB/s, per month) = **about $1.31/h, about $955/month if left running**. Stopped, it costs the disk only (about $63/month). |
 
 ```sh
-gcloud compute instances create agent-ee-gate-c4 --zone ZONE --machine-type c4-highcpu-96 \
+gcloud compute instances create agent-ee-gate-c4 --zone us-central1-a --machine-type c4-highcpu-48 \
   --provisioning-model=SPOT --instance-termination-action=STOP \
   --image-family agent-ee-gate --image-project heath-stuff \
   --boot-disk-size=200GB --boot-disk-type=hyperdisk-balanced \
@@ -129,16 +140,52 @@ gcloud compute instances create agent-ee-gate-c4 --zone ZONE --machine-type c4-h
   --no-service-account --no-scopes --labels purpose=agent-ee-gate,owner=halbritt
 ```
 
-Hyperdisk needs IOPS and throughput together; 440 MiB/s is the default for
-200 GiB (`MIN(2400, 1.5 × 200 + 140)`). A STOP preemption changes the ephemeral
-external IP, so an `ssh agent-ee-gate-c4` alias should look the address up:
+For the 96-vCPU host after a quota increase, change `--machine-type` to
+`c4-highcpu-96` (and the zone, if another region gets the quota).
+
+A STOP preemption keeps the disk but changes the ephemeral external IP. Restart
+with `gcloud compute instances start agent-ee-gate-c4 --zone us-central1-a`. The
+SSH alias looks up the address on each connection:
 
 ```
 Host agent-ee-gate-c4
-  User halbritt
-  IdentityFile ~/.ssh/google_compute_engine
-  IdentitiesOnly yes
-  HostKeyAlias agent-ee-gate-c4
-  UserKnownHostsFile ~/.ssh/google_compute_known_hosts
-  ProxyCommand sh -c 'exec nc "$(gcloud compute instances describe agent-ee-gate-c4 --zone ZONE --format="value(networkInterfaces[0].accessConfigs[0].natIP)")" %p'
+	User halbritt
+	IdentityFile ~/.ssh/google_compute_engine
+	IdentitiesOnly yes
+	HostKeyAlias agent-ee-gate-c4
+	UserKnownHostsFile ~/.ssh/google_compute_known_hosts
+	StrictHostKeyChecking accept-new
+	ServerAliveInterval 30
+	ProxyCommand sh -c 'exec nc "$(gcloud compute instances describe agent-ee-gate-c4 --project heath-stuff --zone us-central1-a --format="value(networkInterfaces[0].accessConfigs[0].natIP)")" %p'
 ```
+
+Run a gate on it:
+
+```sh
+git -C ~/git/agent-ee archive SHA | ssh agent-ee-gate-c4 'mkdir -p ~/agent-ee-gate/ctx/SHA && tar -x -C ~/agent-ee-gate/ctx/SHA'
+ssh agent-ee-gate-c4 'cd ~/agent-ee-gate && JOBS=32 ./ci-run.sh SHA > ci-logs/gate-SHA.out 2>&1; tail -n 3 ci-logs/gate-SHA.out'
+```
+
+### Timings (2026-10-22, agent-ee main 9d57124d: 259 modules, 4831 tests)
+
+| Run | Result | Wall |
+|---|---|---|
+| JOBS=16, one gate (image build from warm cache: 13 s) | passed | 458 s (about 445 s without the build) |
+| JOBS=32, one gate (image reused) | passed | **378 s** |
+| two gates at once, JOBS=16 each (9d57124d and 14ef7275) | 9d57124d passed; 14ef7275 FAILED one test | 591 s / 590 s |
+| two gates at once, JOBS=12 each (same SHAs) | both passed | 625 s / 624 s; peak 1-min load 168 |
+
+- Best single-gate setting: **JOBS=32**. On C4 the slowest module
+  (`test_placement_campaign`) takes 285 s and module times sum to about 6200 s, so
+  a gate cannot go much below about 300 s whatever JOBS is.
+- Two concurrent gates each take about 1.35 to 1.4 times a single JOBS=16 gate.
+  Two in parallel (about 10.4 min for both) finish only slightly before two
+  back-to-back JOBS=32 gates (2 × 378 s = 12.6 min).
+- Load sensitivity: in the 2 × 16 run, `test_concurrent_reviews ...
+  test_coordinator_reports_failure_incomplete_and_does_not_adjudicate` failed with
+  "budget exceeded under load 77.33 (initial roles ('circuit', 'physical') did not
+  overlap in time)". The test asserts that two review roles overlap in wall time,
+  so it can fail on an oversubscribed host. The tool subprocesses push the load
+  well above the 48 vCPUs. The 2 × 12 run passed, but its load still peaked at 168,
+  so it is no guarantee. For release decisions, run one gate at a time (JOBS=32),
+  or treat a lone failure of this test under concurrency as a rerun, not a verdict.
