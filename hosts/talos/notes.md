@@ -15,7 +15,7 @@ Observations to act on only with owner direction:
   Extend with `lvextend -r` when space is needed.
 - An older `linux-image-unsigned-7.0.0-30-generic` is installed alongside the
   running `7.0.0-38` generic kernel.
-- Timezone is `Etc/UTC`.
+- Timezone was `Etc/UTC` (changed to `America/Los_Angeles` the same day at the owner's request).
 - Wi-Fi is the only link. MACs: `eno1` `1c:69:7a:63:e5:ff`, `wlp0s20f3`
   `0c:7a:15:6c:b9:7f` (useful for a DHCP reservation).
 

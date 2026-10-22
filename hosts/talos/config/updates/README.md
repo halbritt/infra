@@ -10,7 +10,7 @@ toolchains or interrupting worker runs.
 | [52infra-unattended-upgrades](52infra-unattended-upgrades) | `/etc/apt/apt.conf.d/` | Adds the `-updates` pocket to Ubuntu's default release/security origins. Removes unused kernels and dependencies. Disables unattended-upgrades' own reboot |
 | [50-infra-container-runtime.conf](50-infra-container-runtime.conf) | `/etc/needrestart/conf.d/` | needrestart never restarts `docker.service`, `docker.socket` or `containerd.service` after library upgrades |
 | [infra-reboot-if-idle](infra-reboot-if-idle) | `/usr/local/sbin/` | Reboots only if `/run/reboot-required` exists and the host is idle |
-| [infra-reboot-if-idle.service](infra-reboot-if-idle.service), [.timer](infra-reboot-if-idle.timer) | `/etc/systemd/system/` | Runs the guard daily at 11:00 UTC (04:00 PDT / 03:00 PST), up to 10 minutes late |
+| [infra-reboot-if-idle.service](infra-reboot-if-idle.service), [.timer](infra-reboot-if-idle.timer) | `/etc/systemd/system/` | Runs the guard daily at 04:00 Pacific (`America/Los_Angeles`, DST-aware), up to 10 minutes late |
 | [install.sh](install.sh) | — | Installs all of the above and enables the timer (run on talos as root) |
 
 Ubuntu's stock `apt-daily.timer` and `apt-daily-upgrade.timer` drive the
@@ -48,7 +48,7 @@ journal (`journalctl -u infra-reboot-if-idle`):
   Agent workers arrive as non-interactive SSH commands, which do not appear in
   utmp, so unattended-upgrades' `Automatic-Reboot-WithUsers` cannot detect them.
 
-A worker active every night at 11:00 UTC would defer kernel and libc restarts
+A worker active every night at 04:00 Pacific would defer kernel and libc restarts
 indefinitely. Check `/run/reboot-required` if that happens. Wi-Fi is the only
 network link; the first boot after install brought it up unattended.
 

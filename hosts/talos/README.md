@@ -26,7 +26,7 @@ Passwordless administration from proximal: `ssh talos` (entry in
 | Network | systemd-networkd via netplan (`00-installer-config.yaml`, Wi-Fi credential inside, not recorded). systemd-resolved, Tailscale MagicDNS. No firewall rules (ufw inactive, empty nftables) |
 | Tailscale | 1.104.2, auto-update on, Tailscale SSH off, no routes or exit node. Node key expires 2027-04-20 |
 | Updates | Automatic: release, security and `-updates` pockets daily. Guarded nightly reboot when required. Docker and KiCad held. See [updates](config/updates/README.md) |
-| Time | UTC, chrony, synchronized |
+| Time | `America/Los_Angeles` (set 2026-10-22; installed as UTC), chrony, synchronized |
 | Services | At first record: base server set only (ssh, tailscaled, chrony, thermald, snapd, avahi, multipathd). Since 2026-10-22 also `docker.service` and `containerd.service` (enabled at boot). No user services or timers |
 | Software | At first record: 541 dpkg packages; snaps `core24`, `snapd`, `hwctl`. Python 3.14.4. No Docker, Node, Git checkouts or agent tooling. Worker toolchain added the same day (below) |
 

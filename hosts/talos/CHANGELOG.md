@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-10-22 — Timezone set to Pacific
+
+Owner-requested: `timedatectl set-timezone America/Los_Angeles` (was `Etc/UTC`).
+The guarded reboot timer moved from `11:00 UTC` to `04:00 America/Los_Angeles`,
+so the window stays at 04:00 local across DST changes.
+
 ## 2026-10-22 — Automatic updates
 
 Owner-requested. Unattended-upgrades now also applies the `-updates` pocket and
