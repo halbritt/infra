@@ -1,5 +1,14 @@
 # Host changelog
 
+## 2026-10-22 — kicad-route worker lanes
+
+Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).
+
+- `~/git/kicad-route`: public clone of halbritt/kicad-route with `receive.denyCurrentBranch updateInstead`. proximal's checkout has the remote `talos`.
+- apt `python3-pip python3-numpy python3-scipy build-essential` (numpy 2.3.5, scipy 1.16.3). The user site has proximal's pins: pytest 9.1.0, shapely 2.2.0 and jsonschema 4.26.0.
+- rustup with toolchain 1.99.1 (minimal profile). `kicad-route update` built router generation `9148d30a…` (`owned-3c91fe5c0120`). There is no Java, so the Freerouting backend is unavailable.
+- Check at kicad-route 409d06ab: 93 focused pcbnew/router tests passed. pytest then segfaulted at teardown (exit 139), a known Python 3.14 + pcbnew issue described in the shared doc.
+
 ## 2026-10-22 — Timezone set to Pacific
 
 Owner-requested: `timedatectl set-timezone America/Los_Angeles` (was `Etc/UTC`).

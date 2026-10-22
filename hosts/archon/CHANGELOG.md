@@ -1,5 +1,15 @@
 # Host changelog
 
+## 2026-10-22 — kicad-route worker lanes
+
+Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).
+
+- `~/git/kicad-route`: public clone of halbritt/kicad-route with `receive.denyCurrentBranch updateInstead`. proximal's checkout has the remote `archon`.
+- pip 26.2.1 was bootstrapped into the user site from the interpreter's bundled wheel. The user site also has numpy 2.5.4, scipy 1.18.1, pillow 13.0.0 and proximal's pins: pytest 9.1.0, shapely 2.2.0 and jsonschema 4.26.0. pacman was not changed.
+- `/usr/local/bin/uv` is a symlink to mise's `uv/latest` binary. The mise shim fails under kicad-route's contained `HOME`. `~/.bashrc` now sources `~/.cargo/env` for non-interactive shells too.
+- `kicad-route update` built router generation `42ddddaf…` (`owned-3c91fe5c0120`). There is no Java, so the Freerouting backend is unavailable.
+- Check at kicad-route 409d06ab: 93 focused pcbnew/router tests passed. pytest then segfaulted at teardown (exit 139), a known Python 3.14 + pcbnew issue.
+
 ## 2026-10-21 — agent-ee tests run in the CI image (`ae-ci-exec`); uv 0.13.4, claude 2.1.307
 
 Owner-requested. Natively (Python 3.14.8, poppler 26.08, ngspice 47), main fails

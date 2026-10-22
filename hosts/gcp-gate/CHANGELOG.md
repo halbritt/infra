@@ -1,5 +1,14 @@
 # Host changelog
 
+## 2026-10-22 — `agent-ee-gate-c4`: kicad-route worker lanes
+
+Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).
+
+- `~/git/kicad-route`: public clone of halbritt/kicad-route with `receive.denyCurrentBranch updateInstead`. proximal's checkout has the remote `agent-ee-gate-c4`.
+- apt `python3-pip python3-numpy python3-scipy build-essential` (numpy 1.26.4, scipy 1.11.4, the same as proximal). The user site has proximal's pins: pytest 9.1.0, shapely 2.2.0 and jsonschema 4.26.0.
+- rustup with toolchain 1.99.1 (minimal profile). `kicad-route update` built router generation `04f9b4c1…` (`owned-3c91fe5c0120`). There is no Java, so the Freerouting backend is unavailable.
+- Check at kicad-route 409d06ab: 93 focused pcbnew/router tests passed in 42 s, exit 0, the same result as proximal.
+
 ## 2026-10-22 — `agent-ee-gate-c4` joins the tailnet
 
 Owner request 2026-10-22 (via the coordinator).

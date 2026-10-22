@@ -223,6 +223,8 @@ Layout, as on peecee-wsl:
 | `~/git/agent-ee/build/kicad-route-pin-5f1c072` | copied from proximal (HEAD 5f1c072b, clean) |
 | `~/git/fome-mc` | public clone at peecee-wsl's 8c42f2ee |
 | `~/git/kicad-happy` | public clone at 06840467 (2.3.1) |
+| `~/git/kicad-route` | public clone of github.com/halbritt/kicad-route + `receive.denyCurrentBranch updateInstead`; proximal's `~/git/kicad-route` has remote `agent-ee-gate-c4` = `ssh://agent-ee-gate-c4/home/halbritt/git/kicad-route` for `launch.py --repo`. Router generation `.router-generations/04f9b4c1…` built by `kicad-route update` (rustup 1.99.1 and `build-essential` added). See [shared/kicad-route](../../shared/kicad-route/README.md) |
+| `~/.cache/agent-worktrees/kicad-route/` | git-wt worktrees for kicad-route lanes |
 | `~/.cache/agent-worktrees/agent-ee/` | git-wt worktrees created by launch.py |
 | `/tmp/agent-ee-burndown-20261017/` | created by launch.py `sync_up` (rsync -R) per worker |
 

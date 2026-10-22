@@ -1,5 +1,9 @@
 # Changelog — proximal (system)
 
+## 2026-10-22 — kicad-route: remotes for remote worker hosts
+
+- `~/git/kicad-route` has the remotes `peecee-wsl`, `archon`, `talos` and `agent-ee-gate-c4` (`ssh://H/home/halbritt/git/kicad-route`), like `~/git/agent-ee`. `launch.py --repo /home/halbritt/git/kicad-route --host H` pushes base refs to them. Before this, the push exited 128. See [shared/kicad-route](../../shared/kicad-route/README.md).
+
 ## 2026-10-22 — Garage: private `agent-ee-evidence` bucket (AGENTEE-20)
 
 - Owner-approved destination for retained agent-ee evidence. Created bucket

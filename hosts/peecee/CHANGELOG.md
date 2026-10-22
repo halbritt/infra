@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-22 — peecee-wsl: kicad-route worker lanes
+
+Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).
+
+- `~/git/kicad-route`: public clone of halbritt/kicad-route with `receive.denyCurrentBranch updateInstead`. proximal's checkout has the remote `peecee-wsl`.
+- apt `python3-numpy python3-scipy` (numpy 2.3.5, scipy 1.16.3). The user site has proximal's pins: pytest 9.1.0, shapely 2.2.0 and jsonschema 4.26.0.
+- `kicad-route update` built router generation `210bdbb4…` (`owned-3c91fe5c0120`) with the existing rustc 1.99.1. There is no Java, so the Freerouting backend is unavailable.
+- Check at kicad-route 409d06ab: 93 focused pcbnew/router tests passed. pytest then segfaulted at teardown (exit 139), a known Python 3.14 + pcbnew issue.
+
 ## 2026-10-21 — peecee-wsl: agent-ee tests run in the CI image (`ae-ci-exec`); claude 2.1.307
 
 Owner-requested. Natively (Python 3.14.4, poppler 26.01, ngspice 45.2), main fails
