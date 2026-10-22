@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-10-22 — Suite drain lifted
+
+`native-admit undrain` at about 23:5xZ. The interim policy's condition (no new
+heavy jobs while the backlog drains) was met: used 0/4, load 0.2, PSI 0, zombies
+0, no containers. agent-449 had pointed out the idle slot. Normal admission
+still applies: budget 4, max_suites 1, `max_weight` 4, and CPU/I/O PSI gates.
+
 ## 2026-10-22 — Native admission; drained for new suites
 
 - `native-admit` and the admitting `ae-ci-exec` are installed. The budget is 4
