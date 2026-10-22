@@ -1,0 +1,14 @@
+// talos: installed as /etc/apt/apt.conf.d/52infra-unattended-upgrades.
+// Canonical source: infra hosts/talos/config/updates/. Lists append to
+// 50unattended-upgrades, which already allows the release and security pockets.
+Unattended-Upgrade::Allowed-Origins {
+	"${distro_id}:${distro_codename}-updates";
+};
+// The KiCad snapshot PPA and the Tailscale repository are deliberately not
+// allowed: KiCad is pinned to an exact version and held, Tailscale updates itself.
+// Packages held with apt-mark (docker.io, docker-buildx, kicad*) are never upgraded.
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+// Reboots are handled by infra-reboot-if-idle.timer, which skips busy nights.
+Unattended-Upgrade::Automatic-Reboot "false";

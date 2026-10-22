@@ -14,6 +14,7 @@ Passwordless administration from proximal: `ssh talos` (entry in
 - [Machine metadata](machine.yaml)
 - [Operational notes](notes.md)
 - [Changelog](CHANGELOG.md)
+- [Updates](config/updates/README.md)
 
 ## Current state (2026-10-22)
 
@@ -24,7 +25,7 @@ Passwordless administration from proximal: `ssh talos` (entry in
 | Access | OpenSSH on `:22`, keys only (`PasswordAuthentication no`, root `prohibit-password`). `authorized_keys` holds the two `gh:halbritt` ed25519 keys imported by the installer |
 | Network | systemd-networkd via netplan (`00-installer-config.yaml`, Wi-Fi credential inside, not recorded). systemd-resolved, Tailscale MagicDNS. No firewall rules (ufw inactive, empty nftables) |
 | Tailscale | 1.104.2, auto-update on, Tailscale SSH off, no routes or exit node. Node key expires 2027-04-20 |
-| Updates | `unattended-upgrades` enabled (default security origins, no automatic reboot). 30 packages upgradable at first record |
+| Updates | Automatic: release, security and `-updates` pockets daily. Guarded nightly reboot when required. Docker and KiCad held. See [updates](config/updates/README.md) |
 | Time | UTC, chrony, synchronized |
 | Services | At first record: base server set only (ssh, tailscaled, chrony, thermald, snapd, avahi, multipathd). Since 2026-10-22 also `docker.service` and `containerd.service` (enabled at boot). No user services or timers |
 | Software | At first record: 541 dpkg packages; snaps `core24`, `snapd`, `hwctl`. Python 3.14.4. No Docker, Node, Git checkouts or agent tooling. Worker toolchain added the same day (below) |

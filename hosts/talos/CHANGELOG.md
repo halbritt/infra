@@ -1,5 +1,14 @@
 # Host changelog
 
+## 2026-10-22 — Automatic updates
+
+Owner-requested. Unattended-upgrades now also applies the `-updates` pocket and
+removes unused kernels and dependencies. needrestart never restarts the container
+runtime. A guarded timer reboots at 11:00 UTC only when a reboot is required and
+no package manager, container or `halbritt` process is running. Existing apt holds
+on Docker and KiCad (set by the agent-ee worker provisioning) are respected; the
+KiCad PPA is not an allowed origin. See [updates](config/updates/README.md).
+
 ## 2026-10-22 — agent-ee-container profile: nested Bubblewrap
 
 Coordinator task: make agent-ee native tests on talos behave as on the other

@@ -1,0 +1,7 @@
+[Unit]
+Description=Reboot for pending updates if talos is idle
+After=apt-daily-upgrade.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/infra-reboot-if-idle

@@ -1,0 +1,25 @@
+#!/bin/sh
+# talos: installed as /usr/local/sbin/infra-reboot-if-idle (root, 0755).
+# Reboot only when an update requires it and the host is idle; otherwise wait
+# for the next scheduled run. Canonical source: infra hosts/talos/config/updates/.
+set -u
+if [ ! -e /run/reboot-required ]; then
+	echo "no reboot required"; exit 0
+fi
+pkgs=$(tr '\n' ' ' </run/reboot-required.pkgs 2>/dev/null)
+# Match unattended-upgrade by path: the idle unattended-upgrade-shutdown helper
+# has the same truncated process name.
+if pgrep -x 'apt|apt-get|dpkg' >/dev/null || pgrep -f '/usr/bin/unattended-upgrade( |$)' >/dev/null; then
+	echo "reboot required ($pkgs); skipped: package manager running"; exit 0
+fi
+if command -v docker >/dev/null && [ -n "$(docker ps -q 2>/dev/null)" ]; then
+	echo "reboot required ($pkgs); skipped: containers running"; exit 0
+fi
+# Agent workers arrive as non-interactive SSH commands, which do not appear in
+# utmp, so look for any halbritt process besides the idle user manager.
+busy=$(ps -u halbritt -o comm= 2>/dev/null | grep -v -x -e systemd -e '(sd-pam)' | head -3 | tr '\n' ' ')
+if [ -n "$busy" ]; then
+	echo "reboot required ($pkgs); skipped: halbritt processes running: $busy"; exit 0
+fi
+echo "reboot required ($pkgs); host idle, rebooting"
+systemctl reboot

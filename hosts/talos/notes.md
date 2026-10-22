@@ -39,3 +39,13 @@ Observations to act on only with owner direction:
   bubblewrap 0.11.1 and poppler 26.01 are stock 26.04, the same as peecee-wsl.
   The CI image (24.04: ngspice 42, bwrap 0.9.0, poppler 24.02, Python 3.12) is
   the test authority.
+
+## Worker provisioning observed — 2026-10-22
+
+Within an hour of the initial record, another agent (agent-ee dispatch from
+proximal) had installed `docker.io` and KiCad `10.0.7~ubuntu26.04.1` from the
+KiCad 10.0 snapshot PPA, plus ngspice, poppler-utils and bubblewrap. It apt-held
+`docker.io`, `docker-buildx` and the four KiCad packages. It also cloned
+`agent-ee`, `cairn`, `fome-mc` and `kicad-happy` into `~/git` and was running
+headless `claude-harm` workers in `~/.cache/agent-worktrees/agent-ee/`. That
+provisioning is not yet recorded here. The update policy was shaped around it.

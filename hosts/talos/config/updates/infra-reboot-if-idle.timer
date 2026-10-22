@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly guarded reboot window for pending updates (11:00 UTC = 04:00 PDT / 03:00 PST)
+
+[Timer]
+OnCalendar=*-*-* 11:00:00 UTC
+RandomizedDelaySec=10min
+Persistent=false
+
+[Install]
+WantedBy=timers.target
