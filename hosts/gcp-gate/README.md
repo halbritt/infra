@@ -110,6 +110,50 @@ prices change):
 The image build and validation (two builds, two gate runs, about 70 Spot
 VM-minutes) cost about $0.40.
 
+## Test overflow: `run-overflow.sh` (owner, 2026-10-22)
+
+The owner said: "with the hosts being fully loaded, if tests are waiting too long, small gcp
+spot instances could be used". [`config/image/run-overflow.sh`](config/image/run-overflow.sh)
+runs ONE queued, not-yet-running test job on a throwaway small Spot VM.
+
+- **VM:** default `c2d-highcpu-4`, explicit `--max` lifetime (default 90m),
+  DELETE on termination, boot-disk auto-delete, no service account, label
+  `purpose=agent-ee-overflow`.
+- **Staging:** the job's worktree from the host it lives on (tracked files at
+  their working-tree content, plus `--include` paths, with no `.git`, as in the
+  gate's `git archive` trees). Also the current `native-admit` and `ae-ci-exec`,
+  so the job is admitted and bounded as on shared hosts.
+- **Run:** the job's exact `ae-ci-exec . -- CMD`.
+- **Collect and teardown:** `job.log`, the exit marker, `--collect` paths and
+  the VM's admission events go to `~/agent-ee-overflow/<label>-<stamp>/`. Then the
+  VM is deleted and the script verifies no instance or disk remains.
+- **Preemption:** exit 3. Any retry is the lane owner's decision, under the
+  original job identity.
+
+agent-449 picks the job; agent-475 provisions and cleans up. Do not cancel the
+local queued waiter until the VM run has started, so the job never runs twice.
+
+```sh
+~/git/infra/hosts/gcp-gate/config/image/run-overflow.sh --host HOST --tree WORKTREE --label LABEL \
+  [--include build/x] [--collect build/x] [--machine-type c2d-highcpu-8] [--max 90m] -- CMD [ARG...]
+```
+
+Readiness smoke, 2026-10-22 23:44Z (agent-ee main b6bb621c, `agent-ee doctor
+--checks-only`):
+
+| Step | Time |
+|---|---|
+| SSH ready | 37 s |
+| Staging | 5 s |
+| Image `agent-ee:exec-758b370fecf753c0` (from the image's BuildKit cache) | 74 s |
+| Doctor | rest of the 135 s job |
+
+Total VM time was 177 s, about $0.004. The run was admitted under lease
+aacddb627901, and teardown was verified. **Practical startup before a test
+starts: about 2–2.5 min**, so overflow pays only when a queued job would
+otherwise wait longer than that and no local slot is free. Evidence:
+`proximal:~/.local/share/infra/native-admission/evidence-20261022/overflow-smoke-doctor/`.
+
 ## Long-running work host: `agent-ee-gate-c4` (c4-highcpu-48 stand-in)
 
 Owner request 2026-10-21: one Spot C4 host that stays RUNNING for gates and

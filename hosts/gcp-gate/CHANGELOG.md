@@ -1,5 +1,20 @@
 # Host changelog
 
+## 2026-10-22 — Test overflow path `run-overflow.sh`
+
+Owner authorization relayed by agent-521: use small GCP Spot instances when
+tests wait too long. Added `config/image/run-overflow.sh`, which runs one
+queued job per small Spot VM with an explicit lifetime, boot-disk auto-delete,
+current admission tools, collection, and verified teardown.
+
+The readiness smoke (doctor only, no tests) passed. Total VM time 177 s:
+SSH ready in 37 s, image built from cache in 74 s. Cost about $0.004, and
+teardown was verified.
+
+At 23:4xZ the only long waiter was ee449d on c4 (20 min, behind the one-suite
+cap), while archon had a free suite slot. agent-449 was told that local
+re-dispatch was cheaper, and no overflow VM was used for a real job.
+
 ## 2026-10-22 — `agent-ee-pypy524-20261022-2330`: short-lived VM for the PyPy comparison
 
 Owner request relayed by agent-524: a PyPy comparison after the Rust one, with
