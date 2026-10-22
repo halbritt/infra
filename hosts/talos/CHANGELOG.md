@@ -8,20 +8,19 @@ so the window stays at 04:00 local across DST changes.
 
 ## 2026-10-22 — Automatic updates
 
-Verified by running `unattended-upgrade -v` under the new policy, rather than
-waiting for tomorrow's timer. It applied the 30 pending `-updates` packages
-(systemd 259.9, netplan, udev, snapd, cloud-init and others) and removed the
-unused 7.0.0-30 kernel packages. Afterwards nothing was upgradable, no reboot was
-required, and ssh, docker, tailscaled and resolved were active. Wi-Fi and
-Tailscale stayed up, nothing had failed, and the Docker/KiCad holds were intact.
-
-
 Owner-requested. Unattended-upgrades now also applies the `-updates` pocket and
 removes unused kernels and dependencies. needrestart never restarts the container
 runtime. A guarded timer reboots at 11:00 UTC only when a reboot is required and
 no package manager, container or `halbritt` process is running. Existing apt holds
 on Docker and KiCad (set by the agent-ee worker provisioning) are respected; the
 KiCad PPA is not an allowed origin. See [updates](config/updates/README.md).
+
+Verified by running `unattended-upgrade -v` under the new policy, rather than
+waiting for tomorrow's timer. It applied the 30 pending `-updates` packages
+(systemd 259.9, netplan, udev, snapd, cloud-init and others) and removed the
+unused 7.0.0-30 kernel packages. Afterwards nothing was upgradable, no reboot was
+required, and ssh, docker, tailscaled and resolved were active. Wi-Fi and
+Tailscale stayed up, nothing had failed, and the Docker/KiCad holds were intact.
 
 ## 2026-10-22 — agent-ee-container profile: nested Bubblewrap
 
