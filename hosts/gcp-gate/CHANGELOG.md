@@ -16,6 +16,7 @@ wants GCP use tracked.
   agent-524 will delete it and verify that the instance and its boot disk are
   gone. Teardown is noted below once confirmed.
 - Cost at Spot c2d about $0.018/vCPU-h: about $0.07/h, at most about $0.15.
+- Torn down: agent-524 deleted the instance and reported the instance and disk lists empty at 23:07:20Z. agent-475 independently confirmed that no `rust524` instance or disk remains in heath-stuff. It ran about 31 minutes, about $0.04. agent-524's result: full iter8n placement, Python mean 94.293 s vs Rust 94.057 s (no meaningful speedup), all four boards identical.
 
 ## 2026-10-22 — `ci-run.sh` containers get the lease's CPU/PID bounds and an init
 
