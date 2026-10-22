@@ -1,5 +1,39 @@
 # Changelog — peecee
 
+## 2026-10-21 — peecee-wsl: agent-ee tests run in the CI image (`ae-ci-exec`); claude 2.1.307
+
+Owner-requested. Natively (Python 3.14.4, poppler 26.01, ngspice 45.2), main fails
+7 modules from toolchain identity drift: test_schematic_render, test_dc_path,
+test_netlist_parity, test_empirical_facts, test_datasheet_capabilities,
+test_passive_corners and test_stage_receipts. All pass in the image.
+
+- Installed `~/.local/bin/ae-ci-exec` (sha256
+  `a824b664ec9907fbb5abef7ee17e3d4a93b6cac6d96488b6a2c9c5c300a877b5`, identical on
+  proximal, peecee-wsl and archon). Canonical source and documentation:
+  [`shared/agent-ee/`](../../shared/agent-ee/README.md). It runs agent-ee
+  commands in the pinned CI image built from the worktree's own Dockerfile, with
+  the release gate's sandbox options, fome-mc and J1 inputs, and kicad-route pin.
+  agent-ee tests on every host should go through it rather than through the
+  distro toolchain.
+- Image `agent-ee:exec-2657c88d90d4f0a9` (agent-ee main de12cca).
+  State lives in `~/.cache/ae-ci-exec/`: the fome-mc clone at 1289f314, the J1
+  drawing, a caller-owned kicad-route copy, build logs and parity results.
+- Parity on a clean `git archive de12cca`, run with `strict_suite.py --jobs 3`:
+  all 10 modules pass with 295 tests and 0 skips, the same result as on the
+  other two hosts. The modules are the 7 peecee-wsl drift modules, test_fab_package,
+  test_fab_stage and test_electrical_locality. Doctor output is byte-identical
+  across hosts.
+- Image build: 2 s, because every toolchain layer was in BuildKit's cache from the
+  release gate's `agent-ee:ci-*` builds. The wrapper's context uses git-archive
+  modes, so the cache keys match. The gate's containers and `agent-ee:ci-*` images were
+  not touched. The parity run waited until the gate finished (load 466 → 14).
+  Batch A 102 s, batch B 92 s. WSL has no AppArmor, so the profile is `unconfined`.
+- The fome-mc input is a separate clone owned by halbritt. The gate's
+  `~/agent-ee-gate/ci-inputs` store is chowned to 10001 for its in-image user.
+- Host tools: claude 2.1.305 → 2.1.307 (`npm i -g @anthropic-ai/claude-code@2.1.307`;
+  no claude process was running). codex 0.163.0, uv 0.13.4 (standalone) and
+  git-wt/git-land (wrappers of `~/git/cairn/scripts/git_trunk_tools.py`) are unchanged.
+
 ## 2026-10-21 — peecee-wsl: KiCad stock 3D model library (kicad-packages3d 10.0.7)
 
 Owner-requested, because agent-ee workers, reviewers and the release gate run

@@ -1,5 +1,37 @@
 # Host changelog
 
+## 2026-10-21 — agent-ee tests run in the CI image (`ae-ci-exec`); uv 0.13.4, claude 2.1.307
+
+Owner-requested. Natively (Python 3.14.8, poppler 26.08, ngspice 47), main fails
+test_fab_package DeclaredFabCampaignTests, test_fab_stage and the Python 3.14
+recursion subcases of test_electrical_locality. All three pass in the image
+(Python 3.12.3, poppler 24.02, ngspice 42).
+
+- Installed `~/.local/bin/ae-ci-exec` (sha256
+  `a824b664ec9907fbb5abef7ee17e3d4a93b6cac6d96488b6a2c9c5c300a877b5`, identical on
+  proximal, peecee-wsl and archon). Canonical source and documentation:
+  [`shared/agent-ee/`](../../shared/agent-ee/README.md). It runs agent-ee
+  commands in the pinned CI image built from the worktree's own Dockerfile, with
+  the release gate's sandbox options, fome-mc and J1 inputs, and kicad-route pin.
+  agent-ee tests on every host should go through it rather than through the
+  distro toolchain.
+- Image `agent-ee:exec-2657c88d90d4f0a9` (agent-ee main de12cca).
+  State lives in `~/.cache/ae-ci-exec/`: the fome-mc clone at 1289f314, the J1
+  drawing, a caller-owned kicad-route copy, build logs and parity results.
+- Parity on a clean `git archive de12cca`, run with `strict_suite.py --jobs 3`:
+  all 10 modules pass with 295 tests and 0 skips, the same result as on the
+  other two hosts. The modules are the 7 peecee-wsl drift modules, test_fab_package,
+  test_fab_stage and test_electrical_locality. Doctor output is byte-identical
+  across hosts.
+- Image build: 262 s cold (pulled the pinned ubuntu:24.04 and rust:1.99.1 bases).
+  Batch A 133 s, batch B 103 s. AppArmor is disabled, so the profile is `unconfined`.
+  halbritt was already in `docker`, so no sudo was used.
+- Host tools: `mise upgrade uv claude`: uv 0.12.19 → 0.13.4, claude 2.1.306 → 2.1.307.
+  codex is 0.163.0 (mise). git-wt/git-land launch `~/.local/lib/git-trunk-tools/git_trunk_tools.py`
+  (no cairn checkout here). That file has the same sha256 (7d6accc6…) as cairn's
+  `scripts/git_trunk_tools.py` on proximal and peecee-wsl. Only the launcher path
+  differs, so the copy must be refreshed by hand when cairn changes it.
+
 ## 2026-10-21 — KiCad 10.0.7 with the stock 3D model library
 
 KiCad was installed at 01:00 PDT with `pacman -S --needed kicad kicad-library

@@ -3,6 +3,7 @@
   "name": "developer",
   "description": "Interactive software-development workstation responsibilities.",
   "shared": [
-    "shared/editor/wezterm/server.lua"
+    "shared/editor/wezterm/server.lua",
+    "shared/agent-ee/ae-ci-exec"
   ]
 }

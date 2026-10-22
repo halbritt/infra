@@ -1,5 +1,37 @@
 # Changelog — proximal (system)
 
+## 2026-10-21 — agent-ee tests run in the CI image (`ae-ci-exec`); uv 0.13.4
+
+Owner-requested, so that agent-ee test results agree across build hosts. Native
+toolchains: Python 3.12.3, poppler 24.02, ngspice 42 (Ubuntu 24.04).
+
+- Installed `~/.local/bin/ae-ci-exec` (sha256
+  `a824b664ec9907fbb5abef7ee17e3d4a93b6cac6d96488b6a2c9c5c300a877b5`, identical on
+  proximal, peecee-wsl and archon). Canonical source and documentation:
+  [`shared/agent-ee/`](../../shared/agent-ee/README.md). It runs agent-ee
+  commands in the pinned CI image built from the worktree's own Dockerfile, with
+  the release gate's sandbox options, fome-mc and J1 inputs, and kicad-route pin.
+  agent-ee tests on every host should go through it rather than through the
+  distro toolchain.
+- Image `agent-ee:exec-2657c88d90d4f0a9` (agent-ee main de12cca).
+  State lives in `~/.cache/ae-ci-exec/`: the fome-mc clone at 1289f314, the J1
+  drawing, a caller-owned kicad-route copy, build logs and parity results.
+- Parity on a clean `git archive de12cca`, run with `strict_suite.py --jobs 3`:
+  all 10 modules pass with 295 tests and 0 skips, the same result as on the
+  other two hosts. The modules are the 7 peecee-wsl drift modules, test_fab_package,
+  test_fab_stage and test_electrical_locality. Doctor output is byte-identical
+  across hosts.
+- Image build: 267 s cold (`docker buildx build --builder default`; the selected
+  buildx builder here is a striatum docker-container builder, so the wrapper names
+  `default`). Batch A 141 s, batch B 156 s. AppArmor is enabled: runs use the
+  already-loaded `agent-ee-container` profile. No sudo was used.
+- Host tools: uv 0.11.25 → 0.13.4 (`pipx install --force uv==0.13.4`). codex 0.163.0,
+  claude 2.1.307 (`~/.local/bin/claude`), git-wt/git-land (wrappers of
+  `~/git/cairn/scripts/git_trunk_tools.py`, sha256 7d6accc6…) are unchanged.
+- Known leftover: a stale root-owned npm install `/usr/local/bin/claude` (1.0.60).
+  Interactive shells shadow it, but non-interactive `ssh proximal claude` lacks
+  `~/.local/bin` in PATH and gets 1.0.60. Removing it needs sudo, so it is not done.
+
 ## 2026-10-21 — KiCad stock 3D model library (kicad-packages3d 10.0.7)
 
 Owner-requested, so that agent-ee's placement-candidate renders show component
