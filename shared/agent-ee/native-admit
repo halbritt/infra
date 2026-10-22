@@ -297,6 +297,7 @@ def run(args):
                 log_event("refused", label=info["label"], weight=weight, reason=reason, waited_s=int(time.time() - start))
                 sys.exit(f"native-admit: {reason}")
             if reason is None:
+                info.update(t=time.time(), started=now(), queued_at=info["started"])  # held_s counts from admission
                 fd, _ = hold("leases", info)
                 qpath.unlink(missing_ok=True)
                 os.close(qfd)
