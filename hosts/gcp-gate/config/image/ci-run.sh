@@ -13,7 +13,8 @@
 # From proximal instead:  git -C ~/git/agent-ee archive SHA | ssh peecee-wsl \
 #   'mkdir -p ~/agent-ee-gate/ctx/SHA && tar -x -C ~/agent-ee-gate/ctx/SHA'
 #
-# Environment: JOBS (strict_suite --jobs, default 4 as in CI),
+# Environment: JOBS (strict_suite --jobs, default 4 as in CI; also the admission
+# weight), CI_RUN_MAX_WAIT (admission wait limit, seconds),
 # BUILD_ATTEMPTS (default 6), REBUILD=1 forces a fresh image build.
 set -euo pipefail
 
@@ -22,6 +23,25 @@ usage() { echo "usage: $0 SHA \"<modules>\"" >&2; exit 2; }
 SHA=$1
 MODULES=${2:-}
 [[ $SHA =~ ^[0-9a-f]{7,40}$ ]] || usage
+
+# --- host-wide admission (native-admit, infra shared/agent-ee) ----------------
+# The gate holds one native-admit lease (class suite, weight $JOBS) for its whole
+# run, image build included, before any native or helper work. Inside an already
+# admitted job it re-enters only with an inherited lock-owning lease descriptor
+# (`native-admit verify`), so it is never charged twice. JOBS above the host's
+# max_weight needs a gate reservation made with --allow-weight, exported as
+# NATIVE_ADMISSION_RESERVATION. CI_RUN_MAX_WAIT (seconds) gives up with exit 75.
+# Hosts without native-admit (throwaway run-gate.sh VMs) run unadmitted.
+NA=$HOME/.local/bin/native-admit
+if [ -x "$NA" ]; then
+  if [ "${CI_RUN_ADMITTED:-}" = 1 ]; then
+    "$NA" verify >/dev/null || { echo "CI_RUN_ADMITTED set without an inherited live lease" >&2; exit 2; }
+  elif ! "$NA" verify >/dev/null 2>&1; then
+    CI_RUN_ADMITTED=1 exec "$NA" run --class suite --weight "${JOBS:-4}" --label "ci-run.sh $SHA" \
+      ${CI_RUN_MAX_WAIT:+--max-wait "$CI_RUN_MAX_WAIT"} -- "$(realpath -e -- "$0")" "$@"
+  fi
+fi
+unset CI_RUN_ADMITTED
 
 GATE=$HOME/agent-ee-gate
 CTX=$GATE/ctx/$SHA
@@ -80,12 +100,23 @@ docker image inspect "$IMAGE" --format 'image {{.Id}} size {{.Size}}'
 profile=$(bash "$CTX/scripts/container_apparmor.sh")
 SANDBOX_OPTS="--network none --security-opt seccomp=unconfined --security-opt apparmor=$profile --security-opt systempaths=unconfined"
 echo "SANDBOX_OPTS=$SANDBOX_OPTS"
+# Every container below (doctor, sandbox probe, owner probe, strict suite) carries the
+# lease label (counted once) and the lease's CPU/PID bounds. Images without a tini
+# ENTRYPOINT (before agent-ee 7e5bdc46) get docker's init so orphans are reaped.
+ADMIT_OPTS=
+if [ -n "${NATIVE_ADMISSION_LEASE:-}" ]; then
+  ADMIT_OPTS="--label native-admission.lease=$NATIVE_ADMISSION_LEASE"
+  [ -z "${NATIVE_ADMISSION_CPUS:-}" ] || ADMIT_OPTS="$ADMIT_OPTS --cpus $NATIVE_ADMISSION_CPUS"
+  [ -z "${NATIVE_ADMISSION_PIDS:-}" ] || ADMIT_OPTS="$ADMIT_OPTS --pids-limit $NATIVE_ADMISSION_PIDS"
+fi
+case $(docker image inspect -f '{{json .Config.Entrypoint}}' "$IMAGE") in *tini*) ;; *) ADMIT_OPTS="$ADMIT_OPTS --init" ;; esac
+echo "ADMIT_OPTS=$ADMIT_OPTS"
 
 echo "=== doctor"
-docker run --rm $SANDBOX_OPTS "$IMAGE" agent-ee doctor --checks-only > "$LOGDIR/$SHA-$STAMP.doctor.json"
+docker run --rm $SANDBOX_OPTS $ADMIT_OPTS "$IMAGE" agent-ee doctor --checks-only > "$LOGDIR/$SHA-$STAMP.doctor.json"
 echo "doctor written to $LOGDIR/$SHA-$STAMP.doctor.json"
 echo "=== sandbox probe"
-docker run --rm $SANDBOX_OPTS "$IMAGE" python3 /opt/agent-ee/scripts/check_container_sandbox.py
+docker run --rm $SANDBOX_OPTS $ADMIT_OPTS "$IMAGE" python3 /opt/agent-ee/scripts/check_container_sandbox.py
 
 # --- required external inputs -------------------------------------------------
 # fome-mc: anonymous public clone at the pinned commit, owned by the image user.
@@ -103,7 +134,7 @@ head=$(g -C "$STORE" rev-parse --verify 'HEAD^{commit}')
 if g -C "$STORE" config --local --get-regexp '^(http\..*\.extraheader|credential\.)'; then
   echo "credentials persisted in the fome-mc store" >&2; exit 1
 fi
-owner=$(docker run --rm --network none "$IMAGE" sh -c 'echo "$(id -u):$(id -g)"')
+owner=$(docker run --rm --network none $ADMIT_OPTS "$IMAGE" sh -c 'echo "$(id -u):$(id -g)"')
 if [ "$(stat -c %u:%g "$STORE")" != "$owner" ]; then sudo -n chown -R "$owner" "$STORE"; fi
 echo "fome-mc store $STORE at $head owned by $owner"
 
@@ -118,17 +149,6 @@ summary=$(mktemp -d "$GATE/tmp/ci-summary-XXXXXX")
 chmod 0777 "$summary"
 status=0
 set -x
-# Under native-admit (infra shared/agent-ee): label the suite container with the
-# caller's lease (so admission does not count it twice) and apply the lease's CPU
-# and PID bounds; images without a tini ENTRYPOINT (before agent-ee 7e5bdc46) get
-# docker's init so orphaned bwrap children are reaped.
-ADMIT_OPTS=
-if [ -n "${NATIVE_ADMISSION_LEASE:-}" ]; then
-  ADMIT_OPTS="--label native-admission.lease=$NATIVE_ADMISSION_LEASE"
-  [ -z "${NATIVE_ADMISSION_CPUS:-}" ] || ADMIT_OPTS="$ADMIT_OPTS --cpus $NATIVE_ADMISSION_CPUS"
-  [ -z "${NATIVE_ADMISSION_PIDS:-}" ] || ADMIT_OPTS="$ADMIT_OPTS --pids-limit $NATIVE_ADMISSION_PIDS"
-fi
-case $(docker image inspect -f '{{json .Config.Entrypoint}}' "$IMAGE") in *tini*) ;; *) ADMIT_OPTS="$ADMIT_OPTS --init" ;; esac
 docker run --rm $SANDBOX_OPTS $ADMIT_OPTS \
   -e AGENT_EE_REQUIRE_TOOLCHAIN=1 -e PYTHONPATH=src -v "$summary:/summary" \
   -v "$STORE:/opt/fome-mc:ro" -e AGENT_EE_FOME_MC_CHECKOUT=/opt/fome-mc \

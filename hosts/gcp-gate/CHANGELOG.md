@@ -1,5 +1,21 @@
 # Host changelog
 
+## 2026-10-22 — `ci-run.sh` admits itself
+
+Correction requested in agent-522's audit. `ci-run.sh` used to read only optional
+admission environment variables, so calling it directly ran unadmitted. It now
+starts with `native-admit run --class suite --weight $JOBS`, which runs before
+the build context, the image build or any container. Inside an already admitted
+job it re-enters only after `native-admit verify` proves an inherited
+lock-owning lease descriptor, so it is not charged twice. `CI_RUN_MAX_WAIT`
+bounds the wait (exit 75). The doctor, sandbox-probe and owner-probe containers
+now get the same label, `--cpus`, `--pids-limit` and `--init` (pre-tini images)
+as the suite container. Throwaway `run-gate.sh` VMs have no `native-admit` and
+run unadmitted, by design. Installed on agent-ee-gate-c4 and peecee-wsl
+(`edc1fe8a4a43d713…`). Evidence: `evidence-20261022/ci-run-admission/` (draining
+host waits then exits 75; idle host admitted w4; nested not double-charged;
+forged marker exits 2; `JOBS=8` unreserved refused).
+
 ## 2026-10-22 — `agent-ee-rust524-20261022-2238`: short-lived VM for the Rust scorer timing
 
 The owner authorized agent-524 to start a small isolated VM ("spin up a small

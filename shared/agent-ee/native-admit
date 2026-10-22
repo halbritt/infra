@@ -4,7 +4,7 @@
   native-admit run --weight N --label TEXT [--class suite|test] [--max-wait S] -- COMMAND [ARG...]
   native-admit status [--json]
   native-admit sample [--print]
-  native-admit reserve --label TEXT --minutes N      # hold the host for one controlled comparison
+  native-admit reserve --label TEXT --minutes N [--allow-weight W]   # hold the host; W only for the sole c4 gate
   native-admit unreserve
   native-admit drain --reason TEXT [--suites-only]   # admit nothing new (or no new suites)
   native-admit undrain
@@ -132,13 +132,18 @@ def inherited_lease():
     if not re.fullmatch(r"[0-9a-f]{12}", lease):
         return None
     path = (HOME / "leases" / f"{lease}.json").resolve()
-    held = False
     for fd in Path("/proc/self/fd").iterdir():
         try:
-            held = held or Path(os.readlink(fd)) == path
+            if Path(os.readlink(fd)) != path:
+                continue
+            # /proc/self/fdinfo lists a "lock:" line only for locks owned by THIS open file
+            # description; a separately reopened descriptor of the same file shows none.
+            if any(line.startswith("lock:") and "FLOCK" in line and "WRITE" in line
+                   for line in Path(f"/proc/self/fdinfo/{fd.name}").read_text().splitlines()):
+                return lease
         except OSError:
             pass
-    return lease if held and not is_dead(path) else None
+    return None
 
 
 def verify(_):
@@ -224,17 +229,23 @@ def hold(directory, info):
 
 
 def allowed_weight(cfg, res):
-    """Largest weight this caller may hold now: reserved_max_weight only while it holds the live reservation."""
+    """Largest weight this caller may hold now. Above max_weight only while it holds the live
+    reservation AND that reservation was made with --allow-weight (for the sole c4 gate), capped by
+    the host's reserved_max_weight. An ordinary reservation confers no extra weight."""
     holds = bool(res) and res.get("token") == os.environ.get("NATIVE_ADMISSION_RESERVATION")
-    return cfg.get("reserved_max_weight", cfg["max_weight"]) if holds else cfg["max_weight"]
+    if not holds:
+        return cfg["max_weight"]
+    return max(cfg["max_weight"], min(cfg.get("reserved_max_weight", cfg["max_weight"]),
+                                      int(res.get("allow_weight", cfg["max_weight"]))))
 
 
 def blocked(cfg, info):
     """Reason the request cannot start now, or None; "refuse: ..." means it never may.
     Call under the mutex: every grant revalidates the weight against the current reservation."""
-    if info["weight"] > allowed_weight(cfg, reservation()):
-        return (f"refuse: weight {info['weight']} exceeds max_weight {cfg['max_weight']} "
-                f"and this caller no longer holds the host reservation")
+    allowed = allowed_weight(cfg, reservation())
+    if info["weight"] > allowed:
+        return (f"refuse: weight {info['weight']} exceeds the {allowed} this caller may hold now "
+                f"(current max_weight {cfg['max_weight']}; more only with a live --allow-weight gate reservation)")
     queue = live("queue")
     ahead = [q for q in queue if q["seq"] < info["seq"]]
     if ahead:
@@ -275,8 +286,8 @@ def run(args):
     klass = args.klass or klass
     if weight > allowed_weight(cfg, reservation()):
         log_event("refused", label=args.label or " ".join(command)[:120], weight=weight, max_weight=cfg["max_weight"])
-        extra = (f"; up to {cfg['reserved_max_weight']} only while holding this host's reservation"
-                 if cfg.get("reserved_max_weight", 0) > cfg["max_weight"] else "")
+        extra = (f"; up to {cfg['reserved_max_weight']} only for the holder of a gate reservation made with "
+                 f"--allow-weight" if cfg.get("reserved_max_weight", 0) > cfg["max_weight"] else "")
         sys.exit(f"native-admit: refused: weight {weight} exceeds this host's max_weight {cfg['max_weight']}{extra} "
                  f"(pass strict_suite --jobs <= {cfg['max_weight']}, or JOBS for ci-run.sh)")
     info = {"id": uuid.uuid4().hex[:12], "seq": time.time_ns(), "label": args.label or " ".join(command)[:120],
@@ -290,6 +301,7 @@ def run(args):
     start, said, reason = time.time(), 0.0, None
     while True:
         with Mutex():
+            cfg = config()  # re-read at every grant attempt: limits, budget and allowances are current
             reason = blocked(cfg, info)
             if reason and reason.startswith("refuse:"):
                 qpath.unlink(missing_ok=True)
@@ -423,8 +435,9 @@ def reserve(args):
         if reservation():
             sys.exit("native-admit: already reserved")
         (HOME / "reservation.json").write_text(json.dumps(
-            {"label": args.label, "token": token, "until": time.time() + args.minutes * 60}))
-    log_event("reserved", label=args.label, minutes=args.minutes)
+            {"label": args.label, "token": token, "until": time.time() + args.minutes * 60,
+             "allow_weight": args.allow_weight or config()["max_weight"]}))
+    log_event("reserved", label=args.label, minutes=args.minutes, allow_weight=args.allow_weight)
     print(f"export NATIVE_ADMISSION_RESERVATION={token}")
 
 
@@ -466,6 +479,7 @@ def main():
     p = sub.add_parser("reserve")
     p.add_argument("--label", required=True)
     p.add_argument("--minutes", type=float, required=True)
+    p.add_argument("--allow-weight", type=int, help="let the holder exceed max_weight up to this (capped by reserved_max_weight); only for the sole authoritative gate")
     p.set_defaults(fn=reserve)
     sub.add_parser("unreserve").set_defaults(fn=unreserve)
     sub.add_parser("verify", help="exit 0 and print the lease id if this process inherited a live lease").set_defaults(fn=verify)
