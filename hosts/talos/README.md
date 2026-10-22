@@ -56,10 +56,22 @@ PATH. Global git config: `user.name halbritt`, `user.email`, `init.defaultBranch
 main`, `safe.directory *` (no credential helper).
 
 AppArmor is enabled, so `ae-ci-exec` runs containers under the
-`agent-ee-container` profile: agent-ee `docker/agent-ee.apparmor` is installed
-at `/etc/apparmor.d/agent-ee-container` (loaded at boot) and was loaded with
-`apparmor_parser -r`. `halbritt` has full passwordless sudo, so agent-ee
-`scripts/container_apparmor.sh` (`sudo -n apparmor_parser`) also works.
+`agent-ee-container` profile, installed at `/etc/apparmor.d/agent-ee-container`
+(loaded at boot). Since 2026-10-22 it is a talos-specific enforce-mode
+`allow all,` profile, not agent-ee's `flags=(unconfined) { userns, }`
+`docker/agent-ee.apparmor`: under Ubuntu 26.04's `bwrap-userns-restrict`
+the unconfined-mode profile let nested Bubblewrap attach to
+`bwrap//&unpriv_bwrap` and fail. See [config/apparmor](config/apparmor/README.md).
+`halbritt` has full passwordless sudo, so agent-ee
+`scripts/container_apparmor.sh` (`sudo -n apparmor_parser`) also works, but
+until agent-ee adopts the new profile running it reloads the old one.
+
+Native test check 2026-10-22 (agent-ee main 1da27635, git-wt worktree,
+`ae-ci-exec ... env AGENT_EE_SKIP_VISUALS=1 PYTHONPATH=src:tests python3 -m
+unittest`): `tests.test_add_planes` 15 tests OK, no skips (2 failures before the
+profile change); `tests.test_placer_native tests.test_placement_native
+tests.test_kicad_route_native tests.test_tree_hygiene tests.test_capabilities`
+65 tests OK, no skips, 201 s. No AppArmor denials in the kernel log.
 
 CI image check 2026-10-22: from a git-wt worktree of agent-ee main 1da27635,
 `ae-ci-exec <worktree> -- env AGENT_EE_SKIP_VISUALS=1 PYTHONPATH=src:tests

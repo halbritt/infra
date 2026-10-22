@@ -1,5 +1,25 @@
 # Host changelog
 
+## 2026-10-22 — agent-ee-container profile: nested Bubblewrap
+
+Coordinator task: make agent-ee native tests on talos behave as on the other
+worker hosts. `tests.test_add_planes` failed 2 tests on agent-ee main 1da27635
+because a nested bwrap in the CI container could not set up its namespace.
+
+- Root cause: the `flags=(unconfined)` profile does not apply its exec rules,
+  so `/usr/bin/bwrap` in the container attached to Ubuntu 26.04's host `bwrap`
+  profile (`bwrap-userns-restrict`); its children run as
+  `bwrap//&unpriv_bwrap`, which denies all capabilities (audit:
+  `profile="unpriv_bwrap" comm="bwrap" capname="sys_admin"`), so the second
+  bwrap level failed.
+- Fix: `/etc/apparmor.d/agent-ee-container` is now an enforce-mode profile with
+  `allow all,` and `attach_disconnected,mediate_deleted` (copy in
+  [config/apparmor](config/apparmor/README.md)); exec inherits, so every bwrap
+  level stays `agent-ee-container`. No host profile, `local/` override or sysctl
+  changed. Old file at `~/.cache/agent-ee-container.orig` on talos.
+- Verified with `ae-ci-exec`: `tests.test_add_planes` 15 OK (was 2 failures);
+  native subset results in README.md.
+
 ## 2026-10-22 — agent-ee fleet worker host
 
 Owner 2026-10-22, "delegate an agent to setup talos as a build host" (via the

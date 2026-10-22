@@ -27,7 +27,12 @@ Observations to act on only with owner direction:
 - AppArmor is enabled and `kernel.apparmor_restrict_unprivileged_userns=1`.
   Native `bwrap` works through Ubuntu's `bwrap-userns-restrict` profile.
   `ae-ci-exec` containers use the `agent-ee-container` profile, which
-  `/etc/apparmor.d/agent-ee-container` loads at boot.
+  `/etc/apparmor.d/agent-ee-container` loads at boot. On this 26.04 host it
+  must be the enforce-mode `allow all,` profile in
+  [config/apparmor](config/apparmor/README.md), not agent-ee's unconfined-mode
+  one: an unconfined-mode profile ignores its exec rules, so container bwrap
+  attaches to the host `bwrap` profile and nested bwrap loses its capabilities
+  under `unpriv_bwrap`.
 - The Dockerfile's apt snapshot is `noble` (24.04) and cannot be installed on
   26.04. KiCad 10.0.7 comes from the same Launchpad snapshot timestamp with
   suite `resolute` (see [config/apt](config/apt/README.md)). ngspice 45.2,

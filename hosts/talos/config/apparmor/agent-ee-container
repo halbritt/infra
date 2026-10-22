@@ -1,0 +1,11 @@
+abi <abi/4.0>,
+include <tunables/global>
+
+# Outer container policy; agent-ee still applies its own Bubblewrap sandbox.
+# Enforce mode with "allow all" instead of flags=(unconfined): an unconfined-mode
+# profile ignores its exec rules and attaches /usr/bin/bwrap to Ubuntu 26.04's
+# host bwrap-userns-restrict profile, whose unpriv_bwrap child denies the
+# capabilities a nested Bubblewrap needs. "allow all" inherits on exec (ix).
+profile agent-ee-container flags=(attach_disconnected,mediate_deleted) {
+  allow all,
+}
