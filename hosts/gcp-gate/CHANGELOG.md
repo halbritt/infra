@@ -1,5 +1,22 @@
 # Host changelog
 
+## 2026-10-22 — `agent-ee-rust524-20261022-2238`: short-lived VM for the Rust scorer timing
+
+The owner authorized agent-524 to start a small isolated VM ("spin up a small
+isolated one with the image already built"). Recorded here because the owner
+wants GCP use tracked.
+
+- Instance id 19682330611757326, us-west1-b, `c2d-highcpu-4` Spot,
+  `instance-termination-action=DELETE`, `max-run-duration=7200s` (it deletes
+  itself by about 17:36 PDT at the latest). No service account. Labels
+  `purpose=agent-ee-rust-scorer,owner=halbritt`. Image
+  `agent-ee-gate-20261022-0352`. Created 15:36:17 PDT. agent-475 verified it
+  with `gcloud compute instances describe` at about 16:00 PDT.
+- agent-524 applied nodiscard and ran its timing pairs under native-admit.
+  agent-524 will delete it and verify that the instance and its boot disk are
+  gone. Teardown is noted below once confirmed.
+- Cost at Spot c2d about $0.018/vCPU-h: about $0.07/h, at most about $0.15.
+
 ## 2026-10-22 — `ci-run.sh` containers get the lease's CPU/PID bounds and an init
 
 Following up the lease label: under `native-admit run`, the strict-suite
