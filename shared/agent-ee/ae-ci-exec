@@ -55,12 +55,15 @@ command -v flock >/dev/null || die "flock not found"
 
 # --- host-wide admission (native-admit, infra shared/agent-ee) ------------------
 # Every run holds a native-admit lease for its whole life, image build included:
-# strict_suite --jobs N weighs N (capped), anything else 1. AE_CI_WEIGHT overrides
+# strict_suite --jobs N weighs N (refused above max_weight), anything else 1. AE_CI_WEIGHT overrides
 # the weight; AE_CI_MAX_WAIT (seconds) gives up with exit 75 instead of queueing
 # indefinitely. Fails closed when native-admit is missing.
-if [ "${AE_CI_EXEC_ADMITTED:-}" != 1 ]; then
-  na=$(dirname "$(realpath -e -- "$0")")/native-admit  # installed side by side
-  [ -x "$na" ] || na=$(command -v native-admit) || die "native-admit not installed (infra shared/agent-ee)"
+na=$(dirname "$(realpath -e -- "$0")")/native-admit  # installed side by side
+[ -x "$na" ] || na=$(command -v native-admit) || die "native-admit not installed (infra shared/agent-ee)"
+if [ "${AE_CI_EXEC_ADMITTED:-}" = 1 ]; then
+  # Re-entry after admission: trust it only if this process inherited the live lease descriptor.
+  "$na" verify >/dev/null || die "AE_CI_EXEC_ADMITTED set without an inherited live lease"
+else
   admit=(--label "ae-ci-exec $(basename "$wt"): $*")
   [ -z "${AE_CI_WEIGHT:-}" ] || admit+=(--weight "$AE_CI_WEIGHT")
   [ -z "${AE_CI_MAX_WAIT:-}" ] || admit+=(--max-wait "$AE_CI_MAX_WAIT")

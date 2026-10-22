@@ -16,7 +16,9 @@ admission decision runs under $STATE/mutex.lock: it removes leases and queue
 entries whose flock is free (dead holders), then admits the head of the FIFO
 queue only if
 
-  weight <= max_weight             (else refused at once, exit 1: no silent clamping)
+  weight <= max_weight             (else refused at once, exit 1: no silent clamping; up to
+                                    reserved_max_weight only for the holder of the host reservation)
+  PSI is readable                  (unknown pressure queues like unknown capacity)
   capacity is known                (docker ps answered; otherwise queue)
   the host is not draining         (drain.json; --suites-only drains suites only)
   used + weight <= budget          (or nothing is running at all)
@@ -73,13 +75,14 @@ def log_event(kind, **fields):
 
 
 def psi(resource):
+    """some avg10 for cpu/io/memory, or None when the kernel does not report it."""
     try:
         for line in Path(f"/proc/pressure/{resource}").read_text().splitlines():
             if line.startswith("some"):
                 return float(dict(kv.split("=") for kv in line.split()[1:])["avg10"])
     except (OSError, KeyError, ValueError):
         pass
-    return 0.0
+    return None
 
 
 def is_dead(path):
@@ -119,6 +122,30 @@ def live(kind):
             continue
         out.append(info)
     return sorted(out, key=lambda x: x.get("seq", 0))
+
+
+def inherited_lease():
+    """The lease named by NATIVE_ADMISSION_LEASE, if this process holds an inherited descriptor
+    on that lease file and the lease is live; else None. Descriptors are inherited only from the
+    admitted process, so this proves ancestry, unlike trusting the environment."""
+    lease = os.environ.get("NATIVE_ADMISSION_LEASE", "")
+    if not re.fullmatch(r"[0-9a-f]{12}", lease):
+        return None
+    path = (HOME / "leases" / f"{lease}.json").resolve()
+    held = False
+    for fd in Path("/proc/self/fd").iterdir():
+        try:
+            held = held or Path(os.readlink(fd)) == path
+        except OSError:
+            pass
+    return lease if held and not is_dead(path) else None
+
+
+def verify(_):
+    lease = inherited_lease()
+    if not lease:
+        sys.exit("native-admit: no inherited live lease")
+    print(lease)
 
 
 def job_weight(args, cfg):
@@ -217,6 +244,8 @@ def blocked(cfg, info):
         return f"{suites} suite(s) running, max {cfg['max_suites']}"
     if used:
         cpu, io = psi("cpu"), psi("io")
+        if cpu is None or io is None:
+            return "pressure unknown: /proc/pressure unreadable"
         if cpu > cfg["cpu_psi_max"]:
             return f"CPU pressure {cpu} > {cfg['cpu_psi_max']}"
         if io > cfg["io_psi_max"]:
@@ -229,15 +258,19 @@ def run(args):
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     if not command:
         sys.exit("native-admit: no command")
-    parent = os.environ.get("NATIVE_ADMISSION_LEASE")
-    if parent and not is_dead(HOME / "leases" / f"{parent}.json"):
-        os.execvp(command[0], command)  # already inside an admitted job
+    if inherited_lease():
+        os.execvp(command[0], command)  # already inside an admitted job (descriptor proves it)
     weight, klass = job_weight(command, cfg)
     weight = args.weight if args.weight is not None else weight
     klass = args.klass or klass
-    if weight > cfg["max_weight"]:
+    res = reservation()
+    holds = bool(res) and res.get("token") == os.environ.get("NATIVE_ADMISSION_RESERVATION")
+    allowed = cfg.get("reserved_max_weight", cfg["max_weight"]) if holds else cfg["max_weight"]
+    if weight > allowed:
         log_event("refused", label=args.label or " ".join(command)[:120], weight=weight, max_weight=cfg["max_weight"])
-        sys.exit(f"native-admit: refused: weight {weight} exceeds this host's max_weight {cfg['max_weight']} "
+        extra = (f"; up to {cfg['reserved_max_weight']} only while holding this host's reservation"
+                 if cfg.get("reserved_max_weight", 0) > cfg["max_weight"] else "")
+        sys.exit(f"native-admit: refused: weight {weight} exceeds this host's max_weight {cfg['max_weight']}{extra} "
                  f"(pass strict_suite --jobs <= {cfg['max_weight']}, or JOBS for ci-run.sh)")
     info = {"id": uuid.uuid4().hex[:12], "seq": time.time_ns(), "label": args.label or " ".join(command)[:120],
             "weight": weight, "class": klass, "pid": os.getpid(), "cwd": os.getcwd(), "t": time.time(),
@@ -381,6 +414,7 @@ def main():
     p.add_argument("--minutes", type=float, required=True)
     p.set_defaults(fn=reserve)
     sub.add_parser("unreserve").set_defaults(fn=unreserve)
+    sub.add_parser("verify", help="exit 0 and print the lease id if this process inherited a live lease").set_defaults(fn=verify)
     p = sub.add_parser("drain", help="stop admitting new work (running leases continue)")
     p.add_argument("--reason", required=True)
     p.add_argument("--suites-only", action="store_true")

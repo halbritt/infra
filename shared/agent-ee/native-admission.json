@@ -1,8 +1,8 @@
 {
-  "_comment": "Per-host native-admit config, installed as ~/.config/native-admission/config.json. Units are strict_suite module workers. Interim policy from agent-521 (2026-10-22): at most one suite per host and at most 4 module workers per suite. cpus_per_unit = threads / budget; a lease gets weight x cpus_per_unit CPUs (docker --cpus). c4 exception (agent-521, 2026-10-22): max_weight/budget 12 so the SOLE authoritative integration gate can run JOBS=12; max_suites 1 still makes it exclusive of other suites.",
+  "_comment": "Per-host native-admit config, installed as ~/.config/native-admission/config.json. Units are strict_suite module workers. Interim policy from agent-521 (2026-10-22): at most one suite per host and at most 4 module workers per suite. cpus_per_unit = threads / budget; a lease gets weight x cpus_per_unit CPUs (docker --cpus). c4 exception (agent-521, 2026-10-22): the SOLE authoritative integration gate may run JOBS=12, only while holding the c4 reservation (reserved_max_weight 12); everyone else is capped at max_weight 4 there too.",
   "proximal": {"budget": 4, "cpus_per_unit": 3, "max_weight": 4, "max_suites": 1, "cpu_psi_max": 50, "io_psi_max": 30, "pids_limit": 16384},
   "talos": {"budget": 4, "cpus_per_unit": 3, "max_weight": 4, "max_suites": 1, "cpu_psi_max": 50, "io_psi_max": 30, "pids_limit": 16384},
   "archon": {"budget": 4, "cpus_per_unit": 4, "max_weight": 4, "max_suites": 1, "cpu_psi_max": 50, "io_psi_max": 30, "pids_limit": 16384},
   "peecee-wsl": {"budget": 8, "cpus_per_unit": 3, "max_weight": 4, "max_suites": 1, "cpu_psi_max": 50, "io_psi_max": 30, "pids_limit": 16384},
-  "agent-ee-gate-c4": {"budget": 12, "cpus_per_unit": 4, "max_weight": 12, "max_suites": 1, "cpu_psi_max": 50, "io_psi_max": 20, "pids_limit": 16384}
+  "agent-ee-gate-c4": {"budget": 12, "cpus_per_unit": 4, "max_weight": 4, "max_suites": 1, "cpu_psi_max": 50, "io_psi_max": 20, "pids_limit": 16384, "reserved_max_weight": 12}
 }

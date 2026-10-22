@@ -37,6 +37,13 @@ PSI 53 to 77, and tens of thousands of zombies.
     running;
   - no reservation is active, or the caller holds it
     (`NATIVE_ADMISSION_RESERVATION`).
+- **Unknown state.** A failed `docker ps` or unreadable `/proc/pressure` queues
+  the request ("capacity unknown" or "pressure unknown"). It is never treated
+  as idle.
+- **Re-entry.** Nested `ae-ci-exec` and `native-admit run` skip admission only
+  when `native-admit verify` finds an inherited descriptor on the live lease
+  file. The environment alone is not trusted: `AE_CI_EXEC_ADMITTED=1` without
+  that descriptor dies with exit 2.
 - **Waiting.** A waiting caller prints `native-admit: waiting: <reason>` every
   5 minutes. `--max-wait S` (`AE_CI_MAX_WAIT` in `ae-ci-exec`) exits 75 instead.
 - **Container bounds** (`ae-ci-exec`) on every admitted container:
@@ -66,11 +73,12 @@ suite.
 | talos | 12 | 4 | 3 | 1 | 50 / 30 |
 | archon | 16 | 4 | 4 | 1 | 50 / 30 |
 | peecee-wsl | 24 | 8 | 3 | 1 | 50 / 30 |
-| agent-ee-gate-c4 | 48 | 12 | 4 | 1 | 50 / 20 |
+| agent-ee-gate-c4 | 48 | 12 (`max_weight` 4; 12 with the reservation) | 4 | 1 | 50 / 20 |
 
-c4 has `max_weight` 12. agent-521 approved this exception on 2026-10-22: the
-sole authoritative integration gate may run `JOBS=12` there when no other suite
-is running. `max_suites` 1 keeps it exclusive.
+c4 exception, approved by agent-521 on 2026-10-22: only the holder of the c4
+reservation may exceed `max_weight` 4, up to `reserved_max_weight` 12. That is
+for the sole authoritative integration gate (`JOBS=12`). Without the reservation,
+weight 12 is refused like any other oversized request.
 
 Change a host by editing `native-admission.json` and rerunning
 `./install-native-admission.sh --tool-only HOST`. The config is read on every
@@ -93,8 +101,7 @@ run unadmitted, and the event `unenforced` is logged.
 ## Rollout and verification (2026-10-22)
 
 Deployed to all five hosts at about 21:55Z. Current hashes, identical on every
-host: `native-admit` `60819182c019c2a4…` and `ae-ci-exec` `fbfd3c2a46c1643c…`
-(infra 93dde0a). Raw evidence:
+host: `native-admit` `8838c8a5bd5c68fc…` and `ae-ci-exec` `2d653097fa422f19…`. Raw evidence:
 `proximal:~/.local/share/infra/native-admission/evidence-20261022/` (README
 inside).
 
@@ -120,3 +127,11 @@ inside).
   - CPU PSI: 77 → 0.
   - Drained for new suites (`--suites-only`) since about 22:09Z, per
     agent-521's interim policy. `native-admit undrain` on talos lifts it.
+- **Root review fixes (22:2xZ).**
+  - Unreadable PSI queues.
+  - Oversized weight is allowed only to the reservation holder.
+  - A forged `AE_CI_EXEC_ADMITTED=1` is refused with exit 2.
+  - A sibling process that knows a live lease ID but did not inherit its
+    descriptor fails `verify`.
+  - In a real run on peecee-wsl, the Docker client (child of `ae-ci-exec`) holds
+    the lease file as fd 5 (`fd-inheritance-peecee.txt`).
