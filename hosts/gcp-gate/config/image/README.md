@@ -9,7 +9,7 @@ validation and cost.
 | `build-image.sh [WARM_SHA]` | proximal | Spot builder VM from the latest `ubuntu-2404-lts-amd64`, uploads inputs, runs provision.sh, images the disk into family `agent-ee-gate`, deletes the builder |
 | `provision.sh IN_DIR WARM_SHA` | builder (root) | packages, `halbritt`, gate layout, fome-mc and J1 inputs, AppArmor profile, warm `agent-ee:ci-WARM_SHA` build, cleanup, poweroff |
 | `run-gate.sh SHA` | proximal | Spot gate VM, `JOBS=8 ./ci-run.sh SHA`, logs to `~/agent-ee-gate-gcp/`, VM deleted |
-| `ci-run.sh` | gate VM | the copy at peecee-wsl and agent-ee-gate-c4 `~/agent-ee-gate/ci-run.sh` (sha256 `d8725585de04853b295244d1ab609208ecd4814eb814b5f8a340a7174fd7c7fc` since 2026-10-22, when the strict-suite container gained the `native-admission.lease` label; the current image still holds the earlier `2c5c20f8…`, which differs only in that label) |
+| `ci-run.sh` | gate VM | the copy at peecee-wsl and agent-ee-gate-c4 `~/agent-ee-gate/ci-run.sh` (sha256 `807be9b04958a1dc450040147b82d932cd2e7bd2fec11d8bac91b8ab489d689c` since 2026-10-22, when the strict-suite container gained the admission lease label, CPU/PID bounds and `--init` for pre-tini images; the current image still holds the earlier `2c5c20f8…` without them) |
 
 Rebuild when ci-run.sh, ae-ci-exec or the toolchain pins in agent-ee's
 Dockerfile change: update the sha256 pins at the top of `build-image.sh`, run

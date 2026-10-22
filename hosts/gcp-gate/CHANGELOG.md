@@ -1,5 +1,15 @@
 # Host changelog
 
+## 2026-10-22 — `ci-run.sh` containers get the lease's CPU/PID bounds and an init
+
+Following up the lease label: under `native-admit run`, the strict-suite
+container now also gets `--cpus $NATIVE_ADMISSION_CPUS` and `--pids-limit
+$NATIVE_ADMISSION_PIDS`. Images without a tini ENTRYPOINT (from before agent-ee
+7e5bdc46) get `--init`. This matches what `ae-ci-exec` applies. Installed on
+agent-ee-gate-c4 and peecee-wsl (`807be9b04958a1dc…`). The flag logic was checked on c4
+against a tini image, a pre-tini image and an unadmitted call. The running gate
+b29cead1 keeps the script it started with.
+
 ## 2026-10-22 — `ci-run.sh` labels its suite container with the admission lease
 
 When agent-449 runs the c4 integration gate under `native-admit run`, the gate's

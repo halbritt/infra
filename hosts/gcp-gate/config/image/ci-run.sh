@@ -118,9 +118,18 @@ summary=$(mktemp -d "$GATE/tmp/ci-summary-XXXXXX")
 chmod 0777 "$summary"
 status=0
 set -x
-# Under native-admit (infra shared/agent-ee), label the suite container with the
-# caller's lease so admission does not count it a second time as unleased work.
-docker run --rm $SANDBOX_OPTS ${NATIVE_ADMISSION_LEASE:+--label native-admission.lease=$NATIVE_ADMISSION_LEASE} \
+# Under native-admit (infra shared/agent-ee): label the suite container with the
+# caller's lease (so admission does not count it twice) and apply the lease's CPU
+# and PID bounds; images without a tini ENTRYPOINT (before agent-ee 7e5bdc46) get
+# docker's init so orphaned bwrap children are reaped.
+ADMIT_OPTS=
+if [ -n "${NATIVE_ADMISSION_LEASE:-}" ]; then
+  ADMIT_OPTS="--label native-admission.lease=$NATIVE_ADMISSION_LEASE"
+  [ -z "${NATIVE_ADMISSION_CPUS:-}" ] || ADMIT_OPTS="$ADMIT_OPTS --cpus $NATIVE_ADMISSION_CPUS"
+  [ -z "${NATIVE_ADMISSION_PIDS:-}" ] || ADMIT_OPTS="$ADMIT_OPTS --pids-limit $NATIVE_ADMISSION_PIDS"
+fi
+case $(docker image inspect -f '{{json .Config.Entrypoint}}' "$IMAGE") in *tini*) ;; *) ADMIT_OPTS="$ADMIT_OPTS --init" ;; esac
+docker run --rm $SANDBOX_OPTS $ADMIT_OPTS \
   -e AGENT_EE_REQUIRE_TOOLCHAIN=1 -e PYTHONPATH=src -v "$summary:/summary" \
   -v "$STORE:/opt/fome-mc:ro" -e AGENT_EE_FOME_MC_CHECKOUT=/opt/fome-mc \
   -v "$J1_DRAWING:/opt/j1/te-776228-1.pdf:ro" -e AGENT_EE_J1_DRAWING=/opt/j1/te-776228-1.pdf \
