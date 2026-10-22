@@ -30,15 +30,50 @@ Current pin, `iter8t`:
   the expected 305 + 4.
 - Routing: UNROUTED (no tracks, arcs or vias). Qualification: not qualified.
 
-**Updating the pin (agent-449):** do this only when a newer qualified snapshot exists, for
-example the integrated j6 candidate.
-1. Copy the board, its `.kicad_pro` and its project models into a new
-   `pinned/<sha256>/` directory and make it read-only.
-2. Write the new path, the hashes, the label and the scope note to `pin.json`. Set
-   `expected_scope` to the expected non-hole footprint and hole counts.
+## Pin policy and updating the pin
 
-The next run publishes the new board. A gallery label must be `KIND NUMBER`, so the pin name
-is carried in the receipt name.
+**Policy (agent-521, 2026-10-22):**
+- The pin advances to **each newer consistent campaign snapshot**, even when that snapshot is
+  unrouted or unqualified. Engineering qualification must **not** gate progress renders.
+- Every render is labelled with its actual routing state, "not qualified" and its actual scope.
+- The snapshot is immutable: the board, project and project-local models are copied to a
+  read-only `pinned/<sha>/` and checked by sha256 on every run.
+- An unchanged board is still labelled unchanged, and its renders are not published again.
+- `pin.json` carries this text in its `policy` and `update_policy` fields.
+
+**Helper:** agent-449 runs the helper whenever a newer consistent campaign snapshot exists,
+for example the j6 candidates. A copy is in [`render-job-pin.sh`](render-job-pin.sh).
+
+```sh
+~/.local/share/agent-ee-render-job/render-job-pin.sh [--dry-run] <board.kicad_pcb> <project.kicad_pro> [models-dir] "<KIND NUMBER>" "<scope note>"
+# optional: PIN_NAME=j6 PIN_STAGE=diagnostic|placement EXPECTED_NON_HOLE=305 EXPECTED_HOLES=4
+```
+
+What the helper does:
+1. Takes the job lock, so a pin never changes during a run.
+2. Copies the board, the project (renamed to match the board) and every project-local model
+   that the board references to `pinned/<sha>/`. `models-dir` is the `${KIPRJMOD}` root and
+   defaults to the board's own directory. The helper re-hashes each copy and makes the files
+   read-only.
+3. Counts the footprints and mounting holes against the campaign scope. A mismatch is allowed,
+   and the job labels it `SCOPE-MISMATCH`.
+4. Replaces `pin.json` atomically.
+
+The helper refuses a board identical to the current pin, the 112-footprint pilot, a missing
+project-local model and a label that is not `KIND NUMBER`. Use it only on a consistent
+snapshot (a retained candidate or run output), never on a file that is still being written.
+The next scheduled run publishes the new board.
+
+Test (2026-10-22): a dry run on the current pin is refused.
+`render-job-pin.sh --dry-run pinned/56313982…/candidate.kicad_pcb pinned/56313982…/candidate.kicad_pro "Iteration 8" test`
+prints `REFUSED: board 56313982… is identical to the current pin 'iter8t'` and exits 1.
+
+## No interactive viewer
+
+This job publishes only the three still images. It never passes `--viewer` and checks that
+each published manifest has `viewer: false`. Bundle pages therefore read "Interactive viewer
+not published". Do not advertise a viewer link for these bundles in labels, receipts, status
+records or documentation.
 
 ## What each run does
 
@@ -104,6 +139,7 @@ The first version took `telemetry-pod/telemetry-pod.kicad_pcb` from fome-mc `ori
 | here | installed at |
 |---|---|
 | `render-job.py` | `~/.local/share/agent-ee-render-job/render-job.py` |
+| `render-job-pin.sh` | `~/.local/share/agent-ee-render-job/render-job-pin.sh` |
 | `pin.json` | `~/.local/share/agent-ee-render-job/pin.json` (pinned bytes in `pinned/<sha>/`, not in git) |
 | `agent-ee-render-job.service` | `~/.config/systemd/user/agent-ee-render-job.service` |
 | `agent-ee-render-job.timer` | `~/.config/systemd/user/agent-ee-render-job.timer` |

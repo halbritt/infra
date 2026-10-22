@@ -11,7 +11,8 @@ Source: an explicit, IMMUTABLE pinned candidate named by pin.json (board,
 project and project-local models copied into pinned/<board sha256>/). Every
 file is re-hashed on every run and the run refuses on any mismatch. The job
 never selects a board from a repository HEAD or a live worktree; agent-449
-updates the pin when a newer qualified snapshot exists. (Correction 2026-10-22,
+advances the pin with render-job-pin.sh to each newer consistent campaign snapshot,
+qualified or not (pin policy, agent-521). No interactive viewer is published. (Correction 2026-10-22,
 agent-521 HOLD Cairn 14664d84: the first version rendered the old 112-footprint
 fome-mc main pilot by mistake.)
 
@@ -366,6 +367,9 @@ def run():
             published = read_json(GALLERY_ROOT / "bundles" / bundle / "manifest.json", {})
             if published.get("board_sha256") != board_sha:
                 raise RuntimeError("published manifest does not carry the pinned board sha256")
+            if published.get("viewer") is not False:
+                # No interactive viewer is published by this job (it 404s); never advertise one.
+                raise RuntimeError("published manifest unexpectedly claims an interactive viewer")
             receipt["publication"] = {"bundle": bundle, "new_bundle": True, "label": pin["label"],
                                       "stage": pin["stage"], "render_manifest_sha256": sha256_file(manifest_path),
                                       "images": manifest.get("images"),
