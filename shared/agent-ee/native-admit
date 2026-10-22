@@ -6,6 +6,8 @@
   native-admit sample [--print]
   native-admit reserve --label TEXT --minutes N      # hold the host for one controlled comparison
   native-admit unreserve
+  native-admit drain --reason TEXT [--suites-only]   # admit nothing new (or no new suites)
+  native-admit undrain
 
 A lease is a file under $STATE/leases that the admitted command holds with an
 exclusive flock. The descriptor is inherited by COMMAND and its children, so the
@@ -14,6 +16,9 @@ admission decision runs under $STATE/mutex.lock: it removes leases and queue
 entries whose flock is free (dead holders), then admits the head of the FIFO
 queue only if
 
+  weight <= max_weight             (else refused at once, exit 1: no silent clamping)
+  capacity is known                (docker ps answered; otherwise queue)
+  the host is not draining         (drain.json; --suites-only drains suites only)
   used + weight <= budget          (or nothing is running at all)
   suites + 1 <= max_suites         (for --class suite)
   CPU and I/O pressure (PSI some avg10) are under their limits, when work is running
@@ -21,7 +26,7 @@ queue only if
 
 "used" counts live leases plus agent-ee containers that hold no live lease
 (started before admission existed, or orphaned by a killed client), weighted by
-their strict_suite --jobs. Model sessions are not leases; only native work is.
+their actual strict_suite --jobs (unclamped). Model sessions are not leases; only native work is.
 
 Config: ~/.config/native-admission/config.json (per host, from infra
 shared/agent-ee/native-admission.json). State: ~/.local/state/native-admission/
@@ -117,12 +122,15 @@ def live(kind):
 
 
 def job_weight(args, cfg):
-    """Weight and class of a command line: strict_suite --jobs N is a suite of N, else a test of 1."""
+    """Requested weight and class: strict_suite --jobs N is a suite of N workers (its default is the
+    CPU count), ci-run.sh is a suite of $JOBS (default 4), anything else a test of 1."""
     text = " ".join(args)
-    if "strict_suite" not in text:
-        return 1, "test"
-    m = re.search(r"--jobs[= ](\d+)", text)
-    return (min(int(m.group(1)), cfg["max_weight"]) if m else cfg["max_weight"]), "suite"
+    if "strict_suite" in text:
+        m = re.search(r"--jobs[= ](\d+)", text)
+        return (int(m.group(1)) if m else os.cpu_count() or 1), "suite"
+    if "ci-run.sh" in text:
+        return int(os.environ.get("JOBS", "4")), "suite"
+    return 1, "test"
 
 
 def containers(cfg, leases):
@@ -134,7 +142,9 @@ def containers(cfg, leases):
         out = subprocess.run(["docker", "ps", "--no-trunc", "--format", fmt], capture_output=True,
                              text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
-        return []
+        return None
+    if out.returncode != 0:
+        return None  # unknown capacity: callers queue instead of assuming an idle host
     held = {lease.get("id") for lease in leases}
     found = []
     for line in out.stdout.splitlines():
@@ -149,6 +159,8 @@ def containers(cfg, leases):
 def usage(cfg):
     leases = live("leases")
     extra = containers(cfg, leases)
+    if extra is None:
+        return leases, None, None, None
     used = sum(x["weight"] for x in leases) + sum(x["weight"] for x in extra)
     suites = sum(x["class"] == "suite" for x in leases + extra)
     return leases, extra, used, suites
@@ -193,7 +205,12 @@ def blocked(cfg, info):
     res = reservation()
     if res and res.get("token") != os.environ.get("NATIVE_ADMISSION_RESERVATION"):
         return f"host reserved for {res.get('label')!r}"
+    drain = read_json(HOME / "drain.json")
+    if drain and (not drain.get("suites_only") or info["class"] == "suite"):
+        return f"host draining: {drain.get('reason')}"
     leases, extra, used, suites = usage(cfg)
+    if extra is None:
+        return "capacity unknown: docker ps failed"
     if used and used + info["weight"] > cfg["budget"]:
         return f"budget {used}+{info['weight']} > {cfg['budget']}"
     if info["class"] == "suite" and suites >= cfg["max_suites"]:
@@ -216,8 +233,12 @@ def run(args):
     if parent and not is_dead(HOME / "leases" / f"{parent}.json"):
         os.execvp(command[0], command)  # already inside an admitted job
     weight, klass = job_weight(command, cfg)
-    weight = min(args.weight if args.weight is not None else weight, cfg["budget"])
+    weight = args.weight if args.weight is not None else weight
     klass = args.klass or klass
+    if weight > cfg["max_weight"]:
+        log_event("refused", label=args.label or " ".join(command)[:120], weight=weight, max_weight=cfg["max_weight"])
+        sys.exit(f"native-admit: refused: weight {weight} exceeds this host's max_weight {cfg['max_weight']} "
+                 f"(pass strict_suite --jobs <= {cfg['max_weight']}, or JOBS for ci-run.sh)")
     info = {"id": uuid.uuid4().hex[:12], "seq": time.time_ns(), "label": args.label or " ".join(command)[:120],
             "weight": weight, "class": klass, "pid": os.getpid(), "cwd": os.getcwd(), "t": time.time(),
             "started": now(), "host": socket.gethostname()}
@@ -252,7 +273,7 @@ def run(args):
         print(f"native-admit: admitted after {waited}s (lease {info['id']}, weight {weight})", file=sys.stderr)
     os.set_inheritable(fd, True)
     os.environ.update(NATIVE_ADMISSION_LEASE=info["id"], NATIVE_ADMISSION_WEIGHT=str(weight),
-                      NATIVE_ADMISSION_CPUS=str(round(weight * cfg["cpus_per_unit"], 2)),
+                      NATIVE_ADMISSION_CPUS=str(round(min(weight * cfg["cpus_per_unit"], os.cpu_count() or 1), 2)),
                       NATIVE_ADMISSION_PIDS=str(cfg["pids_limit"]))
     os.execvp(command[0], command)
 
@@ -263,6 +284,7 @@ def snapshot():
         leases, extra, used, suites = usage(cfg)
         queue = live("queue")
         res = reservation()
+        drain = read_json(HOME / "drain.json")
     zombies = 0
     for stat in Path("/proc").glob("[0-9]*/stat"):
         try:
@@ -273,9 +295,10 @@ def snapshot():
             "load1": float(Path("/proc/loadavg").read_text().split()[0]),
             "psi_cpu": psi("cpu"), "psi_io": psi("io"), "psi_memory": psi("memory"),
             "budget": cfg["budget"], "max_suites": cfg["max_suites"], "used": used, "suites": suites,
-            "leases": [{k: x.get(k) for k in ("id", "label", "weight", "class", "started")} for x in leases],
-            "unleased": extra, "queue": [{k: x.get(k) for k in ("label", "weight", "class", "started")} for x in queue],
-            "reservation": {k: res.get(k) for k in ("label", "until")} if res else None, "zombies": zombies}
+            "leases": [{k: x.get(k) for k in ("id", "label", "weight", "class", "started", "pid")} for x in leases],
+            "unleased": extra or [], "queue": [{k: x.get(k) for k in ("label", "weight", "class", "started")} for x in queue],
+            "reservation": {k: res.get(k) for k in ("label", "until")} if res else None, "drain": drain or None,
+            "capacity_known": extra is not None, "zombies": zombies}
 
 
 def status(args):
@@ -285,6 +308,10 @@ def status(args):
         return
     print(f"{s['host']}: used {s['used']}/{s['budget']}, suites {s['suites']}/{s['max_suites']}, load {s['load1']} "
           f"on {s['nproc']}, PSI cpu {s['psi_cpu']} io {s['psi_io']}, zombies {s['zombies']}")
+    if not s["capacity_known"]:
+        print("capacity UNKNOWN (docker ps failed): new work queues")
+    if s["drain"]:
+        print(f"draining ({'suites only' if s['drain'].get('suites_only') else 'all work'}): {s['drain'].get('reason')}")
     if s["reservation"]:
         print(f"reserved for {s['reservation']['label']!r} until {time.ctime(s['reservation']['until'])}")
     for x in s["leases"]:
@@ -312,6 +339,18 @@ def reserve(args):
             {"label": args.label, "token": token, "until": time.time() + args.minutes * 60}))
     log_event("reserved", label=args.label, minutes=args.minutes)
     print(f"export NATIVE_ADMISSION_RESERVATION={token}")
+
+
+def drain(args):
+    with Mutex():
+        (HOME / "drain.json").write_text(json.dumps({"reason": args.reason, "suites_only": args.suites_only, "since": now()}))
+    log_event("drain", reason=args.reason, suites_only=args.suites_only)
+
+
+def undrain(_):
+    with Mutex():
+        (HOME / "drain.json").unlink(missing_ok=True)
+    log_event("undrain")
 
 
 def unreserve(_):
@@ -342,6 +381,11 @@ def main():
     p.add_argument("--minutes", type=float, required=True)
     p.set_defaults(fn=reserve)
     sub.add_parser("unreserve").set_defaults(fn=unreserve)
+    p = sub.add_parser("drain", help="stop admitting new work (running leases continue)")
+    p.add_argument("--reason", required=True)
+    p.add_argument("--suites-only", action="store_true")
+    p.set_defaults(fn=drain)
+    sub.add_parser("undrain").set_defaults(fn=undrain)
     args = parser.parse_args()
     args.fn(args)
 
