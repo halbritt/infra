@@ -54,7 +54,7 @@ MIRRORED_FIELDS = ("accessToken", "expiresAt", "scopes", "subscriptionType", "ra
 # gets an access-token-only copy of every source profile at the same path, plus
 # the source's `oauthAccount` block in the matching config file when that file
 # exists there. proximal stays the only holder of the refresh token.
-REMOTE_HOSTS = ("peecee-wsl", "archon")
+REMOTE_HOSTS = ("peecee-wsl", "archon", "agent-ee-gate-c4")
 REMOTE_SSH = ("ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
               "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3")
 REMOTE_TIMEOUT = 60  # seconds per host; a hung host must not hold the timer

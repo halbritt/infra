@@ -42,7 +42,7 @@ for each profile (`~/.claude`, `~/.claude-harm` by default):
    `--no-mirror` renews only.
 
 6. Pushes the same access-token-only copy of `~/.claude` and `~/.claude-harm`
-   to the same paths on every host in `REMOTE_HOSTS` (`peecee-wsl`, `archon`)
+   to the same paths on every host in `REMOTE_HOSTS` (`peecee-wsl`, `archon`, `agent-ee-gate-c4` since 2026-10-22)
    over ssh, on every run. See [Remote worker hosts](#remote-worker-hosts-2026-10-21).
    `--no-remote` skips this step.
 

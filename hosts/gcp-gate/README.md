@@ -189,3 +189,70 @@ ssh agent-ee-gate-c4 'cd ~/agent-ee-gate && JOBS=32 ./ci-run.sh SHA > ci-logs/ga
   well above the 48 vCPUs. The 2 × 12 run passed, but its load still peaked at 168,
   so it is no guarantee. For release decisions, run one gate at a time (JOBS=32),
   or treat a lone failure of this test under concurrency as a rerun, not a verdict.
+
+### Fleet worker host (2026-10-22)
+
+Owner 2026-10-22 ("load the machine now"): `agent-ee-gate-c4` is also an
+agent-ee fleet worker host, set up to match peecee-wsl and archon. The
+burndown launcher (`launch.py` / `review.py`) runs Claude and Codex workers
+here over ssh with the same paths as proximal. Release gates in
+`~/agent-ee-gate` are unchanged and share the CPUs.
+
+| Tool | Version | Source on this host |
+|---|---|---|
+| node / npm | v24.22.0 / 11.19.1 | nodejs.org `node-v24.22.0-linux-x64.tar.xz` (SHASUMS256 checked) extracted into `/usr/local`; `npm i -g npm@11.19.1` |
+| claude | 2.1.307 | `npm i -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@2.1.307` under prefix `~/.npm-global` (npm 11 blocks the postinstall that selects `claude.exe` unless allowed) |
+| codex | 0.163.0 | the full standalone tree `~/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/` (`bin/`, `codex-path/rg`, `codex-resources/`) copied from peecee-wsl; `~/.local/bin/codex` symlinks to its `bin/codex`. `@openai/codex@0.163.0` is also in `~/.npm-global`, as on peecee-wsl |
+| uv / uvx | 0.13.4 | binaries and `~/.local/bin/env` copied from peecee-wsl |
+| git-wt / git-land | cairn `git_trunk_tools.py` | `~/.local/bin` wrappers identical to peecee-wsl; the script alone at `~/git/cairn/scripts/git_trunk_tools.py` |
+| ae-ci-exec | `0e8cb9d2…015290` | from the image; verified as uid 1001 (`tests.test_tree_hygiene`, 6 tests OK) |
+| KiCad / ngspice / bwrap / poppler (native) | 10.0.7 / 42 / 0.9.0 / 24.02.0 | apt from the Dockerfile's snapshot PPA (`kicad-10.0-snapshot.sources`, `20261015T000000Z`, key `docker/kicad-10.0-releases.asc`); kicad held. Same versions as the CI image (no packages3d natively) |
+| python3 / git / rsync / jq | 3.12.3 / 2.43.0 / 3.2.7 / 1.7 | Ubuntu 24.04 (peecee-wsl on 26.04 has 3.14.4 / 2.53.0 / 3.4.1 / 1.8.1; gating tests run in the CI image, so this is native drift only) |
+
+`~/.profile` sources `~/.local/bin/env` and `~/.profile.d-toolchains.sh` (copied
+from peecee-wsl), so `bash -lc` puts `~/.local/bin` and `~/.npm-global/bin` on
+PATH. Global git config: `user.name halbritt`, `user.email`, `init.defaultBranch
+main`, `safe.directory *` (no credential helper).
+
+Layout, as on peecee-wsl:
+
+| Path | What |
+|---|---|
+| `~/git/agent-ee` | `git init` + `receive.denyCurrentBranch updateInstead`, populated by `git push agent-ee-gate-c4 main:main` from proximal (no origin: GitHub agent-ee is private and the host holds no GitHub credential). proximal's `~/git/agent-ee` has remote `agent-ee-gate-c4` = `ssh://agent-ee-gate-c4/home/halbritt/git/agent-ee`, which launch.py pushes base refs to and fetches worker branches from |
+| `~/git/agent-ee/build/kicad-route-pin-5f1c072` | copied from proximal (HEAD 5f1c072b, clean) |
+| `~/git/fome-mc` | public clone at peecee-wsl's 8c42f2ee |
+| `~/git/kicad-happy` | public clone at 06840467 (2.3.1) |
+| `~/.cache/agent-worktrees/agent-ee/` | git-wt worktrees created by launch.py |
+| `/tmp/agent-ee-burndown-20261017/` | created by launch.py `sync_up` (rsync -R) per worker |
+
+Credentials come only from proximal's mirror timers; nobody logs in on this host.
+`agent-ee-gate-c4` is in `REMOTE_HOSTS` of
+[`claude-oauth-refresh`](../proximal/config/claude-oauth-refresh/README.md) and
+[`codex-auth-mirror`](../proximal/config/codex-auth-mirror/README.md). Before the
+first push `~/.claude-harm/.claude.json` was created as `{}` so the account block
+is mirrored (as on peecee-wsl). First run 2026-10-22 05:2x UTC: `~/.claude
+mirrored`, `~/.claude-harm mirrored+account`, `~/.codex`, `~/.codex-harm`,
+`~/.codex-3 mirrored`. Checked without printing values: every file mode 0600, no
+`refresh` key in either Claude file, `tokens.refresh_token == ""` in all three
+Codex files. Live probes, launch.py's own argv shape: `claude --print` (haiku)
+answered OK for `~/.claude` and `~/.claude-harm`; `codex exec` answered OK for
+`~/.codex-3`; `~/.codex` and `~/.codex-harm` authenticated and were refused by
+the accounts' usage limits (until 2026-10-27), not by auth. Gemini: not mirrored
+here (peecee-wsl holds a plain copy, but no remote host runs agy; launch.py
+keeps argon/agyopus on proximal).
+
+Launcher registration (`/tmp/agent-ee-burndown-20261017`, backups
+`*.bak-20261022c4`): `HOSTS` and `REMOTE_ACCOUNTS` include `agent-ee-gate-c4`
+with all five accounts; `pick_host` scores it by 1-minute load / 48 threads like
+the others. Worker and reviewer notes cap test parallelism here at 8 processes.
+
+Smoke test 2026-10-22: `launch.py haiku claude-harm 397 c4-smoke-20261022 --host
+agent-ee-gate-c4` with a no-op note. The worker ran on the host (hostname, nproc
+48, all CLIs on PATH), made one empty commit, exited 0 in 18 s; `sync_down`
+brought `result.md` back and the runner fetched `wt/c4-smoke-20261022` (2e2d69fd)
+into proximal. Worktrees, branches and the base ref were then removed on both
+sides; the worker dir is kept at `/tmp/agent-ee-burndown-20261017/smoke/`.
+
+To retire it as a worker host: remove it from `REMOTE_HOSTS` in both mirror
+scripts and from `HOSTS`/`REMOTE_ACCOUNTS`, then delete the profile dirs on the
+VM (or the VM).
