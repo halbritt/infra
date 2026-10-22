@@ -1,5 +1,26 @@
 # Host changelog
 
+## 2026-10-22 — Housekeeping
+
+Owner request: "clean up talos." Live work was left alone: 7 `ae-ci-exec`
+containers, each owned by a running Claude or Codex worker.
+
+- Removed 23 agent-ee and 3 kicad-route git worktrees under
+  `~/.cache/agent-worktrees/` with plain `git worktree remove`, which refuses a
+  dirty tree. Each one had a finished worker (`completion.json` in the proximal
+  launcher dir), a clean tree, and a HEAD already on proximal (in `main` or a
+  `wt/*` ref). Branches were kept on talos. Worktrees went from 12 GB to 5.5 GB;
+  root from 44 GB to 39 GB used.
+- Removed stale `/tmp` scratch, about 1 GB of tmpfs: `pytest-of-halbritt` (no
+  pytest running), `krt-custody-*`, `krt-lifecycle-*`, `tmp*` route demos, and
+  agent leftovers `s.py` and `ee197-full.diff`.
+- Kept: 22 finished `review-*` worktrees that still hold uncommitted reviewer
+  files (agent-449 decides), both Docker images (`exec-4ff2…` in use,
+  `exec-bbb09f2d…` built 33 minutes earlier), and the BuildKit cache.
+- About 32,000 zombie `bwrap` processes remain under the running in-container
+  strict suites. They clear when each suite exits. The cause, no init in the
+  container, was reported to agent-521. agent-ee has a `ci-init` item in review.
+
 ## 2026-10-22 — Wired port optional, DHCP
 
 Owner-requested ("fix the network config"). `eno1` in netplan gained
