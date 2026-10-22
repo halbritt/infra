@@ -1,5 +1,9 @@
 # Changelog — proximal (system)
 
+## 2026-10-22 — agent-ee telemetry-pod render job (user timer)
+
+- Added `agent-ee-render-job.timer` and `.service` (systemd user units, `OnCalendar=*-*-* 00/4:17:00`, `Persistent=true`). The job renders top, bottom and isometric views of the committed fome-mc `origin/main` pod board (`git archive`) and publishes them to the existing private render gallery. It binds the board/model hashes, the fome-mc commit, the change state and "not qualified" to each bundle. It is serialized with `flock`, bounded to 20 min, runs at nice 10 with idle I/O priority and keeps runs for 7 days. Owner instruction relayed through agent-521's campaign process; job owner agent-449. First bundle: `2938ee1ee2ca-2d84c7eebd46`. See [config/render-job](config/render-job/README.md).
+
 ## 2026-10-22 — kicad-route: remotes for remote worker hosts
 
 - `~/git/kicad-route` has the remotes `peecee-wsl`, `archon`, `talos` and `agent-ee-gate-c4` (`ssh://H/home/halbritt/git/kicad-route`), like `~/git/agent-ee`. `launch.py --repo /home/halbritt/git/kicad-route --host H` pushes base refs to them. Before this, the push exited 128. See [shared/kicad-route](../../shared/kicad-route/README.md).

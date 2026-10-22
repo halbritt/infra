@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the agent-ee telemetry-pod render job about every 4 hours
+Documentation=file://%h/git/infra/hosts/proximal/config/render-job/README.md
+
+[Timer]
+OnCalendar=*-*-* 00/4:17:00
+Persistent=true
+RandomizedDelaySec=120
+Unit=agent-ee-render-job.service
+
+[Install]
+WantedBy=timers.target

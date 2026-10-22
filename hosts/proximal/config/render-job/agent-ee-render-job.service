@@ -1,0 +1,17 @@
+[Unit]
+Description=agent-ee telemetry-pod render job (committed fome-mc main -> private render gallery)
+Documentation=file://%h/git/infra/hosts/proximal/config/render-job/README.md
+After=network-online.target
+
+[Service]
+Type=oneshot
+Nice=10
+IOSchedulingClass=idle
+Environment=PYTHONPATH=%h/.local/share/agent-ee-render-gallery/app
+Environment=KICAD10_3DMODEL_DIR=/usr/share/kicad/3dmodels
+# Bounded: timeout(1) sends TERM after 20 min (the job records the failure), KILL 60 s later.
+ExecStart=/usr/bin/timeout --kill-after=60s 20m /usr/bin/python3 %h/.local/share/agent-ee-render-job/render-job.py run
+# Backstop: a run killed before writing its result is marked failed in latest-status.json.
+ExecStopPost=/usr/bin/python3 %h/.local/share/agent-ee-render-job/render-job.py post-check
+TimeoutStartSec=23min
+UMask=0077
