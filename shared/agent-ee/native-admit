@@ -1,0 +1,350 @@
+#!/usr/bin/env python3
+"""native-admit: host-wide admission for native agent-ee/KiCad work.
+
+  native-admit run --weight N --label TEXT [--class suite|test] [--max-wait S] -- COMMAND [ARG...]
+  native-admit status [--json]
+  native-admit sample [--print]
+  native-admit reserve --label TEXT --minutes N      # hold the host for one controlled comparison
+  native-admit unreserve
+
+A lease is a file under $STATE/leases that the admitted command holds with an
+exclusive flock. The descriptor is inherited by COMMAND and its children, so the
+lease ends when they all exit, however they exit (crash, kill -9, cancel). Every
+admission decision runs under $STATE/mutex.lock: it removes leases and queue
+entries whose flock is free (dead holders), then admits the head of the FIFO
+queue only if
+
+  used + weight <= budget          (or nothing is running at all)
+  suites + 1 <= max_suites         (for --class suite)
+  CPU and I/O pressure (PSI some avg10) are under their limits, when work is running
+  no reservation is active, or the request holds it (NATIVE_ADMISSION_RESERVATION)
+
+"used" counts live leases plus agent-ee containers that hold no live lease
+(started before admission existed, or orphaned by a killed client), weighted by
+their strict_suite --jobs. Model sessions are not leases; only native work is.
+
+Config: ~/.config/native-admission/config.json (per host, from infra
+shared/agent-ee/native-admission.json). State: ~/.local/state/native-admission/
+(NATIVE_ADMISSION_HOME overrides both, for tests). Canonical source: infra
+shared/agent-ee/.
+"""
+import argparse
+import datetime
+import fcntl
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+import time
+import uuid
+from pathlib import Path
+
+HOME = Path(os.environ.get("NATIVE_ADMISSION_HOME", Path.home() / ".local/state/native-admission"))
+CONFIG = (HOME / "config.json") if "NATIVE_ADMISSION_HOME" in os.environ else \
+    Path.home() / ".config/native-admission/config.json"
+POLL = 5
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+def config():
+    n = os.cpu_count() or 1
+    cfg = {"budget": max(1, n // 3), "max_weight": 4, "max_suites": 1, "cpu_psi_max": 50.0,
+           "io_psi_max": 30.0, "pids_limit": 16384, "docker": True, "enforce": True}
+    if CONFIG.is_file():
+        cfg.update(json.loads(CONFIG.read_text()))
+    cfg.setdefault("cpus_per_unit", round(n / cfg["budget"], 2))
+    return cfg
+
+
+def log_event(kind, **fields):
+    HOME.mkdir(parents=True, exist_ok=True)
+    with open(HOME / "events.jsonl", "a") as f:
+        f.write(json.dumps({"ts": now(), "event": kind, **fields}) + "\n")
+
+
+def psi(resource):
+    try:
+        for line in Path(f"/proc/pressure/{resource}").read_text().splitlines():
+            if line.startswith("some"):
+                return float(dict(kv.split("=") for kv in line.split()[1:])["avg10"])
+    except (OSError, KeyError, ValueError):
+        pass
+    return 0.0
+
+
+def is_dead(path):
+    """True when nobody holds the file's flock (its holder exited)."""
+    try:
+        fd = os.open(path, os.O_RDONLY)
+    except FileNotFoundError:
+        return True
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except BlockingIOError:
+        return False
+    finally:
+        os.close(fd)
+
+
+def read_json(path):
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def live(kind):
+    """Live entries of leases/ or queue/, removing dead ones (call under the mutex)."""
+    out = []
+    d = HOME / kind
+    d.mkdir(parents=True, exist_ok=True)
+    for path in d.glob("*.json"):
+        info = read_json(path)
+        if is_dead(path):
+            path.unlink(missing_ok=True)
+            if kind == "leases":
+                log_event("released", lease=info.get("id"), label=info.get("label"), weight=info.get("weight"),
+                          held_s=int(time.time() - info.get("t", time.time())))
+            continue
+        out.append(info)
+    return sorted(out, key=lambda x: x.get("seq", 0))
+
+
+def job_weight(args, cfg):
+    """Weight and class of a command line: strict_suite --jobs N is a suite of N, else a test of 1."""
+    text = " ".join(args)
+    if "strict_suite" not in text:
+        return 1, "test"
+    m = re.search(r"--jobs[= ](\d+)", text)
+    return (min(int(m.group(1)), cfg["max_weight"]) if m else cfg["max_weight"]), "suite"
+
+
+def containers(cfg, leases):
+    """Running agent-ee containers that hold no live lease."""
+    if not cfg["docker"]:
+        return []
+    fmt = '{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Label "native-admission.lease"}}\t{{.Command}}'
+    try:
+        out = subprocess.run(["docker", "ps", "--no-trunc", "--format", fmt], capture_output=True,
+                             text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    held = {lease.get("id") for lease in leases}
+    found = []
+    for line in out.stdout.splitlines():
+        cid, name, image, lease, command = (line.split("\t") + [""] * 5)[:5]
+        if not image.startswith("agent-ee:") or (lease and lease in held):
+            continue
+        weight, klass = job_weight([command], cfg)
+        found.append({"name": name, "image": image, "weight": weight, "class": klass})
+    return found
+
+
+def usage(cfg):
+    leases = live("leases")
+    extra = containers(cfg, leases)
+    used = sum(x["weight"] for x in leases) + sum(x["weight"] for x in extra)
+    suites = sum(x["class"] == "suite" for x in leases + extra)
+    return leases, extra, used, suites
+
+
+class Mutex:
+    def __enter__(self):
+        HOME.mkdir(parents=True, exist_ok=True)
+        self.fd = os.open(HOME / "mutex.lock", os.O_RDWR | os.O_CREAT, 0o644)
+        fcntl.flock(self.fd, fcntl.LOCK_EX)
+
+    def __exit__(self, *exc):
+        os.close(self.fd)
+
+
+def reservation():
+    path = HOME / "reservation.json"
+    info = read_json(path)
+    if info and info.get("until", 0) < time.time():
+        path.unlink(missing_ok=True)
+        log_event("reservation-expired", label=info.get("label"))
+        return {}
+    return info
+
+
+def hold(directory, info):
+    """Create directory/<id>.json holding its flock; the descriptor stays open (inheritable)."""
+    path = HOME / directory / f"{info['id']}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o644)
+    fcntl.flock(fd, fcntl.LOCK_EX)
+    os.write(fd, json.dumps(info).encode())
+    return fd, path
+
+
+def blocked(cfg, info):
+    """Reason the request cannot start now, or None. Call under the mutex."""
+    queue = live("queue")
+    ahead = [q for q in queue if q["seq"] < info["seq"]]
+    if ahead:
+        return f"queued behind {len(ahead)}"
+    res = reservation()
+    if res and res.get("token") != os.environ.get("NATIVE_ADMISSION_RESERVATION"):
+        return f"host reserved for {res.get('label')!r}"
+    leases, extra, used, suites = usage(cfg)
+    if used and used + info["weight"] > cfg["budget"]:
+        return f"budget {used}+{info['weight']} > {cfg['budget']}"
+    if info["class"] == "suite" and suites >= cfg["max_suites"]:
+        return f"{suites} suite(s) running, max {cfg['max_suites']}"
+    if used:
+        cpu, io = psi("cpu"), psi("io")
+        if cpu > cfg["cpu_psi_max"]:
+            return f"CPU pressure {cpu} > {cfg['cpu_psi_max']}"
+        if io > cfg["io_psi_max"]:
+            return f"I/O pressure {io} > {cfg['io_psi_max']}"
+    return None
+
+
+def run(args):
+    cfg = config()
+    command = args.command[1:] if args.command[:1] == ["--"] else args.command
+    if not command:
+        sys.exit("native-admit: no command")
+    parent = os.environ.get("NATIVE_ADMISSION_LEASE")
+    if parent and not is_dead(HOME / "leases" / f"{parent}.json"):
+        os.execvp(command[0], command)  # already inside an admitted job
+    weight, klass = job_weight(command, cfg)
+    weight = min(args.weight if args.weight is not None else weight, cfg["budget"])
+    klass = args.klass or klass
+    info = {"id": uuid.uuid4().hex[:12], "seq": time.time_ns(), "label": args.label or " ".join(command)[:120],
+            "weight": weight, "class": klass, "pid": os.getpid(), "cwd": os.getcwd(), "t": time.time(),
+            "started": now(), "host": socket.gethostname()}
+    if not cfg["enforce"]:
+        log_event("unenforced", label=info["label"], weight=weight)
+        os.execvp(command[0], command)
+    with Mutex():
+        qfd, qpath = hold("queue", info)
+    start, said, reason = time.time(), 0.0, None
+    while True:
+        with Mutex():
+            reason = blocked(cfg, info)
+            if reason is None:
+                fd, _ = hold("leases", info)
+                qpath.unlink(missing_ok=True)
+                os.close(qfd)
+                break
+        waited = time.time() - start
+        if args.max_wait is not None and waited >= args.max_wait:
+            log_event("gave-up", label=info["label"], weight=weight, waited_s=int(waited), reason=reason)
+            print(f"native-admit: not admitted after {int(waited)}s ({reason})", file=sys.stderr)
+            sys.exit(75)
+        if waited - said >= 300 or said == 0:
+            print(f"native-admit: waiting: {reason} (weight {weight}, {int(waited)}s; `native-admit status`)",
+                  file=sys.stderr)
+            said = waited or 0.001
+        time.sleep(POLL)
+    waited = int(time.time() - start)
+    log_event("admitted", lease=info["id"], label=info["label"], weight=weight, klass=klass, waited_s=waited,
+              seq=info["seq"])
+    if waited:
+        print(f"native-admit: admitted after {waited}s (lease {info['id']}, weight {weight})", file=sys.stderr)
+    os.set_inheritable(fd, True)
+    os.environ.update(NATIVE_ADMISSION_LEASE=info["id"], NATIVE_ADMISSION_WEIGHT=str(weight),
+                      NATIVE_ADMISSION_CPUS=str(round(weight * cfg["cpus_per_unit"], 2)),
+                      NATIVE_ADMISSION_PIDS=str(cfg["pids_limit"]))
+    os.execvp(command[0], command)
+
+
+def snapshot():
+    cfg = config()
+    with Mutex():
+        leases, extra, used, suites = usage(cfg)
+        queue = live("queue")
+        res = reservation()
+    zombies = 0
+    for stat in Path("/proc").glob("[0-9]*/stat"):
+        try:
+            zombies += stat.read_text().rsplit(")", 1)[1].split()[0] == "Z"
+        except (OSError, IndexError):
+            pass
+    return {"ts": now(), "host": socket.gethostname(), "nproc": os.cpu_count(),
+            "load1": float(Path("/proc/loadavg").read_text().split()[0]),
+            "psi_cpu": psi("cpu"), "psi_io": psi("io"), "psi_memory": psi("memory"),
+            "budget": cfg["budget"], "max_suites": cfg["max_suites"], "used": used, "suites": suites,
+            "leases": [{k: x.get(k) for k in ("id", "label", "weight", "class", "started")} for x in leases],
+            "unleased": extra, "queue": [{k: x.get(k) for k in ("label", "weight", "class", "started")} for x in queue],
+            "reservation": {k: res.get(k) for k in ("label", "until")} if res else None, "zombies": zombies}
+
+
+def status(args):
+    s = snapshot()
+    if args.json:
+        print(json.dumps(s, indent=1))
+        return
+    print(f"{s['host']}: used {s['used']}/{s['budget']}, suites {s['suites']}/{s['max_suites']}, load {s['load1']} "
+          f"on {s['nproc']}, PSI cpu {s['psi_cpu']} io {s['psi_io']}, zombies {s['zombies']}")
+    if s["reservation"]:
+        print(f"reserved for {s['reservation']['label']!r} until {time.ctime(s['reservation']['until'])}")
+    for x in s["leases"]:
+        print(f"  lease {x['id']} w{x['weight']} {x['class']:5} since {x['started']}  {x['label']}")
+    for x in s["unleased"]:
+        print(f"  unleased w{x['weight']} {x['class']:5} {x['name']} {x['image']}")
+    for i, x in enumerate(s["queue"], 1):
+        print(f"  queued #{i} w{x['weight']} {x['class']:5} since {x['started']}  {x['label']}")
+
+
+def sample(args):
+    s = snapshot()
+    with open(HOME / "samples.jsonl", "a") as f:
+        f.write(json.dumps(s) + "\n")
+    if args.print:
+        print(json.dumps(s))
+
+
+def reserve(args):
+    token = uuid.uuid4().hex
+    with Mutex():
+        if reservation():
+            sys.exit("native-admit: already reserved")
+        (HOME / "reservation.json").write_text(json.dumps(
+            {"label": args.label, "token": token, "until": time.time() + args.minutes * 60}))
+    log_event("reserved", label=args.label, minutes=args.minutes)
+    print(f"export NATIVE_ADMISSION_RESERVATION={token}")
+
+
+def unreserve(_):
+    with Mutex():
+        info = reservation()
+        (HOME / "reservation.json").unlink(missing_ok=True)
+    log_event("unreserved", label=info.get("label"))
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="native-admit", description=__doc__.splitlines()[0])
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("run")
+    p.add_argument("--weight", type=int)
+    p.add_argument("--class", dest="klass", choices=("suite", "test"))
+    p.add_argument("--label")
+    p.add_argument("--max-wait", type=float)
+    p.add_argument("command", nargs=argparse.REMAINDER)
+    p.set_defaults(fn=run)
+    p = sub.add_parser("status")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=status)
+    p = sub.add_parser("sample")
+    p.add_argument("--print", action="store_true")
+    p.set_defaults(fn=sample)
+    p = sub.add_parser("reserve")
+    p.add_argument("--label", required=True)
+    p.add_argument("--minutes", type=float, required=True)
+    p.set_defaults(fn=reserve)
+    sub.add_parser("unreserve").set_defaults(fn=unreserve)
+    args = parser.parse_args()
+    args.fn(args)
+
+
+if __name__ == "__main__":
+    main()

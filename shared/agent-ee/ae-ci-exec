@@ -53,6 +53,21 @@ shift 2
 command -v docker >/dev/null || die "docker not found"
 command -v flock >/dev/null || die "flock not found"
 
+# --- host-wide admission (native-admit, infra shared/agent-ee) ------------------
+# Every run holds a native-admit lease for its whole life, image build included:
+# strict_suite --jobs N weighs N (capped), anything else 1. AE_CI_WEIGHT overrides
+# the weight; AE_CI_MAX_WAIT (seconds) gives up with exit 75 instead of queueing
+# indefinitely. Fails closed when native-admit is missing.
+if [ "${AE_CI_EXEC_ADMITTED:-}" != 1 ]; then
+  na=$(dirname "$(realpath -e -- "$0")")/native-admit  # installed side by side
+  [ -x "$na" ] || na=$(command -v native-admit) || die "native-admit not installed (infra shared/agent-ee)"
+  admit=(--label "ae-ci-exec $(basename "$wt"): $*")
+  [ -z "${AE_CI_WEIGHT:-}" ] || admit+=(--weight "$AE_CI_WEIGHT")
+  [ -z "${AE_CI_MAX_WAIT:-}" ] || admit+=(--max-wait "$AE_CI_MAX_WAIT")
+  AE_CI_EXEC_ADMITTED=1 exec "$na" run "${admit[@]}" -- "$(realpath -e -- "$0")" "$wt" -- "$@"
+fi
+unset AE_CI_EXEC_ADMITTED
+
 STATE=${AE_CI_EXEC_HOME:-$HOME/.cache/ae-ci-exec}
 mkdir -p "$STATE"/{inputs,kicad-route,locks,logs,tmp,ctx}
 locked() {  # locked NAME COMMAND...: run COMMAND holding $STATE/locks/NAME.lock
@@ -180,6 +195,13 @@ if [ -e /sys/module/apparmor/parameters/enabled ] && [ "$(cat /sys/module/apparm
 fi
 SANDBOX_OPTS=(--network none --security-opt seccomp=unconfined --security-opt "apparmor=$profile"
               --security-opt systempaths=unconfined)
+# Admission bounds: CPU quota scaled to the lease weight, a PID cap, and an init that
+# reaps orphaned bwrap children. Images from agent-ee 7e5bdc46 on (AGENTEE-459) run
+# tini as their ENTRYPOINT; older images get docker's own init (--init).
+LIMIT_OPTS=(--label "native-admission.lease=${NATIVE_ADMISSION_LEASE:-}")
+[ -z "${NATIVE_ADMISSION_CPUS:-}" ] || LIMIT_OPTS+=(--cpus "$NATIVE_ADMISSION_CPUS")
+[ -z "${NATIVE_ADMISSION_PIDS:-}" ] || LIMIT_OPTS+=(--pids-limit "$NATIVE_ADMISSION_PIDS")
+[[ $(docker image inspect -f '{{json .Config.Entrypoint}}' "$TAG") == *tini* ]] || LIMIT_OPTS+=(--init)
 
 scratch=$(mktemp -d "$STATE/tmp/run-XXXXXXXX")
 name=ae-ci-exec-$(basename "$scratch" | tr 'A-Z' 'a-z')
@@ -213,6 +235,16 @@ env_opts=(-e AGENT_EE_REQUIRE_TOOLCHAIN=1 -e PYTHONPATH=src -e HOME=/tmp -e TMPD
           -e AGENT_EE_FOME_MC_CHECKOUT=/opt/fome-mc -e AGENT_EE_J1_DRAWING=/opt/j1/te-776228-1.pdf)
 [ -z "${AGENT_EE_SKIP_VISUALS+x}" ] || env_opts+=(-e "AGENT_EE_SKIP_VISUALS=$AGENT_EE_SKIP_VISUALS")
 tty=(-i); [ -t 0 ] && [ -t 1 ] && tty=(-i -t)
+# AE_CI_TMPFS=SIZE (e.g. 8g): the per-run /tmp scratch is a memory-backed tmpfs capped
+# at SIZE instead of a disk directory. Only for nondurable scratch: receipts, logs and
+# summaries a command writes into the worktree stay on disk. AE_CI_KEEP_TMP cannot
+# keep a tmpfs.
+scratch_mount=(-v "$scratch:/tmp")
+if [ -n "${AE_CI_TMPFS:-}" ]; then
+  [[ $AE_CI_TMPFS =~ ^[0-9]+[kmg]?$ ]] || die "AE_CI_TMPFS must be a size like 8g"
+  scratch_mount=(--mount "type=tmpfs,destination=/tmp,tmpfs-size=$AE_CI_TMPFS,tmpfs-mode=1777")
+  [ "${AE_CI_KEEP_TMP:-0}" != 1 ] || echo "$prog: AE_CI_KEEP_TMP ignored with AE_CI_TMPFS" >&2
+fi
 
 cleanup() {
   docker kill "$name" >/dev/null 2>&1 || true
@@ -224,9 +256,9 @@ trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
 status=0
-docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[@]}" \
+docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
   --user "$(id -u):$(id -g)" "${env_opts[@]}" \
-  -v "$wt:/opt/agent-ee" "${git_mounts[@]}" -v "$scratch:/tmp" \
+  -v "$wt:/opt/agent-ee" "${git_mounts[@]}" "${scratch_mount[@]}" \
   -v "$STATE/inputs/fome-mc-$FOME_MC_COMMIT:/opt/fome-mc:ro" \
   -v "$STATE/inputs/te-776228-1.pdf:/opt/j1/te-776228-1.pdf:ro" \
   -v "$KR:/opt/kicad-route:ro" \
