@@ -5,8 +5,9 @@ i7-10710U 6C/12T, 61 GiB RAM, Samsung PM961 512 GB NVMe). Installed
 2026-10-22 (UTC) with Subiquity and first recorded the same day. Role since
 2026-10-22: agent-ee fleet worker host (see [Fleet worker host](#fleet-worker-host-2026-10-22)).
 
-LAN: `wlp0s20f3` (Wi-Fi), DHCP, observed `192.168.1.196`. Wired `eno1` is
-configured in netplan but has no link.
+LAN: `wlp0s20f3` (Wi-Fi), DHCP, observed `192.168.1.196`. Wired `eno1` has no
+cable; it is DHCP and optional, so a cable works without config changes
+([network](config/network/README.md)).
 Tailscale: `100.73.54.127` / `talos.tail0ecc2e.ts.net`.
 Passwordless administration from proximal: `ssh talos` (entry in
 `~/.ssh/config`, `HostKeyAlias talos`). `halbritt` has `NOPASSWD: ALL` sudo.
@@ -15,6 +16,7 @@ Passwordless administration from proximal: `ssh talos` (entry in
 - [Operational notes](notes.md)
 - [Changelog](CHANGELOG.md)
 - [Updates](config/updates/README.md)
+- [Network](config/network/README.md)
 
 ## Current state (2026-10-22)
 
@@ -23,7 +25,7 @@ Passwordless administration from proximal: `ssh talos` (entry in
 | Boot | UEFI, Secure Boot disabled. GRUB, kernel `7.0.0-38-generic` |
 | Storage | GPT: 1 GiB ESP, 2 GiB `/boot` (ext4), LVM PV. `ubuntu-vg/ubuntu-lv` 100 GiB ext4 on `/`. ~374 GiB of the VG is unallocated. No disk encryption. 8 GiB `/swap.img` |
 | Access | OpenSSH on `:22`, keys only (`PasswordAuthentication no`, root `prohibit-password`). `authorized_keys` holds the two `gh:halbritt` ed25519 keys imported by the installer |
-| Network | systemd-networkd via netplan (`00-installer-config.yaml`, Wi-Fi credential inside, not recorded). systemd-resolved, Tailscale MagicDNS. No firewall rules (ufw inactive, empty nftables) |
+| Network | systemd-networkd via netplan (`00-installer-config.yaml`, Wi-Fi credential inside, not recorded). `eno1` DHCP + optional, not required for online ([network](config/network/README.md)). systemd-resolved, Tailscale MagicDNS. No firewall rules (ufw inactive, empty nftables) |
 | Tailscale | 1.104.2, auto-update on, Tailscale SSH off, no routes or exit node. Node key expires 2027-04-20 |
 | Updates | Automatic: release, security and `-updates` pockets daily. Guarded nightly reboot when required. Docker and KiCad held. See [updates](config/updates/README.md) |
 | Time | `America/Los_Angeles` (set 2026-10-22; installed as UTC), chrony, synchronized |

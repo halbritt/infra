@@ -18,12 +18,11 @@ upgrades. `20auto-upgrades` was already enabled by the installer. Unattended
 upgrades run at most once a day: the first-boot run on 2026-10-22 at 05:02 UTC
 consumed that day's stamp.
 
-Each timer run first waits on `systemd-networkd-wait-online`. It times out after
-about 30 s and logs `apt-helper ... returned an error code (1)`, because the
-installer's netplan configures the unplugged `eno1` without `optional: true`. The
-step is `ExecStartPre=-`, so the error is ignored and updates still run. To clear
-it, mark `eno1` `optional: true` in `/etc/netplan/00-installer-config.yaml`.
-Use `netplan try`, since Wi-Fi is the only link.
+Each timer run first waits on `systemd-networkd-wait-online`. Until
+2026-10-22 that wait timed out after about 30 s on the unplugged `eno1` and
+logged `apt-helper ... returned an error code (1)`. The step is `ExecStartPre=-`,
+so updates ran anyway. `eno1` is now not required for online and the wait
+returns immediately; see [network](../network/README.md).
 
 ## What is not upgraded automatically
 

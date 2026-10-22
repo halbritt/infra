@@ -1,5 +1,17 @@
 # Host changelog
 
+## 2026-10-22 — Wired port optional, DHCP
+
+Owner-requested ("fix the network config"). `eno1` in netplan gained
+`dhcp4: true` and `optional: true`, plus a networkd drop-in
+`10-netplan-eno1.network.d/50-infra-optional.conf` with `RequiredForOnline=no`.
+netplan 1.2 does not emit `RequiredForOnline` for `optional`, and
+`apt-helper wait-online` waits on every managed link. Applied with
+`netplan generate` and `networkctl reload`. The Wi-Fi unit was unchanged, and
+Wi-Fi and Tailscale stayed up. `apt-helper wait-online` went from a 30 s
+timeout (rc 1) to an immediate rc 0. A future cable gets DHCP at route metric 100
+and is preferred over Wi-Fi (600). Details: [network](config/network/README.md).
+
 ## 2026-10-22 — kicad-route worker lanes
 
 Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).
