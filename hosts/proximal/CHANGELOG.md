@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-10-22 — Garage: private `agent-ee-evidence` bucket (AGENTEE-20)
+
+- Owner-approved destination for retained agent-ee evidence. Created bucket
+  `agent-ee-evidence`, read-only key `agent-ee-evidence-ro` and upload key
+  `agent-ee-evidence-rw`, both scoped to that bucket only. Credentials:
+  `~/.config/agent-ee/evidence-s3.env` (read) and `evidence-s3-upload.env`
+  (upload), mode `0600`, outside every repo. No Garage config or listener change.
+- Uploaded all 20 manifest groups (4,857 objects, 325,214,213 bytes). A full
+  hash-verified round trip over loopback and over the tailnet forward matched the
+  manifest. Details:
+  [`config/garage/README.md`](config/garage/README.md#agent-ee-evidence-bucket).
+
 ## 2026-10-22 — Garage S3 API reachable on the tailnet (`tailscale serve --tcp 3900`)
 
 Owner request 2026-10-22 (via the coordinator): reach Garage S3 from tailnet hosts

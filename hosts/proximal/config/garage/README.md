@@ -115,6 +115,53 @@ Revert (removes only this entry; the other serve mappings stay):
 sudo tailscale serve --tcp=3900 off
 ```
 
+## agent-ee evidence bucket
+
+Owner approval 2026-10-22 (AGENTEE-20): retained agent-ee evidence moves out of the
+agent-ee working tree into a **private** bucket here. No third-party publication.
+
+| | |
+|---|---|
+| bucket | `agent-ee-evidence` (global alias; website access off, no anonymous access) |
+| contents | all 20 groups of agent-ee `evidence/files-manifest.json`: 4,857 objects, 325,214,213 bytes, layout `GROUP/EXACT_RELATIVE_FILE_PATH` |
+| read key | `agent-ee-evidence-ro` — read only on this bucket; used by fetches |
+| upload key | `agent-ee-evidence-rw` — read + write on this bucket; owner-held, for uploads only |
+| read credentials file | `~/.config/agent-ee/evidence-s3.env` (`0600`, dir `0700`; outside every repo) |
+| upload credentials file | `~/.config/agent-ee/evidence-s3-upload.env` (`0600`) |
+
+Created with:
+
+```bash
+G="sudo -u garage garage -c /etc/garage.toml"
+$G bucket create agent-ee-evidence
+$G key create agent-ee-evidence-ro      # secret captured straight into the 0600 file, never printed
+$G key create agent-ee-evidence-rw
+$G bucket allow --read agent-ee-evidence --key agent-ee-evidence-ro
+$G bucket allow --read --write agent-ee-evidence --key agent-ee-evidence-rw
+```
+
+The credentials files hold `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`AWS_DEFAULT_REGION=garage`, `AGENT_EE_EVIDENCE_S3_BUCKET` and
+`AGENT_EE_EVIDENCE_S3_ENDPOINT=http://127.0.0.1:3900`. Other tailnet hosts use the
+[tailnet endpoint](#tailnet-s3-endpoint) (`--endpoint http://100.85.100.81:3900`
+or that value in their copy of the file). Only the read file may be copied to
+another host, and only with mode `0600`. As of 2026-10-22 no copy exists
+elsewhere: the agent-ee test suite reads no relocated bytes, so the release gate
+needs no credentials.
+
+Upload and fetch go through agent-ee's `scripts/evidence_fetch.py` (stdlib SigV4,
+path-style). Each upload PUT signs the manifest SHA-256 as its payload hash, and
+fetch verifies each size and hash before it publishes a group. Verified
+2026-10-22: a full round trip of all 20 groups, once over loopback and once over
+the tailnet address from proximal, matched the manifest exactly. An anonymous GET
+returned 403, a PUT with the read key 403, and a PUT whose signed payload hash
+did not match its body 400.
+
+Revoke/remove: `$G key delete --yes agent-ee-evidence-ro` (likewise `-rw`), and
+`$G bucket delete --yes agent-ee-evidence` only after it has been emptied and the
+owner has a different home for the evidence. Git history of agent-ee still holds
+every object.
+
 ## Files → install locations
 
 | repo file | install path |
