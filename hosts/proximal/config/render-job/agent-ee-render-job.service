@@ -1,5 +1,5 @@
 [Unit]
-Description=agent-ee telemetry-pod render job (committed fome-mc main -> private render gallery)
+Description=agent-ee telemetry-pod render job (pinned candidate -> private render gallery)
 Documentation=file://%h/git/infra/hosts/proximal/config/render-job/README.md
 After=network-online.target
 

@@ -1,0 +1,14 @@
+{
+  "disposition": "HISTORICAL / INCORRECT SELECTION",
+  "ordered_by": "agent-521 HOLD (Cairn 14664d84), 2026-10-22",
+  "recorded_at": "2026-10-22T19:18:13.871732+00:00",
+  "schema": "proximal.agent-ee-render-job.correction/1",
+  "statement": "This bundle rendered the old 112-footprint v9 pilot (fome-mc origin/main telemetry-pod/telemetry-pod.kicad_pcb at cc0a4045152d) by mistake, not the current expanded telemetry-pod candidate. It is retained as evidence only. It is not the current board, not adopted, not qualified, and no routing completeness or acceptance is claimed.",
+  "subject": {
+    "board_sha256": "2938ee1ee2cae459c869ee5c4c8443e66322034736fe3fcbf4b5e56377ea1cfa",
+    "bundle": "2938ee1ee2ca-2d84c7eebd46",
+    "label": "Revision 1",
+    "run_id": "20261022T191106Z"
+  },
+  "superseded_by": "pinned Iter8t candidate (board sha256 56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72) published by the corrected render job"
+}

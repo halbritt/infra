@@ -1,0 +1,21 @@
+{
+  "routing": {
+    "value": "routed",
+    "evidence": [
+      "board",
+      "receipt"
+    ]
+  },
+  "adoption": {
+    "value": "not-adopted",
+    "evidence": [
+      "receipt"
+    ]
+  },
+  "qualification": {
+    "value": "unqualified",
+    "evidence": [
+      "receipt"
+    ]
+  }
+}

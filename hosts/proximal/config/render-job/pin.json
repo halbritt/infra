@@ -1,0 +1,23 @@
+{
+  "schema": "proximal.agent-ee-render-job.pin/1",
+  "name": "iter8t",
+  "label": "Iteration 8",
+  "stage": "diagnostic",
+  "board": {"path": "pinned/56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72/candidate.kicad_pcb", "sha256": "56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72"},
+  "project": {"path": "pinned/56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72/candidate.kicad_pro", "sha256": "a91ee4d1a8ecfa583df33e707defdb3174e505d91853fc1e4959600d770aa57f"},
+  "project_models": {
+    "inputs/models/c-1-776163-1-t-3d.stp": "43ba1f805451c97c81c3e659339e78a5ce25a0cbaeeb0427e809513e38daa473",
+    "inputs/models/NEO-M9N-00B_visualization-only_datasheet-derived_not-manufacturer-mechanical-qualification.step": "8a7f198429247fde472e97f1b8c56820a7206840f56be9a7138b4ec0fa62a5d9"
+  },
+  "expected_scope": {"non_hole_footprints": 305, "mounting_holes": 4, "basis": "current expanded pod scope relayed by agent-521 (Cairn 14664d84): 305 schematic symbols + 4 holes"},
+  "refuse": {"footprint_totals": [112], "board_sha256": ["2938ee1ee2cae459c869ee5c4c8443e66322034736fe3fcbf4b5e56377ea1cfa"], "reason": "old 112-footprint v9 pilot (fome-mc main telemetry-pod.kicad_pcb)"},
+  "scope_note": "Iter8t expanded telemetry-pod placement candidate, models-only derivative with J1 manufacturer STEP and U3 datasheet-derived visualization model. UNROUTED diagnostic, NOT qualified. Not the integrated j6 candidate.",
+  "provenance": {
+    "pinned_at": "2026-10-22",
+    "pinned_by": "render job builder for agent-449 on agent-521 HOLD (Cairn 14664d84)",
+    "board_and_project_from": "/home/halbritt/.cache/agent509-render-refresh/iter8t-renders/snapshot/",
+    "project_models_from": "/home/halbritt/.cache/agent449-pod/iter8t/candidate/inputs/models/ (hashes equal those bound in the 2026-10-22T06:17Z iter8t render manifest)",
+    "prior_gallery_bundle_same_board": "56313982e687-0e28e3b235a2"
+  },
+  "update_policy": "agent-449 replaces this pin (new pinned/<sha>/ dir + this file) only when a newer qualified snapshot exists, e.g. the integrated j6 candidate. Never point it at a repo HEAD or a live worktree."
+}

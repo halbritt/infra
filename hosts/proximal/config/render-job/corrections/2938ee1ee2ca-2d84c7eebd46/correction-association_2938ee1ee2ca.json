@@ -1,0 +1,11 @@
+{
+  "schema": "agent-ee.gallery-association/1",
+  "board_sha256": "2938ee1ee2cae459c869ee5c4c8443e66322034736fe3fcbf4b5e56377ea1cfa",
+  "evidence": [
+    {
+      "role": "receipt",
+      "sha256": "3f43709e7a5475cbbd6b51a6c7cdc22cc214dcaa3865129509b2e48199bc7502"
+    }
+  ],
+  "models": []
+}
