@@ -90,7 +90,9 @@ decision.
 native-admit status                       # used/budget, leases, unleased containers, queue, reservation
 native-admit status --json
 tail ~/.local/state/native-admission/events.jsonl   # admitted / released / gave-up / reserved
-native-admit sample --print               # one snapshot; appends to samples.jsonl
+native-admit sample --print               # one snapshot (load, PSI, memory, root free space, zombies + top parents,
+                                          # leases, unleased jobs, queue, drain/reservation, and per agent-ee
+                                          # container: PID 1, init, cpus, pids limit, lease); appends to samples.jsonl
 eval "$(native-admit reserve --label 'benchmark X' --minutes 60)"   # exports NATIVE_ADMISSION_RESERVATION
 native-admit unreserve
 ```
@@ -140,3 +142,15 @@ inside).
   CHANGELOG). `AE_CI_TMPFS` exists as an opt-in for nondurable `/tmp` scratch,
   but it is not adopted. The measured runs were CPU-quota-bound, so no storage
   benefit was shown.
+
+## Monitors (owner instruction, 2026-10-22)
+
+The per-host monitor agents that agent-449 launches use `native-admit sample
+--print` as their cheap probe. A field they can't read is UNKNOWN:
+`capacity_known: false`, `containers: null`, or a PSI of `null`.
+
+**c4:** run its monitor from proximal (`ssh agent-ee-gate-c4
+'~/.local/bin/native-admit sample --print'`), not as a resident agent on c4. A
+probe lasts under 60 s, so the idle stop ignores it. A long-running `claude` or
+`codex` process on c4 counts as busy and would keep the paid host up
+indefinitely.
