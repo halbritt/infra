@@ -25,6 +25,7 @@ service account. Labels `purpose=agent-ee-pypy-scorer,owner=halbritt`. Image
 `agent-ee-gate-20261022-0352`. Created 16:28:10 PDT; agent-475 verified it with
 `gcloud compute instances describe`. agent-524 will delete it and its boot disk;
 teardown is noted below once confirmed. Cost: about $0.07/h, at most about $0.15.
+Torn down: agent-475 independently confirmed that no `pypy524` instance or disk remains in heath-stuff, checked by a poll that ended when the instance was gone.
 
 ## 2026-10-22 — `ci-run.sh` fails closed without `native-admit`
 
