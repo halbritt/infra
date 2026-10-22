@@ -89,3 +89,34 @@ native-admit unreserve
 
 Emergency off for one host: set `"enforce": false` in its config. Commands then
 run unadmitted, and the event `unenforced` is logged.
+
+## Rollout and verification (2026-10-22)
+
+Deployed to all five hosts at about 21:55Z. Current hashes, identical on every
+host: `native-admit` `60819182c019c2a4…` and `ae-ci-exec` `fbfd3c2a46c1643c…`
+(infra 93dde0a). Raw evidence:
+`proximal:~/.local/share/infra/native-admission/evidence-20261022/` (README
+inside).
+
+- **Competing launches.** Local harness, budget 3: peak weight 3, at most one
+  suite, admission in arrival order. peecee-wsl, 10 real `ae-ci-exec` launches:
+  peak 7 of 8, suites serialized.
+- **Cancellation.** TERM to `ae-ci-exec` kills the container and frees the
+  lease; the queued work started in the same second.
+- **Crash.** `kill -9` of the whole `ae-ci-exec` process group released the
+  lease. The orphaned container still counted as unleased w4 suite usage, and the
+  queued suite started only after it exited (22:12:01Z exit, 22:12:06Z admit).
+- **Refusals and unknown capacity.** `--jobs 8`, and a suite without `--jobs`,
+  are refused on a max_weight 4 host. A `docker ps` failure queues as
+  "capacity unknown". `drain --suites-only` blocks suites and still admits tests.
+- **Container bounds.** Old image under AppArmor: PID 1 `docker-init`,
+  `cpu.max 300000 100000`, `pids.max 16384`, orphans reaped, bwrap and
+  kicad-cli 10.0.7 work. In production, every container started after the deploy
+  has an init (tini, or docker-init for old images), a lease label, `--cpus`
+  and `--pids-limit`.
+- **talos.**
+  - Zombies: 35,587 at 21:44Z, 69 at 21:54Z, 4 at 22:15Z.
+  - Load: 75 → 1.1.
+  - CPU PSI: 77 → 0.
+  - Drained for new suites (`--suites-only`) since about 22:09Z, per
+    agent-521's interim policy. `native-admit undrain` on talos lifts it.

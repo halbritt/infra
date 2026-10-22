@@ -1,5 +1,17 @@
 # Host changelog
 
+## 2026-10-22 — Native admission; drained for new suites
+
+- `native-admit` and the admitting `ae-ci-exec` are installed. The budget is 4
+  module workers with at most one suite, and new containers get `--cpus 3 ×
+  weight`, `--pids-limit 16384` and an init. See
+  [native-admission](../../shared/agent-ee/native-admission.md).
+- Drained for new suites since about 22:09Z (`native-admit drain --suites-only`),
+  per agent-521's interim policy "no new heavy Talos jobs while the backlog
+  drains". The backlog has cleared: zombies went from 35,587 to 4, load from 75
+  to 1.1, CPU PSI from 77 to 0. Lift with `native-admit undrain` when agent-521
+  or agent-449 agree.
+
 ## 2026-10-22 — Housekeeping
 
 Owner request: "clean up talos." Live work was left alone: 7 `ae-ci-exec`

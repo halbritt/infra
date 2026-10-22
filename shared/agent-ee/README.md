@@ -9,8 +9,11 @@ Python (3.12.3 / 3.14.4 / 3.14.8), poppler (24.02 / 26.01 / 26.08) and ngspice
 peecee-wsl and 3 fail on archon. The CI image is the release-gate authority, so
 agent-ee tests run inside it on every host.
 
-Installed byte-identical at `~/.local/bin/ae-ci-exec` on proximal, peecee-wsl
-and archon (canonical copy: this directory).
+Installed byte-identical at `~/.local/bin/ae-ci-exec` on proximal, peecee-wsl,
+archon, talos and agent-ee-gate-c4 (canonical copy: this directory). Since
+2026-10-22 every run is admitted by `native-admit` (host-wide budget, leases,
+queue, CPU/PID bounds, init for old images); see
+[native-admission.md](native-admission.md).
 
 ```sh
 ae-ci-exec WORKTREE -- COMMAND [ARG...]
