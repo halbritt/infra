@@ -73,7 +73,7 @@ The source is the version installed on proximal and archon. File:
    72 h is seven days into a ten-day token, ahead of the eight-day
    `last_refresh` interval that older CLIs use. peecee-wsl runs 0.153.4, whose
    source is not on this box.
-2. For each host in `REMOTE_HOSTS` (`peecee-wsl`, `archon`, and since 2026-10-22 `agent-ee-gate-c4`): one
+2. For each host in `REMOTE_HOSTS` (`peecee-wsl`, `archon`, and since 2026-10-22 `agent-ee-gate-c4` and `talos`): one
    `ssh -o BatchMode=yes <host> python3 -I -c <writer>`, with the jobs on stdin.
    Each job is proximal's `auth.json` with `tokens.refresh_token = ""`. The
    writer replaces the remote file only when it differs (temp file, `fsync`,

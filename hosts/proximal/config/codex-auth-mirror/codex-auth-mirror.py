@@ -35,7 +35,7 @@ import time
 from pathlib import Path
 
 PROFILES = ("~/.codex", "~/.codex-harm", "~/.codex-3")
-REMOTE_HOSTS = ("peecee-wsl", "archon", "agent-ee-gate-c4")
+REMOTE_HOSTS = ("peecee-wsl", "archon", "agent-ee-gate-c4", "talos")
 # Renew this far ahead of expiry. Seven days into a ten-day token, ahead of the
 # eight-day `last_refresh` interval older CLIs (peecee-wsl's 0.153) still use.
 LEAD_HOURS = 72

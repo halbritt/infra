@@ -19,6 +19,9 @@
   "roles": [
     "linux"
   ],
+  "responsibilities": [
+    "agent-ee-fleet-worker"
+  ],
   "paths": {
     "config": "config",
     "notes": "notes.md",

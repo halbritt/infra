@@ -18,3 +18,19 @@ Observations to act on only with owner direction:
 - Timezone is `Etc/UTC`.
 - Wi-Fi is the only link. MACs: `eno1` `1c:69:7a:63:e5:ff`, `wlp0s20f3`
   `0c:7a:15:6c:b9:7f` (useful for a DHCP reservation).
+
+## Fleet worker setup — 2026-10-22
+
+- The root LV is still 100 GiB (about 82 GiB free after setup). The CI image
+  and BuildKit cache fit; if `docker system df` grows, extend with `sudo
+  lvextend -r -L +100G /dev/ubuntu-vg/ubuntu-lv` (not done; no owner request).
+- AppArmor is enabled and `kernel.apparmor_restrict_unprivileged_userns=1`.
+  Native `bwrap` works through Ubuntu's `bwrap-userns-restrict` profile.
+  `ae-ci-exec` containers use the `agent-ee-container` profile, which
+  `/etc/apparmor.d/agent-ee-container` loads at boot.
+- The Dockerfile's apt snapshot is `noble` (24.04) and cannot be installed on
+  26.04. KiCad 10.0.7 comes from the same Launchpad snapshot timestamp with
+  suite `resolute` (see [config/apt](config/apt/README.md)). ngspice 45.2,
+  bubblewrap 0.11.1 and poppler 26.01 are stock 26.04, the same as peecee-wsl.
+  The CI image (24.04: ngspice 42, bwrap 0.9.0, poppler 24.02, Python 3.12) is
+  the test authority.
