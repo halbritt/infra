@@ -24,7 +24,7 @@ move the CPU-bound gate off shared hosts. Build and run scripts:
 
 | Path | What |
 |---|---|
-| `agent-ee-gate/ci-run.sh` | byte-identical to peecee-wsl, sha256 `2c5c20f80838a26e49a21fecce0af5c64a14609ef7cc4d69215c7b4ec3eea3e5` |
+| `agent-ee-gate/ci-run.sh` | image copy: sha256 `2c5c20f80838a26e49a21fecce0af5c64a14609ef7cc4d69215c7b4ec3eea3e5`. On agent-ee-gate-c4 and peecee-wsl since 2026-10-22: `d8725585de04853b295244d1ab609208ecd4814eb814b5f8a340a7174fd7c7fc` (labels the suite container with the caller's `native-admission.lease`; test behaviour unchanged) |
 | `agent-ee-gate/ci-logs/`, `ctx/`, `tmp/` | empty (ci-run.sh needs `tmp/` for its summary dir) |
 | `agent-ee-gate/inputs/te-776228-1.pdf` | J1 drawing, sha256 `14bd5c3b…6e4fe8` (ci.yml `J1_DRAWING_SHA256`) |
 | `agent-ee-gate/ci-inputs/fome-mc-1289f3149d2bcaa83a3b490a0bfbd11ed8a17589` | anonymous clone of public github.com/halbritt/fome-mc at the ci.yml `FOME_MC_COMMIT`, owned 10001:10001, no credential config (the ci-run.sh recipe) |

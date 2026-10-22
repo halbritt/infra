@@ -118,7 +118,10 @@ summary=$(mktemp -d "$GATE/tmp/ci-summary-XXXXXX")
 chmod 0777 "$summary"
 status=0
 set -x
-docker run --rm $SANDBOX_OPTS -e AGENT_EE_REQUIRE_TOOLCHAIN=1 -e PYTHONPATH=src -v "$summary:/summary" \
+# Under native-admit (infra shared/agent-ee), label the suite container with the
+# caller's lease so admission does not count it a second time as unleased work.
+docker run --rm $SANDBOX_OPTS ${NATIVE_ADMISSION_LEASE:+--label native-admission.lease=$NATIVE_ADMISSION_LEASE} \
+  -e AGENT_EE_REQUIRE_TOOLCHAIN=1 -e PYTHONPATH=src -v "$summary:/summary" \
   -v "$STORE:/opt/fome-mc:ro" -e AGENT_EE_FOME_MC_CHECKOUT=/opt/fome-mc \
   -v "$J1_DRAWING:/opt/j1/te-776228-1.pdf:ro" -e AGENT_EE_J1_DRAWING=/opt/j1/te-776228-1.pdf \
   -w /opt/agent-ee "$IMAGE" python3 scripts/strict_suite.py --jobs "$JOBS" \

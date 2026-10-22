@@ -1,5 +1,15 @@
 # Host changelog
 
+## 2026-10-22 — `ci-run.sh` labels its suite container with the admission lease
+
+When agent-449 runs the c4 integration gate under `native-admit run`, the gate's
+strict-suite container was also counted as an unleased suite. One gate showed as
+used 8 with 2 suites against a limit of 1, and other suites waited needlessly.
+`ci-run.sh` now adds `--label native-admission.lease=$NATIVE_ADMISSION_LEASE`
+when it is set; test behaviour is unchanged. It is installed on
+agent-ee-gate-c4 and peecee-wsl (`d8725585de04853b…`, backups `ci-run.sh.bak-20261022-lease`).
+The gate that was already running keeps the old script until it exits.
+
 ## 2026-10-22 — `agent-ee-gate-c4`: root filesystem without online discard
 
 The I/O stall agent-522 found (`jbd2_log_wait_commit`) is ext4 online
