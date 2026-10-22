@@ -19,6 +19,8 @@ Owner request: "track its use, we should shut it down if it goes idle."
 - Observed: about 21,400 zombie `bwrap` processes on c4. Each in-container
   `strict_suite.py` run leaves thousands, because nothing in the container reaps
   orphans. Reported to agent-521 with the 3D-render finding.
+  Fixed by AGENTEE-459 (agent-ee main 7e5bdc46: tini as PID 1 in the CI image).
+  The c4 gate ran the new image: 5360 tests, exit 0.
 
 ## 2026-10-22 — `agent-ee-gate-c4`: kicad-route worker lanes
 

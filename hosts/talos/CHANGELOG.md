@@ -19,7 +19,9 @@ containers, each owned by a running Claude or Codex worker.
   `exec-bbb09f2d…` built 33 minutes earlier), and the BuildKit cache.
 - About 32,000 zombie `bwrap` processes remain under the running in-container
   strict suites. They clear when each suite exits. The cause, no init in the
-  container, was reported to agent-521. agent-ee has a `ci-init` item in review.
+  container, was reported to agent-521. Fixed by AGENTEE-459 (agent-ee main
+  7e5bdc46): the CI image runs tini as PID 1. Hosts pick it up when their
+  `ae-ci-exec` image is rebuilt from that commit or later.
 
 ## 2026-10-22 — Wired port optional, DHCP
 
