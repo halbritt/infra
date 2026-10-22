@@ -1,5 +1,16 @@
 # Host changelog
 
+## 2026-10-22 — `agent-ee-pypy524-20261022-2330`: short-lived VM for the PyPy comparison
+
+Owner request relayed by agent-524: a PyPy comparison after the Rust one, with
+the same frozen iter8n and j6b2 inputs. Instance id 3532614198875333350,
+us-west1-b, `c2d-highcpu-4` Spot, `DELETE` on termination,
+`max-run-duration=7200s` (self-deletes by about 18:28 PDT at the latest). No
+service account. Labels `purpose=agent-ee-pypy-scorer,owner=halbritt`. Image
+`agent-ee-gate-20261022-0352`. Created 16:28:10 PDT; agent-475 verified it with
+`gcloud compute instances describe`. agent-524 will delete it and its boot disk;
+teardown is noted below once confirmed. Cost: about $0.07/h, at most about $0.15.
+
 ## 2026-10-22 — `ci-run.sh` fails closed without `native-admit`
 
 A missing or non-executable `~/.local/bin/native-admit` used to skip admission
