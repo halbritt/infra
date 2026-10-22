@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "name": "talos",
+  "hostname": "talos",
+  "status": "active",
+  "platform": {
+    "os": "linux",
+    "distribution": "Ubuntu",
+    "distribution_version": "26.04.1 LTS",
+    "architecture": "x86_64",
+    "kernel": "7.0.0-38-generic"
+  },
+  "network": {
+    "lan_interface": "wlp0s20f3",
+    "lan_address": "192.168.1.196",
+    "tailnet_address": "100.73.54.127",
+    "tailnet_dns_name": "talos.tail0ecc2e.ts.net"
+  },
+  "roles": [
+    "linux"
+  ],
+  "paths": {
+    "config": "config",
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  },
+  "hardware": {
+    "manufacturer": "Intel",
+    "model": "NUC10i7FNH",
+    "cpu": "Intel Core i7-10710U",
+    "cores": 6,
+    "logical_cpus": 12,
+    "memory_gib": 61,
+    "gpu": [
+      "Intel UHD Graphics (Comet Lake)"
+    ],
+    "storage": [
+      "Samsung PM961 NVMe 512GB"
+    ]
+  }
+}
