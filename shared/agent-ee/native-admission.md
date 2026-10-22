@@ -119,6 +119,7 @@ native-admit sample --print               # one snapshot (load, PSI, memory, roo
                                           # container: PID 1, init, cpus, pids limit, lease); appends to samples.jsonl
 eval "$(native-admit reserve --label 'benchmark X' --minutes 60)"   # exports NATIVE_ADMISSION_RESERVATION
 native-admit unreserve
+native-admit cancel-queued --match TEXT   # overflow handoff: stop one never-admitted queued request, with proof
 ```
 
 Emergency off for one host: set `"enforce": false` in its config. Commands then

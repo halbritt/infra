@@ -8,6 +8,7 @@
   native-admit unreserve
   native-admit drain --reason TEXT [--suites-only]   # admit nothing new (or no new suites)
   native-admit undrain
+  native-admit cancel-queued --match TEXT          # overflow handoff: stop one never-admitted queued request
 
 A lease is a file under $STATE/leases that the admitted command holds with an
 exclusive flock. The descriptor is inherited by COMMAND and its children, so the
@@ -441,6 +442,43 @@ def reserve(args):
     print(f"export NATIVE_ADMISSION_RESERVATION={token}")
 
 
+def cancel_queued(args):
+    """Overflow handoff: atomically stop ONE queued (never-admitted) request whose label contains
+    --match, proving it never held a lease. Holding the mutex for the whole check keeps the request
+    from being granted meanwhile. Prints JSON; exit 0 cancelled, 3 already running (keep it), 4 not
+    found or ambiguous."""
+    import signal
+    with Mutex():
+        queued = [q for q in live("queue") if args.match in q.get("label", "")]
+        running = [l for l in live("leases") if args.match in l.get("label", "")]
+        if running and not queued:
+            print(json.dumps({"result": "running", "leases": [{k: l.get(k) for k in ("id", "label", "pid", "started")} for l in running]}))
+            sys.exit(3)
+        if len(queued) != 1:
+            print(json.dumps({"result": "not-found" if not queued else "ambiguous", "matches": [q.get("label") for q in queued]}))
+            sys.exit(4)
+        q = queued[0]
+        qpath = HOME / "queue" / f"{q['id']}.json"
+        try:
+            os.kill(q["pid"], signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        deadline = time.time() + 30
+        while not is_dead(qpath) and time.time() < deadline:
+            time.sleep(0.2)
+        stopped = is_dead(qpath)
+        never_leased = not (HOME / "leases" / f"{q['id']}.json").exists() and not any(
+            json.loads(line).get("event") == "admitted" and json.loads(line).get("lease") == q["id"]
+            for line in open(HOME / "events.jsonl") if line.strip())
+        if stopped:
+            qpath.unlink(missing_ok=True)
+    result = {"result": "cancelled" if stopped and never_leased else "uncertain", "id": q["id"], "pid": q["pid"],
+              "label": q["label"], "queued_since": q.get("started"), "stopped": stopped, "never_leased": never_leased}
+    log_event("cancelled-queued", **{k: result[k] for k in ("id", "pid", "label", "stopped", "never_leased")})
+    print(json.dumps(result))
+    sys.exit(0 if result["result"] == "cancelled" else 5)
+
+
 def drain(args):
     with Mutex():
         (HOME / "drain.json").write_text(json.dumps({"reason": args.reason, "suites_only": args.suites_only, "since": now()}))
@@ -488,6 +526,9 @@ def main():
     p.add_argument("--suites-only", action="store_true")
     p.set_defaults(fn=drain)
     sub.add_parser("undrain").set_defaults(fn=undrain)
+    p = sub.add_parser("cancel-queued", help="overflow handoff: stop one never-admitted queued request, with proof")
+    p.add_argument("--match", required=True, help="substring of the queued request's label")
+    p.set_defaults(fn=cancel_queued)
     args = parser.parse_args()
     args.fn(args)
 

@@ -114,45 +114,61 @@ VM-minutes) cost about $0.40.
 
 The owner said: "with the hosts being fully loaded, if tests are waiting too long, small gcp
 spot instances could be used". [`config/image/run-overflow.sh`](config/image/run-overflow.sh)
-runs ONE queued, not-yet-running test job on a throwaway small Spot VM.
+moves ONE queued, never-started test job to a throwaway small Spot VM. agent-449 (or
+agent-507 for router tests) picks the job; agent-475 runs the script.
 
-- **VM:** default `c2d-highcpu-4`, explicit `--max` lifetime (default 90m),
-  DELETE on termination, boot-disk auto-delete, no service account, label
-  `purpose=agent-ee-overflow`.
-- **Staging:** the job's worktree from the host it lives on (tracked files at
-  their working-tree content, plus `--include` paths, with no `.git`, as in the
-  gate's `git archive` trees). Also the current `native-admit` and `ae-ci-exec`,
-  so the job is admitted and bounded as on shared hosts.
-- **Run:** the job's exact `ae-ci-exec . -- CMD`.
-- **Collect and teardown:** `job.log`, the exit marker, `--collect` paths and
-  the VM's admission events go to `~/agent-ee-overflow/<label>-<stamp>/`. Then the
-  VM is deleted and the script verifies no instance or disk remains.
-- **Preemption:** exit 3. Any retry is the lane owner's decision, under the
-  original job identity.
+Protocol, in order:
 
-agent-449 picks the job; agent-475 provisions and cleans up. Do not cancel the
-local queued waiter until the VM run has started, so the job never runs twice.
+1. **Prepare without running.** The script creates the VM (default
+   `c2d-highcpu-4`, `--max` lifetime with default 90m, DELETE on termination,
+   boot-disk auto-delete, no service account). It stages the job's tree (tracked
+   files plus `--include` paths, which must exist) and the current
+   `native-admit`/`ae-ci-exec`, and builds the image with `ae-ci-exec . -- true`.
+   The job does not run yet.
+2. **Hand off exclusively.** `--handoff MATCH` runs `native-admit cancel-queued
+   --match MATCH` on the job's host. Under the admission mutex it stops the one
+   matching queued request and proves it never held a lease (`handoff.json`).
+   If that request had already started, it keeps running locally and the VM
+   copy is never executed (exit 7). `--operator-stopped` records a handoff the
+   lane owner made themselves.
+3. **Run and observe.** The script runs the job's exact `ae-ci-exec . -- CMD`.
+   The VM counts as gone only when `instances describe` succeeds and reports
+   not-RUNNING or not-found (exit 3). Failed observations are UNKNOWN, retried
+   within a bound, and never restart the job (exit 5).
+4. **Collect evidence.** Required: `job.log` with its exit marker and every
+   `--collect` path. Anything missing gives exit 4, and partial evidence is kept.
+5. **Clean up.** Absence is claimed only from successful instance AND disk
+   listings (otherwise exit 6). `summary.json` records handoff, job exit,
+   collection and cleanup separately.
 
 ```sh
 ~/git/infra/hosts/gcp-gate/config/image/run-overflow.sh --host HOST --tree WORKTREE --label LABEL \
-  [--include build/x] [--collect build/x] [--machine-type c2d-highcpu-8] [--max 90m] -- CMD [ARG...]
+  --handoff 'ae-ci-exec <worktree>: <command prefix>' [--include build/x] [--collect build/x] \
+  [--machine-type c2d-highcpu-8] [--max 90m] -- CMD [ARG...]
 ```
 
-Readiness smoke, 2026-10-22 23:44Z (agent-ee main b6bb621c, `agent-ee doctor
---checks-only`):
+Readiness smoke, 2026-10-22 23:44Z (first version of the script, doctor only):
 
 | Step | Time |
 |---|---|
 | SSH ready | 37 s |
 | Staging | 5 s |
-| Image `agent-ee:exec-758b370fecf753c0` (from the image's BuildKit cache) | 74 s |
-| Doctor | rest of the 135 s job |
+| Image from cache | 74 s |
+| Total VM time | 177 s |
 
-Total VM time was 177 s, about $0.004. The run was admitted under lease
-aacddb627901, and teardown was verified. **Practical startup before a test
-starts: about 2–2.5 min**, so overflow pays only when a queued job would
-otherwise wait longer than that and no local slot is free. Evidence:
-`proximal:~/.local/share/infra/native-admission/evidence-20261022/overflow-smoke-doctor/`.
+That cost about $0.004, and teardown was verified. Practical startup before a
+test starts is about 2–2.5 min. The failure paths were then checked locally with a fake `gcloud`
+(`evidence-20261022/overflow-failure-paths/`), all seven passing:
+
+| Case | Exit | Result |
+|---|---|---|
+| Normal | 0 | handoff cancelled, never leased; ran once on the VM; collection complete; cleanup verified |
+| Raced to running | 7 | VM copy not executed |
+| Missing collect path | 4 | partial log kept |
+| Failed observations | 5 | UNKNOWN, no restart |
+| TERMINATED | 3 | preempted or expired |
+| Instance listing failed | 6 | cleanup not proven |
+| Missing `--include` | 2 | refused before staging |
 
 ## Long-running work host: `agent-ee-gate-c4` (c4-highcpu-48 stand-in)
 

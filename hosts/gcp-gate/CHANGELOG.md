@@ -1,5 +1,25 @@
 # Host changelog
 
+## 2026-10-22 — `run-overflow.sh` failure-path corrections (agent-521 review)
+
+These fixes landed before any real overflow migration. Details are in README
+"Test overflow".
+
+- **Exclusive handoff:** the script now prepares the VM without running the
+  job, then calls the new `native-admit cancel-queued`. That stops the one queued
+  request under the admission mutex, with proof it never held a lease. A job
+  that had already started is kept, and the VM copy is not run.
+- **Collection:** collection is reported separately from the job result.
+  Required evidence (log, exit marker, declared paths) must be complete, or the
+  run exits 4.
+- **VM state:** state comes only from a successful `describe`. Failed
+  observations count as UNKNOWN, with no restart.
+- **Cleanup:** cleanup is proven only from successful instance and disk
+  listings.
+
+All seven failure paths passed locally with a fake `gcloud`. `native-admit`
+`37828fc2…` (adds `cancel-queued`) is on all five hosts.
+
 ## 2026-10-22 — Test overflow path `run-overflow.sh`
 
 Owner authorization relayed by agent-521: use small GCP Spot instances when
