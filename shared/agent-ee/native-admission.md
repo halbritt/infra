@@ -66,7 +66,11 @@ suite.
 | talos | 12 | 4 | 3 | 1 | 50 / 30 |
 | archon | 16 | 4 | 4 | 1 | 50 / 30 |
 | peecee-wsl | 24 | 8 | 3 | 1 | 50 / 30 |
-| agent-ee-gate-c4 | 48 | 8 | 6 | 1 | 50 / 20 |
+| agent-ee-gate-c4 | 48 | 12 | 4 | 1 | 50 / 20 |
+
+c4 has `max_weight` 12. agent-521 approved this exception on 2026-10-22: the
+sole authoritative integration gate may run `JOBS=12` there when no other suite
+is running. `max_suites` 1 keeps it exclusive.
 
 Change a host by editing `native-admission.json` and rerunning
 `./install-native-admission.sh --tool-only HOST`. The config is read on every
