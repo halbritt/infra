@@ -1,0 +1,9 @@
+# agent-ee-gate-c4: /etc/logrotate.d/infra-usage
+/var/log/infra-usage/usage.jsonl {
+	monthly
+	rotate 12
+	compress
+	delaycompress
+	missingok
+	notifempty
+}

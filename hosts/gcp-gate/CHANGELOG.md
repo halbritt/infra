@@ -1,5 +1,25 @@
 # Host changelog
 
+## 2026-10-22 — `agent-ee-gate-c4`: idle stop and usage tracking
+
+Owner request: "track its use, we should shut it down if it goes idle."
+
+- `infra-idle-stop.timer` on c4 samples every minute into
+  `/var/log/infra-usage/usage.jsonl`. After 30 idle minutes it powers off, which
+  stops the instance. Idle means no running container, no `halbritt` work process
+  older than 60 s, and 1-minute load under 2.0. Details:
+  [idle stop](config/idle-stop/README.md).
+- `c4-usage`, run from proximal, gives run hours and estimated cost from the GCE
+  audit log, plus the busy share from the VM log. It skips failed operations.
+  First report: 7.3 h, about $9, since creation.
+- Verified on install: dry runs showed busy (5 containers, load about 150) and
+  an idle path, the timer is active, the first journal verdict is busy, and the
+  logrotate config is accepted. The decision logic was checked with a scratch
+  test. The idle poweroff itself has not run yet.
+- Observed: about 21,400 zombie `bwrap` processes on c4. Each in-container
+  `strict_suite.py` run leaves thousands, because nothing in the container reaps
+  orphans. Reported to agent-521 with the 3D-render finding.
+
 ## 2026-10-22 — `agent-ee-gate-c4`: kicad-route worker lanes
 
 Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).

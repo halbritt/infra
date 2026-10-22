@@ -1,0 +1,8 @@
+# agent-ee-gate-c4: /etc/systemd/system/infra-idle-stop.service
+# Canonical source: infra hosts/gcp-gate/config/idle-stop/.
+[Unit]
+Description=Log usage; power off (stop the GCE instance) after 30 idle minutes
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/infra-idle-stop --idle-minutes 30

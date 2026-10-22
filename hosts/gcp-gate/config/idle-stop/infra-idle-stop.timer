@@ -1,0 +1,11 @@
+# agent-ee-gate-c4: /etc/systemd/system/infra-idle-stop.timer
+[Unit]
+Description=Usage sample and idle check every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

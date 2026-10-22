@@ -1,0 +1,94 @@
+#!/usr/bin/python3
+"""Record one usage sample and power the VM off after a sustained idle period.
+
+agent-ee-gate-c4: installed as /usr/local/sbin/infra-idle-stop (root, 0755) and
+run every minute by infra-idle-stop.timer. A guest poweroff stops the GCE
+instance; the disk and the usage log stay. Canonical source: infra
+hosts/gcp-gate/config/idle-stop/.
+"""
+import argparse
+import datetime
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+LOG = Path("/var/log/infra-usage/usage.jsonl")
+STATE = Path("/run/infra-idle-stop/idle-since")  # /run resets at boot, so every boot starts a fresh idle window
+# Login plumbing and idle shells. Probes (launch.py's `cat /proc/loadavg`, the
+# credential mirrors' `python3 -c`) live for about a second, which MIN_AGE excludes.
+IGNORED = {"systemd", "(sd-pam)", "sshd", "sshd-session", "sftp-server", "bash", "-bash", "sh",
+           "sleep", "tmux: server", "tmux: client"}
+
+
+def sample(user, min_age, load_threshold):
+    load1 = float(Path("/proc/loadavg").read_text().split()[0])
+    try:
+        out = subprocess.run(["docker", "ps", "-q"], capture_output=True, text=True, timeout=30)
+        containers = len(out.stdout.split()) if out.returncode == 0 else None
+    except (OSError, subprocess.SubprocessError):
+        containers = None
+    out = subprocess.run(["ps", "-u", user, "-o", "etimes=,stat=,comm="], capture_output=True, text=True)
+    procs = []
+    for line in out.stdout.splitlines():
+        fields = line.split(None, 2)
+        if len(fields) < 3 or fields[1].startswith("Z"):  # zombies wait on a live parent, which counts itself
+            continue
+        age, comm = fields[0], fields[2].strip()
+        if age.isdigit() and int(age) >= min_age and comm not in IGNORED:
+            procs.append(comm)
+    reasons = []
+    if containers:
+        reasons.append(f"{containers} containers")
+    if procs:
+        reasons.append(f"{len(procs)} {user} processes ({', '.join(sorted(set(procs))[:5])})")
+    if load1 >= load_threshold:
+        reasons.append(f"load {load1}")
+    return {"load1": load1, "containers": containers, "procs": len(procs), "reasons": reasons}
+
+
+def decide(record, now, idle_seconds, state):
+    """Return seconds idle so far, updating the idle-since marker; 0 when busy."""
+    if record["reasons"]:
+        state.unlink(missing_ok=True)
+        return 0
+    if not state.exists():
+        state.parent.mkdir(parents=True, exist_ok=True)
+        state.write_text(str(now))
+        return 0
+    return now - int(state.read_text())
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--idle-minutes", type=int, default=30)
+    parser.add_argument("--user", default="halbritt")
+    parser.add_argument("--min-age", type=int, default=60, help="ignore processes younger than this (s)")
+    parser.add_argument("--load-threshold", type=float, default=2.0)
+    parser.add_argument("--dry-run", action="store_true", help="print the sample; no log, no poweroff")
+    args = parser.parse_args()
+    now = int(time.time())
+    record = sample(args.user, args.min_age, args.load_threshold)
+    record = {"ts": datetime.datetime.fromtimestamp(now, datetime.timezone.utc).isoformat(timespec="seconds"),
+              "busy": bool(record["reasons"]), **record}
+    if args.dry_run:
+        print(json.dumps(record))
+        return 0
+    idle = decide(record, now, args.idle_minutes * 60, STATE)
+    record["idle_s"] = idle
+    LOG.parent.mkdir(parents=True, exist_ok=True)
+    with LOG.open("a") as log:
+        log.write(json.dumps(record) + "\n")
+    if idle >= args.idle_minutes * 60:
+        print(f"idle for {idle // 60} min (load {record['load1']}, no containers, no {args.user} work); powering off")
+        subprocess.run(["systemctl", "poweroff"], check=False)
+    elif record["busy"]:
+        print("busy: " + "; ".join(record["reasons"]))
+    else:
+        print(f"idle for {idle // 60} min of {args.idle_minutes}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
