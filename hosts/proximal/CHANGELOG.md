@@ -1,5 +1,20 @@
 # Changelog — proximal (system)
 
+## 2026-10-21 — ae-ci-exec: git works in agent worktrees
+
+- `ae-ci-exec` no longer hides `.git`. For a linked worktree, it mounts the common
+  gitdir read-only and the worktree's gitdir read-write at their host paths
+  (details: [`shared/agent-ee/`](../../shared/agent-ee/README.md)). The old
+  tmpfs and `/dev/null` cover left a broken `.git`, so `scripts/check_origins.py`
+  and `tests.test_tree_hygiene` failed in agent worktrees (AGENTEE-417 review).
+- Verified here on main cc6b124: in a linked worktree under
+  `~/.cache/agent-worktrees/agent-ee/`, check_origins reports `errors: []` and
+  test_tree_hygiene passes 6 tests. A plain `--shared` clone and a `.git`-less
+  archive also pass.
+- Reinstalled byte-identical on proximal, peecee-wsl and archon: sha256
+  `0e8cb9d2cd030755859932a52bcbbe3d1207039f195385aa5e20cf2d61015290`. Same image
+  tag `agent-ee:exec-2657c88d90d4f0a9`; no rebuild.
+
 ## 2026-10-21 — agent-ee tests run in the CI image (`ae-ci-exec`); uv 0.13.4
 
 Owner-requested, so that agent-ee test results agree across build hosts. Native

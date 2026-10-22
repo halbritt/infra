@@ -36,7 +36,15 @@ mode, no skips").
 | kicad-happy 2.3.1 in the image at `/opt/kicad-happy` | Same (no mount; root-owned, no `.git`) |
 | Runs as image user 10001 on the image's source copy | Runs as `--user $(id -u):$(id -g)` (uid 1000 = image user `ubuntu`) on the **live worktree**, mounted read-write at `/opt/agent-ee` |
 | strict_suite gives each module a private TMPDIR | Per-run scratch dir mounted at `/tmp`, `TMPDIR=/tmp`, `HOME=/tmp` (as in the CI fixture step); removed after the run (`AE_CI_KEEP_TMP=1` keeps it) |
-| `/opt/agent-ee` has no `.git` (`.dockerignore`) | `WORKTREE/.git` is hidden (tmpfs for a directory, `/dev/null` for a worktree gitfile) |
+| `/opt/agent-ee` has no `.git` (`.dockerignore`), so agent-ee falls back to a file walk | git works on the live tree. For a linked worktree (`.git` is a file), the common gitdir is mounted read-only and the worktree's own gitdir (index, HEAD) read-write, both at their host paths. A generated gitfile names that gitdir absolutely at `/opt/agent-ee/.git`. Object alternates are mounted read-only. A plain checkout's `.git` is inside the mount already. |
+
+Why git is exposed instead of hidden: agent-ee (`tests/test_tree_hygiene.py`,
+`scripts/check_origins.py`) uses `git ls-files` whenever `.git` exists, and walks
+files only when it is absent. A mount cannot make `.git` absent. The first
+version (infra ea97a44) put a tmpfs or `/dev/null` over it. That left a broken
+`.git`, so `git ls-files` failed in agent worktrees (found by the AGENTEE-417
+review). On a live tree, `git ls-files` is also the right answer, because a file
+walk would include untracked scratch.
 
 Why the kicad-route copy is needed: as uid 1000, `git` refuses the image's
 10001-owned `/opt/kicad-route` ("dubious ownership"). The gate's runtime user
@@ -70,6 +78,14 @@ only that small context, and the worktree mount replaces it at run time.
 No sudo. Where AppArmor is enabled, the `agent-ee-container` profile must
 already be loaded. It survives until reboot. To reload it, run
 `bash <agent-ee>/scripts/container_apparmor.sh`, which uses `sudo -n apparmor_parser`.
+
+## Git verification (2026-10-21, proximal, agent-ee main cc6b124)
+
+| Checkout | `check_origins.py` | `test_tree_hygiene` | in-container git |
+|---|---|---|---|
+| linked worktree `~/.cache/agent-worktrees/agent-ee/ae-ci-gitfix` | `errors: []` | 6 tests OK | `status` clean, `rev-parse HEAD` ok, common gitdir read-only |
+| plain clone with alternates (`git clone --shared`) | `errors: []` | OK | `status` clean, `cat-file` ok |
+| `git archive` tree (no `.git`) | not run | OK (file walk) | none |
 
 ## Parity (2026-10-21, agent-ee main de12cca)
 

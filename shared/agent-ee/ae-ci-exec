@@ -28,7 +28,12 @@
 #     read-only over /opt/kicad-route, so git ownership checks behave as in the gate;
 #   - a private scratch dir is mounted at /tmp (TMPDIR=/tmp, HOME=/tmp, as in the
 #     CI fixture step) and removed afterwards (AE_CI_KEEP_TMP=1 keeps it);
-#   - WORKTREE/.git is hidden (the image's /opt/agent-ee has none).
+#   - git works on the tree (the image's /opt/agent-ee has no .git; agent-ee
+#     code falls back to a file walk only when .git is absent, which a mount
+#     cannot reproduce). For a linked worktree (.git is a file), the common gitdir
+#     is mounted read-only and the worktree's own gitdir read-write, both at their
+#     host paths, and /opt/agent-ee/.git names that gitdir by absolute path.
+#     Object alternates are mounted read-only. Plain checkouts need nothing extra.
 # AGENT_EE_SKIP_VISUALS is passed through when set.
 #
 # State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies,
@@ -178,9 +183,31 @@ SANDBOX_OPTS=(--network none --security-opt seccomp=unconfined --security-opt "a
 
 scratch=$(mktemp -d "$STATE/tmp/run-XXXXXXXX")
 name=ae-ci-exec-$(basename "$scratch" | tr 'A-Z' 'a-z')
-hide_git=()
-if [ -d "$wt/.git" ]; then hide_git=(--mount type=tmpfs,destination=/opt/agent-ee/.git,tmpfs-size=65536)
-elif [ -e "$wt/.git" ]; then hide_git=(-v /dev/null:/opt/agent-ee/.git:ro)
+# Git metadata outside the worktree: a linked worktree's gitdir and common dir,
+# and object alternates, at their host paths.
+git_mounts=() gitfile=
+if [ -e "$wt/.git" ] && command -v git >/dev/null; then
+  if mapfile -t gd < <(git -C "$wt" rev-parse --path-format=absolute --git-dir --git-common-dir 2>/dev/null) &&
+     [ "${#gd[@]}" = 2 ]; then
+    git_dir=${gd[0]} common_dir=${gd[1]}
+    if [ -f "$wt/.git" ]; then
+      git_mounts+=(-v "$common_dir:$common_dir:ro")
+      [ "$git_dir" = "$common_dir" ] || git_mounts+=(-v "$git_dir:$git_dir")
+      # The gitfile may hold a relative path; name the gitdir absolutely.
+      gitfile=$scratch.gitfile
+      printf 'gitdir: %s\n' "$git_dir" > "$gitfile"
+      git_mounts+=(-v "$gitfile:/opt/agent-ee/.git:ro")
+    fi
+    if [ -f "$common_dir/objects/info/alternates" ]; then
+      while IFS= read -r alt; do
+        [ -n "$alt" ] && [ "${alt#\#}" = "$alt" ] || continue
+        [[ $alt = /* ]] || alt=$(realpath -m "$common_dir/objects/$alt")
+        case $alt in "$wt"|"$wt"/*|"$common_dir"|"$common_dir"/*) ;; *) git_mounts+=(-v "$alt:$alt:ro") ;; esac
+      done < "$common_dir/objects/info/alternates"
+    fi
+  else
+    echo "$prog: warning: git cannot read $wt/.git; git commands in the container will fail" >&2
+  fi
 fi
 env_opts=(-e AGENT_EE_REQUIRE_TOOLCHAIN=1 -e PYTHONPATH=src -e HOME=/tmp -e TMPDIR=/tmp
           -e AGENT_EE_FOME_MC_CHECKOUT=/opt/fome-mc -e AGENT_EE_J1_DRAWING=/opt/j1/te-776228-1.pdf)
@@ -189,6 +216,7 @@ tty=(-i); [ -t 0 ] && [ -t 1 ] && tty=(-i -t)
 
 cleanup() {
   docker kill "$name" >/dev/null 2>&1 || true
+  [ -z "$gitfile" ] || rm -f "$gitfile"
   if [ "${AE_CI_KEEP_TMP:-0}" = 1 ]; then echo "$prog: kept scratch $scratch" >&2; else rm -rf "$scratch"; fi
 }
 trap cleanup EXIT
@@ -198,7 +226,7 @@ trap 'exit 143' TERM HUP
 status=0
 docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[@]}" \
   --user "$(id -u):$(id -g)" "${env_opts[@]}" \
-  -v "$wt:/opt/agent-ee" "${hide_git[@]}" -v "$scratch:/tmp" \
+  -v "$wt:/opt/agent-ee" "${git_mounts[@]}" -v "$scratch:/tmp" \
   -v "$STATE/inputs/fome-mc-$FOME_MC_COMMIT:/opt/fome-mc:ro" \
   -v "$STATE/inputs/te-776228-1.pdf:/opt/j1/te-776228-1.pdf:ro" \
   -v "$KR:/opt/kicad-route:ro" \
