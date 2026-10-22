@@ -1,5 +1,24 @@
 # Changelog — proximal (system)
 
+## 2026-10-22 — Garage S3 API reachable on the tailnet (`tailscale serve --tcp 3900`)
+
+Owner request 2026-10-22 (via the coordinator): reach Garage S3 from tailnet hosts
+such as `agent-ee-gate-c4`, which joined the tailnet the same day.
+
+- Added a tailnet-only TCP forward: `sudo tailscale serve --bg --tcp 3900
+  tcp://127.0.0.1:3900`. No funnel. Garage's binds and `garage.toml` are
+  unchanged; nothing was restarted.
+- Listeners: `100.85.100.81%tailscale0:3900` and
+  `[fd7a:115c:a1e0::4234:6451]%tailscale0:3900` (tailscaled), plus the existing
+  `127.0.0.1:3900` (garage). Ports 3901-3904 stay loopback only. Nothing listens
+  on the LAN or the public IPv6 address.
+- Verified from agent-ee-gate-c4, archon and peecee-wsl: an unsigned request gets
+  403 `AccessDenied`. LAN, public IPv6 and :3901-3904 refuse the connection. The
+  Plane API container's `head_bucket` and `list_objects_v2` returned 200 before
+  and after. No tailnet ACL change.
+- Revert: `sudo tailscale serve --tcp=3900 off`. Details:
+  [`config/garage/README.md`](config/garage/README.md#tailnet-s3-endpoint).
+
 ## 2026-10-21 — ae-ci-exec: git works in agent worktrees
 
 - `ae-ci-exec` no longer hides `.git`. For a linked worktree, it mounts the common

@@ -27,7 +27,7 @@ Each directory beside this file is one subsystem, self-contained with its own `R
 | [`llama/`](llama/) | llama.cpp inference (`:8081`) | `llama-27b.service` + the live 35B-APEX drop-in override, revert-to-27B path; the box's primary LLM endpoint |
 | [`ollama/`](ollama/) | Ollama inference (`:11434`) | systemd unit + tuning drop-in, model inventory; secondary to the llama.cpp server (`:8081`) |
 | [`whisper/`](whisper/) | STT (`:8910` + shim `:8082`) | `whisper-stt.service` (whisper.cpp, GPU) + `praxis-stt-shim.service` and the shim script — Praxis's live loopback-only STT path |
-| [`garage/`](garage/) | Garage S3 (`:3900-3904`) | `garage.service` + secret-free `garage.toml`, LUKS-backed storage chain (crypttab/fstab), token files referenced never stored |
+| [`garage/`](garage/) | Garage S3 (`:3900-3904`, loopback; S3 `:3900` also on the tailnet via `tailscale serve --tcp`) | `garage.service` + secret-free `garage.toml`, LUKS-backed storage chain (crypttab/fstab), token files referenced never stored |
 | [`wezterm/`](wezterm/) | Headless WezTerm SSH multiplexer | pinned user-local mux binaries and server config, plus the matching cross-platform client profile for native persistent tabs |
 | [`cellular/`](cellular/) | Quectel EC25-AF LTE modem + RedPocket AT&T line (510-520-4061) | attach-APN `RESELLER` fix + persistent NV state, ttyUSB/QMI access map, SMS verified two-way, voice blocked on IMS (firmware suspect), bring-up gotchas (RCS hijack, ttyUSB2 re-enum race) |
 | [`cooling/`](cooling/) | Corsair Commander PRO fan/pump control | channel map (**fan4 = Alphacool loop pump — never throttle**; fan1–3 case fans), all-channels-100% policy, `corsair-cpro` hwmon + setconf tool pointers |

@@ -1,5 +1,18 @@
 # Host changelog
 
+## 2026-10-22 — `agent-ee-gate-c4` joins the tailnet
+
+Owner request 2026-10-22 (via the coordinator).
+
+- Installed tailscale 1.104.2 (pkgs.tailscale.com stable noble), then ran
+  `tailscale up --hostname=agent-ee-gate-c4 --ssh=false`. The owner authorized it
+  in the browser. Node `agent-ee-gate-c4`, `100.122.93.61` /
+  `fd7a:115c:a1e0::552c:5d3e`, key expiry 2027-04-20.
+- Verified: `tailscale ping` both ways (direct after DERP ord), ssh from proximal
+  to `100.122.93.61` (same host key), and proximal Garage S3 at
+  `100.85.100.81:3900` from c4 (403 AccessDenied when unsigned). The public-IP
+  `ssh agent-ee-gate-c4` path is unchanged. No firewall or ACL change.
+
 ## 2026-10-22 — `agent-ee-gate-c4` becomes an agent-ee fleet worker host
 
 Owner 2026-10-22, "load the machine now" (via the coordinator). Set up to match

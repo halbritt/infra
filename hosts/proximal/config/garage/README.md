@@ -14,7 +14,8 @@ Garage is the box's S3 endpoint — notably the object store behind the public P
 | version | `garage v2.3.0` — `/usr/local/bin/garage` |
 | unit | `garage.service` (system, `User=garage`, hardened: `ProtectSystem=strict` etc.) |
 | config | `/etc/garage.toml` (root:garage `0640`) — copy in this dir, **secret-free** (see below) |
-| S3 API | `127.0.0.1:3900` (region `garage`) · web `:3902` · k2v `:3904` — loopback only |
+| S3 API | `127.0.0.1:3900` (region `garage`) · web `:3902` · k2v `:3904` — Garage binds loopback only |
+| tailnet | S3 API **only** at `http://100.85.100.81:3900` (also `proximal.tail0ecc2e.ts.net:3900`, `[fd7a:115c:a1e0::4234:6451]:3900`) via `tailscale serve --tcp` — see [Tailnet S3 endpoint](#tailnet-s3-endpoint) |
 | RPC / admin | `127.0.0.1:3901` (rpc) · `127.0.0.1:3903` (admin + metrics) |
 | storage | `/var/lib/garage.img` (100 GiB loopback file) → LUKS `garage` → XFS on `/var/lib/garage` |
 | db engine | lmdb · metadata auto-snapshot every 6h · compression level 2 |
@@ -56,6 +57,63 @@ Docker-side consumers reach Garage via
 (socat `172.17.0.1:13900` → `127.0.0.1:3900`), captured with the rest of the Plane stack in
 `plane-public/` — verified identical to the installed unit on 2026-07-20; kept there, not
 duplicated here.
+
+## Tailnet S3 endpoint
+
+Owner request 2026-10-22: make the S3 API, and nothing else, reachable from tailnet
+hosts (`agent-ee-gate-c4`, archon, peecee-wsl). Garage's own binds are unchanged
+(`garage.toml` still says `127.0.0.1:3900`) and Garage was not restarted.
+`tailscaled` forwards raw TCP from the node's tailnet addresses to the loopback
+listener:
+
+```bash
+sudo tailscale serve --bg --tcp 3900 tcp://127.0.0.1:3900
+```
+
+`sudo` is needed even though `halbritt` is the tailscale operator: proximal's serve
+config already contains path handlers, and tailscaled then refuses non-root config
+writes. `--bg` stores the mapping in tailscaled's state, so it survives tailscaled
+restarts and reboots. It is a serve entry, not funnel: `tailscale serve status`
+lists it as tailnet-only and `AllowFunnel` is empty. The resulting entry in
+`tailscale serve status --json` is:
+
+```json
+"TCP": { "3900": { "TCPForward": "127.0.0.1:3900" } }
+```
+
+Listeners after the change (`sudo ss -ltnp | grep :3900`):
+
+```
+127.0.0.1:3900                             garage
+100.85.100.81%tailscale0:3900              tailscaled
+[fd7a:115c:a1e0::4234:6451]%tailscale0:3900  tailscaled
+```
+
+The tailscaled sockets are bound to the tailnet addresses and to the `tailscale0`
+device, so nothing listens on the LAN (`192.168.1.92`), the public IPv6
+addresses on `enp3s0`, or `docker0`. RPC `:3901`, web `:3902`, admin `:3903` and
+k2v `:3904` are not forwarded.
+
+Access control is Garage's: every request needs a SigV4 key, and an unsigned
+request gets `AccessDenied`. Any tailnet device that the tailnet ACL lets reach
+proximal can connect; no ACL change was made or needed. Garage sees these
+clients as `127.0.0.1`. Use path-style addressing with region `garage` (the
+`root_domain` vhost names are `*.localhost` only).
+
+Verified 2026-10-22 with `curl http://100.85.100.81:3900/`: `agent-ee-gate-c4`
+(100.122.93.61), archon (100.100.42.51) and peecee-wsl (through peecee's
+tailnet) each got HTTP 403 `AccessDenied`. archon and peecee-wsl got the same
+through the IPv6 tailnet address and `proximal.tail0ecc2e.ts.net`. From all three,
+`192.168.1.92:3900`, proximal's global IPv6 address on :3900, and
+`100.85.100.81:3901-3904` refused the connection. Plane was unaffected: the
+`plane-harm-org` API container's `head_bucket` and `list_objects_v2` through
+the Docker bridge returned 200 before and after.
+
+Revert (removes only this entry; the other serve mappings stay):
+
+```bash
+sudo tailscale serve --tcp=3900 off
+```
 
 ## Files → install locations
 

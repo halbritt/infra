@@ -36,6 +36,10 @@ Docker-bridge proxy units bound only on `172.17.0.1`:
 | Redis | `127.0.0.1:6379` | `plane-harm-org-redis-bridge.service` | `172.17.0.1:16379` |
 | Garage S3 | `127.0.0.1:3900` | `plane-harm-org-garage-bridge.service` | `172.17.0.1:13900` |
 
+Garage still binds loopback only. Since 2026-10-22 its S3 port is also forwarded
+to tailnet clients at `100.85.100.81:3900` by `tailscale serve --tcp`; that path
+does not touch the bridge. See [`../garage/README.md`](../garage/README.md#tailnet-s3-endpoint).
+
 Persistent resources:
 
 | resource | name |

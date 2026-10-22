@@ -129,6 +129,7 @@ standard quotas.
 | Disk | 200 GB `hyperdisk-balanced`, 10000 IOPS, 440 MiB/s (the default throughput for 200 GiB; Hyperdisk needs both set). The root filesystem grew to 193 GB at boot. |
 | Image | family `agent-ee-gate` (`agent-ee-gate-20261022-0352`) |
 | Access | `ssh agent-ee-gate-c4` from proximal (`~/.ssh/config.d/agent-ee-gate-c4`, below) |
+| Tailnet | `agent-ee-gate-c4` / `agent-ee-gate-c4.tail0ecc2e.ts.net`, `100.122.93.61` and `fd7a:115c:a1e0::552c:5d3e` (joined 2026-10-22; see [Tailnet](#tailnet-2026-10-22)) |
 | Spot price | $1.22/h compute (48 × $0.02074 + 96 GiB × $0.002357) + $0.086/h disk ($16 capacity + $35 IOPS above 3000 + $12 throughput above 140 MiB/s, per month) = **about $1.31/h, about $955/month if left running**. Stopped, it costs the disk only (about $63/month). |
 
 ```sh
@@ -256,3 +257,31 @@ sides; the worker dir is kept at `/tmp/agent-ee-burndown-20261017/smoke/`.
 To retire it as a worker host: remove it from `REMOTE_HOSTS` in both mirror
 scripts and from `HOSTS`/`REMOTE_ACCOUNTS`, then delete the profile dirs on the
 VM (or the VM).
+
+### Tailnet (2026-10-22)
+
+Owner request 2026-10-22: `agent-ee-gate-c4` is on the tailnet, mainly so it can
+reach proximal's Garage S3 endpoint `http://100.85.100.81:3900` (see
+[`../proximal/config/garage/README.md`](../proximal/config/garage/README.md#tailnet-s3-endpoint)).
+
+| | |
+|---|---|
+| Package | `tailscale` 1.104.2 from `https://pkgs.tailscale.com/stable/ubuntu noble main` (`/etc/apt/sources.list.d/tailscale.list`, keyring `/usr/share/keyrings/tailscale-archive-keyring.gpg`); `tailscaled` enabled |
+| Join | `sudo tailscale up --hostname=agent-ee-gate-c4 --ssh=false`, authorized by the owner in the browser (no auth key stored anywhere) |
+| Node | `agent-ee-gate-c4`, MagicDNS `agent-ee-gate-c4.tail0ecc2e.ts.net`, `100.122.93.61`, `fd7a:115c:a1e0::552c:5d3e`; node key expires 2027-04-20 06:57 UTC |
+| Prefs | Tailscale SSH off, no exit node, no advertised routes, does not accept routes (`RouteAll=false`), MagicDNS on through systemd-resolved (GCE metadata and public names still resolve) |
+
+Verified 2026-10-22: `tailscale ping` works in both directions (proximal reached
+c4 through DERP `ord` first, then directly at `34.173.184.33:41641`). From
+proximal, `ssh -i ~/.ssh/google_compute_engine -o HostKeyAlias=agent-ee-gate-c4
+-o UserKnownHostsFile=~/.ssh/google_compute_known_hosts halbritt@100.122.93.61`
+reaches the same host key. The `ssh agent-ee-gate-c4` alias (public IP through
+gcloud) still works and is unchanged. No GCP firewall rule and no tailnet ACL
+was changed. From c4, `curl http://100.85.100.81:3900/` returns Garage's 403
+`AccessDenied` (reachable, unsigned).
+
+The node's tailnet identity is in `/var/lib/tailscale` on this VM's disk. It is
+not part of the `agent-ee-gate` image. Never image this disk without removing
+that directory first. To leave the tailnet: `sudo tailscale logout` on the VM,
+then remove the machine in the Tailscale admin console. Deleting the VM leaves a
+stale machine entry, which also has to be removed there.
