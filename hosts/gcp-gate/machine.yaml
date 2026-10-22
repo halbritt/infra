@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "name": "gcp-gate",
+  "hostname": "agent-ee-gate",
+  "status": "active",
+  "platform": {
+    "os": "linux",
+    "distribution": "Ubuntu",
+    "distribution_version": "24.04 LTS",
+    "architecture": "x86_64",
+    "provider": "gce",
+    "project": "heath-stuff",
+    "image_family": "agent-ee-gate"
+  },
+  "roles": [
+    "linux"
+  ],
+  "responsibilities": [
+    "agent-ee-release-gate"
+  ],
+  "paths": {
+    "config": "config",
+    "notes": "notes.md",
+    "changelog": "CHANGELOG.md"
+  },
+  "hardware": {
+    "machine_type": "c2d-highcpu-16 (Spot)",
+    "logical_cpus": 16,
+    "memory_gib": 32,
+    "boot_disk": "100 GB pd-balanced"
+  }
+}
