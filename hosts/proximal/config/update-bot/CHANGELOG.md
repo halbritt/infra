@@ -1,5 +1,39 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-22 13:37 UTC — 297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **os** — verified. Before: Ubuntu 24.04.5 LTS, running kernel 6.8.0-146-generic (6.8.0-147 installed, reboot pending/owner-controlled). The 2026-10-21 run installed 18 ordinary noble updates (ca-certificates, cloud-init, glib, protobuf, xz, tmux, ubuntu-pro, distro-info-data); held out-of-scope packages (docker*, google-cloud-cli, grafana, libpq/postgres stack, nodejs, NVIDIA/CUDA driver stack, tailscale, gh) unchanged. Re-checking for newly published ordinary noble release/security/updates. No apt/dpkg lock held.. After: 9 packages installed and observed at their new versions; 47 held-scope packages still deferred; reboot_required=true.
+  Verification: operation exit 0/0, changed=true; /var/lib/update-bot-os/latest.json status=completed with the 9 selected packages and observed versions; native evidence /var/lib/update-bot-os/1792676303788881409.
+  Activation: active on disk; package-script service restarts suppressed; no reboot.
+  Evidence: `/var/lib/update-bot/runs/297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a/operations/6d68dabc-1269-4f7d-997f-ac68d8f15b30`.
+
+- **hermes** — verified. Before: Installed/activated generation is /var/lib/update-bot/staging/hermes-candidate-54455f3e, carry commit 98065f845f6a630cec62c15da8d2643a3673075a on upstream base 7dcb1b4cfdb88fe870aab3b4fe13041a11207d15, running as healthy gateway pid 1763630 with Slack connected (hermes-activation-latest.json status=verified). Upstream main has advanced to 8237c7f8ec179c88857f24a174509d985af704b7. This prep only fetches upstream and carries the stored patch (config/update-bot/patches/hermes.patch) 3-way onto the new base in an isolated clone; no venv build, tests, launcher change or gateway restart here. Live install/launcher/gateway untouched.. After: isolated candidate /var/lib/update-bot/staging/hermes-candidate-8237c7f8 cloned at 8237c7f8 with the stored patch carried (6 files clean, 3 auto-merged, no markers) and committed as carry 43ff17bc743e17e839e73f320758efab691fffd9; no venv build, tests, install, launcher change or restart.
+  Verification: operation exit 0/0 verified; prep.log RESULT: PORT_OK carry_commit=43ff17bc base=8237c7f8; verify.log PREP_OK HEAD=43ff17bc; live install/launcher/gateway untouched.
+  Activation: none; candidate staged only, build/test/install/activation pending next run.
+  Evidence: `/var/lib/update-bot/runs/297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a/operations/6efca0f1-3409-4500-99ec-e5f725735762`.
+
+- **wigolo** — verified. Before: Global npm wigolo@0.2.1 installed as a source build from ~/git/wigolo; built 2026-10-21 at upstream-main da59eee72ee5e6c6a79a290e9c0f6d3720588711. config/wigolo/SOURCE_COMMIT still records c6ad4479 (publisher updates it). The ~/git/wigolo checkout is clean (no local work). Remote upstream main (KnockOutEZ/wigolo) has advanced to 3507bb8eeec5ae99b1425af4c0fbe6cfb10e09b5. Published npm latest is still 0.2.1 (must NOT replace the source build with it). The script fetches origin main, checks out the new commit detached, npm ci, builds, packs and reinstalls globally. Preserves ~/.wigolo data/cache and provider config.. After: rebuilt from upstream main 3507bb8e and reinstalled globally as wigolo@0.3.0; ~/git/wigolo HEAD=3507bb8e; data/cache and provider config preserved.
+  Verification: operation exit 0/0 verified; build log RESULT: WIGOLO_BUILD_OK target=3507bb8eeec5ae99b1425af4c0fbe6cfb10e09b5; npm ls -g wigolo => wigolo@0.3.0.
+  Activation: global package in use for new invocations; no service restart.
+  Evidence: `/var/lib/update-bot/runs/297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a/operations/8f652aa2-510f-49d5-989e-9c2db0171868`.
+
+- **agy** — verified. Before: Installed Agy reports 1.4.5 via /home/halbritt/.local/bin/agy --version (self-updated from 1.4.4 since the 2026-10-21 run). Its bundled changelog/version cannot establish the online latest; the only native channel check is the built-in updater subcommand 'agy update' (stdin closed, noninteractive). No agy interactive session is being interrupted by a CLI update.. After: native updater reports 'You are already on the latest version'; version still 1.4.5.
+  Verification: operation exit 0/0; install.log 'Checking for updates... (current version 1.4.5) / You are already on the latest version'; verify.log 1.4.5.
+  Activation: no change; existing installation in use.
+  Evidence: `/var/lib/update-bot/runs/297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a/operations/996dfbd3-92bf-4e27-892d-80e565cb1fce`.
+
+- **opencode** — verified. Before: Continuation of failed operation dc76c4e8-e103-4e19-9254-bb2d5727025b (exit 5, BUILD_FAIL). That run cloned v1.19.4 (148842ef7cb1bc34192b3fff57d0f9721ab9c801), applied the stored 3-patch series cleanly, ran bun install --frozen-lockfile and the focused admission/instance/httpapi/prompt tests (102 pass, 1 skip, 0 fail), then the ELF build aborted: v1.19.4 script requires bun ^1.4.4 but bun 1.3.14 was staged. Live ELF was NOT modified (install step never reached); it remains 1.19.3+cairn.e3c4eb2 sha d2c0d8436871. This operation stages bun 1.4.4 and rebuilds the ELF in the existing candidate /var/lib/update-bot/staging/opencode-1.19.4 (patch still applied), then atomically installs.. After: bun 1.4.4 staged; ELF rebuilt and atomically installed; installed version 1.19.4+cairn.148842e sha256 66209749ccbe28bd46d14b4ef992f7d1f6750f874147476e581b0223ec0015c5; opencode-installed.json updated.
+  Verification: operation exit 0/0 verified; verify.log prints 1.19.4+cairn.148842e and the sha256; backup of prior ELF at /var/lib/update-bot/backups/opencode-d2c0d843....
+  Activation: active for new launches; existing process inode mappings preserved; no restart.
+  Evidence: `/var/lib/update-bot/runs/297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a/operations/ba8aca8a-1ab6-47b0-8f58-c7f77de65570`.
+
+- **opencode** — failed. Before: Installed patched OpenCode ELF at /home/halbritt/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe reports 1.19.3+cairn.e3c4eb2 (sha256 d2c0d843687126ee956b92714b616ee2caf00e897669811a338d7df77c9461e8, per /var/lib/update-bot/opencode-installed.json). npm opencode-ai latest is 1.19.4; upstream tag v1.19.4 = 148842ef7cb1bc34192b3fff57d0f9721ab9c801. The script clones v1.19.4, applies the stored 3-patch series (patches/opencode.patch) 3-way, runs bun install --frozen-lockfile, the focused admission/instance/httpapi/prompt tests, builds the single native ELF and atomically replaces the npm ELF. No opencode process is restarted; existing process inode mappings are preserved.. After: candidate cloned at 148842ef, stored 3-patch series applied cleanly, focused tests 102 pass/1 skip/0 fail, then ELF build aborted requiring bun ^1.4.4 (staged 1.3.14); no install, live ELF unchanged.
+  Verification: operation exit_code 5 status=failed; build log tail BUILD_FAIL 'This script requires bun@^1.4.4, but you are using bun@1.3.14'; install step never reached; installed ELF still 1.19.3+cairn.e3c4eb2.
+  Activation: none; running ELF unchanged.
+  Evidence: `/var/lib/update-bot/runs/297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a/operations/dc76c4e8-e103-4e19-9254-bb2d5727025b`.
+
 ## 2026-10-21 13:37 UTC — 0ff6ed03-e969-4809-9b43-ad1930aeb745
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
