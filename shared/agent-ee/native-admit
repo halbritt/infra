@@ -223,8 +223,18 @@ def hold(directory, info):
     return fd, path
 
 
+def allowed_weight(cfg, res):
+    """Largest weight this caller may hold now: reserved_max_weight only while it holds the live reservation."""
+    holds = bool(res) and res.get("token") == os.environ.get("NATIVE_ADMISSION_RESERVATION")
+    return cfg.get("reserved_max_weight", cfg["max_weight"]) if holds else cfg["max_weight"]
+
+
 def blocked(cfg, info):
-    """Reason the request cannot start now, or None. Call under the mutex."""
+    """Reason the request cannot start now, or None; "refuse: ..." means it never may.
+    Call under the mutex: every grant revalidates the weight against the current reservation."""
+    if info["weight"] > allowed_weight(cfg, reservation()):
+        return (f"refuse: weight {info['weight']} exceeds max_weight {cfg['max_weight']} "
+                f"and this caller no longer holds the host reservation")
     queue = live("queue")
     ahead = [q for q in queue if q["seq"] < info["seq"]]
     if ahead:
@@ -263,10 +273,7 @@ def run(args):
     weight, klass = job_weight(command, cfg)
     weight = args.weight if args.weight is not None else weight
     klass = args.klass or klass
-    res = reservation()
-    holds = bool(res) and res.get("token") == os.environ.get("NATIVE_ADMISSION_RESERVATION")
-    allowed = cfg.get("reserved_max_weight", cfg["max_weight"]) if holds else cfg["max_weight"]
-    if weight > allowed:
+    if weight > allowed_weight(cfg, reservation()):
         log_event("refused", label=args.label or " ".join(command)[:120], weight=weight, max_weight=cfg["max_weight"])
         extra = (f"; up to {cfg['reserved_max_weight']} only while holding this host's reservation"
                  if cfg.get("reserved_max_weight", 0) > cfg["max_weight"] else "")
@@ -284,6 +291,11 @@ def run(args):
     while True:
         with Mutex():
             reason = blocked(cfg, info)
+            if reason and reason.startswith("refuse:"):
+                qpath.unlink(missing_ok=True)
+                os.close(qfd)
+                log_event("refused", label=info["label"], weight=weight, reason=reason, waited_s=int(time.time() - start))
+                sys.exit(f"native-admit: {reason}")
             if reason is None:
                 fd, _ = hold("leases", info)
                 qpath.unlink(missing_ok=True)

@@ -23,11 +23,16 @@ PSI 53 to 77, and tens of thousands of zombies.
   exited, whether normally, by crash, by `kill -9` or by cancellation. Every
   decision runs under `mutex.lock` and first removes entries whose lock is free.
 - **Weight.** Units are strict-suite module workers. `strict_suite --jobs N`
-  weighs `min(N, max_weight)`. A suite without `--jobs` weighs `max_weight`,
-  because its default is the CPU count. Anything else weighs 1.
+  weighs N. A suite without `--jobs` weighs the CPU count, which is its
+  default. `ci-run.sh` weighs `$JOBS`. Anything else weighs 1. A weight above
+  `max_weight` is refused (exit 1), and nothing is clamped. Only the holder of
+  the host reservation may go up to `reserved_max_weight`. That permission is
+  rechecked under the mutex when the slot is granted, so a request whose
+  reservation expires or is revoked while it is queued is refused then, not
+  admitted.
   `ae-ci-exec` honours `AE_CI_WEIGHT`.
 - **Usage** is the sum of live leases plus agent-ee containers that hold no
-  live lease, weighted the same way. Those are jobs started before admission, or
+  live lease, weighted by their actual `--jobs`. Those are jobs started before admission, or
   containers whose client was killed. So a pre-existing backlog counts.
 - **Admission** follows strict FIFO order. The queue head starts when all of
   these hold:
