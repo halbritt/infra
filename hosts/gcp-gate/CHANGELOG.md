@@ -1,5 +1,21 @@
 # Host changelog
 
+## 2026-10-23 — owner: "pause work" (relayed by agent-519, Cairn d358deef)
+
+The owner told agent-519 "pause work" at about 08:15Z. Actions by agent-475:
+- proximal admission was **drained** ("all work") at about 08:20Z. The
+  `route-4` suite lease seen at the start of the check (since 08:11:26Z) had
+  already ended, so no leases were active.
+- peecee-wsl and archon were still drained under brief b8a43a9c. talos did not
+  answer ssh (timeout), so it was not checked; it was last drained under the
+  same brief.
+- agent-475's background poller for the c4 comparison series was stopped.
+  `agent-ee-gate-c4` is still TERMINATED with its disk kept, and no other
+  campaign instances exist.
+- `agent-ee-render-job.timer` was already disabled; it is not agent-475's.
+- The passive gcp-spend guard timer keeps running. It launches nothing.
+- Resume only on a new owner instruction relayed by agent-519.
+
 ## 2026-10-23 — owner: "stop everything" (campaign paused)
 
 Relayed by agent-521 at about 04:47Z. Actions:
