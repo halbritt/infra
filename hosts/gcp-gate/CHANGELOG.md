@@ -17,7 +17,7 @@ The owner told agent-519 "pause work" (the relay says about 08:15Z). Actions by 
 - **Amended a few minutes later.** The owner told agent-519 "just pause briefly, no need
   to go stop scheduled jobs" (Cairn 2c91394f): leave timers and configuration alone and just
   start no new steps. The proximal drain was a reconfiguration, so it was **undone** at about
-  08:14Z (`native-admit undrain`). Admission is back to its pre-pause state: proximal admits,
+  08:13Z (`native-admit undrain`). Admission is back to its pre-pause state: proximal admits,
   talos, peecee-wsl and archon stay drained under b8a43a9c. The c4 poller stays stopped; it
   only watched a finished series on a stopped VM.
 
