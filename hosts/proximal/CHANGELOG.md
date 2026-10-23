@@ -1,5 +1,11 @@
 # Changelog — proximal (system)
 
+## 2026-10-23 — agent-ee render job: pin advanced to the ROUTE-1 candidate (incomplete)
+
+- The pin now names the ROUTE-1 routed candidate `19ed7954…` as "Diagnostic 8", stage diagnostic. The board comes from fome-mc main `0fc9b543` route-1/candidate.
+- That candidate is INCOMPLETE: 78 unconnected on 48 nets, and validation failed on 61 dangling via/track warnings. It is not released. The job records routing completeness as unverified and makes no acceptance claim.
+- Bundle `19ed7954ab30-395dc29f7f68` was published under native-admit.
+
 ## 2026-10-23 — agent-ee render job: re-enabled, pinned to the R5 complete placement
 
 - `agent-ee-render-job.timer` is enabled again (about every 4 hours), per agent-521 brief b9e0f217. It had been stopped during the owner's 2026-10-23 stop and resume.
