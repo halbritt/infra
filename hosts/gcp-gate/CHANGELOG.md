@@ -22,6 +22,8 @@ Relayed by agent-521 at about 04:47Z. Actions:
   admitted host only. agent-449 picks the host, and only that host gets
   undrained. agent-524's Rust VM is running again on the owner's direct
   instruction to agent-524; the conflict was flagged to agent-519.
+- **proximal undrained at 05:04:48Z**, named by agent-449 for one bounded
+  placement run. talos, peecee-wsl and archon stay drained.
 
 ## 2026-10-23 — billed spend from the Budget API (owner via agent-519)
 
