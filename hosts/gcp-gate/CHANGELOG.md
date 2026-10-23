@@ -1,5 +1,21 @@
 # Host changelog
 
+## 2026-10-22 — $100 cumulative campaign cap: `gcp-spend` ledger and guard
+
+Owner: "keep the gcp spend under control, I don't want to exceed $100".
+
+- New `config/budget/gcp-spend`: an itemized estimate from audit-log lifetimes
+  and catalog prices, with ×1.25 safety, a $3 allowance and $10 headroom.
+  Billing data is not readable.
+- `run-overflow.sh`, `run-gate.sh` and `build-image.sh` reserve the worst case
+  before any create and refuse when spend is unknown or insufficient.
+- A 15-minute user timer on proximal (`gcp-spend-guard`) stops c4, after
+  preserving its gate logs, before the cap.
+- First reconciliation: accrued about $23.69, $1.64/h committed, $66.31 left
+  before the hold. Tests: reserve, refuse (oversized and unpriced) and release
+  work against an isolated ledger, and the guard's first run made no stop.
+  Details: [budget](config/budget/README.md).
+
 ## 2026-10-22 — Overflow boundaries: VM state and mixed handoff matches
 
 Second agent-521 review of `run-overflow.sh`:

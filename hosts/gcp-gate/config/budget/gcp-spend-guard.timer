@@ -1,0 +1,10 @@
+# proximal user unit: ~/.config/systemd/user/gcp-spend-guard.timer
+[Unit]
+Description=Campaign GCP cap guard every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+
+[Install]
+WantedBy=timers.target

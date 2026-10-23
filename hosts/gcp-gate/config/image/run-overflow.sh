@@ -102,6 +102,7 @@ cleanup() {
     cleanup="NOT-PROVEN instances(rc=$rc_i:${out_i:-none}) disks(rc=$rc_d:${out_d:-none})"
     log "CLEANUP NOT PROVEN for $VM: $cleanup; check by hand"
   fi
+  [ "$cleanup" = verified ] && "$SPEND" release "$RES" --note "teardown verified" >/dev/null 2>&1
   summary
 }
 finish() { # finish CODE: exit after cleanup, preferring the most serious unproven outcome
@@ -114,6 +115,12 @@ printf '%q ' "$0" --host "$HOST" --tree "$TREE" --label "$LABEL" ${HANDOFF:+--ha
 src "git -C $(printf %q "$TREE") rev-parse HEAD 2>/dev/null; git -C $(printf %q "$TREE") status --porcelain | wc -l" > "$OUT/source.txt" ||
   { echo "cannot read $HOST:$TREE" >&2; exit 2; }
 
+SPEND=${GCP_SPEND:-$(cd "$(dirname "$0")/../budget" && pwd)/gcp-spend}
+case $MAX in *h) max_h=${MAX%h} ;; *m) max_h=$(echo "${MAX%m} / 60" | bc -l) ;; *) log "--max must be like 90m or 2h"; exit 2 ;; esac
+# Campaign cap (owner: under $100 cumulative): no ledger reservation, no VM.
+RES=$("$SPEND" reserve --label "overflow $LABEL" --vm "$VM" --machine-type "$MACHINE_TYPE" --max-hours "$max_h" 2>"$OUT/budget.err") ||
+  { log "BUDGET REFUSED: $(cat "$OUT/budget.err")"; exit 2; }
+log "budget reservation $RES (worst case for $MACHINE_TYPE x $MAX)"
 t_create=$(date +%s)
 log "creating $VM ($MACHINE_TYPE Spot, $ZONE, max $MAX, delete on termination, boot-disk auto-delete)"
 gc compute instances create "$VM" --zone "$ZONE" --machine-type "$MACHINE_TYPE" \

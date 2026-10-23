@@ -1,0 +1,8 @@
+# proximal user unit: ~/.config/systemd/user/gcp-spend-guard.service
+# Canonical source: infra hosts/gcp-gate/config/budget/.
+[Unit]
+Description=Campaign GCP cap guard (stop agent-ee-gate-c4 before the $100 cap)
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/infra/hosts/gcp-gate/config/budget/gcp-spend guard

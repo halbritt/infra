@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""gcp-spend: campaign GCP spend estimate, launch reservations and the cap guard.
+
+Owner, 2026-10-22: "keep the gcp spend under control, I don't want to exceed $100".
+That is the cumulative ceiling for the agent-ee/kicad-route telemetry-pod campaign in
+project heath-stuff: gate, builder, overflow and experiment VMs, their disks, image
+storage and related charges.
+
+  gcp-spend status [--json]       itemized accrued estimate, commitments, remaining allowance
+  gcp-spend reserve --label L --machine-type T --max-hours H [--disk-gb N] [--disk-type pd-balanced]
+                                  refuse (exit 1) unless the WORST-case cost fits; prints the reservation id
+  gcp-spend release ID            close a reservation after verified teardown
+  gcp-spend guard                 timer: stop agent-ee-gate-c4 (logs preserved first) when the cap would be reached
+
+Billing data is not readable here: there is no billing export, and the Budget API is
+disabled. So spend is ESTIMATED from the GCE admin audit log (every create, start,
+stop, preempt and delete) times the catalog Spot prices measured on 2026-10-22, then
+multiplied by SAFETY. Allowances are added for charges the log cannot show (egress,
+logging, snapshots). Anything the tool cannot establish makes reserve refuse.
+Ledger: ~/.local/share/infra/gcp-budget/. Canonical source: infra
+hosts/gcp-gate/config/budget/.
+"""
+import argparse, datetime, json, subprocess, sys, time, uuid
+from pathlib import Path
+
+PROJECT, CAP, HEADROOM, SAFETY = "heath-stuff", 100.0, 10.0, 1.25
+CAMPAIGN_START = "2026-10-21T00:00:00Z"        # first campaign VM: image builder, 2026-10-22 03:16Z
+EXCLUDE = {"tailscale-exit-node"}               # not campaign (owner's exit node, created 2026-04-25)
+STATE = Path(__import__("os").environ.get("GCP_SPEND_STATE", Path.home() / ".local/share/infra/gcp-budget"))
+# Spot USD per vCPU-h, per GiB-h (Cloud Billing catalog, 2026-10-22; infra hosts/gcp-gate/README.md "Cost").
+FAMILY = {"c2d": (0.01428, 0.001915), "c4": (0.02074, 0.002357)}
+SHAPES = {"c2d-highcpu-4": ("c2d", 4, 8), "c2d-highcpu-8": ("c2d", 8, 16), "c2d-highcpu-16": ("c2d", 16, 32),
+          "c4-highcpu-48": ("c4", 48, 96), "c4-highcpu-96": ("c4", 96, 192)}
+DISK_PER_GB_H = {"pd-balanced": 0.10 / 730}     # USD per GB-hour
+C4_DISK_PER_H = 63.0 / 730                      # 200 GB hyperdisk-balanced at 10000 IOPS / 440 MiB/s
+IMAGE_PER_GB_H = 0.05 / 730
+ALLOWANCES = {"egress, logging and other unmetered charges (estimate)": 3.0}
+
+
+def shape_of(name):
+    """(machine type, disk GB, disk kind) for a campaign instance; ledger entries override."""
+    led = {e["vm"]: e for e in ledger() if e.get("vm")}
+    if name in led:
+        return led[name]["machine_type"], led[name].get("disk_gb", 100), "pd-balanced"
+    if name == "agent-ee-gate-c4":
+        return "c4-highcpu-48", 200, "c4-hyperdisk"
+    if name.startswith(("agent-ee-ovf-", "agent-ee-rust524", "agent-ee-pypy524")):
+        return "c2d-highcpu-4", 100, "pd-balanced"
+    if name.startswith("agent-ee-gate-"):           # builders and run-gate.sh gates (c2d-highcpu-16 defaults)
+        return "c2d-highcpu-16", 100, "pd-balanced"
+    return None, None, None
+
+
+def rate(machine_type):
+    fam, vcpu, gib = SHAPES[machine_type]
+    per_cpu, per_gib = FAMILY[fam]
+    return vcpu * per_cpu + gib * per_gib
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def ts(text):
+    return datetime.datetime.fromisoformat(text.replace("Z", "+00:00"))
+
+
+def gcloud(*args):
+    out = subprocess.run(["gcloud", "--project", PROJECT, *args], capture_output=True, text=True, timeout=180)
+    if out.returncode != 0:
+        raise RuntimeError(f"gcloud {' '.join(args[:3])} failed: {out.stderr.strip()[-200:]}")
+    return out.stdout
+
+
+def ledger():
+    path = STATE / "ledger.jsonl"
+    return [json.loads(l) for l in path.read_text().splitlines() if l.strip()] if path.exists() else []
+
+
+def lifecycle():
+    query = ('resource.type="gce_instance" AND operation.last=true AND timestamp>="%s" AND '
+             'protoPayload.methodName:("insert" OR "start" OR "stop" OR "delete" OR "preempted" OR '
+             '"guestTerminate" OR "suspend" OR "resume")' % CAMPAIGN_START)
+    events = json.loads(gcloud("logging", "read", query, "--format=json", "--limit=5000"))
+    per = {}
+    for e in events:
+        pp = e["protoPayload"]
+        if e.get("severity") == "ERROR" or pp.get("status", {}).get("code"):
+            continue
+        name = pp["resourceName"].split("/")[-1]
+        if name not in EXCLUDE:
+            per.setdefault(name, []).append((ts(e["timestamp"]), pp["methodName"].rsplit(".", 1)[-1]))
+    return {n: sorted(v) for n, v in per.items()}
+
+
+def estimate():
+    """Itemized accrued estimate and current hourly commitments; raises if anything is unknown."""
+    t = now(); items, committed = [], []
+    live = {i["name"]: i["status"] for i in json.loads(gcloud("compute", "instances", "list", "--format=json(name,status)"))}
+    for name, evs in lifecycle().items():
+        mt, disk_gb, disk_kind = shape_of(name)
+        if mt is None:
+            raise RuntimeError(f"unknown campaign instance shape: {name}")
+        up_h, started, created, deleted = 0.0, None, None, None
+        for when, method in evs:
+            if method in ("insert", "start", "resume"):
+                created = created or when
+                started = started or when
+            elif method in ("stop", "preempted", "guestTerminate", "delete", "suspend") and started:
+                up_h += (when - started).total_seconds() / 3600; started = None
+            if method == "delete":
+                deleted = when
+        running = live.get(name) == "RUNNING"
+        if started and running:
+            up_h += (t - started).total_seconds() / 3600
+        disk_end = deleted or t
+        disk_h = (disk_end - created).total_seconds() / 3600 if created else 0
+        compute = up_h * rate(mt)
+        disk = disk_h * (C4_DISK_PER_H if disk_kind == "c4-hyperdisk" else disk_gb * DISK_PER_GB_H[disk_kind])
+        items.append({"item": name, "machine_type": mt, "vm_hours": round(up_h, 2), "disk_hours": round(disk_h, 2),
+                      "usd": round(compute + disk, 3), "state": live.get(name, "deleted")})
+        if running:
+            committed.append({"item": f"{name} running", "usd_per_h": round(rate(mt) + (C4_DISK_PER_H if disk_kind == "c4-hyperdisk" else disk_gb * DISK_PER_GB_H[disk_kind]), 3)})
+        elif name in live:
+            committed.append({"item": f"{name} disk (stopped)", "usd_per_h": round(C4_DISK_PER_H if disk_kind == "c4-hyperdisk" else disk_gb * DISK_PER_GB_H[disk_kind], 3)})
+    for img in json.loads(gcloud("compute", "images", "list", "--no-standard-images", "--format=json(name,archiveSizeBytes,creationTimestamp)")):
+        if not img["name"].startswith("agent-ee-gate"):
+            continue
+        gb = int(img["archiveSizeBytes"]) / 1e9; hours = (t - ts(img["creationTimestamp"])).total_seconds() / 3600
+        items.append({"item": f"image {img['name']}", "usd": round(gb * IMAGE_PER_GB_H * hours, 3)})
+        committed.append({"item": f"image {img['name']} storage", "usd_per_h": round(gb * IMAGE_PER_GB_H, 4)})
+    metered = sum(i["usd"] for i in items)
+    accrued = metered * SAFETY + sum(ALLOWANCES.values())
+    open_res = [r for r in ledger() if r.get("state") == "open" and ts(r["until"]) > t]
+    reserved = sum(r["worst_usd"] for r in open_res)
+    per_h = sum(c["usd_per_h"] for c in committed) * SAFETY
+    return {"as_of": t.isoformat(timespec="seconds"), "cap": CAP, "headroom": HEADROOM, "safety": SAFETY,
+            "items": items, "allowances": ALLOWANCES, "metered_usd": round(metered, 2),
+            "accrued_estimate_usd": round(accrued, 2), "committed_usd_per_h": round(per_h, 3),
+            "open_reservations": open_res, "reserved_usd": round(reserved, 2),
+            "remaining_usd": round(CAP - HEADROOM - accrued - reserved, 2),
+            "hours_until_hold_at_current_rate": round((CAP - HEADROOM - accrued - reserved) / per_h, 1) if per_h else None,
+            "basis": "estimate: GCE audit-log lifetimes x catalog Spot prices (2026-10-22) x safety + allowances; billing data not available"}
+
+
+def status(args):
+    e = estimate()
+    if args.json:
+        print(json.dumps(e, indent=1)); return
+    print(f"campaign GCP spend, {e['as_of']} ({e['basis']})")
+    for i in e["items"]:
+        print(f"  {i['item']:40} {i.get('machine_type',''):15} vm {i.get('vm_hours','-'):>6} h  disk {i.get('disk_hours','-'):>6} h  ${i['usd']:7.3f}  {i.get('state','')}")
+    for k, v in e["allowances"].items():
+        print(f"  allowance: {k}  ${v:.2f}")
+    print(f"metered ${e['metered_usd']:.2f} x {SAFETY} + allowances = accrued estimate ${e['accrued_estimate_usd']:.2f}")
+    print(f"open reservations ${e['reserved_usd']:.2f}; committed ${e['committed_usd_per_h']:.3f}/h (with safety)")
+    print(f"cap ${CAP:.0f} - headroom ${HEADROOM:.0f} -> remaining ${e['remaining_usd']:.2f}; hold in about {e['hours_until_hold_at_current_rate']} h at the current rate")
+
+
+def append(entry):
+    STATE.mkdir(parents=True, exist_ok=True)
+    with open(STATE / "ledger.jsonl", "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def reserve(args):
+    try:
+        e = estimate()
+    except Exception as err:  # unknown spend: no launch
+        print(f"gcp-spend: REFUSED: spend cannot be established ({err})", file=sys.stderr); sys.exit(1)
+    if args.machine_type not in SHAPES:
+        print(f"gcp-spend: REFUSED: no price for {args.machine_type}", file=sys.stderr); sys.exit(1)
+    worst = (rate(args.machine_type) + args.disk_gb * DISK_PER_GB_H["pd-balanced"]) * args.max_hours * SAFETY
+    # Keep the running commitment for the reservation window in view too.
+    window = e["committed_usd_per_h"] * args.max_hours
+    if worst + window > e["remaining_usd"]:
+        print(f"gcp-spend: REFUSED: worst case ${worst:.2f} + current commitments ${window:.2f} over {args.max_hours} h "
+              f"exceeds remaining ${e['remaining_usd']:.2f} (cap ${CAP:.0f}, headroom ${HEADROOM:.0f})", file=sys.stderr)
+        sys.exit(1)
+    rid = uuid.uuid4().hex[:10]
+    append({"id": rid, "state": "open", "label": args.label, "vm": args.vm, "machine_type": args.machine_type,
+            "disk_gb": args.disk_gb, "max_hours": args.max_hours, "worst_usd": round(worst, 2),
+            "created": now().isoformat(timespec="seconds"),
+            "until": (now() + datetime.timedelta(hours=args.max_hours)).isoformat(timespec="seconds"),
+            "remaining_before": e["remaining_usd"]})
+    print(rid)
+
+
+def release(args):
+    entries = ledger()
+    if not any(e["id"] == args.id and e["state"] == "open" for e in entries):
+        print(f"gcp-spend: no open reservation {args.id}", file=sys.stderr); sys.exit(1)
+    append({"id": args.id, "state": "closed", "closed": now().isoformat(timespec="seconds"), "note": args.note})
+    # Fold: the latest state per id wins.
+    folded = {}
+    for e in entries + [{"id": args.id, "state": "closed"}]:
+        folded.setdefault(e["id"], {}).update(e)
+    (STATE / "ledger.jsonl").write_text("".join(json.dumps(v) + "\n" for v in folded.values()))
+
+
+def guard(args):
+    """Stop agent-ee-gate-c4 (after copying its gate logs) before the cap can be reached."""
+    STATE.mkdir(parents=True, exist_ok=True)
+    unknown_file = STATE / "guard-unknown"
+    try:
+        e = estimate(); unknown_file.unlink(missing_ok=True)
+    except Exception as err:
+        n = int(unknown_file.read_text()) + 1 if unknown_file.exists() else 1
+        unknown_file.write_text(str(n))
+        print(f"guard: spend UNKNOWN ({err}); consecutive {n}")
+        if n < 3:
+            return
+        reason = "spend unknown for 3 consecutive checks"
+    else:
+        next_hour = e["committed_usd_per_h"] * 1.0
+        print(f"guard: accrued ${e['accrued_estimate_usd']}, remaining ${e['remaining_usd']}, next hour ${next_hour:.2f}")
+        if e["remaining_usd"] > next_hour:
+            return
+        reason = f"remaining ${e['remaining_usd']} would not cover the next hour (${next_hour:.2f})"
+    try:
+        live = gcloud("compute", "instances", "describe", "agent-ee-gate-c4", "--zone", "us-central1-a", "--format=value(status)").strip()
+    except Exception as err:
+        print(f"guard: cannot read c4 state ({err})"); return
+    if live != "RUNNING":
+        print(f"guard: hold ({reason}); c4 is {live}"); return
+    dest = Path.home() / "agent-ee-gate-c4-preserved" / now().strftime("%Y%m%dT%H%M%SZ")
+    dest.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["rsync", "-a", "--timeout=120", "agent-ee-gate-c4:agent-ee-gate/ci-logs/", f"{dest}/ci-logs/"], timeout=300)
+    print(f"guard: STOPPING agent-ee-gate-c4: {reason}; gate logs preserved in {dest}")
+    gcloud("compute", "instances", "stop", "agent-ee-gate-c4", "--zone", "us-central1-a")
+    append({"id": "guard-" + uuid.uuid4().hex[:6], "state": "event", "event": "c4-stopped", "reason": reason,
+            "at": now().isoformat(timespec="seconds"), "preserved": str(dest)})
+
+
+def main():
+    p = argparse.ArgumentParser(prog="gcp-spend", description=__doc__.splitlines()[0])
+    sub = p.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("status"); s.add_argument("--json", action="store_true"); s.set_defaults(fn=status)
+    s = sub.add_parser("reserve"); s.add_argument("--label", required=True); s.add_argument("--vm")
+    s.add_argument("--machine-type", required=True); s.add_argument("--max-hours", type=float, required=True)
+    s.add_argument("--disk-gb", type=int, default=100); s.set_defaults(fn=reserve)
+    s = sub.add_parser("release"); s.add_argument("id"); s.add_argument("--note", default=""); s.set_defaults(fn=release)
+    sub.add_parser("guard").set_defaults(fn=guard)
+    a = p.parse_args(); a.fn(a)
+
+
+if __name__ == "__main__":
+    main()

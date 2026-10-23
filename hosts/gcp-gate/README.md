@@ -96,6 +96,10 @@ JSON is identical across the two GCE runs.
 
 ## Cost
 
+Campaign spend is capped at **$100 cumulative** (owner, 2026-10-22). Every launch
+needs a `gcp-spend reserve`, and a guard stops c4 before the cap. See
+[budget](config/budget/README.md).
+
 Measured with Cloud Billing catalog prices for us-west1 on 2026-10-22 (Spot
 prices change):
 

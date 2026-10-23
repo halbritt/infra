@@ -33,6 +33,7 @@ OUT=${OUT:-$HOME/agent-ee-gate-gcp/$SHA-$STAMP}
 LABELS=purpose=agent-ee-gate,owner=halbritt
 
 gc() { gcloud --project "$PROJECT" "$@"; }
+SPEND=${GCP_SPEND:-$(cd "$(dirname "$0")/../budget" && pwd)/gcp-spend}
 log() { echo "=== run-gate $(date -u +%H:%M:%S): $*"; }
 mkdir -p "$OUT"
 image_args=(--image-family agent-ee-gate --image-project "$PROJECT")
@@ -43,11 +44,14 @@ attempt=1
 while :; do
   VM=agent-ee-gate-$SHA-$(date -u +%H%M%S)
   log "attempt $attempt: $VM ($MACHINE_TYPE Spot, $ZONE)"
+  # Campaign cap (owner: under $100 cumulative): no ledger reservation, no VM (3 h max-run-duration).
+  RES=$("$SPEND" reserve --label "gate $SHA" --vm "$VM" --machine-type "$MACHINE_TYPE" --max-hours 3) ||
+    { log "BUDGET REFUSED; no VM created"; exit 2; }
   gc compute instances create "$VM" --zone "$ZONE" --machine-type "$MACHINE_TYPE" \
     --provisioning-model=SPOT --instance-termination-action=DELETE --max-run-duration=3h \
     "${image_args[@]}" --boot-disk-size=100GB --boot-disk-type=pd-balanced \
     --no-service-account --no-scopes --labels "$LABELS" >/dev/null
-  [ "${KEEP:-0}" = 1 ] || trap 'gc compute instances delete "$VM" --zone "$ZONE" --quiet >/dev/null 2>&1 || true' EXIT
+  [ "${KEEP:-0}" = 1 ] || trap 'gc compute instances delete "$VM" --zone "$ZONE" --quiet >/dev/null 2>&1 || true; "$SPEND" release "$RES" --note "gate VM deleted" >/dev/null 2>&1 || true' EXIT
   vm() { gc compute ssh "$VM" --zone "$ZONE" --ssh-flag=-oServerAliveInterval=30 --command "$1"; }
   gone() { ! gc compute instances describe "$VM" --zone "$ZONE" --format='value(status)' 2>/dev/null | grep -q RUNNING; }
 

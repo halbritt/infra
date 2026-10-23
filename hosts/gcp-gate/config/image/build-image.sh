@@ -55,12 +55,16 @@ fi
 
 base=$(gc compute images describe-from-family ubuntu-2404-lts-amd64 --project ubuntu-os-cloud --format='value(name)')
 log "builder $BUILDER ($BUILDER_TYPE Spot, $ZONE) from $base, warm $WARM_SHA"
+SPEND=${GCP_SPEND:-$(cd "$(dirname "$0")/../budget" && pwd)/gcp-spend}
+# Campaign cap (owner: under $100 cumulative): no ledger reservation, no builder (3 h max-run-duration).
+RES=$("$SPEND" reserve --label "image builder" --vm "$BUILDER" --machine-type "$BUILDER_TYPE" --max-hours 3) ||
+  { log "BUDGET REFUSED; no builder created"; exit 2; }
 gc compute instances create "$BUILDER" --zone "$ZONE" --machine-type "$BUILDER_TYPE" \
   --provisioning-model=SPOT --instance-termination-action=DELETE --max-run-duration=3h \
   --image "$base" --image-project ubuntu-os-cloud \
   --boot-disk-size=100GB --boot-disk-type=pd-balanced \
   --no-service-account --no-scopes --labels "$LABELS"
-cleanup_builder() { gc compute instances delete "$BUILDER" --zone "$ZONE" --quiet || true; }
+cleanup_builder() { gc compute instances delete "$BUILDER" --zone "$ZONE" --quiet || true; "$SPEND" release "$RES" --note "builder deleted" >/dev/null 2>&1 || true; }
 trap 'rm -rf "$stage"; cleanup_builder' EXIT
 
 for i in $(seq 30); do ssh_b true 2>/dev/null && break; sleep 10; done
