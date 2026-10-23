@@ -1,5 +1,24 @@
 # Changelog — proximal (system)
 
+## 2026-10-22 — restic off-site backup: cache restored, retention runs again
+
+- Every scheduled backup ran with no cache. systemd sets no `HOME` for the
+  root service, so restic logged `unable to open cache` and fetched every tree
+  blob of the parent snapshot from the Nearline bucket, one request at a time.
+  Runs took 117 h and 76 h, and the run started on 10-19 was still going after
+  3.7 days, nearly idle. The fix is drop-in `30-cache.conf`
+  (`CacheDirectory=restic`, `RESTIC_CACHE_DIR=/var/cache/restic`) on
+  `restic-backup` and `restic-prune`, seeded from the old July cache.
+- `forget` had never run since `/nvr/archive` was added. Every backup exited 3
+  (live sqlite files vanished mid-run), and `set -e` stopped the script before
+  retention. It now runs on exit 0 or 3, and the script still exits with the
+  backup's status.
+- The stalled run was stopped with SIGTERM. After `daemon-reload`, a fresh run
+  started at 19:46:56 PDT with the cache.
+- The scripts, units, drop-ins and excludes are now tracked in
+  [config/restic](config/restic/README.md); secrets stay on the host. Owner
+  request: "restic backups do need to work".
+
 ## 2026-10-23 — hostmon: versioned source, resume fix, monitor-health and capacity alerts
 
 - Committed the read-only host monitor source (`probe.py`, `hostmon.py`, `brief.txt`) to [config/hostmon](config/hostmon/README.md); previously it existed only in the fleet tooling under `/tmp` and the deployed `~/.local/share/hostmon/`.

@@ -1,0 +1,3 @@
+/home/halbritt/.cache
+/home/halbritt/models
+node_modules

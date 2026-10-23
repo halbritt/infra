@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+
+exec 9>/run/lock/caplab-backup.lock
+/usr/bin/flock --exclusive 9
+rc=0
+/usr/bin/restic backup --tag scheduled \
+  --exclude-file=/etc/restic/home-excludes.txt \
+  --exclude /nvr/archive/claude-scratch \
+  /nvr/pg-backups /nvr/engram-backups /nvr/archive /home/halbritt || rc=$?
+# Exit 3: the snapshot was saved but some files could not be read (usually live files such
+# as sqlite -wal/-shm that vanished mid-run). Retention still applies; the 3 is still reported.
+if [ "$rc" = 0 ] || [ "$rc" = 3 ]; then
+  /usr/bin/restic forget --tag scheduled \
+    --keep-daily 7 --keep-weekly 4 --keep-monthly 6
+fi
+exit "$rc"

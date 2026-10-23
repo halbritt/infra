@@ -18,7 +18,7 @@ symlink in its place, so existing paths still work.
 | locally built Docker images (runpod-jobrunner-noop, checkout-refs-runner, kayakgen-*, harbor-prebuilt) | `/nvr/archive/docker-images/local-images-20261017.tar` (`docker load -i`) |
 
 Off-site backup: restic does not follow symlinks, so
-`/usr/local/libexec/caplab-p5/restic-backup-locked` (not tracked in any repo;
+`/usr/local/libexec/caplab-p5/restic-backup-locked` (tracked since 2026-10-22 in [config/restic](../restic/README.md);
 the previous copy is saved beside it as `.pre-archive-20261017`) now also backs
 up `/nvr/archive`, excluding `/nvr/archive/claude-scratch`. That keeps
 coverage the same as before the move.

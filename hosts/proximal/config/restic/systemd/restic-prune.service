@@ -1,0 +1,12 @@
+[Unit]
+Description=restic prune + check (proximal off-site repo)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/restic/proximal.env
+ExecStart=/usr/bin/restic prune
+ExecStartPost=/usr/bin/restic check
+Nice=10
+IOSchedulingClass=idle

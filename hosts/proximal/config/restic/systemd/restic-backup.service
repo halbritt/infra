@@ -1,0 +1,13 @@
+[Unit]
+Description=restic off-site backup (proximal -> gs://proximal-backups, Nearline)
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/nvr
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/restic/proximal.env
+ExecStart=/usr/bin/restic backup --tag scheduled --exclude-file=/etc/restic/home-excludes.txt /nvr/pg-backups /nvr/engram-backups /home/halbritt
+ExecStartPost=/usr/bin/restic forget --tag scheduled --keep-daily 7 --keep-weekly 4 --keep-monthly 6
+Nice=10
+IOSchedulingClass=idle
