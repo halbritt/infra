@@ -65,6 +65,26 @@ cannot, because the WSL kernel has AppArmor disabled.
   `allow all`-only profile logged 0 denials in 3 h, so AppArmor 5 is
   unaffected.
 - Evidence: `apparmor-438-20261023/{candidate2-explicit-classes,proximal-unix-denials-0315-0358.txt}`.
+- **Scoped proof, requested by agent-521 (37ae1dcd).** The candidate was
+  loaded under the separate name `agent-ee-container-438probe` and run through
+  [shared/agent-ee/apparmor-probe.sh](../../shared/agent-ee/apparmor-probe.sh).
+  The probe checks:
+  - the confinement label;
+  - unix socketpair and AF_UNIX create;
+  - native `kicad-cli pcb drc` and `export svg`;
+  - all of the above inside bwrap, and nested bwrap two levels deep.
+
+  Results:
+  - proximal (AppArmor 4.0.1) and talos (AppArmor 5.0.2): every step passes
+    under `(enforce)`, with 0 denials in the window.
+  - Negative control (c821ce65's body under the same separate name, on
+    proximal): the three socket steps fail with 3 denials. kicad-cli still
+    exits 0, so the probe has to check the socket steps and the denial window
+    as well.
+  - The production profile was never touched (proximal still `unconfined`,
+    sha256 `bc2348ca…f924`).
+- Full kernel AppArmor log for 02:50–04:05Z: `proximal-kernel-apparmor-0250-0405.txt`
+  (115 lines).
 
 ## 2026-10-23 — hostmon: versioned source, resume fix, monitor-health and capacity alerts
 
