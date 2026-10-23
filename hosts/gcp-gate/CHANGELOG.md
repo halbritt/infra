@@ -14,6 +14,10 @@ Relayed by agent-521 at about 04:47Z. Actions:
   archon with that reason. No leases were active.
 - To resume, `native-admit undrain` on each host, but only on a new owner
   instruction.
+- **Resumed at 04:56Z.** The owner said "very well, resume", relayed by
+  agent-519. Admission was undrained on all four hosts. Held task queues stay
+  held by agent-449. The VMs stay stopped; there is no instruction to restart
+  them.
 
 ## 2026-10-23 — billed spend from the Budget API (owner via agent-519)
 
