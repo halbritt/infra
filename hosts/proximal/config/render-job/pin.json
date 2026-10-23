@@ -1,14 +1,14 @@
 {
   "schema": "proximal.agent-ee-render-job.pin/1",
-  "name": "accepted-j6b2",
-  "label": "Diagnostic 7",
-  "stage": "diagnostic",
+  "name": "placement-r5",
+  "label": "Candidate 5",
+  "stage": "placement",
   "board": {
-    "path": "pinned/2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673/telemetry-pod.kicad_pcb",
-    "sha256": "2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673"
+    "path": "pinned/8f3bc234305516b91b6e519d3e0a3cd05b69b6dd16006a317c39b6d810ace5fd/telemetry-pod.kicad_pcb",
+    "sha256": "8f3bc234305516b91b6e519d3e0a3cd05b69b6dd16006a317c39b6d810ace5fd"
   },
   "project": {
-    "path": "pinned/2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673/telemetry-pod.kicad_pro",
+    "path": "pinned/8f3bc234305516b91b6e519d3e0a3cd05b69b6dd16006a317c39b6d810ace5fd/telemetry-pod.kicad_pro",
     "sha256": "10002b987995765415313fa89da32ba9011160853596f1a78ff8fba24ac9b175"
   },
   "project_models": {
@@ -29,19 +29,17 @@
     ],
     "reason": "old 112-footprint v9 pilot (fome-mc main telemetry-pod.kicad_pcb)"
   },
-  "scope_note": "Accepted j6b2 capture (agent-521 Cairn 6bf3405a): fome-mc main 4a961fd21debc6c86a1fb095fcf1453b457d1c5d (merge of reviewed 396eb6b6; tree 966b579a), candidate 5504a022417b5bf49ad6b1cec7f39f65bd3f8a566e46a286bb656904bef837ba, emission-7d5b0d4d design/project (MANIFEST 161f71b0); board = root telemetry-pod.kicad_pcb at 4a961fd2. UNPLACED and UNROUTED (0 tracks, 499 unconnected, 21 DRC: expected pre-placement scope); NOT QUALIFIED. Models visualization only. No physical-fit/fabrication approval. Initial seed includes off-board unplaced components, shown as captured.",
+  "scope_note": "R5 complete placement 309/309 (305 + 4 holes), unrouted, not qualified; 63 open silkscreen DRC findings",
   "provenance": {
-    "pinned_at": "2026-10-23T02:25:26.403193+00:00",
+    "pinned_at": "2026-10-23T06:54:08.663147+00:00",
     "pinned_by": "render-job-pin.sh",
-    "board_from": "fome-mc main 4a961fd21debc6c86a1fb095fcf1453b457d1c5d:telemetry-pod/telemetry-pod.kicad_pcb (byte-identical to emission-7d5b0d4d design/project; sha256 2f1c9557...)",
-    "project_from": "fome-mc main 4a961fd21debc6c86a1fb095fcf1453b457d1c5d:telemetry-pod/telemetry-pod.kicad_pro (sha256 10002b98...)",
-    "models_from": "fome-mc main 4a961fd21debc6c86a1fb095fcf1453b457d1c5d:telemetry-pod/inputs/models (project-local; hashes in project_models)",
+    "board_from": "fome-mc main 0fc9b543b06238f59324d0eb6b53fd44d443c4ca:telemetry-pod/expansion/placement-r5/board/telemetry-pod.kicad_pcb (writer commit 9d5aefdd; sha256 8f3bc234...)",
+    "project_from": "fome-mc main 0fc9b543b06238f59324d0eb6b53fd44d443c4ca:telemetry-pod/expansion/placement-r5/board/telemetry-pod.kicad_pro (original bytes, sha256 10002b98...)",
+    "models_from": "previous pin pinned/2f1c9557.../inputs/models = fome-mc main 4a961fd2:telemetry-pod/inputs/models (project-local; hashes in project_models)",
     "previous_pin": {
-      "name": "diagnostic-6",
-      "board_sha256": "adfb7668ac0c80dc1b4f1d2f97afa86b193f630c545bf43cbc0de8f49f351a40"
-    },
-    "snapshot_copied_via": "agent-449 session scratch pin-snapshot-396eb6b6 (ephemeral; the git locators above are durable)",
-    "metadata_refreshed_at": "2026-10-23T03:00Z: provenance locators made durable; pinned bytes, hashes, label and stage unchanged (agent-521 24efad6b)"
+      "name": "accepted-j6b2",
+      "board_sha256": "2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673"
+    }
   },
   "update_policy": "agent-449 advances the pin with render-job-pin.sh <board.kicad_pcb> <project.kicad_pro> [models-dir] <label> <scope-note> whenever a newer consistent campaign snapshot exists (e.g. j6 candidates). The helper refuses a board identical to the current pin or the 112-footprint pilot. An unchanged board is labelled unchanged by the job. Never point the pin at a repository HEAD or a live worktree.",
   "policy": "PIN POLICY (agent-521, 2026-10-22): the pin advances to EACH newer consistent campaign snapshot, even if unrouted or unqualified; engineering qualification must NOT gate progress renders. Every render is labelled with its actual routing state, 'not qualified' and its actual scope. The snapshot is immutable (pinned/<sha>/, read-only) with matched board/project/project models, and every file is sha256-checked on each run.",

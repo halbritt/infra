@@ -1,5 +1,11 @@
 # Changelog — proximal (system)
 
+## 2026-10-23 — agent-ee render job: re-enabled, pinned to the R5 complete placement
+
+- `agent-ee-render-job.timer` is enabled again (about every 4 hours), per agent-521 brief b9e0f217. It had been stopped during the owner's 2026-10-23 stop and resume.
+- The pin now names the R5 complete placement: board `8f3bc234…`, label "Candidate 5", stage placement, unrouted and not qualified. The board and project come from fome-mc main `0fc9b543`.
+- One run under native-admit published gallery bundle `8f3bc2343055-c429d9d298cd` with its status record.
+
 ## 2026-10-22 — restic off-site backup: cache restored, retention runs again
 
 - Retention is now 30 daily, 12 weekly and 12 monthly (was 7/4/6). Prune now
