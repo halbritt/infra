@@ -34,8 +34,10 @@ EXCLUDE = {"tailscale-exit-node"}               # not campaign (owner's exit nod
 STATE = Path(ENV.get("GCP_SPEND_STATE", Path.home() / ".local/share/infra/gcp-budget"))
 # Spot USD per vCPU-h, per GiB-h (Cloud Billing catalog, 2026-10-22; infra hosts/gcp-gate/README.md "Cost").
 FAMILY = {"c2d": (0.01428, 0.001915), "c4": (0.02074, 0.002357)}
-SHAPES = {"c2d-highcpu-4": ("c2d", 4, 8), "c2d-highcpu-8": ("c2d", 8, 16), "c2d-highcpu-16": ("c2d", 16, 32),
-          "c4-highcpu-48": ("c4", 48, 96), "c4-highcpu-96": ("c4", 96, 192)}
+# Every highcpu shape of both families (2 GiB per vCPU), priced at the family rates above.
+SHAPES = {f"{fam}-highcpu-{n}": (fam, n, 2 * n)
+          for fam, sizes in (("c2d", (2, 4, 8, 16, 32, 56, 112)), ("c4", (2, 4, 8, 16, 32, 48, 96, 144, 192)))
+          for n in sizes}
 DISK_PER_GB_H = {"pd-balanced": 0.10 / 730, "pd-standard": 0.04 / 730, "pd-ssd": 0.17 / 730}  # USD per GB-hour
 C4_DISK_PER_H = 63.0 / 730                      # 200 GB hyperdisk-balanced at 10000 IOPS / 440 MiB/s
 IMAGE_PER_GB_H = 0.05 / 730
