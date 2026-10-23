@@ -28,3 +28,7 @@ on each host, and the working copy is under `/tmp/agent-ee-burndown-20261017/hos
   Added the capacity aggregator and stale/idle-host alerts. Verified resumed luna turns on talos, peecee-wsl and c4
   (sessions created 2026-10-22T22:19Z, resumed OK 2026-10-23T02:37Z) and an injected failure/recovery drill
   delivered through the forwarder to Cairn.
+- 2026-10-23 (later): capacity() treats a non-dict admission ("UNKNOWN") as unknown (free=null) instead of raising
+  (agent-521 reproduction, d35fea49); the model gets the computed `init_ok_containers` list and model sends that
+  claim a missing init on an init-protected container (HostConfig.Init or PID1 tini/docker-init, per agent-475)
+  are dropped (talos false positive 6e798876). Drill host removed from the forwarder roster.

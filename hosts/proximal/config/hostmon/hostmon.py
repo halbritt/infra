@@ -48,6 +48,10 @@ def _agent_ee(x):
     return x["name"].startswith("ae-ci-exec") or str(x.get("image") or "").startswith("agent-ee:")
 
 
+def init_ok(x):
+    """475: a container is init-protected when HostConfig.Init is true OR PID 1 is tini/docker-init."""
+    return bool(x.get("init")) or "init" in str(x.get("pid1")) or "tini" in str(x.get("pid1"))
+
 def conditions(s, host):
     """Deterministic alert conditions {key: text}. A missing probe is UNKNOWN, never healthy."""
     c = {}
@@ -110,8 +114,7 @@ def conditions(s, host):
         # 475: conforming = PID1 comm in {tini, docker-init} AND lease label AND cpus>0 AND pids_limit>0.
         if _agent_ee(x) and not x.get("lease"):
             c[f"no-lease:{x['name']}"] = f"container {x['name']} has no native-admission.lease label"
-        if _agent_ee(x) and (not x.get("init") and "init" not in str(x.get("pid1")) and
-                                                   "tini" not in str(x.get("pid1"))):
+        if _agent_ee(x) and not init_ok(x):
             c[f"no-init:{x['name']}"] = f"container {x['name']} PID1 {x.get('pid1')} without init ({x.get('image')})"
         if _agent_ee(x) and (not x.get("cpus") or not x.get("pids_limit")):
             c[f"no-limits:{x['name']}"] = f"container {x['name']} cpus={x.get('cpus')} pids_limit={x.get('pids_limit')}"
@@ -239,7 +242,8 @@ def run(host, kind, account, via):
         last_digest = dg if due or last_digest is None else last_digest
         if due:
             try:
-                res = model_turn(st, kind, account, host, via, {"host": host, "sample": s, "active_alerts": active,
+                res = model_turn(st, kind, account, host, via, {"host": host, "sample": s, "init_ok_containers": sorted(
+                    x.get("name") for x in s.get("containers") or [] if isinstance(x, dict) and init_ok(x)), "active_alerts": active,
                                                                 "new_alerts": new, "events_since_last_turn": events})
             except RuntimeError as e:
                 append(d / "outbox.jsonl", {"ts": now(), "host": host, "severity": "warning", "to": ["449"],
@@ -265,7 +269,11 @@ def run(host, kind, account, via):
                                             "text": f"hostmon-{host} model turns recovered ({kind}/{account}); "
                                                     f"failing since {st['model_failing']['since']}."})
                 st.pop("model_failing")
+            ok_init = {x.get("name") for x in s.get("containers") or [] if isinstance(x, dict) and init_ok(x)}
             for m in res.get("send") or []:
+                # The deterministic init check is authoritative (talos 6e798876 false positive, 2026-10-23).
+                if "init" in str(m.get("key")) and any(n and n in str(m.get("key")) for n in ok_init):
+                    continue
                 if m.get("key") and m.get("text"):
                     append(d / "outbox.jsonl", {"ts": now(), "host": host, **{k: m.get(k) for k in
                                                 ("severity", "to", "key", "text")}})
@@ -289,7 +297,8 @@ def capacity(hosts, sd, state):
             smp = json.loads(line) if line else {}
         except (OSError, subprocess.SubprocessError, ValueError):
             smp = {}
-        adm = smp.get("admission") or {}
+        # Probes report admission="UNKNOWN" (a string) when unreadable: keep it unknown (free=null), never idle.
+        adm = smp.get("admission") if isinstance(smp.get("admission"), dict) else {}
         try:
             age = now_s - datetime.datetime.fromisoformat(smp["ts"].replace("Z", "+00:00")).timestamp()
         except (KeyError, ValueError, TypeError):
