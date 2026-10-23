@@ -269,10 +269,12 @@ def run(host, kind, account, via):
                                             "text": f"hostmon-{host} model turns recovered ({kind}/{account}); "
                                                     f"failing since {st['model_failing']['since']}."})
                 st.pop("model_failing")
-            ok_init = {x.get("name") for x in s.get("containers") or [] if isinstance(x, dict) and init_ok(x)}
+            cs_ = [x for x in s.get("containers") or [] if isinstance(x, dict) and _agent_ee(x)]
+            all_init_ok = isinstance(s.get("containers"), list) and all(init_ok(x) for x in cs_)
             for m in res.get("send") or []:
-                # The deterministic init check is authoritative (talos 6e798876 false positive, 2026-10-23).
-                if "init" in str(m.get("key")) and any(n and n in str(m.get("key")) for n in ok_init):
+                # The deterministic init check is authoritative (talos 6e798876, peecee 4467ee6e false positives):
+                # a model init claim is dropped while every agent-ee container is init-protected.
+                if "init" in str(m.get("key")).lower() and all_init_ok:
                     continue
                 if m.get("key") and m.get("text"):
                     append(d / "outbox.jsonl", {"ts": now(), "host": host, **{k: m.get(k) for k in
