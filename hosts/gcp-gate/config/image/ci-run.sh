@@ -124,8 +124,8 @@ fi
 docker image inspect "$IMAGE" --format 'image {{.Id}} size {{.Size}}'
 
 # --- sandbox options (CI step "Permit container user namespaces") ------------
-profile=$(bash "$CTX/scripts/container_apparmor.sh")
-SANDBOX_OPTS="--network none --security-opt seccomp=unconfined --security-opt apparmor=$profile --security-opt systempaths=unconfined"
+# No AppArmor profile (owner, 2026-10-23); provision.sh turned off the userns restriction.
+SANDBOX_OPTS="--network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined --security-opt systempaths=unconfined"
 echo "SANDBOX_OPTS=$SANDBOX_OPTS"
 # Every container below (doctor, sandbox probe, owner probe, strict suite) carries the
 # lease label (counted once) and the lease's CPU/PID bounds. Images without a tini

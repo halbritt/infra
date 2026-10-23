@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-10-23 — agent-ee AppArmor profile removed (owner)
+
+The owner: "remove the apparmor profiles like I asked". The runtime-only
+`agent-ee-container` (unconfined-mode) profile was removed from the kernel
+(`/sys/kernel/security/apparmor/.remove`); there was no file in `/etc/apparmor.d`. No
+container was using it.
+- `kernel.apparmor_restrict_unprivileged_userns=0`, persistent in
+  `/etc/sysctl.d/60-agent-ee-userns.conf` ([shared/agent-ee](../../shared/agent-ee/60-agent-ee-userns.conf)).
+  Without it, bwrap in an `apparmor=unconfined` container fails (`RTM_NEWADDR: Operation
+  not permitted`). The distro's own profiles stay loaded.
+- `ae-ci-exec` (85444e87) now always passes `apparmor=unconfined` and refuses to start while
+  the restriction is on. Installed on proximal, talos, archon and peecee-wsl.
+- Checked: `bwrap --unshare-all` inside `agent-ee:ee466-gate-b29cead1`, uid 1000,
+  `apparmor=unconfined`, works.
+- Do not run agent-ee's `scripts/container_apparmor.sh`: it loads the profile again.
+
 ## 2026-10-23 — agent-ee render job: pin advanced to the ROUTE-3 working candidate
 
 - The pin now names ROUTE-3 attempt 2 `08066170…` as "Diagnostic 9", stage diagnostic. The board comes from fome-mc main `46c7c730` route-3/candidate.

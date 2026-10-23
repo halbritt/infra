@@ -31,7 +31,7 @@ mode, no skips").
 | Gate | ae-ci-exec |
 |---|---|
 | `docker buildx build --load` of the commit's Dockerfile, tag `agent-ee:ci-SHA` | Same Dockerfile, `--builder default`, tag `agent-ee:exec-<16 hex>`; never touches `agent-ee:ci-*` |
-| `--network none --security-opt seccomp=unconfined --security-opt apparmor=<profile> --security-opt systempaths=unconfined` | Same. Profile `agent-ee-container` where AppArmor is enabled (proximal), else `unconfined` (peecee-wsl, archon). |
+| `--network none --security-opt seccomp=unconfined --security-opt apparmor=<profile> --security-opt systempaths=unconfined` | `apparmor=unconfined` on every host. No AppArmor profile, ever (owner, 2026-10-23). |
 | `AGENT_EE_REQUIRE_TOOLCHAIN=1 PYTHONPATH=src`, `-w /opt/agent-ee` | Same |
 | fome-mc: anonymous clone at ci.yml `FOME_MC_COMMIT`, owned by the runtime user, `:ro` at `/opt/fome-mc` | Same clone recipe, in `~/.cache/ae-ci-exec/inputs/fome-mc-<commit>`, owned by the caller (the runtime user here) |
 | J1 drawing, ci.yml `J1_DRAWING_SHA256`, `:ro` at `/opt/j1/te-776228-1.pdf` | Same; fetched with the CI curl line if missing, hash-checked on every run |
@@ -78,9 +78,12 @@ only that small context, and the worktree mount replaces it at run time.
   label=ae-ci-exec.inputs`. Remove `~/.cache/ae-ci-exec/kicad-route/<hash>{,.ready}`
   with the image.
 
-No sudo. Where AppArmor is enabled, the `agent-ee-container` profile must
-already be loaded. It survives until reboot. To reload it, run
-`bash <agent-ee>/scripts/container_apparmor.sh`, which uses `sudo -n apparmor_parser`.
+No sudo, and no AppArmor profile (owner, 2026-10-23). On an AppArmor host, bwrap
+inside the unconfined container needs `kernel.apparmor_restrict_unprivileged_userns=0`:
+install [60-agent-ee-userns.conf](60-agent-ee-userns.conf) in `/etc/sysctl.d/` and run
+`sudo sysctl -p` on it. ae-ci-exec refuses to start while the restriction is on. Set on
+proximal and talos; archon and peecee-wsl run without AppArmor. Do not run agent-ee's
+`scripts/container_apparmor.sh`: it loads the profile again.
 
 ## Git verification (2026-10-21, proximal, agent-ee main cc6b124)
 

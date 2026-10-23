@@ -1,5 +1,25 @@
 # Host changelog
 
+## 2026-10-23 — agent-ee AppArmor profile removed (owner)
+
+The owner: "remove the apparmor profiles like I asked". The enforce-mode
+`agent-ee-container` profile was unloaded (`apparmor_parser -R`). Its file in
+`/etc/apparmor.d`, its cache in `/var/cache/apparmor/f6da0254.0` and the backup
+`~/.cache/agent-ee-container.orig` were deleted, and `config/apparmor/` was removed from
+infra. No container was using it (the pause was on).
+- `kernel.apparmor_restrict_unprivileged_userns=0`, persistent in
+  `/etc/sysctl.d/60-agent-ee-userns.conf` ([shared/agent-ee](../../shared/agent-ee/60-agent-ee-userns.conf)).
+  Without it, bwrap in an `apparmor=unconfined` container fails (`RTM_NEWADDR: Operation
+  not permitted`). The distro's own profiles stay loaded.
+- `ae-ci-exec` (85444e87) now always passes `apparmor=unconfined` and refuses to start while
+  the restriction is on. Installed on proximal, talos, archon and peecee-wsl.
+- Checked: `bwrap --unshare-all` inside `agent-ee:ee466-gate-b29cead1`, uid 1000,
+  `apparmor=unconfined`, works.
+- The ssh timeout seen at 08:11Z was one connection after an idle period: tailscale on
+  proximal logged `open-conn-track: timeout opening ... :22` while the direct path moved
+  from IPv6 to IPv4. It is the only such event in 48 h; talos is otherwise healthy
+  (Wi-Fi -57 dBm, no packet loss, no failed units).
+
 ## 2026-10-23 — Qualified for fome-mc and qualified-runtime work (container)
 
 Assigned by agent-521. talos now holds the qualified agent-ee image

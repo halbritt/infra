@@ -57,9 +57,8 @@ if ! id "$GATE_USER" >/dev/null 2>&1; then
   else useradd -m -u 1000 -s /bin/bash "$GATE_USER"; fi
 fi
 usermod -aG docker "$GATE_USER"
-# ci-run.sh calls `sudo -n apparmor_parser` (scripts/container_apparmor.sh) and,
-# when a new fome-mc pin is cloned, `sudo -n chown`. Nothing else.
-printf '%s\n' "$GATE_USER ALL=(root) NOPASSWD: /usr/sbin/apparmor_parser, /usr/bin/chown" \
+# ci-run.sh calls `sudo -n chown` when a new fome-mc pin is cloned. Nothing else.
+printf '%s\n' "$GATE_USER ALL=(root) NOPASSWD: /usr/bin/chown" \
   > /etc/sudoers.d/agent-ee-gate
 chmod 0440 /etc/sudoers.d/agent-ee-gate
 visudo -cf /etc/sudoers.d/agent-ee-gate
@@ -113,12 +112,12 @@ if g -C "$STORE" config --local --get-regexp '^(http\..*\.extraheader|credential
 fi
 chown -R 10001:10001 "$STORE"
 
-log "AppArmor profile agent-ee-container (persistent, for ae-ci-exec)"
-# ci-run.sh reloads the commit's own profile on every run; this copy only makes
-# the profile present after boot for ae-ci-exec, which never uses sudo.
-install -m 0644 "$CTX/docker/agent-ee.apparmor" /etc/apparmor.d/agent-ee-container
-apparmor_parser -r /etc/apparmor.d/agent-ee-container
-aa-status | grep -q agent-ee-container
+log "userns sysctl (no AppArmor profile, owner 2026-10-23)"
+# Containers run apparmor=unconfined; bwrap inside them needs user namespaces without
+# Ubuntu's AppArmor restriction.
+printf '%s\n' "kernel.apparmor_restrict_unprivileged_userns = 0" > /etc/sysctl.d/60-agent-ee-userns.conf
+sysctl -q -p /etc/sysctl.d/60-agent-ee-userns.conf
+rm -f /etc/apparmor.d/agent-ee-container
 
 log "warm docker build agent-ee:ci-$WARM_SHA"
 # The exact ci-run.sh build line, so later agent-ee:ci-SHA builds hit these layers.

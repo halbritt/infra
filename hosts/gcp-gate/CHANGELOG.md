@@ -1,5 +1,18 @@
 # Host changelog
 
+## 2026-10-23 — no agent-ee AppArmor profile on gate VMs (owner)
+
+- ci-run.sh passes `apparmor=unconfined` and no longer calls agent-ee's
+  `container_apparmor.sh`.
+- provision.sh sets `kernel.apparmor_restrict_unprivileged_userns=0`, installs no
+  profile and drops `apparmor_parser` from the gate sudoers.
+- The current image `agent-ee-gate-20261022-0352` was built before this change. It
+  loads the profile at boot and has the old ci-run.sh. Until it is rebuilt, run-gate.sh
+  removes the profile, sets the sysctl and installs the repo's ci-run.sh on every VM
+  before the run. Rebuilding the image was not done during the pause.
+- `agent-ee-gate-c4` (TERMINATED) still has the profile on its disk. It goes with the disk
+  when c4 is retired.
+
 ## 2026-10-23 — owner: "pause work" (relayed by agent-519, Cairn d358deef)
 
 The owner told agent-519 "pause work" (the relay says about 08:15Z). Actions by agent-475:

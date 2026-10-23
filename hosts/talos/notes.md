@@ -24,15 +24,10 @@ Observations to act on only with owner direction:
 - The root LV is still 100 GiB (about 82 GiB free after setup). The CI image
   and BuildKit cache fit; if `docker system df` grows, extend with `sudo
   lvextend -r -L +100G /dev/ubuntu-vg/ubuntu-lv` (not done; no owner request).
-- AppArmor is enabled and `kernel.apparmor_restrict_unprivileged_userns=1`.
-  Native `bwrap` works through Ubuntu's `bwrap-userns-restrict` profile.
-  `ae-ci-exec` containers use the `agent-ee-container` profile, which
-  `/etc/apparmor.d/agent-ee-container` loads at boot. On this 26.04 host it
-  must be the enforce-mode `allow all,` profile in
-  [config/apparmor](config/apparmor/README.md), not agent-ee's unconfined-mode
-  one: an unconfined-mode profile ignores its exec rules, so container bwrap
-  attaches to the host `bwrap` profile and nested bwrap loses its capabilities
-  under `unpriv_bwrap`.
+- No AppArmor profile for agent-ee (owner, 2026-10-23). The distro profiles stay
+  loaded, but `/etc/sysctl.d/60-agent-ee-userns.conf` sets
+  `kernel.apparmor_restrict_unprivileged_userns=0`, so `ae-ci-exec` containers run with
+  `apparmor=unconfined` and bwrap inside them can create user namespaces.
 - The Dockerfile's apt snapshot is `noble` (24.04) and cannot be installed on
   26.04. KiCad 10.0.7 comes from the same Launchpad snapshot timestamp with
   suite `resolute` (see [config/apt](config/apt/README.md)). ngspice 45.2,

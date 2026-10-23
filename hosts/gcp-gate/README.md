@@ -17,8 +17,8 @@ move the CPU-bound gate off shared hosts. Build and run scripts:
 | Base | `ubuntu-2404-noble-amd64-v20261021` (family `ubuntu-2404-lts-amd64`) |
 | Docker | Ubuntu `docker.io` 29.1.3 (`29.1.3-0ubuntu3~24.04.2`) and `docker-buildx` 0.30.1 (`0.30.1-0ubuntu1~24.04.1`), both held. Same upstream versions and the same Ubuntu packaging as peecee-wsl (`29.1.3-0ubuntu4.1` / `0.30.1-0ubuntu1` on 26.04). containerd image store (overlayfs snapshotter), as on peecee-wsl. |
 | Other packages | git, rsync, jq, python3, apparmor, apparmor-utils, zstd, curl |
-| User | `halbritt` (uid 1001: the GCE image already has `ubuntu` at 1000), groups `docker`; `/etc/sudoers.d/agent-ee-gate` allows `sudo -n` for `apparmor_parser` and `chown` only, the two commands ci-run.sh runs. The guest agent also adds SSH users to `google-sudoers`. |
-| AppArmor | enabled. ci-run.sh loads the commit's `agent-ee-container` profile on every run (unlike peecee-wsl, where WSL has no AppArmor and the profile is `unconfined`). This matches hosted CI. A copy in `/etc/apparmor.d/agent-ee-container` keeps it loaded after boot for `ae-ci-exec`. |
+| User | `halbritt` (uid 1001: the GCE image already has `ubuntu` at 1000), groups `docker`; `/etc/sudoers.d/agent-ee-gate` allows `sudo -n` for `chown` only, the one command ci-run.sh runs. The guest agent also adds SSH users to `google-sudoers`. |
+| AppArmor | enabled for the distro profiles only. No agent-ee profile (owner, 2026-10-23): containers run `apparmor=unconfined`, and provision.sh sets `kernel.apparmor_restrict_unprivileged_userns=0` so bwrap works in them. The existing c4 disk still holds `/etc/apparmor.d/agent-ee-container` from before; it is removed if c4 is ever started again, or goes with the disk at retirement. |
 
 ### Contents of `/home/halbritt`
 

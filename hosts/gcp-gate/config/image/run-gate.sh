@@ -66,6 +66,18 @@ while :; do
   vm() { gc compute ssh "$VM" --zone "$ZONE" --ssh-flag=-oServerAliveInterval=30 --command "$1"; }
 
   for i in $(seq 30); do vm true >/dev/null 2>&1 && break; sleep 10; done
+  # No AppArmor profile (owner, 2026-10-23). Images built before then load agent-ee-container
+  # at boot and carry a ci-run.sh that reloads it: drop the profile, lift the userns
+  # restriction and install this ci-run.sh. A no-op on images provisioned since.
+  vm "sudo sh -s" <<'PREP'
+printf '%s\n' "kernel.apparmor_restrict_unprivileged_userns = 0" > /etc/sysctl.d/60-agent-ee-userns.conf
+sysctl -q -p /etc/sysctl.d/60-agent-ee-userns.conf
+if [ -e /etc/apparmor.d/agent-ee-container ]; then
+  apparmor_parser -R /etc/apparmor.d/agent-ee-container || true
+  rm /etc/apparmor.d/agent-ee-container
+fi
+PREP
+  vm "cat > ~/agent-ee-gate/ci-run.sh" < "$(dirname "$0")/ci-run.sh"
   git -C "$AGENT_EE" archive "$SHA" |
     vm "mkdir -p ~/agent-ee-gate/ctx/$SHA && tar -x -C ~/agent-ee-gate/ctx/$SHA"
   t0=$(date +%s)

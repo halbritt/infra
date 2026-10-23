@@ -17,8 +17,8 @@
 # belong to the release gate and are never touched.
 #
 # Container, as in the gate's strict-suite step:
-#   --network none, seccomp/systempaths unconfined, AppArmor profile
-#   agent-ee-container where AppArmor is enabled (else unconfined);
+#   --network none, seccomp/systempaths/AppArmor unconfined (owner, 2026-10-23: no
+#   AppArmor profiles; hosts set kernel.apparmor_restrict_unprivileged_userns=0 instead);
 #   AGENT_EE_REQUIRE_TOOLCHAIN=1, PYTHONPATH=src, workdir /opt/agent-ee;
 #   fome-mc at the ci.yml FOME_MC_COMMIT, read-only at /opt/fome-mc;
 #   the J1 drawing (ci.yml J1_DRAWING_SHA256), read-only at /opt/j1/te-776228-1.pdf.
@@ -37,8 +37,8 @@
 # AGENT_EE_SKIP_VISUALS is passed through when set.
 #
 # State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies,
-# locks, build logs, scratch). No sudo: where AppArmor is enabled the
-# agent-ee-container profile must already be loaded (scripts/container_apparmor.sh).
+# locks, build logs, scratch). No sudo. On an AppArmor host, bwrap in the container
+# needs kernel.apparmor_restrict_unprivileged_userns=0 (set in /etc/sysctl.d).
 # Exit status: COMMAND's, or 125 for a docker run error, 2 for usage/setup errors.
 set -euo pipefail
 
@@ -192,11 +192,10 @@ locked "image-${input_hash:0:16}" build_image
 locked "image-${input_hash:0:16}" extract_kicad_route
 
 # --- sandbox options (ci.yml "Permit container user namespaces") ---------------
-profile=unconfined
-if [ -e /sys/module/apparmor/parameters/enabled ] && [ "$(cat /sys/module/apparmor/parameters/enabled)" = Y ]; then
-  profile=agent-ee-container
+if [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" != 0 ]; then
+  die "kernel.apparmor_restrict_unprivileged_userns=1 blocks bwrap in the container; set it to 0 (shared/agent-ee/README.md)"
 fi
-SANDBOX_OPTS=(--network none --security-opt seccomp=unconfined --security-opt "apparmor=$profile"
+SANDBOX_OPTS=(--network none --security-opt seccomp=unconfined --security-opt apparmor=unconfined
               --security-opt systempaths=unconfined)
 # Admission bounds: CPU quota scaled to the lease weight, a PID cap, and an init that
 # reaps orphaned bwrap children. Images from agent-ee 7e5bdc46 on (AGENTEE-459) run
@@ -267,7 +266,4 @@ docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[
   -v "$KR:/opt/kicad-route:ro" \
   -w /opt/agent-ee "$TAG" "$@" <&0 &
 wait $! || status=$?
-if [ "$status" = 125 ] && [ "$profile" = agent-ee-container ]; then
-  echo "$prog: docker run failed; if the AppArmor profile is missing, load it once with: bash $wt/scripts/container_apparmor.sh" >&2
-fi
 exit "$status"

@@ -59,16 +59,13 @@ from peecee-wsl), so `bash -lc` puts `~/.local/bin` and `~/.npm-global/bin` on
 PATH. Global git config: `user.name halbritt`, `user.email`, `init.defaultBranch
 main`, `safe.directory *` (no credential helper).
 
-AppArmor is enabled, so `ae-ci-exec` runs containers under the
-`agent-ee-container` profile, installed at `/etc/apparmor.d/agent-ee-container`
-(loaded at boot). Since 2026-10-22 it is a talos-specific enforce-mode
-`allow all,` profile, not agent-ee's `flags=(unconfined) { userns, }`
-`docker/agent-ee.apparmor`: under Ubuntu 26.04's `bwrap-userns-restrict`
-the unconfined-mode profile let nested Bubblewrap attach to
-`bwrap//&unpriv_bwrap` and fail. See [config/apparmor](config/apparmor/README.md).
-`halbritt` has full passwordless sudo, so agent-ee
-`scripts/container_apparmor.sh` (`sudo -n apparmor_parser`) also works, but
-until agent-ee adopts the new profile running it reloads the old one.
+`ae-ci-exec` runs containers with `apparmor=unconfined`; there is no agent-ee AppArmor
+profile (owner, 2026-10-23: the enforce-mode `agent-ee-container` profile installed on
+2026-10-22 was unloaded and deleted, with its cache and backup copy). Instead
+`/etc/sysctl.d/60-agent-ee-userns.conf` ([shared/agent-ee](../../shared/agent-ee/60-agent-ee-userns.conf))
+sets `kernel.apparmor_restrict_unprivileged_userns=0`, so bwrap inside the container
+can create user namespaces. Checked 2026-10-23: `bwrap --unshare-all` in
+`agent-ee:ee466-gate-b29cead1` as uid 1000 works.
 
 Native test check 2026-10-22 (agent-ee main 1da27635, git-wt worktree,
 `ae-ci-exec ... env AGENT_EE_SKIP_VISUALS=1 PYTHONPATH=src:tests python3 -m
