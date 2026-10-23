@@ -1,5 +1,25 @@
 # Host changelog
 
+## 2026-10-23 — `run-gate.sh` and `build-image.sh`: release only after proven teardown
+
+agent-521 found that both scripts released their `gcp-spend` reservation even
+after a failed delete. Both now use the shared `config/image/teardown.sh`, with
+the semantics reviewed for `run-overflow.sh`:
+
+- `teardown_vm` deletes the VM, then releases the reservation only when the
+  exact-name instance AND disk listings both succeed and are empty. Otherwise
+  the reservation is kept and the result is reported.
+- `vm_state` trusts only explicit GCE statuses or a successful empty exact
+  listing.
+- `run-gate.sh` retries only after a confirmed preemption and a proven teardown
+  of the previous VM, whose reservation is then released. Unknown state exits 5
+  without a retry; an unproven teardown exits 6.
+
+Tests: `evidence-20261022/gate-builder-teardown/`, with no cloud: 5
+`teardown_vm` cases, 6 `vm_state` cases, and the `run-gate.sh` loop for unknown
+state (exit 6, no retry, reservation kept) and for preemption (2 attempts, 2
+releases, exit 3).
+
 ## 2026-10-23 — `gcp-spend` inventory accounting follow-up and guard notification
 
 Second agent-521 review: H1–H3 accepted; H4 corrected.

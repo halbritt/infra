@@ -64,7 +64,9 @@ gc compute instances create "$BUILDER" --zone "$ZONE" --machine-type "$BUILDER_T
   --image "$base" --image-project ubuntu-os-cloud \
   --boot-disk-size=100GB --boot-disk-type=pd-balanced \
   --no-service-account --no-scopes --labels "$LABELS"
-cleanup_builder() { gc compute instances delete "$BUILDER" --zone "$ZONE" --quiet || true; "$SPEND" release "$RES" --note "builder deleted" >/dev/null 2>&1 || true; }
+. "$(dirname "$0")/teardown.sh"
+# The reservation is released only when the builder and its disk are proven gone.
+cleanup_builder() { teardown_vm "$BUILDER" "$ZONE" "$RES" || echo "builder teardown not proven; reservation $RES kept" >&2; }
 trap 'rm -rf "$stage"; cleanup_builder' EXIT
 
 for i in $(seq 30); do ssh_b true 2>/dev/null && break; sleep 10; done
