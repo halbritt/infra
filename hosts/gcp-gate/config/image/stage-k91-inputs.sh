@@ -2,10 +2,7 @@
 # stage-k91-inputs.sh HOST...: fill each gate host's content-addressed K91 store from proximal.
 # For every input in k91-inputs.json: verify the test's pinned file hashes and the tree digest on
 # proximal, copy to HOST:~/agent-ee-gate/ci-inputs/k91/<name>-<tree sha256>.partial, verify the
-# tree digest there, give it normal modes (owner-writable, no group/other write), then rename it
-# into place. An existing store is re-verified. Integrity comes from the gate's :ro bind mount and
-# its per-gate digest check, not file modes: tests copytree these receipts and edit their copies,
-# and copytree carries the source modes over (a-w stores failed 35 routing-boundary cases, 2026-10-23).
+# tree digest there, make it read-only, then rename it into place. An existing store is re-verified.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 [ $# -ge 1 ] || { echo "usage: $0 HOST..." >&2; exit 2; }
@@ -32,7 +29,7 @@ while read -r name src tree; do
       if [ -d \"\$d\" ]; then t=\$(cd \"\$d\" && $TREE); [ \"\$t\" = $tree ] || { echo \"$name: existing store altered\" >&2; exit 3; }; cat >/dev/null; echo \"$host: $name present and verified\"; exit 0; fi
       rm -rf \"\$d.partial\"; mkdir -p \"\$d.partial\"; tar -x -C \"\$d.partial\"
       t=\$(cd \"\$d.partial\" && $TREE); [ \"\$t\" = $tree ] || { echo \"$name: copy tree \$t != $tree\" >&2; exit 3; }
-      chmod -R u+w,go-w,a+rX \"\$d.partial\"; mv \"\$d.partial\" \"\$d\"; echo \"$host: $name staged and verified\""
+      chmod -R a+rX,a-w \"\$d.partial\"; mv \"\$d.partial\" \"\$d\"; echo \"$host: $name staged and verified\""
   done
 done < /tmp/k91-stage.$$
 rm -f /tmp/k91-stage.$$
