@@ -49,6 +49,13 @@ def _agent_ee(x):
     return x["name"].startswith("ae-ci-exec") or str(x.get("image") or "").startswith("agent-ee:")
 
 
+def cpu_saturated(s):
+    """475 (2026-10-23): host cpu PSI "some" also counts tasks waiting on their own container --cpus quota, so it is only
+    a host problem when the 1-min load reaches nproc. Unknown load/nproc counts as saturated (alert, never hide)."""
+    load, n = s.get("load"), s.get("nproc")
+    l1 = load[0] if isinstance(load, list) and load else load
+    return not (isinstance(l1, (int, float)) and isinstance(n, int) and n > 0) or l1 >= n
+
 def init_ok(x):
     """475: a container is init-protected when HostConfig.Init is true OR PID 1 is tini/docker-init."""
     return bool(x.get("init")) or "init" in str(x.get("pid1")) or "tini" in str(x.get("pid1"))
@@ -63,7 +70,7 @@ def conditions(s, host):
         v = psi.get(k)
         if v == "UNKNOWN" or not isinstance(v, dict):
             c[f"psi-{k}-unknown"] = f"PSI {k} UNKNOWN"
-        elif v.get("avg60", 0) >= cap:
+        elif v.get("avg60", 0) >= cap and not (k == "cpu" and not cpu_saturated(s)):
             c[f"psi-{k}"] = f"PSI {k} avg60 {v['avg60']} >= {cap}"
     m = s.get("mem")
     if isinstance(m, dict):
@@ -282,6 +289,9 @@ def run(host, kind, account, via):
             for m in res.get("send") or []:
                 # The deterministic full-suite check is authoritative (peecee ee387 14-module false positive).
                 if "full-suite" in str(m.get("key")).lower() and not full:
+                    continue
+                # Container quota throttling is not host CPU pressure (475, talos 03:19-03:33Z false alarms).
+                if "cpu" in str(m.get("key")).lower() and not cpu_saturated(s):
                     continue
                 # The deterministic init check is authoritative (talos 6e798876, peecee 4467ee6e false positives):
                 # a model init claim is dropped while every agent-ee container is init-protected.
