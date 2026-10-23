@@ -1,4 +1,4 @@
-# fome-mc pinned runtime on talos (`fome-runtime:d96f8e00`)
+# fome-mc pinned runtime (`fome-runtime:d96f8e00`) on talos and proximal
 
 agent-521 asked (2026-10-23) for talos to be qualified for FUTURE fome-mc and
 qualified-runtime work. agent-449 dispatches; this directory only provides the
@@ -114,3 +114,51 @@ must be rebuilt in-container once per checkout (`bash toolchain/bootstrap.sh
   - real image on talos: PASS exits 0; with `install.sh verify` forced to
     fail, exit 1.
 - The accepted readiness logs are unchanged (`logs/`, `logs/run1/`).
+
+## proximal lane (2026-10-23, agent-449 request)
+
+Since 2026-10-22, infra's update-bot has kept proximal's host
+ghostscript/poppler on current Ubuntu security releases (7.10 / 9.11), so
+fome-mc's pinned `make doctor` fails on the host. The disposition (agent-449,
+cc agent-521) is a container lane identical to talos's. No host package change,
+no apt hold, no update-bot exclusion, no GCP.
+
+- **Image.** `./build.sh proximal` builds `fome-runtime:d96f8e00` from the
+  same Dockerfile, on proximal's local base `agent-ee:ee466-gate-b29cead1`.
+  That base has ID/config `d96f8e00…` and layer-list `940e0e6f…`. The built
+  image is ID and config `sha256:3d57118c47f35c24fe42af03d100e0167ba2ec0cf57d3827f14783905db4559c`
+  (proximal's store is classic). Its packages are identical to talos's:
+  ghostscript `10.02.1~dfsg1-0ubuntu7.9`, poppler-utils `24.02.0-1ubuntu9.10`,
+  mupdf-tools `1.23.10+ds1-1build3`, librsvg2-bin `2.58.0+dfsg-1ubuntu0.1`,
+  kicad `10.0.7~ubuntu24.04.1`, ngspice `42+ds-3build1`, wx `4.2.1`, uv
+  0.13.4. Builds are not byte-reproducible, so talos's ID differs.
+- **Checkouts.** `~/.cache/fome-qualify/` on proximal, at the same commits as
+  talos: fome-mc `77ef193d…`, kicad-libraries `ab9c5f8a…`,
+  Polygonus-Universal-112 `ddcf0f77…`.
+- **Readiness.** One run of `fome-qualify.sh` (per-step leases: bootstrap test
+  w1, doctor test w1, smoke suite w2):
+  - bootstrap rc 0;
+  - `make doctor` PASS, 54 checks, 0 required failures;
+  - `make smoke` 18 passed in 54.6 s;
+  - "all steps passed".
+
+  Evidence: `proximal:~/.local/share/infra/native-admission/evidence-20261022/proximal-fome-qualification/`.
+- **Invocation on proximal.** The same as talos without the `ssh`. The class
+  and weight table above applies:
+
+```sh
+Q=~/.cache/fome-qualify; ~/.local/bin/native-admit run --label "<lane>" --class <suite|test> --weight <2|1> -- sh -c "
+  exec docker run --rm --network none --label native-admission.lease=\$NATIVE_ADMISSION_LEASE \
+    --cpus \$NATIVE_ADMISSION_CPUS --pids-limit \$NATIVE_ADMISSION_PIDS --user \$(id -u):\$(id -g) \
+    -e HOME=/work/home -e FOME_KICAD_LIBS=/work/kicad-libraries -v \$Q:/work -w /work/<checkout> \
+    fome-runtime:d96f8e00 make <target> [PROJECT=… REV=…]"
+```
+
+Once agent-521 accepts it, agent-449 moves `integration/fome-gate.sh` and the
+fome templates to this lane, and host fome runs on proximal stop counting as
+qualified.
+
+`fome-qualify.sh` changed once more on 2026-10-23: its lease label is now
+`fome-qual <host> <step> d96f8e00` instead of `talos-qual …`. It is
+`aa6fd9a2a2761a88…`, installed identically on talos and proximal. Only the
+label differs from the accepted `3281dea8…`.

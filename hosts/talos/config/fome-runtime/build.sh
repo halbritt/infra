@@ -1,6 +1,7 @@
 #!/bin/sh
-# Build fome-runtime:d96f8e00 on talos from this directory. Run from proximal:
-#   ~/git/infra/hosts/talos/config/fome-runtime/build.sh
+# Build fome-runtime:d96f8e00 on HOST (default talos; `proximal` builds locally) from this directory.
+# Run from proximal:
+#   ~/git/infra/hosts/talos/config/fome-runtime/build.sh [talos|proximal]
 # Refuses unless talos holds the exact qualified base image ID. Copies proximal's uv (sha256 checked).
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -13,7 +14,9 @@ UV_SHA256=$(sha256sum "$HOME/.local/bin/uv" | cut -d' ' -f1)
 "$HOME/.local/bin/uv" --version | grep -qx 'uv 0.13.4.*' || { echo "proximal uv is not 0.13.4" >&2; exit 2; }
 ctx=$(mktemp -d); trap 'rm -rf "$ctx"' EXIT
 cp "$HERE/Dockerfile" "$ctx/"; install -m 0755 "$HOME/.local/bin/uv" "$ctx/uv"
-tar -C "$ctx" -c . | ssh talos "set -e
+HOST=${1:-talos}
+if [ "$HOST" = proximal ]; then run_on() { sh -c "$1"; }; else run_on() { ssh -o BatchMode=yes "$HOST" "$1"; }; fi
+tar -C "$ctx" -c . | run_on "set -e
   id=\$(docker image inspect -f '{{.Id}}' agent-ee:ee466-gate-b29cead1)
   layers=\$(docker image inspect -f '{{json .RootFS.Layers}}' agent-ee:ee466-gate-b29cead1 | sha256sum | cut -d' ' -f1)
   case \$id in $BASE_ID|$BASE_MANIFEST) ;; *) echo \"base image \$id is not the qualified image\" >&2; exit 2 ;; esac

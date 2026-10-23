@@ -13,7 +13,7 @@ Q=${FOME_QUALIFY_DIR:-$HOME/.cache/fome-qualify}; NA=${NATIVE_ADMIT:-$HOME/.loca
 mkdir -p "$Q/logs" "$Q/uv-cache" "$Q/home"
 step() { # step NAME CLASS WEIGHT NETWORK COMMAND
   name=$1 class=$2 weight=$3 net=$4; shift 4
-  "$NA" run --label "talos-qual fome $name d96f8e00" --class "$class" --weight "$weight" -- sh -c '
+  "$NA" run --label "fome-qual $(hostname -s) $name d96f8e00" --class "$class" --weight "$weight" -- sh -c '
     exec docker run --rm --network "$0" --label native-admission.lease=$NATIVE_ADMISSION_LEASE \
       --cpus $NATIVE_ADMISSION_CPUS --pids-limit $NATIVE_ADMISSION_PIDS --user "$(id -u):$(id -g)" \
       -e HOME=/work/home -e UV_CACHE_DIR=/work/uv-cache -e FOME_KICAD_LIBS=/work/kicad-libraries \
