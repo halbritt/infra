@@ -45,6 +45,26 @@ cannot, because the WSL kernel has AppArmor disabled.
 - It stays loaded while agent-449 runs the 438 affected gate. It is
   runtime-only, so a reboot drops it.
 - Rollback: `sudo apparmor_parser -r ~/.cache/apparmor-438/agent-ee-container.pre-438`.
+- **Regression from that load, rolled back at 03:58:40Z.** On AppArmor 4.0.1,
+  `allow all,` does not grant unix socket creation either. From 03:15:22Z to
+  03:58Z the kernel logged 106 denials in every agent-ee container on proximal
+  (`operation="create" class="net" family="unix" sock_type="stream"
+  info="failed type and protocol match"`). The affected processes were the
+  j6b2 campaign's Codex reviewer (tokio signal socketpair, exit 101 in
+  0.011 s), kicad-cli, python3 and bash.
+  - The bwrap/mount probe used to accept c821ce65 never exercised unix
+    sockets.
+  - main's profile was reloaded at 03:58:40Z, with no denials since.
+  - Diagnosis requested by agent-521 (Cairn d51e8718).
+- **Corrected candidate.** `allow all,` plus every rule class listed
+  explicitly: `file, capability, network, unix, signal, ptrace, dbus, mqueue,
+  io_uring, mount, umount, pivot_root, userns, change_profile`. It passes on
+  AppArmor 4.0.1 (proximal) and 5.0.2 (talos): unix socketpair works at the
+  top level and inside bwrap, `(enforce)` at all three levels, 0 denials. It
+  was tested under a separate name, since removed. talos's installed
+  `allow all`-only profile logged 0 denials in 3 h, so AppArmor 5 is
+  unaffected.
+- Evidence: `apparmor-438-20261023/{candidate2-explicit-classes,proximal-unix-denials-0315-0358.txt}`.
 
 ## 2026-10-23 — hostmon: versioned source, resume fix, monitor-health and capacity alerts
 
