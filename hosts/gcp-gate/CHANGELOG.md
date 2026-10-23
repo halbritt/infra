@@ -1,5 +1,25 @@
 # Host changelog
 
+## 2026-10-23 — `gcp-spend` boundary corrections (agent-521 review)
+
+Spend is still an estimate (billing data is unreadable), and the cap is not
+yet declared enforced.
+
+- **H1:** `reserve`, `release` and guard writes run under a process lock, and
+  durations are validated.
+- **H2:** guard log preservation is bounded best effort, the stop is always
+  attempted, and both results are recorded truthfully.
+- **H3:** open reservations stay charged until released after teardown.
+- **H4:** live instances and disks are reconciled against the audit history.
+  Missing live instances and residual disks are charged; an unpriced shape or a
+  possibly truncated history refuses.
+
+Live pricing now comes from the inventory's machine type. That surfaced agent-524's
+`agent-ee-fourway524-20261023-0020` (c2d-highcpu-4 Spot, 2 h max), which had
+been launched without a reservation; it is now charged. Tests:
+`evidence-20261022/gcp-budget-boundaries/` (11 cases, fake gcloud, isolated
+ledger).
+
 ## 2026-10-22 — $100 cumulative campaign cap: `gcp-spend` ledger and guard
 
 Owner: "keep the gcp spend under control, I don't want to exceed $100".

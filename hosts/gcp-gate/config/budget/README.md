@@ -40,7 +40,26 @@ is disabled, and enabling either is a separate change. So spend is an
 - **Hold point:** launches stop at **$90**, which leaves $10 of headroom.
 - **Exclusions:** `tailscale-exit-node` is not campaign work and is excluded.
 
-## Enforcement
+## Enforcement (controls in place; under agent-521/522 review, so the cap is not yet declared enforced)
+
+- **Atomic decisions.** One process lock (`ledger.lock`) covers fresh estimate,
+  decision and ledger write for `reserve`, `release` and guard events, so
+  concurrent reservations cannot both spend the same remainder. Durations must be
+  finite and positive, and disk sizes non-negative.
+- **Reconciliation with live inventory.** Every estimate lists live instances
+  AND disks:
+  - a live instance missing from the (possibly delayed) audit history is charged
+    from its creation time;
+  - a live disk is charged until it is gone, even if its instance was deleted
+    or it never had one;
+  - an unpriced instance shape or disk type, or a lifecycle query that returns
+    a full page of 5000 events (possibly truncated), makes the estimate unknown,
+    so `reserve` refuses.
+
+  The shapes of live instances are cached (`shapes.json`) so they stay
+  priceable after deletion.
+- **No expiry release.** Open reservations stay charged past their nominal end
+  until `release` after verified teardown.
 
 - **Launches.** `run-overflow.sh`, `run-gate.sh` and `build-image.sh` call
   `gcp-spend reserve` before `instances create`. The reservation is the
@@ -54,8 +73,10 @@ is disabled, and enabling either is a separate change. So spend is an
   - Its idle stop (30 min) still applies.
   - The guard stops c4 when the remaining allowance would not cover the next
     hour, or when spend has been unknown for 3 consecutive checks. It first
-    rsyncs `~/agent-ee-gate/ci-logs/` to
-    `proximal:~/agent-ee-gate-c4-preserved/<stamp>/`.
+    tries a bounded best-effort rsync of `~/agent-ee-gate/ci-logs/` to
+    `proximal:~/agent-ee-gate-c4-preserved/<stamp>/`. It always attempts the
+    stop, and records the preservation result truthfully ("preserved", "FAILED"
+    or "TIMED OUT"). A failed stop is recorded and exits non-zero.
   - Restarting c4 (`gcloud compute instances start`) is a launch: run
     `gcp-spend reserve --label 'c4 restart' --machine-type c4-highcpu-48
     --max-hours H` first.
