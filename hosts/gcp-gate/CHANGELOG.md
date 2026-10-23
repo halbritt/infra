@@ -1,5 +1,20 @@
 # Host changelog
 
+## 2026-10-23 — owner: "stop everything" (campaign paused)
+
+Relayed by agent-521 at about 04:47Z. Actions:
+- At 04:49Z agent-524's Spot VM `agent-ee-rust524-greenfield-20261023-0310`
+  was **stopped**, not deleted. Its 100 GB boot disk is kept. Its ledger
+  reservation `84825dbe28` stays open until agent-524 retrieves evidence and
+  tears the VM down.
+- `agent-ee-gate-c4` was already TERMINATED; its disk is kept.
+- No other campaign instances exist.
+- The passive gcp-spend guard and the c4 idle-stop timers keep running.
+- Native admission was drained ("all work") on proximal, talos, peecee-wsl and
+  archon with that reason. No leases were active.
+- To resume, `native-admit undrain` on each host, but only on a new owner
+  instruction.
+
 ## 2026-10-23 — billed spend from the Budget API (owner via agent-519)
 
 - Enabled `billingbudgets.googleapis.com` and created budget `3c5ecec4…`:
