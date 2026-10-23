@@ -1,5 +1,20 @@
 # Host changelog
 
+## 2026-10-23 — right-sized ephemeral gates (owner direction via agent-519)
+
+- Measured d04b5121 on Spot c2d-highcpu-16 / JOBS=16 (1150 s, $0.103) and
+  c2d-highcpu-32 / JOBS=32 (703 s, $0.131). Both passed, and teardown was
+  verified for both. The knee is c2d-highcpu-32.
+- `run-gate.sh` now defaults to c2d-highcpu-32 with JOBS=32.
+- `gate-size` added (384b05d): it predicts suite time and cost for a shape or
+  module subset from a measured log.
+- gcp-spend now prices every c2d and c4 highcpu shape (adba58b). Before that,
+  c2d-highcpu-32 was refused for lack of a price. New gates are charged at
+  the shape recorded in their ledger reservation. Unledgered 2026-10-22 gates
+  keep their actual c2d-highcpu-16 shape.
+- The c4 retirement plan is recorded in the README. The c4 instance and disk
+  are unchanged.
+
 ## 2026-10-23 — K91 stores: owner-write briefly restored, then reverted
 
 The canonical gate of 76f221ac on peecee-wsl failed in

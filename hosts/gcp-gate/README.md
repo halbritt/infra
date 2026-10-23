@@ -46,28 +46,29 @@ public fome-mc store. VMs run with no service account.
 
 ## Run a gate
 
-Default recipe (owner, 2026-10-21): a Spot `c2d-highcpu-16` with
-termination action DELETE, `JOBS=8` as on peecee-wsl. From proximal:
+Default recipe: a Spot `c2d-highcpu-32` with termination action DELETE and
+`JOBS=32`. This is the measured knee (see "Right-sizing" below). It was
+`c2d-highcpu-16` with `JOBS=8` until 2026-10-23. From proximal:
 
 ```sh
 ~/git/infra/hosts/gcp-gate/config/image/run-gate.sh SHA
 ```
 
-It creates the VM, stages `git archive SHA`, runs `JOBS=8 ./ci-run.sh SHA >
+It creates the VM, stages `git archive SHA`, runs `JOBS=32 ./ci-run.sh SHA >
 ci-logs/gate-SHA.out` detached, polls for `=== exit N`, copies `ci-logs/` to
 `~/agent-ee-gate-gcp/SHA-<stamp>/` and deletes the VM. A preemption deletes the
 VM; the script retries on a new one (3 attempts) and reports the count. By hand:
 
 ```sh
 gcloud compute instances create agent-ee-gate-SHA --zone us-west1-b \
-  --machine-type c2d-highcpu-16 --provisioning-model=SPOT --instance-termination-action=DELETE \
+  --machine-type c2d-highcpu-32 --provisioning-model=SPOT --instance-termination-action=DELETE \
   --max-run-duration=3h --image-family agent-ee-gate --image-project heath-stuff \
   --boot-disk-size=100GB --boot-disk-type=pd-balanced --no-service-account --no-scopes \
   --labels purpose=agent-ee-gate,owner=halbritt
 git -C ~/git/agent-ee archive SHA | gcloud compute ssh agent-ee-gate-SHA --zone us-west1-b \
   --command 'mkdir -p ~/agent-ee-gate/ctx/SHA && tar -x -C ~/agent-ee-gate/ctx/SHA'
 gcloud compute ssh agent-ee-gate-SHA --zone us-west1-b \
-  --command 'cd ~/agent-ee-gate && JOBS=8 ./ci-run.sh SHA > ci-logs/gate-SHA.out 2>&1; tail -n 3 ci-logs/gate-SHA.out'
+  --command 'cd ~/agent-ee-gate && JOBS=32 ./ci-run.sh SHA > ci-logs/gate-SHA.out 2>&1; tail -n 3 ci-logs/gate-SHA.out'
 gcloud compute instances delete agent-ee-gate-SHA --zone us-west1-b --quiet
 ```
 
@@ -113,6 +114,81 @@ prices change):
 
 The image build and validation (two builds, two gate runs, about 70 Spot
 VM-minutes) cost about $0.40.
+
+## Right-sizing (owner, 2026-10-22)
+
+The owner said: "the aim of which is to throw as much CPU at it as it can use
+and no more", and "Other tests as well, again on smaller instances run for the
+duration and shut down."
+
+Every cloud test job, gate or not, gets its own ephemeral Spot VM. It is sized
+at the knee, the smallest shape at which wall time stops improving materially.
+The VM is deleted when the job ends. Ledger reservation, maximum lifetime and
+verified cleanup still apply. The rest of this section covers sizing; the
+reasons c4 does not fit are under "c4: retirement plan".
+
+[`config/image/gate-size`](config/image/gate-size) does the sizing:
+`gate-size LOG [--modules M...] [--vcpus 4,8,16,32]`.
+
+- It replays a measured ci-run log through strict_suite.py's own scheduling:
+  modules are submitted in sorted order, and each of `--jobs` workers takes the
+  next one when it frees.
+- It prints predicted suite time and estimated cost per shape, then names the
+  smallest shape within 10% of the best.
+- `--modules` sizes an affected-test subset run through
+  `strict_suite.py --jobs N MODULE...`.
+- Module times carry the reference run's load, so check a new shape with one
+  real run.
+
+### Measured (2026-10-23, agent-ee main d04b5121: 282 modules, 5547 tests)
+
+Both gates ran at the same time on separate VMs, from the same image and the
+same warm cache (image build 71 s). Neither was preempted, and both passed. Teardown was
+verified by empty instance and disk listings. Evidence is in
+`proximal:~/.local/share/infra/gcp-sizing-20261023/`.
+
+| Shape | JOBS | ci-run wall | Strict suite (replayed) | Slowest module | VM time | Metered cost |
+|---|---|---|---|---|---|---|
+| c2d-highcpu-16 | 16 | 1150 s | 1047 s | 667 s | 0.34 h | $0.103 |
+| **c2d-highcpu-32** | 32 | **703 s** | 600 s | 549 s | 0.22 h | **$0.131** |
+| c2d-highcpu-56 (predicted from the 32 run) | 56 | — | 555 s | 549 s | — | about $0.25 |
+| c4-highcpu-48 (persistent, 2026-10-22, 9d57124d, 259 modules) | 32 | 378 s | — | 285 s | — | (see c4 below) |
+
+Findings:
+
+- **Full gate: `c2d-highcpu-32`, `JOBS=32`, now run-gate.sh's default.** It is
+  39% faster than 16 vCPU for 27% more money. 56 vCPU would gain under 8% for
+  1.75× the rate, because the suite is already within 1.09× of its slowest module.
+- The floor is the slowest module: test_envelope_mechanics, 549 s on c2d. More
+  vCPU cannot beat it. Only faster cores can (c4: 285–323 s), or splitting that
+  module.
+- The model fits. Replaying each run's own log reproduces its wall time to
+  within about 3 s, after adding the 71 s build and about 30 s for doctor and
+  probes. Cross-shape predictions carry the reference run's per-module load:
+  the 16-vCPU log predicts 711 s at 32, against 600 s measured. Use a reference
+  log from the target shape.
+- Ordering is free speed, in agent-ee and not owned here. strict_suite submits
+  modules alphabetically. Longest-first submission replays to 549 s at 32
+  (the floor, against 600 s) and 978 s at 16 (against 1061 s).
+
+### Job classes
+
+| Class | Shape | Basis |
+|---|---|---|
+| Full strict gate (`run-gate.sh`) | c2d-highcpu-32, JOBS=32 | measured above |
+| Affected-test subset through `strict_suite.py --jobs N` | `gate-size --modules …` against the latest c2d-32 log | replay, then one real run |
+| Single-process `python3 -m unittest …` job (`run-overflow.sh`) | c2d-highcpu-4 (default) | one interpreter plus tool subprocesses; record the first real run's wall time and CPU before changing it |
+
+### c4: retirement plan
+
+A persistent, mostly idle c4-highcpu-48 does not fit this model. Its 12.4
+running hours are most of the estimate, and its 200 GB Hyperdisk costs about
+$63/month even when stopped.
+
+Plan: once the ephemeral right-sized path has passed a real gate for agent-449,
+preserve c4's logs and evidence and keep the image. Then report, through
+agent-519, before deleting the instance or its disk. Until then, the idle stop
+and the spend guard stay in place.
 
 ## Test overflow: `run-overflow.sh` (owner, 2026-10-22)
 

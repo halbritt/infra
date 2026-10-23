@@ -4,10 +4,10 @@
 # Runs the agent-ee release gate for SHA on a throwaway Spot VM booted from the
 # image family agent-ee-gate, then deletes the VM. Run on proximal.
 #
-#   1. creates the VM (default c2d-highcpu-16 Spot, termination action DELETE,
+#   1. creates the VM (default c2d-highcpu-32 Spot, the measured wall-time knee (README "Right-sizing"), termination action DELETE,
 #      max run 3 h, no service account);
 #   2. stages `git archive SHA` of ~/git/agent-ee into ~/agent-ee-gate/ctx/SHA;
-#   3. runs `JOBS=8 CI_RUN_EPHEMERAL_VM=1 ./ci-run.sh SHA > ci-logs/gate-SHA.out` detached on
+#   3. runs `JOBS=32 CI_RUN_EPHEMERAL_VM=1 ./ci-run.sh SHA > ci-logs/gate-SHA.out` detached on
 #      the VM (one VM per gate, so ci-run.sh may run without native-admit there)
 #      and polls for its "=== exit N" line;
 #   4. copies ~/agent-ee-gate/ci-logs back to $OUT (default
@@ -19,8 +19,8 @@
 # the reservation and exits 6. Exit status: ci-run.sh's, or 3 when every attempt was
 # preempted. KEEP=1 leaves the VM running (delete it yourself).
 #
-# Environment: AGENT_EE, ZONE (us-west1-b), MACHINE_TYPE (c2d-highcpu-16),
-# JOBS (8), REBUILD (passed to ci-run.sh), IMAGE (default: latest in the family).
+# Environment: AGENT_EE, ZONE (us-west1-b), MACHINE_TYPE (c2d-highcpu-32),
+# JOBS (32; keep JOBS = vCPUs), REBUILD (passed to ci-run.sh), IMAGE (default: latest in the family).
 set -euo pipefail
 
 [ $# = 1 ] && [[ $1 =~ ^[0-9a-f]{7,40}$ ]] || { echo "usage: $0 SHA" >&2; exit 2; }
@@ -28,8 +28,8 @@ AGENT_EE=${AGENT_EE:-$HOME/git/agent-ee}
 SHA=$(git -C "$AGENT_EE" rev-parse --short=8 "$1^{commit}")
 PROJECT=${PROJECT:-heath-stuff}
 ZONE=${ZONE:-us-west1-b}
-MACHINE_TYPE=${MACHINE_TYPE:-c2d-highcpu-16}
-JOBS=${JOBS:-8}
+MACHINE_TYPE=${MACHINE_TYPE:-c2d-highcpu-32}
+JOBS=${JOBS:-32}
 MAX_ATTEMPTS=${MAX_ATTEMPTS:-3}
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 OUT=${OUT:-$HOME/agent-ee-gate-gcp/$SHA-$STAMP}
