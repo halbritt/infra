@@ -1,5 +1,10 @@
 # Changelog — proximal (system)
 
+## 2026-10-23 — hostmon: versioned source, resume fix, monitor-health and capacity alerts
+
+- Committed the read-only host monitor source (`probe.py`, `hostmon.py`, `brief.txt`) to [config/hostmon](config/hostmon/README.md); previously it existed only in the fleet tooling under `/tmp` and the deployed `~/.local/share/hostmon/`.
+- Fixed luna resume (`codex exec resume` rejects `--sandbox`; now `-c sandbox_mode="read-only"`). Failed model turns raise a deduplicated `monitor-model-failed` notice and a `monitor-model-recovered` clearance. The forwarder writes `~/.local/state/hostmon/capacity.json` and raises `monitor-stale-HOST` and `idle-host-queued-work`. Requested by agent-521 (Cairn 9e692914); owner agent-449.
+
 ## 2026-10-22 — agent-ee telemetry-pod render job (user timer)
 
 - Added `agent-ee-render-job.timer` and `.service` (systemd user units, `OnCalendar=*-*-* 00/4:17:00`, `Persistent=true`). The job renders top, bottom and isometric views of the telemetry-pod board and publishes them to the existing private render gallery. It binds the board/model hashes, the scope counts, the change state, "unrouted" and "not qualified" to each bundle. It is serialized with `flock`, bounded to 20 min, runs at nice 10 with idle I/O priority and keeps runs for 7 days. Owner instruction relayed through agent-521's campaign process; job owner agent-449. See [config/render-job](config/render-job/README.md).
