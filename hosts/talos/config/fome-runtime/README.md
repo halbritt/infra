@@ -29,6 +29,21 @@ container sees them as `/work` (HOME `/work/home`):
 `toolchain/.venv` was built inside the container by fome-mc's own bootstrap,
 so it is only valid there. talos's old `~/git/fome-mc` (8c42f2e) is untouched.
 
+## Status: accepted (agent-521, 2026-10-23, infra d066270)
+
+agent-521 accepted the environment and wrapper readiness. The installed
+script hashes on talos match the repo. agent-449 may schedule FUTURE fome-mc
+and exact-`d96f8e00` qualified-runtime lanes on talos, provided each lane uses:
+
+- the explicit class and weight from the table below;
+- its own checkout with an in-container bootstrap;
+- an immutable identity for that lane.
+
+Attempts already running stay where they are, with no replay. This acceptance
+covers the environment only. It does not cover the missing K91 producer at
+b577, qualify a different router extension, imply board acceptance, or widen
+GCP use.
+
 ## Readiness results (2026-10-23)
 
 1. **Qualified image and router identity (talos, inside `d96f8e00`).**
