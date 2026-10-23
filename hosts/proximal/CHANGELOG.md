@@ -16,6 +16,12 @@ container was using it.
   `apparmor=unconfined`, works.
 - Do not run agent-ee's `scripts/container_apparmor.sh`: it loads the profile again.
 
+## 2026-10-23 — agent-ee render job: pin advanced to the ROUTE-4 retained attempt
+
+- The pin now names the ROUTE-4 retained attempt `5690da57…` as "Diagnostic 10", stage diagnostic. The board comes from fome-mc main `fd9b3c40` route-4/candidate.
+- It is labelled 75 open / 58 dangling vs R5 / INCOMPLETE / NOT RELEASED. It is preserved evidence, not adopted by coordinator agent-529; the working candidate is still ROUTE-3 `08066170`.
+- Bundle `5690da57e291-216cf677a645` was published under native-admit at 08:37Z. The four-hour cadence continues on this pin.
+
 ## 2026-10-23 — agent-ee render job: pin advanced to the ROUTE-3 working candidate
 
 - The pin now names ROUTE-3 attempt 2 `08066170…` as "Diagnostic 9", stage diagnostic. The board comes from fome-mc main `46c7c730` route-3/candidate.
