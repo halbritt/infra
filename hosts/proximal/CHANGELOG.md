@@ -26,6 +26,18 @@
   [config/restic](config/restic/README.md); secrets stay on the host. Owner
   request: "restic backups do need to work".
 
+## 2026-10-23 — owner: no AppArmor work, ever
+
+The owner's ruling, verbatim: "no fucking apparmor, ever". Following the
+03:05–03:58Z regression:
+- No agent loads, replaces, tests or proposes AppArmor profiles on any host.
+- The explicit-class candidate and `apparmor-probe.sh` are withdrawn and
+  deleted from `shared/agent-ee/`.
+- The AGENTEE-438 enforce-profile work is stopped on the infra side.
+- The profiles that were already deployed are unchanged: proximal
+  `agent-ee-container` (unconfined, main's) and talos's installed profile.
+  Changing either needs the owner's explicit say.
+
 ## 2026-10-23 — AGENTEE-438 AppArmor profile checked on AppArmor 4 (H1); not adopted
 
 agent-449 asked whether proximal could stand in for c4 as the AppArmor 4 host
