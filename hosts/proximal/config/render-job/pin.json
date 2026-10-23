@@ -1,19 +1,19 @@
 {
   "schema": "proximal.agent-ee-render-job.pin/1",
-  "name": "iter8t",
-  "label": "Iteration 8",
+  "name": "accepted-j6b2",
+  "label": "Diagnostic 7",
   "stage": "diagnostic",
   "board": {
-    "path": "pinned/56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72/candidate.kicad_pcb",
-    "sha256": "56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72"
+    "path": "pinned/2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673/telemetry-pod.kicad_pcb",
+    "sha256": "2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673"
   },
   "project": {
-    "path": "pinned/56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72/candidate.kicad_pro",
-    "sha256": "a91ee4d1a8ecfa583df33e707defdb3174e505d91853fc1e4959600d770aa57f"
+    "path": "pinned/2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673/telemetry-pod.kicad_pro",
+    "sha256": "10002b987995765415313fa89da32ba9011160853596f1a78ff8fba24ac9b175"
   },
   "project_models": {
-    "inputs/models/c-1-776163-1-t-3d.stp": "43ba1f805451c97c81c3e659339e78a5ce25a0cbaeeb0427e809513e38daa473",
-    "inputs/models/NEO-M9N-00B_visualization-only_datasheet-derived_not-manufacturer-mechanical-qualification.step": "8a7f198429247fde472e97f1b8c56820a7206840f56be9a7138b4ec0fa62a5d9"
+    "inputs/models/NEO-M9N-00B_visualization-only_datasheet-derived_not-manufacturer-mechanical-qualification.step": "8a7f198429247fde472e97f1b8c56820a7206840f56be9a7138b4ec0fa62a5d9",
+    "inputs/models/c-1-776163-1-t-3d.stp": "43ba1f805451c97c81c3e659339e78a5ce25a0cbaeeb0427e809513e38daa473"
   },
   "expected_scope": {
     "non_hole_footprints": 305,
@@ -29,13 +29,17 @@
     ],
     "reason": "old 112-footprint v9 pilot (fome-mc main telemetry-pod.kicad_pcb)"
   },
-  "scope_note": "Iter8t expanded telemetry-pod placement candidate, models-only derivative with J1 manufacturer STEP and U3 datasheet-derived visualization model. UNROUTED diagnostic, NOT qualified. Not the integrated j6 candidate.",
+  "scope_note": "Accepted j6b2 capture (agent-521 Cairn 6bf3405a): fome-mc main 4a961fd21debc6c86a1fb095fcf1453b457d1c5d (merge of reviewed 396eb6b6; tree 966b579a), candidate 5504a022417b5bf49ad6b1cec7f39f65bd3f8a566e46a286bb656904bef837ba, emission-7d5b0d4d design/project (MANIFEST 161f71b0); board = root telemetry-pod.kicad_pcb at 4a961fd2. UNPLACED and UNROUTED (0 tracks, 499 unconnected, 21 DRC: expected pre-placement scope); NOT QUALIFIED. Models visualization only. No physical-fit/fabrication approval. Initial seed includes off-board unplaced components, shown as captured.",
   "provenance": {
-    "pinned_at": "2026-10-22",
-    "pinned_by": "render job builder for agent-449 on agent-521 HOLD (Cairn 14664d84)",
-    "board_and_project_from": "/home/halbritt/.cache/agent509-render-refresh/iter8t-renders/snapshot/",
-    "project_models_from": "/home/halbritt/.cache/agent449-pod/iter8t/candidate/inputs/models/ (hashes equal those bound in the 2026-10-22T06:17Z iter8t render manifest)",
-    "prior_gallery_bundle_same_board": "56313982e687-0e28e3b235a2"
+    "pinned_at": "2026-10-23T02:25:26.403193+00:00",
+    "pinned_by": "render-job-pin.sh",
+    "board_from": "/tmp/claude-1000/-home-halbritt-git-agent-ee/27f222af-22f4-4cfc-adf8-8d834ed069d8/scratchpad/pin-snapshot-396eb6b6/telemetry-pod.kicad_pcb",
+    "project_from": "/tmp/claude-1000/-home-halbritt-git-agent-ee/27f222af-22f4-4cfc-adf8-8d834ed069d8/scratchpad/pin-snapshot-396eb6b6/telemetry-pod.kicad_pro",
+    "models_from": "/tmp/claude-1000/-home-halbritt-git-agent-ee/27f222af-22f4-4cfc-adf8-8d834ed069d8/scratchpad/pin-snapshot-396eb6b6",
+    "previous_pin": {
+      "name": "diagnostic-6",
+      "board_sha256": "adfb7668ac0c80dc1b4f1d2f97afa86b193f630c545bf43cbc0de8f49f351a40"
+    }
   },
   "update_policy": "agent-449 advances the pin with render-job-pin.sh <board.kicad_pcb> <project.kicad_pro> [models-dir] <label> <scope-note> whenever a newer consistent campaign snapshot exists (e.g. j6 candidates). The helper refuses a board identical to the current pin or the 112-footprint pilot. An unchanged board is labelled unchanged by the job. Never point the pin at a repository HEAD or a live worktree.",
   "policy": "PIN POLICY (agent-521, 2026-10-22): the pin advances to EACH newer consistent campaign snapshot, even if unrouted or unqualified; engineering qualification must NOT gate progress renders. Every render is labelled with its actual routing state, 'not qualified' and its actual scope. The snapshot is immutable (pinned/<sha>/, read-only) with matched board/project/project models, and every file is sha256-checked on each run.",

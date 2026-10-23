@@ -19,16 +19,21 @@ pin, the run refuses. It also refuses a board on the pin's refuse list (the 112-
 pilot, by sha256 and by footprint count). The job never selects a board from a repository HEAD
 or a live worktree.
 
-Current pin, `iter8t`:
-- Board: `pinned/56313982…/candidate.kicad_pcb`, sha256
-  `56313982e6871d8054359d61ae5f74202a19b707d051efb56bc20233d5c6dd72`.
-- Project: sha256 `a91ee4d1…`.
-- Project models: J1 `c-1-776163-1-t-3d.stp` (`43ba1f80…`) and U3
+Current pin, `accepted-j6b2` (pinned 2026-10-23 by agent-449's dispatcher; previous pins `diagnostic-6` (board `adfb7668…`, the 5d923c54 initial capture) and, before that, `iter8t`):
+- Source: the agent-521-accepted j6b2 capture (Cairn 6bf3405a) as landed on fome-mc main
+  `4a961fd21debc6c86a1fb095fcf1453b457d1c5d` (merge of the reviewed `396eb6b6`, tree `966b579a`).
+  Candidate `5504a022…`. The files are the emission-7d5b0d4d `design/project` snapshot (MANIFEST
+  `161f71b0…`); the board equals the root `telemetry-pod/telemetry-pod.kicad_pcb` at that commit.
+- Board: `pinned/2f1c9557…/telemetry-pod.kicad_pcb`, sha256
+  `2f1c955704ab1fb38217c24cbaf5a45f4219a74a6a2309be710452c54db3b673`.
+- Project: sha256 `10002b98…`.
+- Project models (unchanged): J1 `c-1-776163-1-t-3d.stp` (`43ba1f80…`) and U3
   `NEO-M9N-00B_visualization-only_datasheet-derived…step` (`8a7f1984…`).
-- Gallery label `Iteration 8`, stage `diagnostic`.
+- Gallery label `Diagnostic 7`, stage `diagnostic`.
 - Scope: 309 footprints, which are 305 non-hole footprints and 4 mounting holes. This matches
   the expected 305 + 4.
-- Routing: UNROUTED (no tracks, arcs or vias). Qualification: not qualified.
+- Routing: UNPLACED and UNROUTED (no tracks, arcs or vias). Qualification: not qualified.
+- The render code is the separately installed gallery app release; this pin does not pin agent-ee.
 
 ## Pin policy and updating the pin
 
