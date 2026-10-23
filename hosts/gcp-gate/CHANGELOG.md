@@ -1,5 +1,29 @@
 # Host changelog
 
+## 2026-10-23 — `gcp-spend` inventory accounting follow-up and guard notification
+
+Second agent-521 review: H1–H3 accepted; H4 corrected.
+
+- Every live disk is priced from its own type, size and provisioning, and
+  counted in commitments.
+- A live RUNNING VM with contradictory history is charged from its last
+  recorded event.
+- Guard stops, and failed stops, notify agent-519 through Cairn, and the
+  delivery is recorded.
+
+Tests: `evidence-20261022/gcp-budget-boundaries-2/`.
+
+- R1: an unpriced type on a disk sharing a VM's name is refused.
+- R1b: a Hyperdisk without provisioning is refused.
+- R1c: c4's Hyperdisk is priced at $0.0864/h.
+- R2: a retained disk is a $0.017/h commitment.
+- R3: a missing restart charges the unaccounted ~1 h.
+- N1 and N2: a budget stop and a failed stop are both recorded and notified
+  (the failed stop exits 1).
+- A real delivery test to agent-475's own inbox gave event 172f615d.
+
+Spend is still an ESTIMATE.
+
 ## 2026-10-23 — `gcp-spend` boundary corrections (agent-521 review)
 
 Spend is still an estimate (billing data is unreadable), and the cap is not

@@ -58,6 +58,21 @@ is disabled, and enabling either is a separate change. So spend is an
 
   The shapes of live instances are cached (`shapes.json`) so they stay
   priceable after deletion.
+- **Disk accounting.** Every live disk is priced from its OWN listed type, size
+  and provisioning: pd-balanced, pd-standard and pd-ssd per GB, and
+  hyperdisk-balanced from capacity plus provisioned IOPS above 3000 plus
+  throughput above 140 MiB/s. A disk sharing a VM's name is no exception. An
+  unknown type or missing Hyperdisk provisioning refuses. Every live disk is
+  both accrued since creation and counted in hourly commitments, whether or not
+  its VM still exists. History prices only disks that are gone.
+- **Contradictory history.** A VM that is live RUNNING while its history ends
+  in a stop (a delayed or missing restart) is charged from its last recorded
+  event.
+- **Notification.** Every guard stop or failed stop sends a bounded
+  (60 s) Cairn notice to agent-519 (owner notifications) through the existing
+  hosted profile (`cairn agent remember` + `cairn publish --to agent/…`). The
+  delivery result ("notified … event X" or "NOTIFY FAILED") is recorded in the
+  ledger event. journald alone is not counted as notification.
 - **No expiry release.** Open reservations stay charged past their nominal end
   until `release` after verified teardown.
 

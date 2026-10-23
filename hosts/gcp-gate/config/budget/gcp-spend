@@ -120,13 +120,22 @@ def lifecycle():
     return {n: sorted(v) for n, v in per.items()}
 
 
-def disk_rate(dtype, size_gb):
-    """USD/h for a live disk by type; unknown types make the estimate unknown."""
+# hyperdisk-balanced us-central1 (catalog 2026-10-22, infra hosts/gcp-gate/README.md): capacity $0.08/GB-month,
+# provisioned IOPS above 3000 $0.005/IOPS-month, throughput above 140 MiB/s $0.04/MiB/s-month.
+HDB_GB, HDB_IOPS, HDB_TPUT = 0.08 / 730, 0.005 / 730, 0.04 / 730
+
+
+def disk_rate(d):
+    """USD/h for a LIVE disk from its actual type, size and provisioning; unknown means refuse."""
+    dtype, size = d["type"].rsplit("/", 1)[-1], int(d["sizeGb"])
     if dtype == "hyperdisk-balanced":
-        return C4_DISK_PER_H * max(1.0, size_gb / 200)   # priced like c4's provisioned disk, never below it
+        if "provisionedIops" not in d or "provisionedThroughput" not in d:
+            raise RuntimeError(f"disk {d['name']}: hyperdisk provisioning unknown")
+        return (size * HDB_GB + max(0, int(d["provisionedIops"]) - 3000) * HDB_IOPS
+                + max(0, int(d["provisionedThroughput"]) - 140) * HDB_TPUT)
     if dtype in DISK_PER_GB_H:
-        return size_gb * DISK_PER_GB_H[dtype]
-    raise RuntimeError(f"no price for disk type {dtype}")
+        return size * DISK_PER_GB_H[dtype]
+    raise RuntimeError(f"disk {d['name']}: no price for disk type {dtype}")
 
 
 def estimate():
@@ -138,7 +147,9 @@ def estimate():
     live = {i["name"]: i for i in json.loads(gcloud("compute", "instances", "list",
             "--format=json(name,status,machineType,creationTimestamp)")) if i["name"] not in EXCLUDE}
     live_disks = {d["name"]: d for d in json.loads(gcloud("compute", "disks", "list",
-            "--format=json(name,sizeGb,type,creationTimestamp,users)")) if d["name"] not in EXCLUDE}
+            "--format=json(name,sizeGb,type,creationTimestamp,users,provisionedIops,provisionedThroughput)"))
+            if d["name"] not in EXCLUDE}
+    disk_rates = {n: disk_rate(d) for n, d in live_disks.items()}   # validates every live disk first
     history = lifecycle()
     for name, inst in live.items():               # live but absent from (possibly delayed) history
         if name not in history:
@@ -147,7 +158,6 @@ def estimate():
                 raise RuntimeError(f"live instance {name} has unpriced shape {mt}")
             history[name] = [(ts(inst["creationTimestamp"]), "insert")]
             items.append({"item": f"{name} (live, missing from audit history: charged from creation)", "usd": 0.0})
-    disk_charged = set()
     for name, inst in live.items():
         remember_shape(name, inst["machineType"].rsplit("/", 1)[-1])
     for name, evs in history.items():
@@ -157,8 +167,9 @@ def estimate():
             raise RuntimeError(f"unknown or unpriced campaign instance shape: {name} ({mt})")
         if name in live_disks:
             disk_gb = int(live_disks[name]["sizeGb"])
-        up_h, started, created, deleted = 0.0, None, None, None
+        up_h, started, created, deleted, last = 0.0, None, None, None, None
         for when, method in evs:
+            last = when
             if method in ("insert", "start", "resume"):
                 created = created or when
                 started = started or when
@@ -168,27 +179,30 @@ def estimate():
                 deleted = when
         state = live.get(name, {}).get("status")
         running = state == "RUNNING"
-        if started and running:
+        note = ""
+        if running and started:
             up_h += (t - started).total_seconds() / 3600
-        if name in live_disks:                    # the disk still exists, whatever the instance did
-            deleted = None; disk_charged.add(name)
-        disk_end = deleted or t
-        disk_h = (disk_end - created).total_seconds() / 3600 if created else 0
+        elif running:   # live RUNNING but the history ends down: the restart is missing; bound it from the last event
+            up_h += (t - (last or created)).total_seconds() / 3600
+            note = " (live RUNNING contradicts history: current run charged from the last recorded event)"
         compute = up_h * rate(mt)
-        disk = disk_h * (C4_DISK_PER_H if disk_kind == "c4-hyperdisk" else disk_gb * DISK_PER_GB_H[disk_kind])
-        items.append({"item": name, "machine_type": mt, "vm_hours": round(up_h, 2), "disk_hours": round(disk_h, 2),
+        # Disks: a live disk is priced below from its actual properties; history prices only disks that are gone.
+        if name in live_disks:
+            disk_h, disk = 0.0, 0.0
+        else:
+            disk_h = ((deleted or t) - created).total_seconds() / 3600 if created else 0
+            disk = disk_h * (C4_DISK_PER_H if disk_kind == "c4-hyperdisk" else disk_gb * DISK_PER_GB_H[disk_kind])
+        items.append({"item": name + note, "machine_type": mt, "vm_hours": round(up_h, 2), "disk_hours": round(disk_h, 2),
                       "usd": round(compute + disk, 3), "state": state or "deleted"})
         if running:
-            committed.append({"item": f"{name} running", "usd_per_h": round(rate(mt) + (C4_DISK_PER_H if disk_kind == "c4-hyperdisk" else disk_gb * DISK_PER_GB_H[disk_kind]), 3)})
-        elif name in live:
-            committed.append({"item": f"{name} disk (stopped)", "usd_per_h": round(C4_DISK_PER_H if disk_kind == "c4-hyperdisk" else disk_gb * DISK_PER_GB_H[disk_kind], 3)})
-    for dname, d in live_disks.items():           # residual disks with no instance history at all
-        if dname in disk_charged:
-            continue
-        r = disk_rate(d["type"].rsplit("/", 1)[-1], int(d["sizeGb"]))
+            committed.append({"item": f"{name} running", "usd_per_h": round(rate(mt), 3)})
+    for dname, d in live_disks.items():           # EVERY live disk: accrued since creation, and a commitment
+        r = disk_rates[dname]
         hours = (t - ts(d["creationTimestamp"])).total_seconds() / 3600
-        items.append({"item": f"disk {dname} (residual)", "disk_hours": round(hours, 2), "usd": round(r * hours, 3), "state": "disk"})
-        committed.append({"item": f"disk {dname} (residual)", "usd_per_h": round(r, 4)})
+        attached = "attached" if d.get("users") else "unattached"
+        items.append({"item": f"disk {dname} ({d['type'].rsplit('/', 1)[-1]} {d['sizeGb']} GB, {attached})",
+                      "disk_hours": round(hours, 2), "usd": round(r * hours, 3), "state": "disk"})
+        committed.append({"item": f"disk {dname}", "usd_per_h": round(r, 4)})
     for img in json.loads(gcloud("compute", "images", "list", "--no-standard-images", "--format=json(name,archiveSizeBytes,creationTimestamp)")):
         if not img["name"].startswith("agent-ee-gate"):
             continue
@@ -290,6 +304,30 @@ def release_locked(args):
     (STATE / "ledger.jsonl").write_text("".join(json.dumps(v) + "\n" for v in folded.values()))
 
 
+OWNER_QUEUE = ENV.get("GCP_SPEND_NOTIFY_TO", "agent/ef38ddd8-3916-42d2-bfeb-2e3c51d15748")  # agent-519 (owner notifications); override for tests only
+
+
+def notify_owner(text):
+    """Bounded best-effort Cairn notice to agent-519; returns a truthful delivery record."""
+    cmd = ENV.get("GCP_SPEND_NOTIFY_CMD")               # tests substitute a recorder
+    try:
+        if cmd:
+            r = subprocess.run([cmd], input=text, capture_output=True, text=True, timeout=60)
+            return f"notify rc {r.returncode}: {r.stdout.strip()[-120:]}"
+        token = str(Path.home() / ".local/share/cairn/hosted-agent.token")
+        rem = subprocess.run(["cairn", "agent", "--token-file", token, "remember", "--repo", str(Path.home() / "git/cairn"),
+                              "--request-id", str(uuid.uuid4()), "--shareable", "--stdin"],
+                             input=text, capture_output=True, text=True, timeout=60)
+        rec = json.loads(rem.stdout)["data"]
+        pub = subprocess.run(["cairn", "publish", "--token-file", token, "--request-id", str(uuid.uuid4()),
+                              "--to", OWNER_QUEUE, "--kind", "notice", "--version", str(rec["version"]), rec["record_id"]],
+                             capture_output=True, text=True, timeout=60)
+        out = json.loads(pub.stdout)
+        return f"notified {OWNER_QUEUE}: event {out['data']['event_id']}" if out.get("ok") else f"NOTIFY FAILED: {pub.stdout[-160:]}"
+    except Exception as err:
+        return f"NOTIFY FAILED: {err}"
+
+
 def guard(args):
     """Stop agent-ee-gate-c4 (after copying its gate logs) before the cap can be reached."""
     STATE.mkdir(parents=True, exist_ok=True)
@@ -332,9 +370,15 @@ def guard(args):
     except Exception as err:
         stopped = f"STOP FAILED: {err}"
     print(f"guard: {stopped}")
+    notified = notify_owner(
+        "gcp-spend guard (campaign GCP cap, owner $100 cumulative; figures are ESTIMATES, not billing):\n"
+        f"- agent-ee-gate-c4: {stopped}\n- reason: {reason}\n- gate logs: {preserved}\n"
+        "- New campaign launches stay refused until the remaining allowance allows them. Owner decision needed\n"
+        "  only to raise the cap or to resume c4 work.\nFrom the gcp-spend guard timer on proximal (infra hosts/gcp-gate/config/budget).")
+    print(f"guard: {notified}")
     with Lock():
         append({"id": "guard-" + uuid.uuid4().hex[:6], "state": "event", "event": "c4-stop", "reason": reason,
-                "at": now().isoformat(timespec="seconds"), "preservation": preserved, "stop": stopped})
+                "at": now().isoformat(timespec="seconds"), "preservation": preserved, "stop": stopped, "notification": notified})
     if stopped.startswith("STOP FAILED"):
         sys.exit(1)
 
