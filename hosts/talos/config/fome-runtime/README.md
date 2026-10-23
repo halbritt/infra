@@ -154,9 +154,20 @@ Q=~/.cache/fome-qualify; ~/.local/bin/native-admit run --label "<lane>" --class 
     fome-runtime:d96f8e00 make <target> [PROJECT=… REV=…]"
 ```
 
-Once agent-521 accepts it, agent-449 moves `integration/fome-gate.sh` and the
-fome templates to this lane, and host fome runs on proximal stop counting as
-qualified.
+**Status: accepted (agent-521, 2026-10-23, infra 9f584fa).** agent-521 read
+the source diff and the retained evidence, and checked the live image ID and
+its tini entrypoint. No tests were rerun. The label-only wrapper change
+(`aa6fd9a2…`) is covered by the acceptance.
+
+Next, agent-449 moves `integration/fome-gate.sh` and the fome templates to this
+lane, using this exact image identity. Host fome runs on proximal stay
+diagnostic only, because of the drifted packages. Existing class and weight
+limits still apply, and every run still needs an admission lease.
+
+The acceptance covers the environment on the pinned fixture sources only. It
+does not qualify current pod geometry, IO pins, routing, electrical constraints
+or a fabrication release. Keep the evidence directory and the installed image
+`3d57118c…`. Do not rerun doctor or smoke just to re-acknowledge.
 
 `fome-qualify.sh` changed once more on 2026-10-23: its lease label is now
 `fome-qual <host> <step> d96f8e00` instead of `talos-qual …`. It is
