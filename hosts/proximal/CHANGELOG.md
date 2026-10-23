@@ -39,6 +39,12 @@ cannot, because the WSL kernel has AppArmor disabled.
   It was loaded under the separate name `agent-ee-container-438probe`, which
   has since been removed from both hosts.
 - Evidence is in `proximal:~/.local/share/infra/apparmor-438-20261023/`.
+- **Fixed profile loaded and kept.** At 03:05:26Z agent-ee c821ce65's
+  profile (the candidate, byte for byte) was loaded as `agent-ee-container`.
+  The probe shows `(enforce)` at all three levels, with 0 denials.
+- It stays loaded while agent-449 runs the 438 affected gate. It is
+  runtime-only, so a reboot drops it.
+- Rollback: `sudo apparmor_parser -r ~/.cache/apparmor-438/agent-ee-container.pre-438`.
 
 ## 2026-10-23 — hostmon: versioned source, resume fix, monitor-health and capacity alerts
 
