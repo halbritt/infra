@@ -85,6 +85,23 @@ FOME_MC_COMMIT=$(ci_env FOME_MC_COMMIT)
 J1_DRAWING_SHA256=$(ci_env J1_DRAWING_SHA256)
 [ -n "$FOME_MC_COMMIT" ] && [ -n "$J1_DRAWING_SHA256" ] || { echo "cannot read CI pins" >&2; exit 2; }
 
+# --- K91 native receipt inputs (agent-ee AGENTEE-442; infra k91-inputs.json) -----------------
+# Commits whose tests read AGENT_EE_K91_* need agent-507's external kicad-route a0ed434 receipts.
+# Each is a content-addressed read-only store, ci-inputs/k91/<name>-<tree sha256>, staged once from
+# proximal by stage-k91-inputs.sh. The gate refuses to start when any is missing or altered.
+K91_OPTS=
+if grep -rqs AGENT_EE_K91_ "$CTX/tests"; then
+  k91_tree() { (cd "$1" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -c1-64); }
+  for spec in final:AGENT_EE_K91_FINAL_RECEIPT:bb515bf60be75f4510b282d64c7dd82e4127e8e44d08581b14140aa21de0f6d5 protected-existing:AGENT_EE_K91_PROTECTED_EXISTING:4f728c6c52edf786c97658224fcf189758657640105b24cfaa840a1acdaef5e8 protected-human:AGENT_EE_K91_PROTECTED_HUMAN:ee07b110eaf5089838e9dc31b18a617885652d9c41e1bf8d6004c58b8a429efb; do
+    name=${spec%%:*}; rest=${spec#*:}; var=${rest%%:*}; tree=${rest#*:}
+    dir=$GATE/ci-inputs/k91/$name-$tree
+    [ -d "$dir" ] || { echo "K91 input $name missing ($dir); run infra stage-k91-inputs.sh for this host" >&2; exit 2; }
+    [ "$(k91_tree "$dir")" = "$tree" ] || { echo "K91 input $name altered ($dir)" >&2; exit 2; }
+    K91_OPTS="$K91_OPTS -v $dir:/opt/k91/$name:ro -e $var=/opt/k91/$name"
+  done
+  echo "K91 inputs verified: final, protected-existing, protected-human"
+fi
+
 # --- image ------------------------------------------------------------------
 if [ "${REBUILD:-0}" = 1 ] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   attempts=${BUILD_ATTEMPTS:-6} delay=30 n=1
@@ -159,7 +176,7 @@ summary=$(mktemp -d "$GATE/tmp/ci-summary-XXXXXX")
 chmod 0777 "$summary"
 status=0
 set -x
-docker run --rm $SANDBOX_OPTS $ADMIT_OPTS \
+docker run --rm $SANDBOX_OPTS $ADMIT_OPTS $K91_OPTS \
   -e AGENT_EE_REQUIRE_TOOLCHAIN=1 -e PYTHONPATH=src -v "$summary:/summary" \
   -v "$STORE:/opt/fome-mc:ro" -e AGENT_EE_FOME_MC_CHECKOUT=/opt/fome-mc \
   -v "$J1_DRAWING:/opt/j1/te-776228-1.pdf:ro" -e AGENT_EE_J1_DRAWING=/opt/j1/te-776228-1.pdf \

@@ -24,7 +24,7 @@ move the CPU-bound gate off shared hosts. Build and run scripts:
 
 | Path | What |
 |---|---|
-| `agent-ee-gate/ci-run.sh` | image copy: sha256 `2c5c20f80838a26e49a21fecce0af5c64a14609ef7cc4d69215c7b4ec3eea3e5`. On agent-ee-gate-c4 and peecee-wsl since 2026-10-22: `2c4d75fd49b2b2153490bde072ca7a122d61e4988665c9145c11185272b27ae2` (under `native-admit run`: lease label, `--cpus`/`--pids-limit` from the lease, `--init` for images without tini) |
+| `agent-ee-gate/ci-run.sh` | image copy: sha256 `2c5c20f80838a26e49a21fecce0af5c64a14609ef7cc4d69215c7b4ec3eea3e5`. On agent-ee-gate-c4 and peecee-wsl since 2026-10-22: `99b77facef615f6edec9b3bd9d3ffbd51e70552e68481f867fc8c86358fca786` (under `native-admit run`: lease label, `--cpus`/`--pids-limit` from the lease, `--init` for images without tini) |
 | `agent-ee-gate/ci-logs/`, `ctx/`, `tmp/` | empty (ci-run.sh needs `tmp/` for its summary dir) |
 | `agent-ee-gate/inputs/te-776228-1.pdf` | J1 drawing, sha256 `14bd5c3b…6e4fe8` (ci.yml `J1_DRAWING_SHA256`) |
 | `agent-ee-gate/ci-inputs/fome-mc-1289f3149d2bcaa83a3b490a0bfbd11ed8a17589` | anonymous clone of public github.com/halbritt/fome-mc at the ci.yml `FOME_MC_COMMIT`, owned 10001:10001, no credential config (the ci-run.sh recipe) |

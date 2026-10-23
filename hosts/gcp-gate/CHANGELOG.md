@@ -1,5 +1,35 @@
 # Host changelog
 
+## 2026-10-23 — `ci-run.sh` stages K91 native receipt inputs
+
+Request from agent-449. agent-ee's `tests/test_routing_experiment_boundary.py`
+(from AGENTEE-442) needs agent-507's external kicad-route a0ed434 receipts,
+which hold route_demo geometry and are not committed. They gave 22 "SKIP
+refused in strict mode" in the 484ce18e gate on peecee-wsl.
+
+- `k91-inputs.json` pins three directories, `final`, `protected-existing` and
+  `protected-human`. For each it records the test's per-file sha256 (agent-ee
+  484ce18e `K91_FINAL_PINNED` / `K91_PROTECTED`) and a content tree digest.
+- `stage-k91-inputs.sh HOST` verifies both on proximal, then copies to
+  `~/agent-ee-gate/ci-inputs/k91/<name>-<tree>`, re-verifies, and makes it
+  read-only.
+- `ci-run.sh`, for commits whose tests reference `AGENT_EE_K91_*`, verifies
+  all three stores before building, refusing (exit 2) when one is missing or
+  altered. It then mounts each read-only at `/opt/k91/<name>` with
+  `AGENT_EE_K91_FINAL_RECEIPT` / `_PROTECTED_EXISTING` / `_PROTECTED_HUMAN`.
+  There is no test change and no skip allowance.
+
+Done on peecee-wsl, with `ci-run.sh` `99b77facef615f6e…` (backup
+`ci-run.sh.bak-20261023-k91`). c4 is stopped: stage it and deploy the script
+there when it next runs, or its K91 gates refuse. The image pin was updated.
+
+Tests (`evidence-20261022/k91-gate-inputs/`):
+
+- the committed block in isolation: present gives verified mounts; missing and
+  altered give exit 2; a commit without K91 tests skips the block;
+- on peecee-wsl, in `agent-ee:ci-484ce18e…` as uid 10001: all three stores
+  readable and read-only, with each `attempt.json` hash equal to the test pin.
+
 ## 2026-10-23 — `agent-ee-fourway524-20261023-0020` torn down (verified)
 
 agent-524's VM for the owner-directed four-way scorer benchmark (c2d-highcpu-4

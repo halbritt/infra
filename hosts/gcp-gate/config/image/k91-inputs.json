@@ -1,0 +1,45 @@
+{
+ "_comment": "K91 native receipt gate inputs for agent-ee's tests/test_routing_experiment_boundary.py (agent-ee 484ce18e: K91_FINAL_PINNED, K91_PROTECTED). Byte copies of agent-507's kicad-route a0ed434 receipts on proximal, content-addressed by tree_sha256 = sha256 of the LC_ALL=C-sorted `sha256sum ./path` lines of every regular file. Staged by stage-k91-inputs.sh; verified by ci-run.sh. Canonical source: infra hosts/gcp-gate/config/image/.",
+ "agent_ee_reference": "484ce18e",
+ "final": {
+  "env": "AGENT_EE_K91_FINAL_RECEIPT",
+  "source": "/home/halbritt/git/kicad-route/build/krt91-final-native-agent507/final-clean-receipt",
+  "pinned": {
+   "routability-experiment.json": "833fac9d41953609b404e836b378c89c3454f71a288141c4103ec5c17e7caddc",
+   "experiment-policy.json": "bbba9c43d37ecb7fa96ba3ce7cf387656f7f6cde52dd2143651150c6e982c59e",
+   "attempt.json": "eda15c237ba6431e6c9bf6a80a13ba96f3f184b4e0046081ced350bd44a19717",
+   "reference/route_demo/route_demo.kicad_pcb": "1477600bf32bf50fc348651c8317f4f6772d208ea3a03ea3eaf955ff25800478",
+   "candidate/route_demo/route_demo.kicad_pcb": "0a81e3e24840dddeb671f6ac5b17eb56e4622b1354458b15dda151b245494f5d",
+   "work/effective-configuration-output.kicad_pcb": "7495a5771807d594621710bc39de7f1d274449b01504cdd9d1bd2cf627788219"
+  },
+  "tree_sha256": "bb515bf60be75f4510b282d64c7dd82e4127e8e44d08581b14140aa21de0f6d5"
+ },
+ "protected-existing": {
+  "env": "AGENT_EE_K91_PROTECTED_EXISTING",
+  "source": "/home/halbritt/git/kicad-route/build/krt91-final-native-agent507/composed-tmp/experiment0/protected-existing",
+  "pinned": {
+   "routability-experiment.json": "e37530a27b5f80215207fe624260bc51e515efb98494442683a759b0204a20b2",
+   "experiment-policy.json": "bbba9c43d37ecb7fa96ba3ce7cf387656f7f6cde52dd2143651150c6e982c59e",
+   "attempt.json": "a76fb8bfef16a278b960906b5fdeb862556f972636aa90e023362e0c98641032",
+   "reference/existing-fixture/route_demo.kicad_pcb": "0cfd162b0677e865e0308547c671eda39f15e965ae5c4f3cdf59b0a410f1dff0",
+   "work/input/existing-fixture/route_demo.kicad_pcb": "1477600bf32bf50fc348651c8317f4f6772d208ea3a03ea3eaf955ff25800478",
+   "candidate/existing-fixture/route_demo.kicad_pcb": "e2b57728f995ef3b3b619b48d5c14f418c1d6b0ceb9a564e0821efa533f1f541",
+   "work/effective-configuration-output.kicad_pcb": "1a22beded37a68a8e2d5c32f0171802d7fb03e7c7d11a34fe1870ab685e019a3"
+  },
+  "tree_sha256": "4f728c6c52edf786c97658224fcf189758657640105b24cfaa840a1acdaef5e8"
+ },
+ "protected-human": {
+  "env": "AGENT_EE_K91_PROTECTED_HUMAN",
+  "source": "/home/halbritt/git/kicad-route/build/krt91-final-native-agent507/composed-tmp/experiment0/protected-human",
+  "pinned": {
+   "routability-experiment.json": "ea32ebf4b96a616e11f81bc893f2b72ae7f6233744312b19306474c123cc7fff",
+   "experiment-policy.json": "bbba9c43d37ecb7fa96ba3ce7cf387656f7f6cde52dd2143651150c6e982c59e",
+   "attempt.json": "89bc71c4b6795abde0d6546264e8f1f0e633ae25b28c8b3a76fbd36039887ed0",
+   "reference/human-fixture/route_demo.kicad_pcb": "0cfd162b0677e865e0308547c671eda39f15e965ae5c4f3cdf59b0a410f1dff0",
+   "work/input/human-fixture/route_demo.kicad_pcb": "1477600bf32bf50fc348651c8317f4f6772d208ea3a03ea3eaf955ff25800478",
+   "candidate/human-fixture/route_demo.kicad_pcb": "c15e6ea3f95323cfc40036787fae4a2ff65b6d25a1a0f97019295e650802d030",
+   "work/effective-configuration-output.kicad_pcb": "3d5914d39851da6c80fcf66c4e3f2809dc645d90dfe6d9f9e4ea5dd4c698973a"
+  },
+  "tree_sha256": "ee07b110eaf5089838e9dc31b18a617885652d9c41e1bf8d6004c58b8a429efb"
+ }
+}
