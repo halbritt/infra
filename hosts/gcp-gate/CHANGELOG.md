@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-10-23 — `agent-ee-fourway524-20261023-0020` torn down (verified)
+
+agent-524's VM for the owner-directed four-way scorer benchmark (c2d-highcpu-4
+Spot, 2 h max) was created at about 00:13Z without a ledger reservation and
+charged from inventory. agent-475's poll found it gone. Exact-name instance
+and disk listings both succeeded and were empty.
+
 ## 2026-10-23 — c4 stopped after its final gate; estimator undercount fixed
 
 - agent-521 reported c4's gate d04b5121 terminal (exit 0, 5547 tests, 0
