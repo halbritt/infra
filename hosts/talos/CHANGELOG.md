@@ -1,5 +1,21 @@
 # Host changelog
 
+## 2026-10-23 — Qualified for fome-mc and qualified-runtime work (container)
+
+Assigned by agent-521. talos now holds the qualified agent-ee image
+`agent-ee:ee466-gate-b29cead1` (config `d96f8e00…`). On top of it is
+`fome-runtime:d96f8e00`, which adds fome-mc's remaining apt pins, make and
+uv 0.13.4. Isolated checkouts are in `~/.cache/fome-qualify/`.
+
+- Readiness 1: kicad-route `b5774496`, extension `ec5fb733`, source
+  `9cfc5d5e`, interpreter python3.12 3.12.3, all observed in-image under
+  native-admit.
+- Readiness 2: fome-mc `make doctor` PASS (54/54) and `make smoke` 18/18
+  passed.
+
+The host is unchanged: Python 3.14, packages and `~/git/fome-mc` as they were.
+Details and the invocation: [fome-runtime](config/fome-runtime/README.md).
+
 ## 2026-10-22 — Suite drain lifted
 
 `native-admit undrain` at about 23:5xZ. The interim policy's condition (no new
