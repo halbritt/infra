@@ -322,7 +322,10 @@ def capacity(hosts, sd, state):
     waiting = {h: v for h, v in snap.items() if (v["queued"] or 0) > 0}
     idle = [h for h, v in snap.items() if (v["free_units"] or 0) > 0 and (v["queued"] or 0) == 0
             and v["age_s"] is not None and v["age_s"] <= 300]
-    if waiting and idle:
+    # Persistence: a lane's affected-test run briefly queued behind its own host's suite slot is normal (the worker
+    # is bound to that host's worktree); raise only after the condition holds for 3 consecutive loops (~3 min).
+    state["idle_streak"] = state.get("idle_streak", 0) + 1 if (waiting and idle) else 0
+    if waiting and idle and state["idle_streak"] >= 3:
         alerts["idle-host-queued-work"] = (
             "Queued native work while qualified-capacity candidates are idle: queued "
             + ", ".join(f"{h}={v['queued']}" for h, v in waiting.items()) + "; free "
@@ -334,7 +337,7 @@ def capacity(hosts, sd, state):
         if k not in seen:
             seen[k] = now()
             append(out, {"ts": now(), "host": "proximal", "severity": "warning", "to": ["449"], "key": k, "text": text})
-    for k in [k for k in seen if k not in alerts]:
+    for k in [k for k in seen if k not in alerts and not (k == "idle-host-queued-work" and waiting and idle)]:
         append(out, {"ts": now(), "host": "proximal", "severity": "info", "to": ["449"], "key": k + "-cleared",
                      "text": f"cleared: {k} (raised {seen.pop(k)})"})
 
