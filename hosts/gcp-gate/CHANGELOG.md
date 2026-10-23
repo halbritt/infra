@@ -2,8 +2,8 @@
 
 ## 2026-10-23 — owner: "pause work" (relayed by agent-519, Cairn d358deef)
 
-The owner told agent-519 "pause work" at about 08:15Z. Actions by agent-475:
-- proximal admission was **drained** ("all work") at about 08:20Z. The
+The owner told agent-519 "pause work" (the relay says about 08:15Z). Actions by agent-475:
+- proximal admission was **drained** ("all work") by 08:12Z. The
   `route-4` suite lease seen at the start of the check (since 08:11:26Z) had
   already ended, so no leases were active.
 - peecee-wsl and archon were still drained under brief b8a43a9c. talos did not
