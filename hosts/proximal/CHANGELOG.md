@@ -16,6 +16,12 @@ container was using it.
   `apparmor=unconfined`, works.
 - Do not run agent-ee's `scripts/container_apparmor.sh`: it loads the profile again.
 
+## 2026-10-23 — agent-ee render job: pin advanced to the 3D-model-complete ROUTE-4 board
+
+- The pin now names `b1bb009b…` as "Diagnostic 11". It is the ROUTE-4 historical board `5690da57` plus 9 KiCad stock 3D model declarations from AGENTEE-477 (coverage 283 → 292 of 309). Copper and placement are unchanged.
+- It is labelled INCOMPLETE / NOT RELEASED / placement grouping unverified. The board comes from fome-mc main `fa41e4b9` agentee-477-3d-models/candidate.
+- Bundle `b1bb009b4e4c-6319f68a586a` was published under native-admit at 09:06Z, with a status record of not adopted and not qualified. The four-hour cadence continues.
+
 ## 2026-10-23 — agent-ee render job: pin advanced to the ROUTE-4 retained attempt
 
 - The pin now names the ROUTE-4 retained attempt `5690da57…` as "Diagnostic 10", stage diagnostic. The board comes from fome-mc main `fd9b3c40` route-4/candidate.

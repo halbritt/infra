@@ -1,14 +1,14 @@
 {
   "schema": "proximal.agent-ee-render-job.pin/1",
-  "name": "route-4",
-  "label": "Diagnostic 10",
+  "name": "route-4-models",
+  "label": "Diagnostic 11",
   "stage": "diagnostic",
   "board": {
-    "path": "pinned/5690da57e291dff46f80b239c1c81f164d0622c6d4c0d03b65437e653f025825/telemetry-pod.kicad_pcb",
-    "sha256": "5690da57e291dff46f80b239c1c81f164d0622c6d4c0d03b65437e653f025825"
+    "path": "pinned/b1bb009b4e4cb7a104b56ed5795c01006e0bc079af0faae3b575a8ba3de218c6/telemetry-pod.kicad_pcb",
+    "sha256": "b1bb009b4e4cb7a104b56ed5795c01006e0bc079af0faae3b575a8ba3de218c6"
   },
   "project": {
-    "path": "pinned/5690da57e291dff46f80b239c1c81f164d0622c6d4c0d03b65437e653f025825/telemetry-pod.kicad_pro",
+    "path": "pinned/b1bb009b4e4cb7a104b56ed5795c01006e0bc079af0faae3b575a8ba3de218c6/telemetry-pod.kicad_pro",
     "sha256": "10002b987995765415313fa89da32ba9011160853596f1a78ff8fba24ac9b175"
   },
   "project_models": {
@@ -29,16 +29,16 @@
     ],
     "reason": "old 112-footprint v9 pilot (fome-mc main telemetry-pod.kicad_pcb)"
   },
-  "scope_note": "ROUTE-4 retained attempt 5690da57 (agent-507 GND junction via from ROUTE-3 08066170): 75 OPEN / 58 DANGLING vs R5 / INCOMPLETE / NOT RELEASED; preserved evidence, NOT adopted by coordinator 529; working candidate remains ROUTE-3 08066170",
+  "scope_note": "ROUTE-4 historical board 5690da57 + 9 KiCad stock 3D models (AGENTEE-477; coverage 292/309; L1/L2 models blocked; models-only derivative, copper/placement unchanged): 75 OPEN / 58 DANGLING / PLACEMENT GROUPING UNVERIFIED / INCOMPLETE / NOT RELEASED",
   "provenance": {
-    "pinned_at": "2026-10-23T08:36:35.651248+00:00",
+    "pinned_at": "2026-10-23T09:05:14.709503+00:00",
     "pinned_by": "render-job-pin.sh",
-    "board_from": "fome-mc main fd9b3c404d117a4ba1f36d3d26f63ea52b018531:telemetry-pod/expansion/route-4/candidate/telemetry-pod.kicad_pcb (agent-507 commit 4d022e3; sha256 5690da57...)",
-    "project_from": "original project bytes, sha256 10002b98... (fome-mc main fd9b3c40:telemetry-pod/expansion/route-4/candidate/telemetry-pod.kicad_pro)",
-    "models_from": "pinned/2f1c9557.../inputs/models = fome-mc main 4a961fd2:telemetry-pod/inputs/models (project-local; hashes in project_models)",
+    "board_from": "fome-mc main fa41e4b93ab03d88c2f0d17320016371325a3726:telemetry-pod/expansion/agentee-477-3d-models/candidate/telemetry-pod.route4-models.kicad_pcb (writer commit 3a2d197; ROUTE-4 5690da57 + 9 model declarations only; sha256 b1bb009b...)",
+    "project_from": "original project bytes, sha256 10002b98... (pinned/5690da57.../telemetry-pod.kicad_pro)",
+    "models_from": "pinned/2f1c9557.../inputs/models (J1, U3 project-local) + KiCad 10.0.7 stock models via KICAD10_3DMODEL_DIR",
     "previous_pin": {
-      "name": "route-3",
-      "board_sha256": "0806617082c33df6daaa00f5d9c6131e7e07ac6160aadc07a2b2bcb90b5ac651"
+      "name": "route-4",
+      "board_sha256": "5690da57e291dff46f80b239c1c81f164d0622c6d4c0d03b65437e653f025825"
     }
   },
   "update_policy": "agent-449 advances the pin with render-job-pin.sh <board.kicad_pcb> <project.kicad_pro> [models-dir] <label> <scope-note> whenever a newer consistent campaign snapshot exists (e.g. j6 candidates). The helper refuses a board identical to the current pin or the 112-footprint pilot. An unchanged board is labelled unchanged by the job. Never point the pin at a repository HEAD or a live worktree.",
