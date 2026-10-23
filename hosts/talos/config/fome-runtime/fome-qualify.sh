@@ -1,32 +1,31 @@
 #!/bin/sh
-# Readiness (2) on talos: fome-mc's pinned environment inside fome-runtime:d96f8e00, under one
-# native-admit lease. Isolated checkouts in ~/.cache/fome-qualify (fome-mc, kicad-libraries). Steps:
-#   bootstrap  toolchain/bootstrap.sh --no-apt (uv sync --frozen, kicad shim, kicad-happy pin, skills, doctor);
-#              network only for PyPI and the pinned kicad-happy clone
-#   doctor     make doctor, --network none
-#   smoke      make smoke (RC fixture), --network none
-# STEPS="doctor smoke" runs a subset. The Universal-112 donor (a doctor-required project) is staged at
-# ~/.cache/fome-qualify/home/git/Polygonus-Universal-112 (HOME=/work/home in the container).
-# Logs: ~/.cache/fome-qualify/logs/<step>.log and .rc. Canonical source: infra hosts/talos/config/fome-runtime/.
+# Readiness (2) on talos: fome-mc's pinned environment inside fome-runtime:d96f8e00. Each step is its own
+# native-admit lease with the class/weight of its actual work; the run stops at the first failing step and
+# exits with its status (logs and .rc kept). Isolated checkouts in ~/.cache/fome-qualify (fome-mc,
+# kicad-libraries, home/git/Polygonus-Universal-112).
+#   bootstrap  class test  w1  toolchain/bootstrap.sh --no-apt; network for PyPI and the pinned kicad-happy clone
+#   doctor     class test  w1  make doctor, --network none
+#   smoke      class suite w2  make smoke (RC fixture pytest + KiCad), --network none
+# STEPS="doctor smoke" runs a subset. Logs: ~/.cache/fome-qualify/logs/<step>.log and .rc.
+# Canonical source: infra hosts/talos/config/fome-runtime/.
 set -u
-Q=$HOME/.cache/fome-qualify; mkdir -p "$Q/logs" "$Q/uv-cache"
-export STEPS="${STEPS:-bootstrap doctor smoke}"
-exec ~/.local/bin/native-admit run --label "talos-qual fome-runtime d96f8e00" --weight 1 -- sh -c '
-  Q=$HOME/.cache/fome-qualify
-  run() { # run STEP NETWORK COMMAND
-    step=$1 net=$2; shift 2
-    docker run --rm --network "$net" --label native-admission.lease=$NATIVE_ADMISSION_LEASE \
+Q=${FOME_QUALIFY_DIR:-$HOME/.cache/fome-qualify}; NA=${NATIVE_ADMIT:-$HOME/.local/bin/native-admit}
+mkdir -p "$Q/logs" "$Q/uv-cache" "$Q/home"
+step() { # step NAME CLASS WEIGHT NETWORK COMMAND
+  name=$1 class=$2 weight=$3 net=$4; shift 4
+  "$NA" run --label "talos-qual fome $name d96f8e00" --class "$class" --weight "$weight" -- sh -c '
+    exec docker run --rm --network "$0" --label native-admission.lease=$NATIVE_ADMISSION_LEASE \
       --cpus $NATIVE_ADMISSION_CPUS --pids-limit $NATIVE_ADMISSION_PIDS --user "$(id -u):$(id -g)" \
       -e HOME=/work/home -e UV_CACHE_DIR=/work/uv-cache -e FOME_KICAD_LIBS=/work/kicad-libraries \
-      -v "$Q:/work" -w /work/fome-mc fome-runtime:d96f8e00 sh -c "mkdir -p /work/home; $*" \
-      > "$Q/logs/$step.log" 2>&1
-    echo $? > "$Q/logs/$step.rc"; echo "$step rc=$(cat $Q/logs/$step.rc)"
-  }
-  for step in ${STEPS:-bootstrap doctor smoke}; do
-    case $step in
-      bootstrap) run bootstrap bridge "bash toolchain/bootstrap.sh --no-apt" ;;
-      doctor) run doctor none "make doctor" ;;
-      smoke) run smoke none "make smoke" ;;
-    esac
-  done
-'
+      -v "$1:/work" -w /work/fome-mc fome-runtime:d96f8e00 sh -c "$2"' "$net" "$Q" "$*" > "$Q/logs/$name.log" 2>&1
+  rc=$?; echo $rc > "$Q/logs/$name.rc"; echo "$name rc=$rc"; return $rc
+}
+for s in ${STEPS:-bootstrap doctor smoke}; do
+  case $s in
+    bootstrap) step bootstrap test 1 bridge "bash toolchain/bootstrap.sh --no-apt" ;;
+    doctor) step doctor test 1 none "make doctor" ;;
+    smoke) step smoke suite 2 none "make smoke" ;;
+    *) echo "unknown step $s" >&2; exit 2 ;;
+  esac || { rc=$?; echo "stopped after $s failed (rc $rc); later steps not run" >&2; exit $rc; }
+done
+echo "all steps passed"

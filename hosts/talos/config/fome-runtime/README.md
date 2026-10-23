@@ -14,8 +14,8 @@ and packages are untouched.
 | Base | the qualified agent-ee image `agent-ee:ee466-gate-b29cead1`, config digest `sha256:d96f8e00a50a1bb6fab119ac8973a083af9373e2c9c235f3df20f655cfc3b5b7` (proximal's image ID). talos's containerd image store reports it as `sha256:9724a2d0…` (its manifest digest). `docker save` on talos shows Config `d96f8e00…` and the same 15 layers. Copied from proximal with `docker save \| ssh talos docker load` (147 s). |
 | [Dockerfile](Dockerfile) | `FROM` the base, plus the exact apt pins the base lacks (`mupdf-tools=1.23.10+ds1-1build3`, `librsvg2-bin=2.58.0+dfsg-1ubuntu0.1`, `ghostscript=10.02.1~dfsg1-0ubuntu7.9`, held), plus `make`, plus `uv` 0.13.4 (proximal's binary). Same Ubuntu snapshot, `20261015T000000Z`. |
 | [build.sh](build.sh) | builds `fome-runtime:d96f8e00` on talos. Refuses unless the base is the qualified image (either store's ID and the exact layer-list digest) and uv's sha256 matches. Built 2026-10-23: image `sha256:6c724d65…`, config `sha256:ab569ec0…`. |
-| [observe-router.sh](observe-router.sh) | readiness 1: kicad-route identities inside the base image, under native-admit |
-| [fome-qualify.sh](fome-qualify.sh) | readiness 2: fome-mc `bootstrap.sh --no-apt`, `make doctor`, `make smoke` in the runtime, under native-admit |
+| [observe-router.sh](observe-router.sh), [router-identity-check.sh](router-identity-check.sh) | readiness 1: kicad-route identities inside the base image under native-admit (class test w1). Compares each identity with its qualified value and exits non-zero on any mismatch or verify failure |
+| [fome-qualify.sh](fome-qualify.sh) | readiness 2: one native-admit lease per step: bootstrap test w1, doctor test w1, smoke suite w2. Stops at the first failure and exits with its status; logs and `.rc` kept |
 
 Isolated managed checkouts on talos live in `~/.cache/fome-qualify/`. The
 container sees them as `/work` (HOME `/work/home`):
@@ -56,15 +56,46 @@ routing and renders.
 
 ## Invocation (for agent-449)
 
+Pass an explicit admission class and weight for the target: `native-admit`
+only recognizes `strict_suite` and `ci-run.sh` by itself, so a bare
+`--weight 1` would run aggregate work as class `test`, past `max_suites` 1.
+
+| Target kind | Examples | `--class` / `--weight` |
+|---|---|---|
+| Aggregate (multi-step suites, pytest) | `smoke`, `check`, `export`, `analyze`, `baseline`, `verify-io`, `fab-package`, `verify-fab-package` | `suite` / `2` |
+| Single native step | `doctor`, `erc`, `drc`, `netlist`, `simulate` | `test` / `1` |
+
+KiCad steps are multi-threaded, so a suite weighs 2 and gets 6 CPUs at
+talos's 3 per unit. Raise the weight (at most 4) only for real parallel work.
+
 ```sh
-ssh talos 'Q=~/.cache/fome-qualify; ~/.local/bin/native-admit run --label "<lane>" --weight 1 -- sh -c "
-  docker run --rm --network none --label native-admission.lease=\$NATIVE_ADMISSION_LEASE \
+ssh talos 'Q=~/.cache/fome-qualify; ~/.local/bin/native-admit run --label "<lane>" --class <suite|test> --weight <2|1> -- sh -c "
+  exec docker run --rm --network none --label native-admission.lease=\$NATIVE_ADMISSION_LEASE \
     --cpus \$NATIVE_ADMISSION_CPUS --pids-limit \$NATIVE_ADMISSION_PIDS --user \$(id -u):\$(id -g) \
-    -e HOME=/work/home -e FOME_KICAD_LIBS=/work/kicad-libraries -v \$Q:/work -w /work/fome-mc \
+    -e HOME=/work/home -e FOME_KICAD_LIBS=/work/kicad-libraries -v \$Q:/work -w /work/<checkout> \
     fome-runtime:d96f8e00 make <target> [PROJECT=… REV=…]"'
 ```
+
+The exit status is make's, through `exec` and `native-admit`. `fome-qualify.sh`
+(one lease per step, stops at the first failure and exits with its status)
+and `observe-router.sh` (exits non-zero if any identity check in
+[router-identity-check.sh](router-identity-check.sh) fails) are the
+reference wrappers.
 
 Each lane should use its own fome-mc worktree or checkout under `$Q` at its
 own commit, rather than the shared `fome-mc` used for qualification. The venv
 must be rebuilt in-container once per checkout (`bash toolchain/bootstrap.sh
 --no-apt`, which needs network).
+
+## Wrapper corrections (agent-521 review, 2026-10-23)
+
+- `fome-qualify.sh` and `observe-router.sh` used to exit 0 after a failed
+  step or identity check, and smoke ran as class `test`. Both are fixed.
+- Evidence in `evidence-20261022/talos-fome-wrapper-fixes/`:
+  - fake docker: all pass gives exit 0; doctor failing gives exit 3 with smoke
+    not run; smoke failing gives exit 3; leases run as test/test/suite with
+    weights 1/1/2;
+  - fake kicad-route tree: every mismatched identity is a FAIL, exit 1;
+  - real image on talos: PASS exits 0; with `install.sh verify` forced to
+    fail, exit 1.
+- The accepted readiness logs are unchanged (`logs/`, `logs/run1/`).
