@@ -20,6 +20,7 @@ MODELS = {"sonnet": "sonnet", "luna": "gpt-6-luna"}
 HOMES = {"claude": "~/.claude", "claude-harm": "~/.claude-harm", "codex": "~/.codex", "codex-harm": "~/.codex-harm",
          "codex-3": "~/.codex-3"}
 SAMPLE_S, TURN_MIN_S, ROTATE_TURNS = 60, 300, 40
+FULL_SUITE_MIN = 200  # modules; the full strict suite is ~277
 QUOTA = re.compile(r"quota|usage limit|rate limit|unauthori[sz]ed|401|403|credit|exhausted|log ?in", re.I)
 
 
@@ -242,7 +243,8 @@ def run(host, kind, account, via):
         last_digest = dg if due or last_digest is None else last_digest
         if due:
             try:
-                res = model_turn(st, kind, account, host, via, {"host": host, "sample": s, "init_ok_containers": sorted(
+                res = model_turn(st, kind, account, host, via, {"host": host, "sample": s, "suite_module_counts": [x.get("modules") for x in s.get("suites") or [] if isinstance(x, dict)],
+                    "full_suite_threshold_modules": FULL_SUITE_MIN, "init_ok_containers": sorted(
                     x.get("name") for x in s.get("containers") or [] if isinstance(x, dict) and init_ok(x)), "active_alerts": active,
                                                                 "new_alerts": new, "events_since_last_turn": events})
             except RuntimeError as e:
@@ -271,7 +273,13 @@ def run(host, kind, account, via):
                 st.pop("model_failing")
             cs_ = [x for x in s.get("containers") or [] if isinstance(x, dict) and _agent_ee(x)]
             all_init_ok = isinstance(s.get("containers"), list) and all(init_ok(x) for x in cs_)
+            # A full strict suite is ~277 modules (or no module list); a focused lane run of tens of modules is normal.
+            full = [x for x in s.get("suites") or [] if isinstance(x, dict)
+                    and not (isinstance(x.get("modules"), int) and x["modules"] < FULL_SUITE_MIN)]
             for m in res.get("send") or []:
+                # The deterministic full-suite check is authoritative (peecee ee387 14-module false positive).
+                if "full-suite" in str(m.get("key")).lower() and not full:
+                    continue
                 # The deterministic init check is authoritative (talos 6e798876, peecee 4467ee6e false positives):
                 # a model init claim is dropped while every agent-ee container is init-protected.
                 if "init" in str(m.get("key")).lower() and all_init_ok:
