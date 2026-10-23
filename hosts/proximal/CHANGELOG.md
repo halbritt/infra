@@ -2,6 +2,13 @@
 
 ## 2026-10-22 — restic off-site backup: cache restored, retention runs again
 
+- Result: the first cached run finished in 1 h 38 min (snapshot `dd5e23ec`,
+  exit 0), against 76–117 h before.
+- Retention was blocked by a stale exclusive repo lock from 2026-09-11
+  (PID 1067185). `restic unlock` removed it and 7 other stale locks.
+- Retention will remove 60 of 73 snapshots, keeping 13, at the next nightly
+  run. See [config/restic](config/restic/README.md).
+
 - Every scheduled backup ran with no cache. systemd sets no `HOME` for the
   root service, so restic logged `unable to open cache` and fetched every tree
   blob of the parent snapshot from the Nearline bucket, one request at a time.

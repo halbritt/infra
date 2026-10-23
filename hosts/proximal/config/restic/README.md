@@ -64,3 +64,14 @@ sudo journalctl -u restic-backup -n 30 --no-pager      # "snapshot … saved", "
     the backup's status.
   - The previous script is kept on the host as
     `restic-backup-locked.pre-cache-20261022`.
+- **2026-10-22: the first run with a cache took 1 h 38 min.** It started at
+  19:46:56 PDT and saved snapshot `dd5e23ec`: 7.8 M files, 998 GiB processed,
+  77 GiB added (61 GiB stored), exit 0, no unreadable files.
+  - `forget` then failed. A stale **exclusive** repository lock from PID
+    1067185, created on **2026-09-11**, had probably blocked forget and prune
+    ever since. Seven more stale locks came from interrupted runs.
+  - `restic unlock` at about 21:30 PDT removed all 8; the holder PIDs were dead.
+  - A retention dry-run (7 daily, 4 weekly, 6 monthly) keeps 13 of 73
+    `scheduled` snapshots and removes 60. That `forget` runs with the next
+    nightly backup. The data is freed at the next monthly prune (Nov 1).
+    Packs younger than 30 days incur Nearline early-deletion charges.
