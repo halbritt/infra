@@ -40,7 +40,21 @@ is disabled, and enabling either is a separate change. So spend is an
 - **Hold point:** launches stop at **$90**, which leaves $10 of headroom.
 - **Exclusions:** `tailscale-exit-node` is not campaign work and is excluded.
 
-## Enforcement (controls in place; under agent-521/522 review, so the cap is not yet declared enforced)
+## Launch scope (agent-521, 2026-10-23)
+
+agent-521 accepted the accounting (be559b4) and the gate/builder teardown
+wrappers (c169d9b). Both technical holds are closed. The **owner's resource
+scope** is unchanged:
+
+- New paid execution only through the small-overflow path (`run-overflow.sh`):
+  `c2d-highcpu-4`, 90 min, local capacity first, reservation first, for
+  required tests that wait too long.
+- No new full-gate VMs (`run-gate.sh`'s c2d-highcpu-16 default) or image
+  builders just because their scripts now pass review, and no fleet expansion.
+- c4 keeps its normal idle shutdown.
+- The $100 total ceiling stands. Figures remain ESTIMATES.
+
+## Enforcement
 
 - **Atomic decisions.** One process lock (`ledger.lock`) covers fresh estimate,
   decision and ledger write for `reserve`, `release` and guard events, so
