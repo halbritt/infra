@@ -1,5 +1,11 @@
 # Changelog — proximal (system)
 
+## 2026-10-23 — agent-ee render job: pin advanced to the ROUTE-3 working candidate
+
+- The pin now names ROUTE-3 attempt 2 `08066170…` as "Diagnostic 9", stage diagnostic. The board comes from fome-mc main `46c7c730` route-3/candidate.
+- It is labelled 77 open / 60 dangling vs R5 / INCOMPLETE / NOT RELEASED. Bundle `0806617082c3-f0aa17fbffd7` was published under native-admit at 07:56Z.
+- The four-hour cadence continues on this pin.
+
 ## 2026-10-23 — agent-ee render job: pin advanced to the ROUTE-1 candidate (incomplete)
 
 - The pin now names the ROUTE-1 routed candidate `19ed7954…` as "Diagnostic 8", stage diagnostic. The board comes from fome-mc main `0fc9b543` route-1/candidate.
