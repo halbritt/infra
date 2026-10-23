@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""gate-size LOG [--modules M ...] [--vcpus 4,8,16,32] [--family c2d] [--knee 0.10]
+
+Right-sizing for ephemeral cloud test VMs (owner, 2026-10-22: "throw as much CPU at it as
+it can use and no more"). Replays a measured ci-run.sh log ("===== module (Ns, exit X)"
+lines from strict_suite.py) through strict_suite's own scheduling: modules submitted in
+sorted order to a pool of --jobs workers, each taking the next module when it frees. For
+each vCPU count (JOBS = vCPUs) it prints the predicted suite wall time and the estimated
+VM cost. It then names the smallest shape whose wall time is within KNEE of the best
+candidate's. --modules restricts the replay to an affected-test subset, for example one
+run through `strict_suite.py --jobs N MODULE...`.
+
+Module times come from the reference run's own load, so a prediction at a very different
+JOBS is an estimate. Validate a chosen shape with one real run (run-gate.sh, MACHINE_TYPE and
+JOBS) before relying on it. Costs use gcp-spend's Spot catalog, the 1.25 safety factor and
+BOOT_MIN minutes of VM time for boot, staging and the image build.
+"""
+import argparse
+import heapq
+import importlib.machinery
+import importlib.util
+import os
+import re
+import sys
+from pathlib import Path
+
+LINE = re.compile(r"^===== (\S+) \(([0-9.]+)s, exit (\d+)\)")
+BOOT_MIN = float(os.environ.get("BOOT_MIN", "6"))
+
+
+def spend_module():
+    path = Path(__file__).resolve().parent.parent / "budget" / "gcp-spend"
+    loader = importlib.machinery.SourceFileLoader("gcp_spend", str(path))
+    spec = importlib.util.spec_from_loader("gcp_spend", loader)
+    mod = importlib.util.module_from_spec(spec)
+    sys.dont_write_bytecode = True
+    loader.exec_module(mod)
+    return mod
+
+
+def replay(durations, workers):
+    """Makespan of strict_suite's pool: sorted submission, the first free worker takes the next."""
+    free = [0.0] * workers
+    for name in sorted(durations):
+        start = heapq.heappop(free)
+        heapq.heappush(free, start + durations[name])
+    return max(free)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("log")
+    ap.add_argument("--modules", nargs="+", help="subset to replay (default: every module in LOG)")
+    ap.add_argument("--vcpus", default="4,8,16,32", help="comma-separated candidate vCPU counts")
+    ap.add_argument("--family", default="c2d")
+    ap.add_argument("--knee", type=float, default=0.10, help="allowed slowdown against the best candidate")
+    args = ap.parse_args()
+
+    durations = {}
+    for line in Path(args.log).read_text(errors="replace").splitlines():
+        m = LINE.match(line)
+        if m:
+            durations[m.group(1)] = float(m.group(2))
+    if not durations:
+        sys.exit(f"gate-size: no strict_suite module lines in {args.log}")
+    if args.modules:
+        missing = [m for m in args.modules if m not in durations]
+        if missing:
+            sys.exit(f"gate-size: not in {args.log}: {' '.join(missing)}")
+        durations = {m: durations[m] for m in args.modules}
+
+    spend = spend_module()
+    total, slowest = sum(durations.values()), max(durations.values())
+    print(f"{len(durations)} modules, {total:.0f} s of module time, slowest "
+          f"{max(durations, key=durations.get)} {slowest:.0f} s (floor)")
+    rows = []
+    for n in sorted(int(v) for v in args.vcpus.split(",")):
+        shape = f"{args.family}-highcpu-{n}"
+        if shape not in spend.SHAPES:
+            print(f"  {shape}: no price in gcp-spend; skipped")
+            continue
+        wall = replay(durations, n)
+        cost = (wall / 3600 + BOOT_MIN / 60) * spend.rate(shape) * 1.25
+        rows.append((n, shape, wall, cost))
+        print(f"  {shape:<16} JOBS={n:<3} suite {wall:6.0f} s  ({wall / slowest:4.2f}x floor)  "
+              f"est. ${cost:.3f} per run")
+    if rows:
+        best = min(r[2] for r in rows)
+        n, shape, wall, cost = next(r for r in rows if r[2] <= best * (1 + args.knee))
+        print(f"smallest within {args.knee:.0%} of the best: {shape} (JOBS={n}), {wall:.0f} s, est. ${cost:.3f}")
+
+
+if __name__ == "__main__":
+    main()
