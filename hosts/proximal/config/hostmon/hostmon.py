@@ -212,12 +212,15 @@ def run(host, kind, account, via):
         cur = conditions(s, host)
         new = {k: v for k, v in cur.items() if k not in active}
         cleared = [k for k in active if k not in cur]
-        # Persisting UNKNOWN/unreachable needs two consecutive samples before it counts (one ssh blip is noise).
+        # Persisting UNKNOWN/unreachable needs two consecutive samples before it counts (one ssh blip is noise);
+        # so does dead-lease: a lease is released by flock a moment after its PID exits (475, talos d6b2c35d69c1).
+        prev_pending, now_pending = set(st.get("pending_two") or []), set()
         for k in list(new):
-            if k == "unreachable" or k.endswith("-unknown") or k.startswith("disk-unknown"):
-                if st.get("pending_unknown") != k:
-                    st["pending_unknown"] = k
-                    new.pop(k)
+            if (k == "unreachable" or k.endswith("-unknown") or k.startswith("disk-unknown")
+                    or k.startswith("dead-lease:")) and k not in prev_pending:
+                now_pending.add(k)
+                new.pop(k)
+        st["pending_two"] = sorted(now_pending)
         for k, v in new.items():
             active[k] = {"since": s["ts"], "text": v}
             events.append({"ts": s["ts"], "alert": k, "text": v})
