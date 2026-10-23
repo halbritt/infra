@@ -12,11 +12,18 @@ storage and related charges.
   gcp-spend release ID            close a reservation after verified teardown
   gcp-spend guard                 timer: stop agent-ee-gate-c4 (logs preserved first) when the cap would be reached
 
-Billing data is not readable here: there is no billing export, and the Budget API is
-disabled. So spend is ESTIMATED from the GCE admin audit log (every create, start,
-stop, preempt and delete) times the catalog Spot prices measured on 2026-10-22, then
-multiplied by SAFETY. Allowances are added for charges the log cannot show (egress,
-logging, snapshots). Anything the tool cannot establish makes reserve refuse.
+Spend is ESTIMATED from the GCE admin audit log (every create, start, stop, preempt and
+delete) times the catalog Spot prices measured on 2026-10-22, then multiplied by SAFETY.
+Allowances are added for charges the log cannot show (egress, logging, snapshots).
+Anything the tool cannot establish makes reserve refuse.
+
+Billed spend (owner, 2026-10-22: "Budget API"). Budget BUDGET_ID ($100; project
+heath-stuff; Compute Engine and Networking services only; credits excluded; from
+2026-10-21) publishes its cumulative cost a few times a day to Pub/Sub topic
+campaign-budget. Every estimate pulls subscription campaign-budget-pull and keeps the
+latest figure in billed.json. Billed spend lags by hours, so reserve and guard enforce
+the LARGER of the billed figure and the estimate. An unreadable subscription leaves the
+last stored figure in force; it never lowers spend.
 Ledger: ~/.local/share/infra/gcp-budget/. Canonical source: infra
 hosts/gcp-gate/config/budget/.
 """
@@ -27,6 +34,7 @@ ENV = os.environ
 PROJECT, SAFETY = "heath-stuff", 1.25
 CAP = float(ENV.get("GCP_SPEND_CAP", 100.0))         # overrides exist for isolated tests only
 HEADROOM = float(ENV.get("GCP_SPEND_HEADROOM", 10.0))
+BUDGET_ID, BUDGET_SUB = "3c5ecec4-de1f-41c5-9ce5-6a9a8b3efd95", "campaign-budget-pull"
 GCLOUD = ENV.get("GCP_SPEND_GCLOUD", "gcloud")
 LOG_LIMIT = 5000                                     # a full page means the history may be truncated: unknown
 CAMPAIGN_START = "2026-10-21T00:00:00Z"        # first campaign VM: image builder, 2026-10-22 03:16Z
@@ -127,6 +135,35 @@ def lifecycle():
 HDB_GB, HDB_IOPS, HDB_TPUT = 0.08 / 730, 0.005 / 730, 0.04 / 730
 
 
+def billed():
+    """Latest billed cost from the budget's Pub/Sub notifications, or None before the first one.
+    Pulls (and acks) pending messages and keeps the newest in billed.json; a failed pull
+    leaves the stored figure as it was."""
+    path = STATE / "billed.json"
+    last = json.loads(path.read_text()) if path.exists() else None
+    if ENV.get("GCP_SPEND_NO_BILLED"):                    # isolated tests only
+        return None
+    try:
+        msgs = json.loads(gcloud("pubsub", "subscriptions", "pull", BUDGET_SUB, "--auto-ack", "--limit=100", "--format=json") or "[]")
+    except Exception as err:
+        return dict(last, pull_error=str(err)[:200]) if last else None
+    for m in msgs:
+        msg = m.get("message", {})
+        if msg.get("attributes", {}).get("budgetId") != BUDGET_ID:
+            continue
+        import base64
+        data = json.loads(base64.b64decode(msg["data"]))
+        if last and msg["publishTime"] <= last["as_of"]:
+            continue
+        last = {"as_of": msg["publishTime"], "cost_usd": float(data["costAmount"]),
+                "interval_start": data.get("costIntervalStart"), "budget_usd": data.get("budgetAmount"),
+                "threshold_exceeded": data.get("alertThresholdExceeded"), "currency": data.get("currencyCode")}
+    if last:
+        STATE.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(last, indent=1))
+    return last
+
+
 def disk_rate(d):
     """USD/h for a LIVE disk from its actual type, size and provisioning; unknown means refuse."""
     dtype, size = d["type"].rsplit("/", 1)[-1], int(d["sizeGb"])
@@ -220,13 +257,17 @@ def estimate():
     open_res = [r for r in ledger() if r.get("state") == "open"]
     reserved = sum(r["worst_usd"] for r in open_res)
     per_h = sum(c["usd_per_h"] for c in committed) * SAFETY
+    b = billed()
+    spend = max(accrued, b["cost_usd"]) if b else accrued
     return {"as_of": t.isoformat(timespec="seconds"), "cap": CAP, "headroom": HEADROOM, "safety": SAFETY,
             "items": items, "allowances": ALLOWANCES, "metered_usd": round(metered, 2),
             "accrued_estimate_usd": round(accrued, 2), "committed_usd_per_h": round(per_h, 3),
             "open_reservations": open_res, "reserved_usd": round(reserved, 2),
-            "remaining_usd": round(CAP - HEADROOM - accrued - reserved, 2),
-            "hours_until_hold_at_current_rate": round((CAP - HEADROOM - accrued - reserved) / per_h, 1) if per_h else None,
-            "basis": "estimate: GCE audit-log lifetimes x catalog Spot prices (2026-10-22) x safety + allowances; billing data not available"}
+            "billed": b, "enforced_spend_usd": round(spend, 2),
+            "remaining_usd": round(CAP - HEADROOM - spend - reserved, 2),
+            "hours_until_hold_at_current_rate": round((CAP - HEADROOM - spend - reserved) / per_h, 1) if per_h else None,
+            "basis": "max(estimate: GCE audit-log lifetimes x catalog Spot prices (2026-10-22) x safety + allowances; "
+                     "billed: budget notifications, lagging by hours)"}
 
 
 def status(args):
@@ -239,6 +280,13 @@ def status(args):
     for k, v in e["allowances"].items():
         print(f"  allowance: {k}  ${v:.2f}")
     print(f"metered ${e['metered_usd']:.2f} x {SAFETY} + allowances = accrued estimate ${e['accrued_estimate_usd']:.2f}")
+    b = e["billed"]
+    if b:
+        print(f"billed ${b['cost_usd']:.2f} as of {b['as_of']} (budget {BUDGET_ID[:8]}, Compute Engine + Networking, credits excluded)"
+              + (f"; last pull failed: {b['pull_error']}" if b.get("pull_error") else ""))
+    else:
+        print(f"billed: no budget notification received yet (budget {BUDGET_ID[:8]})")
+    print(f"enforced spend ${e['enforced_spend_usd']:.2f} (the larger of billed and estimate)")
     print(f"open reservations ${e['reserved_usd']:.2f}; committed ${e['committed_usd_per_h']:.3f}/h (with safety)")
     print(f"cap ${CAP:.0f} - headroom ${HEADROOM:.0f} -> remaining ${e['remaining_usd']:.2f}; hold in about {e['hours_until_hold_at_current_rate']} h at the current rate")
 
@@ -347,7 +395,7 @@ def guard(args):
         reason = "spend unknown for 3 consecutive checks"
     else:
         next_hour = e["committed_usd_per_h"] * 1.0
-        print(f"guard: accrued ${e['accrued_estimate_usd']}, remaining ${e['remaining_usd']}, next hour ${next_hour:.2f}")
+        print(f"guard: accrued ${e['accrued_estimate_usd']}, enforced ${e['enforced_spend_usd']}, remaining ${e['remaining_usd']}, next hour ${next_hour:.2f}")
         if e["remaining_usd"] > next_hour:
             return
         reason = f"remaining ${e['remaining_usd']} would not cover the next hour (${next_hour:.2f})"

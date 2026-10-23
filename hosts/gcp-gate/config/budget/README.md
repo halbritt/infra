@@ -22,9 +22,48 @@ it. There is no spend authorization beyond it.
 
 ## How spend is established
 
-The billing data is not readable here: there is no billing export, the Budget API
-is disabled, and enabling either is a separate change. So spend is an
-**estimate**:
+Spend is the LARGER of two figures. The billed figure lags by hours; the estimate
+covers that lag.
+
+### Billed (since 2026-10-23, owner: "Budget API")
+
+The budget is `3c5ecec4-de1f-41c5-9ce5-6a9a8b3efd95` on heath-stuff's billing
+account:
+
+- $100, custom period starting 2026-10-21, no end;
+- credits excluded, so the figure is gross;
+- scoped to project heath-stuff, **Compute Engine and Networking services only**;
+- thresholds at 25, 50, 75, 90 and 100% of actual spend. A forecast-based
+  threshold is not allowed on a custom period. Default threshold emails go to
+  the billing account's admins.
+
+Cost notifications go to Pub/Sub topic `campaign-budget` (subscription
+`campaign-budget-pull`, 7-day retention) a few times a day. Every `gcp-spend`
+estimate pulls and acks them, and keeps the latest in
+`~/.local/share/infra/gcp-budget/billed.json`. A failed pull keeps the last
+figure.
+
+Not enabled: a BigQuery export, other billing-account changes, or any change to
+the cap.
+
+**Separating non-campaign charges.** heath-stuff also holds charges that are
+not campaign charges:
+
+- the restic backup bucket `proximal-backups`, about 1.39 TB Nearline, around
+  $14/month;
+- two empty buckets;
+- the Text-to-Speech, Gemini and Vertex APIs.
+
+The service filter keeps all of them out. That leaves one non-campaign item
+inside the billed figure: tailscale-exit-node's 10 GB pd-standard disk (about
+$0.40/month; the VM is TERMINATED). It is a negligible over-count, in the
+conservative direction.
+
+First comparison: at 2026-10-23T02:33Z, billed was $8.51 for 2026-10-21 onward
+(lagging by hours). The estimate was $17.77 metered, × 1.25 + $3 = $25.22. The
+estimate stays the binding figure.
+
+### Estimate
 
 - **Compute:** GCE admin audit log lifetimes since 2026-10-21. Successful
   create, start or resume opens running time; stop, preempt, guest poweroff,

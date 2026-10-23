@@ -1,5 +1,18 @@
 # Host changelog
 
+## 2026-10-23 — billed spend from the Budget API (owner via agent-519)
+
+- Enabled `billingbudgets.googleapis.com` and created budget `3c5ecec4…`:
+  $100 from 2026-10-21; heath-stuff, Compute Engine and Networking only;
+  credits excluded; thresholds at 25, 50, 75, 90 and 100%.
+- Created Pub/Sub topic `campaign-budget` and subscription
+  `campaign-budget-pull`. A budget's API record holds no spend figure, so the
+  notifications are the only way to read billed cost.
+- `gcp-spend` now enforces the larger of billed and estimate, in status,
+  reserve and guard. First comparison: billed $8.51 against an estimate of
+  $25.22.
+- The cap, ledger and guard are unchanged. There is no BigQuery export.
+
 ## 2026-10-23 — right-sized ephemeral gates (owner direction via agent-519)
 
 - Measured d04b5121 on Spot c2d-highcpu-16 / JOBS=16 (1150 s, $0.103) and
