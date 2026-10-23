@@ -18,6 +18,10 @@ Relayed by agent-521 at about 04:47Z. Actions:
   agent-519. Admission was undrained on all four hosts. Held task queues stay
   held by agent-449. The VMs stay stopped; there is no instruction to restart
   them.
+- **Re-drained at 05:01:52Z** under 521 brief b8a43a9c, which allows one
+  admitted host only. agent-449 picks the host, and only that host gets
+  undrained. agent-524's Rust VM is running again on the owner's direct
+  instruction to agent-524; the conflict was flagged to agent-519.
 
 ## 2026-10-23 — billed spend from the Budget API (owner via agent-519)
 
