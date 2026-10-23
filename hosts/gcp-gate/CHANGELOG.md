@@ -1,5 +1,19 @@
 # Host changelog
 
+## 2026-10-23 — peecee-wsl admitted as a second local host (449's request for 529, via 519)
+
+Cairn 4ef35885: proximal admits one suite at a time, so 479, 484r and 486 were
+serialized. The owner, away: "try not to block on anything waiting for me."
+- **peecee-wsl undrained at 10:37Z.** It has 24 threads, budget 8 and one suite. It is
+  idle, has 770 GB free and holds recent `agent-ee:ci-*`/`exec-*` images. It runs WSL,
+  so there is no AppArmor. proximal continues as before. talos and archon stay drained.
+- (b) needed no change: `--class` and `--weight` are the caller's choice, so a light
+  read-only native read can already run as `--class test --weight 1`. On proximal it
+  still waits while a weight-4 suite holds the whole budget of 4. On peecee-wsl
+  (budget 8) it can run beside one suite.
+- The running lease was not preempted. At 10:37Z that was 479's `agentee-479-green3`
+  suite on proximal, with 484r queued behind it as test w2.
+
 ## 2026-10-23 — no agent-ee AppArmor profile on gate VMs (owner)
 
 - ci-run.sh passes `apparmor=unconfined` and no longer calls agent-ee's
