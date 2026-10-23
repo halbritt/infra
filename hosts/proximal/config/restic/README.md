@@ -22,7 +22,9 @@ they had been kept 30 days.
 
 **Schedule.**
 - **Backup:** daily at 02:30 (`Persistent=true`, up to 20 minutes of random delay).
-- **Prune and check:** monthly, on the 1st at 03:30.
+- **Prune and check:** monthly, on the 1st at 03:30. Prune runs with
+  `--max-unused unlimited`, so it only deletes packs that are entirely unused
+  and never repacks.
 
 **What is backed up.**
 - **Paths:** `/nvr/pg-backups`, `/nvr/engram-backups`, `/nvr/archive` (excluding
@@ -32,7 +34,7 @@ they had been kept 30 days.
   on 2026-10-17.
 - **Locking:** both scripts take `/run/lock/caplab-backup.lock`, so backup and
   prune never overlap.
-- **Retention:** `forget` keeps 7 daily, 4 weekly and 6 monthly snapshots. It
+- **Retention:** `forget` keeps 30 daily, 12 weekly and 12 monthly snapshots. It
   runs after any backup that saved a snapshot, including exit 3.
 - **Exit 3:** the snapshot was saved, but some files could not be read
   (usually live sqlite `-wal`/`-shm` files that vanished mid-run). The unit
@@ -75,3 +77,16 @@ sudo journalctl -u restic-backup -n 30 --no-pager      # "snapshot … saved", "
     `scheduled` snapshots and removes 60. That `forget` runs with the next
     nightly backup. The data is freed at the next monthly prune (Nov 1).
     Packs younger than 30 days incur Nearline early-deletion charges.
+- **2026-10-22: retention and prune tuned for Nearline (owner).** The owner
+  said the old 7/4/6 policy had been chosen arbitrarily.
+  - Nearline bills every object for at least 30 days, so keeping dailies for
+    fewer than 30 days saved nothing. Retention is now 30 daily, 12 weekly and
+    12 monthly.
+  - Repacking downloads packs, which costs retrieval (about $0.01/GB) plus
+    egress (about $0.12/GB). That dwarfs early-deletion charges, so prune now
+    uses `--max-unused unlimited`.
+  - Dry run: keeps 39 and removes 34 of 73 `scheduled` snapshots
+    (2026-06-16 to 2026-10-22). The removed ones are extra dailies older than
+    30 days. The old policy would have removed 60.
+  - The previous prune script is kept on the host as
+    `restic-prune-locked.pre-maxunused-20261022`.

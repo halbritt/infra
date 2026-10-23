@@ -3,5 +3,7 @@ set -euo pipefail
 
 exec 9>/run/lock/caplab-backup.lock
 /usr/bin/flock --exclusive 9
-/usr/bin/restic prune
+# Nearline: never repack (repacking downloads packs: retrieval plus egress fees); only delete
+# packs that are entirely unused. Partly-used packs keep their dead space at storage cost.
+/usr/bin/restic prune --max-unused unlimited
 /usr/bin/restic check

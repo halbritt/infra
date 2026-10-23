@@ -2,6 +2,11 @@
 
 ## 2026-10-22 — restic off-site backup: cache restored, retention runs again
 
+- Retention is now 30 daily, 12 weekly and 12 monthly (was 7/4/6). Prune now
+  runs with `--max-unused unlimited`, so it never repacks: repacking would mean
+  Nearline retrieval and egress charges. Owner-approved. Tonight's run keeps
+  39 and removes 34 snapshots.
+
 - Result: the first cached run finished in 1 h 38 min (snapshot `dd5e23ec`,
   exit 0), against 76–117 h before.
 - Retention was blocked by a stale exclusive repo lock from 2026-09-11

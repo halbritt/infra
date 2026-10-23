@@ -12,6 +12,6 @@ rc=0
 # as sqlite -wal/-shm that vanished mid-run). Retention still applies; the 3 is still reported.
 if [ "$rc" = 0 ] || [ "$rc" = 3 ]; then
   /usr/bin/restic forget --tag scheduled \
-    --keep-daily 7 --keep-weekly 4 --keep-monthly 6
+    --keep-daily 30 --keep-weekly 12 --keep-monthly 12
 fi
 exit "$rc"
