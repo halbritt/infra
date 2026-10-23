@@ -1,5 +1,21 @@
 # Host changelog
 
+## 2026-10-23 — c4 stopped after its final gate; estimator undercount fixed
+
+- agent-521 reported c4's gate d04b5121 terminal (exit 0, 5547 tests, 0
+  skips). c4 had then been idle for 12 min with no processes, containers or
+  admissions. The ee449d worker had completed.
+- The gate logs (`~/agent-ee-gate/ci-logs/`) and ee449d results
+  (`build/ee449d`) were preserved to
+  `proximal:~/agent-ee-gate-c4-preserved/20261023T004340Z-final/` (163 files,
+  211 MB, sha256 verified). Then `gcloud compute instances stop` ran: c4 is
+  TERMINATED, and its 200 GB disk remains (about $63/month).
+- Found by that stop: `gcp-spend` dropped an open run when the VM was no
+  longer RUNNING but its stop event had not reached the audit log yet. The
+  estimate fell from $24 to $13.84, an undercount. Now an open run is charged
+  to now until a closing event appears (regression R4). Estimate after the
+  fix: $24.72 accrued, $65.28 remaining.
+
 ## 2026-10-23 — `run-gate.sh` and `build-image.sh`: release only after proven teardown
 
 agent-521 found that both scripts released their `gcp-spend` reservation even

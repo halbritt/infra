@@ -180,8 +180,10 @@ def estimate():
         state = live.get(name, {}).get("status")
         running = state == "RUNNING"
         note = ""
-        if running and started:
-            up_h += (t - started).total_seconds() / 3600
+        if started:     # an open run: charged to now until a closing event appears in the (possibly lagging) log,
+            up_h += (t - started).total_seconds() / 3600   # whether or not the live state already shows it stopped
+            if not running:
+                note = " (stopped/absent live, closing event not yet in the audit log: open run charged to now)"
         elif running:   # live RUNNING but the history ends down: the restart is missing; bound it from the last event
             up_h += (t - (last or created)).total_seconds() / 3600
             note = " (live RUNNING contradicts history: current run charged from the last recorded event)"
