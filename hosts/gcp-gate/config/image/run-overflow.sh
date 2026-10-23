@@ -68,12 +68,22 @@ summary() {
   printf '{"vm": "%s", "machine_type": "%s", "zone": "%s", "handoff": "%s", "job_exit": "%s", "collection": "%s", "cleanup": "%s"}\n' \
     "$VM" "$MACHINE_TYPE" "$ZONE" "$handoff" "$job_status" "$collection" "$cleanup" > "$OUT/summary.json"
 }
-# vm_state: running | gone:<state> | unknown. Only a successful describe establishes state.
+# vm_state: running | gone:<state> | unknown. Only explicit GCE status values from a successful
+# describe count; absence needs a successful exact-name listing that comes back empty. Anything
+# else (failed calls, empty or unrecognised output, arbitrary stderr) is UNKNOWN.
 vm_state() {
-  local out rc; out=$(gc compute instances describe "$VM" --zone "$ZONE" --format='value(status)' 2>&1); rc=$?
-  if [ $rc = 0 ]; then [ "$out" = RUNNING ] && echo running || echo "gone:${out:-unknown-status}"
-  elif grep -qi 'not found\|was not found\|notFound' <<<"$out"; then echo gone:not-found
-  else echo unknown; fi
+  local out rc
+  out=$(gc compute instances describe "$VM" --zone "$ZONE" --format='value(status)' 2>/dev/null); rc=$?
+  if [ $rc = 0 ]; then
+    case $out in
+      RUNNING|PROVISIONING|STAGING|REPAIRING) echo running ;;
+      TERMINATED|STOPPING|STOPPED|SUSPENDING|SUSPENDED) echo "gone:$out" ;;
+      *) echo unknown ;;
+    esac
+    return
+  fi
+  out=$(gc compute instances list --filter="name=$VM" --format='value(name)' 2>/dev/null); rc=$?
+  if [ $rc = 0 ] && [ -z "$out" ]; then echo gone:not-found; else echo unknown; fi
 }
 cleanup() {
   [ "$created" = 1 ] || { summary; return; }

@@ -129,11 +129,15 @@ Protocol, in order:
    --match MATCH` on the job's host. Under the admission mutex it stops the one
    matching queued request and proves it never held a lease (`handoff.json`).
    If that request had already started, it keeps running locally and the VM
-   copy is never executed (exit 7). `--operator-stopped` records a handoff the
+   copy is never executed (exit 7). A selector that matches both running and queued
+   work is refused without touching either (rc 6, so the VM copy is not run:
+   exit 8). `--operator-stopped` records a handoff the
    lane owner made themselves.
 3. **Run and observe.** The script runs the job's exact `ae-ci-exec . -- CMD`.
-   The VM counts as gone only when `instances describe` succeeds and reports
-   not-RUNNING or not-found (exit 3). Failed observations are UNKNOWN, retried
+   The VM counts as gone only from an explicit GCE status in a successful
+   `describe` (TERMINATED, STOPPING, STOPPED, SUSPENDING, SUSPENDED), or from a
+   successful exact-name `instances list` that comes back empty (exit 3).
+   Empty or unrecognised output and arbitrary stderr are UNKNOWN. Failed observations are UNKNOWN, retried
    within a bound, and never restart the job (exit 5).
 4. **Collect evidence.** Required: `job.log` with its exit marker and every
    `--collect` path. Anything missing gives exit 4, and partial evidence is kept.

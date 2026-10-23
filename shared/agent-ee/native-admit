@@ -446,7 +446,7 @@ def cancel_queued(args):
     """Overflow handoff: atomically stop ONE queued (never-admitted) request whose label contains
     --match, proving it never held a lease. Holding the mutex for the whole check keeps the request
     from being granted meanwhile. Prints JSON; exit 0 cancelled, 3 already running (keep it), 4 not
-    found or ambiguous."""
+    found or ambiguous among queued requests, 6 matches both running and queued work (nothing touched)."""
     import signal
     with Mutex():
         queued = [q for q in live("queue") if args.match in q.get("label", "")]
@@ -454,6 +454,10 @@ def cancel_queued(args):
         if running and not queued:
             print(json.dumps({"result": "running", "leases": [{k: l.get(k) for k in ("id", "label", "pid", "started")} for l in running]}))
             sys.exit(3)
+        if running and queued:  # the selector names live work in both states: touch neither
+            print(json.dumps({"result": "ambiguous-mixed", "running": [l.get("label") for l in running],
+                              "queued": [q.get("label") for q in queued]}))
+            sys.exit(6)
         if len(queued) != 1:
             print(json.dumps({"result": "not-found" if not queued else "ambiguous", "matches": [q.get("label") for q in queued]}))
             sys.exit(4)

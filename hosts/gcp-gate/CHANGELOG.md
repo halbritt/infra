@@ -1,5 +1,20 @@
 # Host changelog
 
+## 2026-10-22 — Overflow boundaries: VM state and mixed handoff matches
+
+Second agent-521 review of `run-overflow.sh`:
+
+- `vm_state` now trusts only explicit GCE status values from a successful
+  `describe`, and absence only from a successful exact-name listing that comes
+  back empty. Arbitrary stderr ("helper command not found") and empty or
+  unrecognised output are UNKNOWN.
+- `native-admit cancel-queued` refuses (rc 6, touching nothing) when its
+  selector matches both running and queued work.
+
+Regressions in `evidence-20261022/overflow-boundaries/`: 7 `vm_state` cases,
+and mixed, unique-queued and running-only `cancel-queued` probes with real
+processes. All pass.
+
 ## 2026-10-22 — `run-overflow.sh` failure-path corrections (agent-521 review)
 
 These fixes landed before any real overflow migration. Details are in README
