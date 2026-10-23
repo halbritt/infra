@@ -1,5 +1,20 @@
 # Host changelog
 
+## 2026-10-23 — K91 stores keep owner-writable modes
+
+The a-w modes on the staged K91 stores broke the canonical gate of 76f221ac on
+peecee-wsl: 35 failures, all in `test_routing_experiment_boundary`. Those tests
+`copytree` a receipt and then edit, reseal or remove the copy. copytree carries
+the read-only modes over, so the tests' own copies could not be written.
+
+- On peecee-wsl at 02:08:55Z the stores were changed with
+  `chmod -R u+w,go-w,a+rX`. All three tree digests were checked before and
+  after, and are unchanged because the digest covers content only.
+- `stage-k91-inputs.sh` now stages with the same modes.
+- Integrity still comes from the `:ro` bind mount and ci-run.sh's digest
+  check before every gate.
+- `ci-run.sh` itself is unchanged.
+
 ## 2026-10-23 — `ci-run.sh` stages K91 native receipt inputs
 
 Request from agent-449. agent-ee's `tests/test_routing_experiment_boundary.py`
