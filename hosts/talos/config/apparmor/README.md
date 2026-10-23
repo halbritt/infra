@@ -55,3 +55,9 @@ docker run --rm --network none --security-opt seccomp=unconfined \
 Before: `agent-ee-container (unconfined)`, `bwrap//&unpriv_bwrap (enforce)`,
 then the namespace error. After: `agent-ee-container (enforce)` at all three
 levels.
+
+AppArmor 4 note (2026-10-23): talos's installed profile is `allow all,` only.
+That is enough on AppArmor 5. On AppArmor 4.0.1 (proximal, c4) the same
+profile denies bwrap's `rslave` mount. Adding explicit `mount,` `umount,`
+`pivot_root,` and `userns,` rules works on both versions. See the proximal
+CHANGELOG (AGENTEE-438 H1).

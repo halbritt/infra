@@ -19,6 +19,27 @@
   [config/restic](config/restic/README.md); secrets stay on the host. Owner
   request: "restic backups do need to work".
 
+## 2026-10-23 — AGENTEE-438 AppArmor profile checked on AppArmor 4 (H1); not adopted
+
+agent-449 asked whether proximal could stand in for c4 as the AppArmor 4 host
+for AGENTEE-438 (Cairn request 51b1fe36). Answer: proximal can; peecee-wsl
+cannot, because the WSL kernel has AppArmor disabled.
+
+- **438 profile fails on AppArmor 4.** At 02:57:5xZ agent-ee 15128b6c's
+  `profile agent-ee-container flags=(attach_disconnected,mediate_deleted) { allow all, }`
+  was loaded at runtime with `apparmor_parser -r`. Under AppArmor 4.0.1 it
+  denied bwrap's mount: `apparmor="DENIED" operation="mount" info="failed flags match"
+  flags="rw, silent, rslave"`, and bwrap printed "Failed to make / slave".
+- **Rolled back.** The main profile (`flags=(unconfined) { userns, }`) was
+  reloaded at 02:58:01Z. Admission was idle, and only the two probe containers
+  ran while the 438 profile was live.
+- **A candidate works on both versions.** `allow all,` plus explicit `mount,`
+  `umount,` `pivot_root,` `userns,` gives `(enforce)` at all three bwrap levels
+  on proximal (AppArmor 4.0.1) and on talos (AppArmor 5.0.2), with 0 denials.
+  It was loaded under the separate name `agent-ee-container-438probe`, which
+  has since been removed from both hosts.
+- Evidence is in `proximal:~/.local/share/infra/apparmor-438-20261023/`.
+
 ## 2026-10-23 — hostmon: versioned source, resume fix, monitor-health and capacity alerts
 
 - Committed the read-only host monitor source (`probe.py`, `hostmon.py`, `brief.txt`) to [config/hostmon](config/hostmon/README.md); previously it existed only in the fleet tooling under `/tmp` and the deployed `~/.local/share/hostmon/`.
