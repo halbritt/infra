@@ -14,6 +14,9 @@
 - **Fix:** a request reloaded `qwen3-vl:8b` (32768 ctx, forever, 7.4 GiB). The heartbeat
   went to `resident` at 08:02:04 PDT, and fleet `live` went from 2 to 3. The tracker now
   asks for `qwen3-vl:8b` (memory-price-tracker drop-in and docs; ingest restarted).
+- **Follow-up (owner):** the tracker no longer uses peecee at all. Sentiment now runs on
+  proximal's resident llama.cpp Qwen3.8-27B (memory-price-tracker `LLAMA_CPP_URL`, with
+  no Ollama host set), so nothing requests a model on peecee.
 
 ## 2026-10-22 — peecee-wsl: kicad-route worker lanes
 
