@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-23 13:34 UTC — 6dc4615e-1325-4305-8691-9ec4a2e6e044
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **codex** — verified. Before: Installed codex-cli 0.163.0 via ~/.local/bin/codex (Cairn coordinated launcher -> /home/halbritt/.npm-global/lib/node_modules/@openai/codex/bin/codex.js); npm registry latest @openai/codex is 0.164.0. The Cairn wrapper is a separate file and is not modified by the npm global install. No live codex interactive session was inspected as blocking; npm global install replaces package files atomically for new launches.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/6dc4615e-1325-4305-8691-9ec4a2e6e044/operations/10e5fa56-7622-4867-8b23-edec454ab5ac`.
+
+- **hermes** — verified. Before: Install operation 90b4ebf6 verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-8237c7f8, carry 87edd33a on upstream cb757fac, launcher sha256 588d0417, carry behavior tests + import smoke passed. The running gateway (pid 1763630) still uses the previous generation hermes-candidate-54455f3e. Prior activation receipt (2026-10-21) status=verified. The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/6dc4615e-1325-4305-8691-9ec4a2e6e044/operations/834d7d8d-d282-4142-9398-7792b39be2ee`.
+
+- **hermes** — verified. Before: Selected/installed generation hermes-candidate-54455f3e (carry 98065f845 on upstream 7dcb1b4c), running gateway on it, Slack connected. Carried candidate hermes-candidate-8237c7f8 is staged with the stored patch committed as carry 43ff17bc on upstream base 8237c7f8 (6 files clean, 3 auto-merged, no markers); no .venv yet, no tests run, install/launcher/receipt not written. No unresolved prior operation.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/6dc4615e-1325-4305-8691-9ec4a2e6e044/operations/90b4ebf6-3cb4-429a-a799-c9a1abdae25c`.
+
+- **os** — verified. Before: Ubuntu 24.04.5 LTS, running kernel 6.8.0-146-generic; previous run (op 6d68dabc, 2026-10-22) installed 9 ordinary noble updates and deferred 47 held third-party/database/container/CUDA packages; reboot_required=true (kernel 6.8.0-147 installed). The fixed privileged helper refreshes metadata and applies only allowed ordinary noble release/security/kernel updates; it rejects removals and scope expansion and never reboots.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/6dc4615e-1325-4305-8691-9ec4a2e6e044/operations/fa06b70d-6699-4bb5-9d2d-3241ce44e3da`.
+
 ## 2026-10-24 13:31 UTC — 6b0f3d6d-d986-40f9-b7c9-b99af92277f6
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
