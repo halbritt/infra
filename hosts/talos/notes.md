@@ -28,7 +28,7 @@ Observations to act on only with owner direction:
   added for it was removed again on 2026-10-24, when talos left agent-ee.
 - The Dockerfile's apt snapshot is `noble` (24.04) and cannot be installed on
   26.04. KiCad 10.0.7 comes from the same Launchpad snapshot timestamp with
-  suite `resolute` (see [config/apt](config/apt/README.md)). ngspice 45.2,
+  suite `resolute` (`config/apt`, deleted 2026-10-24 with KiCad). ngspice 45.2,
   bubblewrap 0.11.1 and poppler 26.01 are stock 26.04, the same as peecee-wsl.
   The CI image (24.04: ngspice 42, bwrap 0.9.0, poppler 24.02, Python 3.12) is
   the test authority.

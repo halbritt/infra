@@ -57,7 +57,7 @@ uv 0.13.4. Isolated checkouts are in `~/.cache/fome-qualify/`.
   passed.
 
 The host is unchanged: Python 3.14, packages and `~/git/fome-mc` as they were.
-Details and the invocation: [fome-runtime](config/fome-runtime/README.md).
+Details and the invocation: `config/fome-runtime` (deleted 2026-10-24 with the agent-ee retirement; in git history).
 
 ## 2026-10-22 — Suite drain lifted
 
@@ -158,7 +158,7 @@ because a nested bwrap in the CI container could not set up its namespace.
   bwrap level failed.
 - Fix: `/etc/apparmor.d/agent-ee-container` is now an enforce-mode profile with
   `allow all,` and `attach_disconnected,mediate_deleted` (copy in
-  [config/apparmor](config/apparmor/README.md)); exec inherits, so every bwrap
+  `config/apparmor` (deleted 2026-10-23, owner)); exec inherits, so every bwrap
   level stays `agent-ee-container`. No host profile, `local/` override or sysctl
   changed. Old file at `~/.cache/agent-ee-container.orig` on talos.
 - Verified with `ae-ci-exec`: `tests.test_add_planes` 15 OK (was 2 failures);

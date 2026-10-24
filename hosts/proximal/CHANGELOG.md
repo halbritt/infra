@@ -138,7 +138,7 @@ cannot, because the WSL kernel has AppArmor disabled.
 - Evidence: `apparmor-438-20261023/{candidate2-explicit-classes,proximal-unix-denials-0315-0358.txt}`.
 - **Scoped proof, requested by agent-521 (37ae1dcd).** The candidate was
   loaded under the separate name `agent-ee-container-438probe` and run through
-  [shared/agent-ee/apparmor-probe.sh](../../shared/agent-ee/apparmor-probe.sh).
+  `shared/agent-ee/apparmor-probe.sh` (deleted in 4ef18e9, owner ruling).
   The probe checks:
   - the confinement label;
   - unix socketpair and AF_UNIX create;
