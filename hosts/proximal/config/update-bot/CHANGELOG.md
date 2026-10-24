@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-24 13:31 UTC — 6b0f3d6d-d986-40f9-b7c9-b99af92277f6
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **agy** — verified. Before: Installed Agy reports 1.4.7 via /home/halbritt/.local/bin/agy --version (self-updated from 1.4.5 since the 2026-10-23 run). Its bundled changelog/version cannot establish the online latest; the only native channel check is the built-in updater subcommand 'agy update' (stdin closed, noninteractive). No agy interactive session is being interrupted by a CLI update.. After: native updater reports 'You are already on the latest version'; version still 1.4.7.
+  Verification: operation exit 0/0; install.log 'Checking for updates... (current version 1.4.7) / You are already on the latest version'; verify.log 1.4.7 (non-fatal read-only ~/.gemini status-file warning).
+  Activation: no change; existing installation in use.
+  Evidence: `/var/lib/update-bot/runs/6b0f3d6d-d986-40f9-b7c9-b99af92277f6/operations/024983aa-a5c1-42dc-9e40-653974c9a425`.
+
+- **hermes** — verified. Before: Install operation d7a807ac verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-3403b92c, carry 477297bd on upstream 3403b92c, launcher sha256 15b2410a, carry behavior tests + import smoke passed. The running gateway (pid 1085865) still uses the previous generation hermes-candidate-8237c7f8. Prior activation receipt (2026-10-23) status=verified for revision 87edd33a. The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: fixed helper performed a fresh native zero-work drain and one supported reload; new gateway pid 3325445 on candidate-3403b92c, revision 477297bd, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 477297bd pid 3325445 slack connected; gateway pid 3325445 live on candidate-3403b92c.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/6b0f3d6d-d986-40f9-b7c9-b99af92277f6/operations/5a1e3f12-4a29-4000-be09-cfa5896ea368`.
+
+- **hermes** — verified. Before: Selected/installed generation hermes-candidate-8237c7f8 (carry 87edd33a on upstream cb757fac), running gateway pid 1085865 on it, Slack connected. Carried candidate hermes-candidate-3403b92c is staged with the stored patch committed as a carry on upstream base 3403b92c (prep operation verified, no markers); no .venv yet, no tests run, install/launcher/receipt not written. No unresolved prior operation.. After: venv built; four focused carry-behavior test files + gateway import smoke passed; versioned launcher installed (sha256 15b2410a); provenance receipt hermes-installed.json written (source candidate-3403b92c, revision 477297bd, upstream 3403b92c).
+  Verification: operation exit 0/0; finish.log RESULT: INSTALL_OK carry=477297bd base=3403b92c; verify.log INSTALL_VERIFIED 477297bd 3403b92c launcher 15b2410a.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/6b0f3d6d-d986-40f9-b7c9-b99af92277f6/operations/d7a807ac-137a-41e8-9102-8c8d023c8ceb`.
+
+- **hermes** — verified. Before: Installed/activated generation hermes-candidate-8237c7f8, carry 87edd33a on upstream base cb757fac, selected by ~/.local/bin/hermes; running gateway pid 1085865 on it, Slack connected (activation verified 2026-10-23). Upstream NousResearch/hermes-agent main has advanced to 3403b92c. No candidate exists yet at 3403b92c. No unresolved prior operation for this base.. After: isolated candidate /var/lib/update-bot/staging/hermes-candidate-3403b92c cloned at 3403b92c with the stored patch carried (3 files auto-merged, no markers) committed as carry 477297bd; no build/install/activation.
+  Verification: operation exit 0/0; prep.log RESULT: PORT_OK carry_commit=477297bd base=3403b92c; no_markers_in_carried_files; live install/launcher/gateway untouched.
+  Activation: none; candidate staged only.
+  Evidence: `/var/lib/update-bot/runs/6b0f3d6d-d986-40f9-b7c9-b99af92277f6/operations/ed0282d7-ca8f-464d-82bc-e5594af495a2`.
+
 ## 2026-10-22 13:37 UTC — 297ada9a-43fb-47b1-a48f-b0bbe4fe8e2a
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
