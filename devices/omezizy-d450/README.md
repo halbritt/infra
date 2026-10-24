@@ -27,17 +27,23 @@ device — no raster, no driver, no CUPS filter.
   (`render_tspl` + `send_to_printer`) is the canonical, tested path (verified
   2026-06-25). It writes TSPL to `/dev/usb/lp*` or spools through the raw queue
   (`lp -d OmezizyD450 -o raw`). **The raw queue is intentional — leave it raw.**
-- **Arbitrary raster PDFs** (e.g. a USPS shipping label) — `~/.local/bin/print-label
-  <pdf>` renders via the vendor `rastertolabeltspl` filter and sends TSPL to the
-  device. Driver + PPD live in `~/label-printer/driver/`. This path exists only
-  because a raster PDF cannot be expressed as native TSPL drawing commands.
+- **Arbitrary PDFs** (e.g. a USPS shipping label) — `print-label FILE.pdf [COPIES]`
+  ([source](print-label), installed at `~/.local/bin/print-label`). It renders page 1 at
+  203 dpi with the host's `pdftoppm` and sends it as a TSPL `BITMAP` straight to the
+  device, with no CUPS and no vendor filter. Since 2026-10-23 it no longer uses the vendor
+  `rastertolabeltspl` filter (still in `~/label-printer/driver/`), because the snap CUPS's
+  Ghostscript now fails.
+- **From the Windows PC (peecee):** there is no Windows driver. Copy the PDF to proximal
+  and run `print-label` (an agent can read it from `/mnt/c/Users/halbr/Downloads` via
+  peecee-wsl).
 
 ## Constraints / gotchas
 
 - The snap-based CUPS **cannot host the vendor filter**: the snap filesystem is
   read-only, `run-cupsd` force-resets `ServerBin` on every start, and
-  `libcupsimage.so.2` is not bundled. That is why `print-label` bypasses CUPS for
-  the raster case rather than "fixing" the queue.
+  `libcupsimage.so.2` is not bundled. Its `cupsfilter` also cannot read files in hidden
+  directories under `$HOME`, and as of 2026-10-23 its Ghostscript fails on PDFs
+  (`cfFilterGhostscript: Unexpected page count`). `print-label` avoids CUPS entirely.
 - Bitmap polarity is **bit 0 = printed dot** (TSC convention).
 - Raster input to the vendor filter must be **8-bit grayscale "W"** (from
   `cupsfilter`), not 1-bit "K" (from `gs -sDEVICE=cups`) — the latter prints

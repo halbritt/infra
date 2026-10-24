@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# print-label — print a PDF (page 1) to the 4x6 D450 thermal label printer on proximal.
+# Installed at ~/.local/bin/print-label; source of truth is infra devices/omezizy-d450/.
+#
+# Pipeline: PDF -> 203 dpi grayscale (host poppler pdftoppm) -> 1-bit, scaled to fit
+#           4x6 (812x1218 dots) -> TSPL BITMAP -> /dev/usb/lpN.
+# No CUPS: the OmezizyD450 queue is raw (binkeeper's contract), and since 2026-10 the snap
+# CUPS's Ghostscript fails ("cfFilterGhostscript: Unexpected page count"), which broke
+# the earlier vendor-filter path.
+# Bitmap polarity is TSC-style: bit 0 = printed dot.
+#
+# Usage: print-label FILE.pdf [COPIES]      LABEL_DEV=/dev/usb/lpN overrides detection.
+set -euo pipefail
+
+PDF="${1:?usage: print-label FILE.pdf [COPIES]}"
+COPIES="${2:-1}"
+[ -f "$PDF" ] || { echo "error: $PDF not found" >&2; exit 1; }
+
+# the usblp node whose IEEE-1284 ID names MDL:D450
+find_device() {
+  for d in /sys/class/usbmisc/lp*; do
+    grep -qi 'MDL:D450' "$d/device/ieee1284_id" 2>/dev/null && { echo "/dev/usb/$(basename "$d")"; return 0; }
+  done
+  return 1
+}
+DEV="${LABEL_DEV:-$(find_device || true)}"
+[ -n "$DEV" ] && [ -e "$DEV" ] || { echo "error: D450 not found (no /sys/class/usbmisc/lp* with MDL:D450)" >&2; exit 1; }
+
+TMP="$(mktemp -d)"
+trap 'rm -r "$TMP"' EXIT
+pdftoppm -r 203 -gray -singlefile -f 1 -l 1 "$PDF" "$TMP/page"
+
+python3 - "$TMP/page.pgm" "$DEV" "$COPIES" <<'PYEOF'
+import os, sys, time
+from PIL import Image
+
+src, dev, copies = sys.argv[1], sys.argv[2], int(sys.argv[3])
+W, H = 812, 1218                      # 4x6 in at 203 dpi
+im = Image.open(src).convert('L')
+if im.size != (W, H):                 # fit, keep aspect, centre on white
+    im.thumbnail((W, H), Image.LANCZOS)
+    canvas = Image.new('L', (W, H), 255)
+    canvas.paste(im, ((W - im.width) // 2, (H - im.height) // 2))
+    im = canvas
+bw = im.point(lambda v: 255 if v >= 128 else 0, mode='1')
+px = bw.load()
+wb = (W + 7) // 8
+bits = bytearray()
+for y in range(H):
+    for xb in range(wb):
+        byte = 0
+        for bit in range(8):
+            x = xb * 8 + bit
+            byte = (byte << 1) | (1 if x >= W or px[x, y] else 0)   # 0 = printed dot
+        bits.append(byte)
+job = (b"SIZE 4,6\r\nGAP 0,0\r\nDIRECTION 1\r\nREFERENCE 0,0\r\nCLS\r\n"
+       + f"BITMAP 0,0,{wb},{H},0,".encode() + bytes(bits)
+       + f"\r\nPRINT 1,{copies}\r\n".encode())
+
+fd = os.open(dev, os.O_RDWR)
+def drain():                          # the printer ACKs commands; keep its buffer empty
+    os.set_blocking(fd, False)
+    got = b''
+    try:
+        while (c := os.read(fd, 4096)):
+            got += c
+    except OSError:
+        pass
+    os.set_blocking(fd, True)
+    return got
+drain()
+for i in range(0, len(job), 4096):
+    os.write(fd, job[i:i + 4096])
+    drain()
+time.sleep(1.5)
+status = drain().decode(errors='replace').strip()
+os.close(fd)
+print(f"sent {len(job)} bytes to {dev}" + (f"; printer: {status}" if status else ""))
+PYEOF
