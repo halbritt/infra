@@ -84,6 +84,8 @@ heads missing from proximal's `agent-ee`. kicad-route had none missing.
   [`claude-oauth-refresh`](../proximal/config/claude-oauth-refresh/README.md) and
   [`codex-auth-mirror`](../proximal/config/codex-auth-mirror/README.md)
 - uv/uvx, git-wt and git-land
+- linger is enabled for `halbritt` (2026-10-24, for the striatum-next drive), so user
+  units outlive ssh sessions
 - stock bubblewrap, poppler-utils, build-essential and python3-numpy/scipy/pip
 
 To stop credential mirroring as well, remove talos from both `REMOTE_HOSTS` lists and

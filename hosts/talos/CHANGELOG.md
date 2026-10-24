@@ -1,5 +1,14 @@
 # Host changelog
 
+## 2026-10-24 — linger enabled for halbritt (owner)
+
+`sudo loginctl enable-linger halbritt` (`/var/lib/systemd/linger/halbritt`). The user
+manager now outlives ssh sessions, so the striatum-next drive's `systemd-run --user`
+scopes and user services keep running after logout. Revert with `sudo loginctl
+disable-linger halbritt`. At the time `striatum-talos-migration-verify.service` (a
+`striatum reconcile --verify` from the drive move) was failed; that belongs to the
+striatum-next migration and was left alone.
+
 ## 2026-10-24 — retired from agent-ee and cleaned (owner)
 
 The owner said: "it should not be running anything related to agent-ee at present, and
