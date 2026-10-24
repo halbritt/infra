@@ -10,7 +10,7 @@ peecee-wsl and 3 fail on archon. The CI image is the release-gate authority, so
 agent-ee tests run inside it on every host.
 
 Installed byte-identical at `~/.local/bin/ae-ci-exec` on proximal, peecee-wsl,
-archon and agent-ee-gate-c4 (canonical copy: this directory; talos was retired from agent-ee on 2026-10-24). Since
+(canonical copy: this directory). talos, archon and agent-ee-gate-c4 were retired from agent-ee on 2026-10-24; the owner replaced the campaign with a single agent. Since
 2026-10-22 every run is admitted by `native-admit` (host-wide budget, leases,
 queue, CPU/PID bounds, init for old images); see
 [native-admission.md](native-admission.md).

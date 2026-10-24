@@ -1,5 +1,22 @@
 # Host changelog
 
+## 2026-10-24 — agent-ee-gate-c4 deleted with its disk (owner: "clean up the GCP disk")
+
+- At 18:29Z `gcloud compute instances delete agent-ee-gate-c4 --delete-disks=all` removed
+  the TERMINATED c4-highcpu-48 and its 200 GB hyperdisk-balanced boot disk (auto-delete).
+  There were no snapshots and no open reservations.
+- The disk had cost about $5.35 over 62 h (gcp-spend estimate). Billed campaign spend:
+  $21.03 as of 18:20Z.
+- Kept: the image `agent-ee-gate-20261022-0352` (about 7.5 GB archive), the Budget API
+  budget and alerts, and gcp-spend with its guard. `tailscale-exit-node` is not agent-ee
+  and was left alone.
+- c4 and archon were removed from `native-admission.json` and the installer's host list.
+  The admitted agent-ee hosts are now proximal and peecee-wsl. The owner replaced the
+  campaign with one agent (agent-545), which cleans the proximal worktrees and the
+  burndown launcher itself.
+- Still to do in the Tailscale admin console: remove the offline device
+  `agent-ee-gate-c4`.
+
 ## 2026-10-24 — talos removed from agent-ee admission (owner)
 
 talos was retired from agent-ee for the striatum-next drive. It was removed from

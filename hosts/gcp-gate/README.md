@@ -181,6 +181,8 @@ Findings:
 
 ### c4: retirement plan
 
+**Done 2026-10-24 (owner):** the instance and its 200 GB Hyperdisk were deleted. The image `agent-ee-gate-20261022-0352` and the ephemeral `run-gate.sh` path remain.
+
 A persistent, mostly idle c4-highcpu-48 does not fit this model. Its 12.4
 running hours are most of the estimate, and its 200 GB Hyperdisk costs about
 $63/month even when stopped.
@@ -255,6 +257,8 @@ test starts is about 2–2.5 min. The failure paths were then checked locally wi
 | Missing `--include` | 2 | refused before staging |
 
 ## Long-running work host: `agent-ee-gate-c4` (c4-highcpu-48 stand-in)
+
+**Deleted 2026-10-24 (owner)**, with its disk. The rest of this section is history. The ssh client config is parked at `~/.ssh/config.d/.agent-ee-gate-c4.deleted-20261024`. The offline tailnet device `agent-ee-gate-c4` (100.122.93.61) still has to be removed in the Tailscale admin console.
 
 Owner request 2026-10-21: one Spot C4 host that stays RUNNING for gates and
 tests. The requested `c4-highcpu-96` is blocked by quota, so a `c4-highcpu-48`

@@ -1,5 +1,26 @@
 # Host changelog
 
+## 2026-10-24 — agent-ee material removed (owner: "you clean up archon")
+
+The owner replaced the agent-ee campaign with a single agent; archon is no longer an
+agent-ee host. Only the owner's own `claude` session was running, and it was left alone.
+Nothing was restarted; Hyprland and the session were untouched.
+- **Archive first:** everything went to proximal
+  `~/.local/share/infra/archon-agent-ee-archive-20261024/` (2.2 GB; 297 files verified by
+  checksum on both ends, plus `burndown-archon-only.tgz`). It holds git bundles of
+  `agent-ee`, `fome-mc`, `kicad-route` and `kicad-happy`, with every branch and worktree
+  HEAD. That includes 98 agent-ee, 30 kicad-route, 2 fome-mc and 4 kicad-happy commits
+  that existed only locally. It also holds the patches and untracked files of 73 dirty
+  worktrees, 61,839 burndown files not on proximal, and the small `/tmp/agent-ee-*` dirs.
+- **Removed:**
+  - `~/git/agent-ee` and all agent worktrees (about 44 GB)
+  - the agent branches in `fome-mc`, `kicad-route` and `kicad-happy`, whose main
+    checkouts are kept, clean (kicad-happy stays detached at v2.3.1)
+  - `/tmp/agent-ee-*` (19 GB) and `~/.cache/ae-ci-exec`
+  - `native-admit`, `ae-ci-exec` and `~/.config/native-admission`
+  - every `agent-ee*` Docker image and the build cache (about 45 GB)
+- **Kept:** `agent-board`, `skillpack`, and `ubuntu:24.04`.
+
 ## 2026-10-22 — kicad-route worker lanes
 
 Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).
