@@ -1,5 +1,28 @@
 # Host changelog
 
+## 2026-10-24 — retired from agent-ee and cleaned (owner)
+
+The owner said: "it should not be running anything related to agent-ee at present, and
+should be cleaned up. I'm moving the striatum-next drive to it." Nothing was running
+(admission drained, no containers or agent processes).
+- **Archive:** proximal `~/.local/share/infra/talos-agent-ee-archive-20261024/`
+  (1.2 GB, checksums verified on both ends). It holds git bundles of every repo, with
+  all branches and worktree HEADs; the dirty worktrees' patches and untracked files; the
+  talos-only burndown files; fome-qualify logs; agent-521's harness evidence; and the
+  hostmon and AGENTEE-438 probe files.
+- **Removed:** agent-ee/fome-mc/kicad-route/kicad-happy checkouts and worktrees,
+  caches, `/tmp/agent-ee-*`, all Docker images and the build cache (about 45 GB),
+  `native-admit`, `ae-ci-exec`, the hostmon probe, rustup and user-site pins, the KiCad
+  user config, the KiCad packages and ngspice (purged, with 180 automatic
+  dependencies), the KiCad snapshot apt source and keyring, and the agent-ee userns
+  sysctl (`apparmor_restrict_unprivileged_userns` back to 1).
+- **Unregistered:** proximal launcher `HOSTS`/`KICAD_HOSTS`/`KICAD_REVIEW_HOSTS`, the
+  `talos` git remotes in proximal's agent-ee and kicad-route, and native admission.
+- **Kept:** docker (held), node, the claude/codex CLIs and their mirrored login
+  profiles, uv, git-wt/git-land, and stock bubblewrap/poppler/build tools.
+- `/` was extended to the whole VG (473.9 GiB) during the cleanup, outside it.
+- Disk use is 16 GB of 466 GB.
+
 ## 2026-10-23 — agent-ee AppArmor profile removed (owner)
 
 The owner: "remove the apparmor profiles like I asked". The enforce-mode

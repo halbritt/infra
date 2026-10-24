@@ -5,7 +5,7 @@
 set -eu
 cd "$(dirname "$0")"
 tool_only=0; [ "${1:-}" = --tool-only ] && { tool_only=1; shift; }
-[ $# -gt 0 ] || set -- proximal peecee-wsl archon talos agent-ee-gate-c4
+[ $# -gt 0 ] || set -- proximal peecee-wsl archon agent-ee-gate-c4
 for host in "$@"; do
   cfg=$(python3 -c "import json,sys; print(json.dumps(json.load(open('native-admission.json'))[sys.argv[1]]))" "$host")
   files="native-admit"; [ "$tool_only" = 1 ] || files="$files ae-ci-exec"

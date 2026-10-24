@@ -10,7 +10,7 @@ peecee-wsl and 3 fail on archon. The CI image is the release-gate authority, so
 agent-ee tests run inside it on every host.
 
 Installed byte-identical at `~/.local/bin/ae-ci-exec` on proximal, peecee-wsl,
-archon, talos and agent-ee-gate-c4 (canonical copy: this directory). Since
+archon and agent-ee-gate-c4 (canonical copy: this directory; talos was retired from agent-ee on 2026-10-24). Since
 2026-10-22 every run is admitted by `native-admit` (host-wide budget, leases,
 queue, CPU/PID bounds, init for old images); see
 [native-admission.md](native-admission.md).
@@ -82,7 +82,7 @@ No sudo, and no AppArmor profile (owner, 2026-10-23). On an AppArmor host, bwrap
 inside the unconfined container needs `kernel.apparmor_restrict_unprivileged_userns=0`:
 install [60-agent-ee-userns.conf](60-agent-ee-userns.conf) in `/etc/sysctl.d/` and run
 `sudo sysctl -p` on it. ae-ci-exec refuses to start while the restriction is on. Set on
-proximal and talos; archon and peecee-wsl run without AppArmor. Do not run agent-ee's
+proximal (talos had it until it left agent-ee on 2026-10-24); archon and peecee-wsl run without AppArmor. Do not run agent-ee's
 `scripts/container_apparmor.sh`: it loads the profile again.
 
 ## Git verification (2026-10-21, proximal, agent-ee main cc6b124)

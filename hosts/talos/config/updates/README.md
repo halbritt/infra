@@ -1,9 +1,8 @@
 # Updates
 
-Owner-requested automatic updates, 2026-10-22. talos is being provisioned as an
-agent-ee/KiCad worker (agent-ee worktrees, Docker, KiCad 10.0.7 from the KiCad
-snapshot PPA). The policy keeps the OS patched without upgrading pinned
-toolchains or interrupting worker runs.
+Owner-requested automatic updates, 2026-10-22. The policy was written while talos was
+an agent-ee/KiCad worker (retired 2026-10-24; KiCad removed). It keeps the OS patched
+without upgrading held packages (Docker) or interrupting running containers.
 
 | Piece | Installed at | What it does |
 |---|---|---|
@@ -26,10 +25,10 @@ returns immediately; see [network](../network/README.md).
 
 ## What is not upgraded automatically
 
-- Packages held with `apt-mark hold` by the worker provisioning: `docker.io`,
-  `docker-buildx`, `kicad`, `kicad-symbols`, `kicad-footprints`,
-  `kicad-templates`. Upgrade them deliberately and re-hold them.
-- The KiCad snapshot PPA and the Tailscale repository are not allowed origins.
+- Packages held with `apt-mark hold`: `docker.io` and `docker-buildx`. Upgrade them
+  deliberately and re-hold them. (The KiCad packages and snapshot PPA were removed on
+  2026-10-24.)
+- The Tailscale repository is not an allowed origin.
   Tailscale updates itself (`tailscale set --auto-update`, already on).
 - Release upgrades (`do-release-upgrade`).
 - Snaps follow snapd's own refresh schedule (default, 4 times a day).

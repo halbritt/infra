@@ -4,9 +4,8 @@
 Unattended-Upgrade::Allowed-Origins {
 	"${distro_id}:${distro_codename}-updates";
 };
-// The KiCad snapshot PPA and the Tailscale repository are deliberately not
-// allowed: KiCad is pinned to an exact version and held, Tailscale updates itself.
-// Packages held with apt-mark (docker.io, docker-buildx, kicad*) are never upgraded.
+// The Tailscale repository is deliberately not allowed: Tailscale updates itself.
+// Packages held with apt-mark (docker.io, docker-buildx) are never upgraded.
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";

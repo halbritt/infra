@@ -12,6 +12,10 @@ Unlike agent-ee, kicad-route tests run natively on the host with the system
 `/usr/bin/python3` (KiCad's `pcbnew` bindings exist only there), not in the
 agent-ee CI image.
 
+
+**talos was retired from agent-ee on 2026-10-24.** Its kicad-route checkout, remote,
+router generation, rustup toolchain and user-site pins were removed. The talos rows
+below are history.
 ## What a `--repo` launch needs on a host
 
 From `launch.py` `prepare()`, for any repository:

@@ -1,5 +1,0 @@
-Types: deb
-URIs: https://snapshot.ppa.launchpadcontent.net/kicad/kicad-10.0-releases/ubuntu/20261015T000000Z
-Suites: resolute
-Components: main
-Signed-By: /usr/share/keyrings/kicad-10.0-releases.asc

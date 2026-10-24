@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-10-24 — talos removed from agent-ee admission (owner)
+
+talos was retired from agent-ee for the striatum-next drive. It was removed from
+`native-admission.json`, the installer's host list and the burndown launcher's host
+lists, and `native-admit` was uninstalled there. See hosts/talos/CHANGELOG.md.
+
 ## 2026-10-23 — peecee-wsl admitted as a second local host (449's request for 529, via 519)
 
 Cairn 4ef35885: proximal admits one suite at a time, so 479, 484r and 486 were

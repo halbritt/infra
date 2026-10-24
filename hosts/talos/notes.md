@@ -24,10 +24,8 @@ Observations to act on only with owner direction:
 - The root LV is still 100 GiB (about 82 GiB free after setup). The CI image
   and BuildKit cache fit; if `docker system df` grows, extend with `sudo
   lvextend -r -L +100G /dev/ubuntu-vg/ubuntu-lv` (not done; no owner request).
-- No AppArmor profile for agent-ee (owner, 2026-10-23). The distro profiles stay
-  loaded, but `/etc/sysctl.d/60-agent-ee-userns.conf` sets
-  `kernel.apparmor_restrict_unprivileged_userns=0`, so `ae-ci-exec` containers run with
-  `apparmor=unconfined` and bwrap inside them can create user namespaces.
+- No AppArmor profile for agent-ee (owner, 2026-10-23). The userns sysctl relaxation
+  added for it was removed again on 2026-10-24, when talos left agent-ee.
 - The Dockerfile's apt snapshot is `noble` (24.04) and cannot be installed on
   26.04. KiCad 10.0.7 comes from the same Launchpad snapshot timestamp with
   suite `resolute` (see [config/apt](config/apt/README.md)). ngspice 45.2,
@@ -44,3 +42,7 @@ KiCad 10.0 snapshot PPA, plus ngspice, poppler-utils and bubblewrap. It apt-held
 `agent-ee`, `cairn`, `fome-mc` and `kicad-happy` into `~/git` and was running
 headless `claude-harm` workers in `~/.cache/agent-worktrees/agent-ee/`. That
 provisioning is not yet recorded here. The update policy was shaped around it.
+
+## Retired from agent-ee — 2026-10-24
+
+See README "Retired from agent-ee". The fleet-worker notes above are history.
