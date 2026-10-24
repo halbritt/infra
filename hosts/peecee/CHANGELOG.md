@@ -1,5 +1,20 @@
 # Changelog — peecee
 
+## 2026-10-24 — ollama off the GPU fleet: qwen3.6:27b evicting qwen3-vl:8b (owner: "ollama is down on peecee")
+
+- **Symptom:** the `OllamaServer` task was running and the API answered (0.30.7, up since
+  boot on 10-16). gpu-fleet's heartbeat, however, showed peecee slot 0 as `not loadable:
+  marker owns card (free=3.6 GiB < 21000)`, with `qwen3.6:27b` resident (16 GB, ctx
+  4096, keep-alive forever).
+- **Cause:** memory-price-tracker's sentiment step (`OLLAMA_MODEL=qwen3.6:27b`) loaded
+  the 27B every ingest run (10-07, 10-10, 10-13, 10-16 and 10-21, about 19:00). With
+  `OLLAMA_KEEP_ALIVE=-1` it stayed resident and pushed out the fleet's `qwen3-vl:8b`.
+  This is the same drift fixed by hand on 2026-09-23. Its requests also ran past the
+  tracker's 12 s timeout, so it got nothing back.
+- **Fix:** a request reloaded `qwen3-vl:8b` (32768 ctx, forever, 7.4 GiB). The heartbeat
+  went to `resident` at 08:02:04 PDT, and fleet `live` went from 2 to 3. The tracker now
+  asks for `qwen3-vl:8b` (memory-price-tracker drop-in and docs; ingest restarted).
+
 ## 2026-10-22 — peecee-wsl: kicad-route worker lanes
 
 Owner request (via the coordinator): run kicad-route lanes here as well as agent-ee lanes. Details: [shared/kicad-route](../../shared/kicad-route/README.md).
