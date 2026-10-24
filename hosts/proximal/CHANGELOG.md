@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-10-24 — ZFS ARC capped at 16 GiB; swap flushed (owner)
+
+- The ARC was at its default half-of-RAM ceiling (61 of 62.9 GiB) caching the backup and
+  archive pool `nvr`. Swap was full (16 GiB), including about 5.8 GiB of postgres
+  `shared_buffers`.
+- Capped live and persistently: `zfs_arc_max=17179869184`, in `/etc/modprobe.d/zfs.conf`
+  ([config/zfs](config/zfs/README.md)).
+- Then `swapoff -a && swapon -a`. Result: swap 0 B, about 61 GiB available, memory PSI 0.
+- The two journaled OOMs (10-14 and 10-20) were striatum drive processes exhausting RAM
+  (46 and 24 GiB anon), not the ARC.
+
 ## 2026-10-23 — agent-ee AppArmor profile removed (owner)
 
 The owner: "remove the apparmor profiles like I asked". The runtime-only

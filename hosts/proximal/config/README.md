@@ -51,6 +51,7 @@ Each directory beside this file is one subsystem, self-contained with its own `R
 | [`codex-auth-mirror/`](codex-auth-mirror/) | Codex login renewal + remote mirrors | user timer (`*:0/15`) that has each Codex CLI home (`~/.codex`, `~/.codex-harm`, `~/.codex-3`) renew itself 72 h before its 10-day token expires, then pushes `auth.json` with the refresh token blanked to `peecee-wsl` and `archon`, so proximal stays the only refresh-token holder |
 | [`systemd-user/`](systemd-user/) | systemd user manager config (`user@1000`) | env for every `--user` unit: PATH fix (`~/.local/bin` + `~/.npm-global/bin`, the stale-root-claude fix) + the striatum-next wake-unit `KillMode` drop-in (pattern superseded 2026-07-21, kept for record) |
 | [`vitae-elicitation/`](vitae-elicitation/) | Vitae RFC 0007 elicitation interview | tailnet-only web interview mining the Principal's episodic memory into the `vitae` graph; defined in `~/git/vitae`, enacted here as a user unit on loopback `:8909` + Tailscale Serve; loopback-only bind enforced |
+| [`zfs/`](zfs/) | ZFS ARC limit for the `nvr` pool (16 GiB; default was half of RAM) | `/etc/modprobe.d/zfs.conf` |
 
 Agents using either Plane instance should load
 [`../PLANE_AGENT_GUIDE.md`](../PLANE_AGENT_GUIDE.md) before reading or writing Plane data.
