@@ -1,5 +1,34 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-25 13:31 UTC — 3d04afaa-8129-4bf9-927f-87da728cab55
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **wigolo** — verified. Before: Global npm wigolo is 0.3.0 built from the source checkout ~/git/wigolo at detached HEAD 3507bb8e (clean tree). git ls-remote KnockOutEZ/wigolo main now reports 9180e934, ahead of the installed source revision. config/wigolo/SOURCE_COMMIT still records the stale c6ad4479. Preserve ~/.wigolo data/cache and the provider config; do not downgrade to the older published npm release.. After: rebuilt from 9180e934 (tarball wigolo-0.3.1.tgz) and reinstalled globally; npm ls -g wigolo => wigolo@0.3.1; ~/git/wigolo HEAD = 9180e934; ~/.wigolo data/cache and MCP provider config untouched.
+  Verification: operation exit 0/0; build log RESULT: WIGOLO_BUILD_OK target=9180e934 tarball=wigolo-0.3.1.tgz; installed package.json version 0.3.1.
+  Activation: installed (global npm replaced); running MCP server not restarted.
+  Evidence: `/var/lib/update-bot/runs/3d04afaa-8129-4bf9-927f-87da728cab55/operations/1d74facc-e965-4970-87d7-984342482226`.
+
+- **agy** — verified. Before: Installed Agy reports 1.4.7 via /home/halbritt/.local/bin/agy --version. Its bundled changelog/version cannot establish the online latest; the only native channel check is the built-in updater subcommand 'agy update' (stdin closed, noninteractive). No agy interactive session is being interrupted by a CLI update.. After: native updater reports 'You are already on the latest version'; version still 1.4.7.
+  Verification: operation exit 0/0; install.log 'Checking for updates... (current version 1.4.7) / You are already on the latest version'; verify.log 1.4.7 (non-fatal read-only ~/.gemini status-file warning).
+  Activation: no change; existing installation in use.
+  Evidence: `/var/lib/update-bot/runs/3d04afaa-8129-4bf9-927f-87da728cab55/operations/62c77329-7a9e-40db-a5f2-f59d911bbbab`.
+
+- **hermes** — verified. Before: Installed/activated generation hermes-candidate-3403b92c, carry 477297bd on upstream base 3403b92c, selected by ~/.local/bin/hermes; running gateway pid 3325445 on it, Slack connected (activation verified 2026-10-24). Upstream NousResearch/hermes-agent main has advanced to ad249d9c via git ls-remote. No candidate exists yet at ad249d9c. No unresolved prior operation for this base.. After: isolated candidate /var/lib/update-bot/staging/hermes-candidate-ad249d9c cloned at ad249d9c with the stored patch carried (3 files 3-way merged, no markers) committed as carry a80d665b; no build/install/activation.
+  Verification: operation exit 0/0; prep.log RESULT: PORT_OK carry_commit=a80d665b base=ad249d9c; no_markers_in_carried_files; live install/launcher/gateway untouched.
+  Activation: none; candidate staged only.
+  Evidence: `/var/lib/update-bot/runs/3d04afaa-8129-4bf9-927f-87da728cab55/operations/758ef649-ec1c-4a7c-b5b8-a1b6b3b6cd87`.
+
+- **hermes** — verified. Before: Prep op 758ef649 verified: candidate hermes-candidate-ad249d9c staged with carry a80d665b on upstream base ad249d9c (3 files 3-way merged, no markers); no venv yet, no tests run, install/launcher/receipt not written. Selected/installed generation is hermes-candidate-3403b92c (carry 477297bd), running gateway pid 3325445 on it, Slack connected. No unresolved prior operation.. After: venv built; four focused carry-behavior test files (241 passed/0 failed) + gateway import smoke passed; versioned launcher installed (sha256 22fcea4c); provenance receipt hermes-installed.json written (source candidate-ad249d9c, revision a80d665b, upstream ad249d9c).
+  Verification: operation exit 0/0; finish.log RESULT: INSTALL_OK carry=a80d665b base=ad249d9c; verify.log printed launcher sha 22fcea4c.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/3d04afaa-8129-4bf9-927f-87da728cab55/operations/8caafe31-7190-474b-b145-ec48a21e0135`.
+
+- **hermes** — verified. Before: Install operation 8caafe31 verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-ad249d9c, carry a80d665b on upstream ad249d9c, launcher sha256 22fcea4c, 241 carry behavior tests passed and import smoke passed, provenance receipt written. The running gateway (pid 3325445) still uses the previous generation hermes-candidate-3403b92c. Prior activation receipt (2026-10-24) status=verified for revision 477297bd. The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: fixed helper performed a fresh native zero-work drain and one supported reload; new gateway pid 2991546 on candidate-ad249d9c, revision a80d665b, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision a80d665b pid 2991546 slack connected; gateway pid 2991546 live on candidate-ad249d9c.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/3d04afaa-8129-4bf9-927f-87da728cab55/operations/a7775234-f638-43f6-9300-438e0d448f22`.
+
 ## 2026-10-23 13:34 UTC — 6dc4615e-1325-4305-8691-9ec4a2e6e044
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
