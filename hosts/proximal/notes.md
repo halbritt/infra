@@ -39,9 +39,12 @@ guidance remains in [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md).
 
 ## Striatum migration and source authentication
 
-Striatum engineering execution moved to Talos on 2026-10-24. Proximal retains
-its read-only Striatum data fence and the source Claude/Codex authentication
-services. Those services continue publishing access-only remote mirrors;
+Striatum engineering execution moved to Talos on 2026-10-24. At the owner's
+request on 2026-10-25, the read-only bind mount over
+`~/.local/share/striatum` and its systemd mount unit were removed. The retained
+directory is writable on the root filesystem; do not restore the read-only
+mount. Source scheduling remains retired. Proximal retains the source
+Claude/Codex authentication services, which publish access-only remote mirrors;
 refresh tokens stay on Proximal. The Claude refresher selects no retired local
 Striatum harness homes. See
 [claude-oauth-refresh](config/claude-oauth-refresh/README.md).

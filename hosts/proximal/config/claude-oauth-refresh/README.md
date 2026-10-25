@@ -35,7 +35,8 @@ for each profile (`~/.claude`, `~/.claude-harm` by default):
    the re-read guard matters.
 
 5. Selects no local harness mirrors: `MIRRORS` is empty after the 2026-10-24
-   Striatum migration to Talos. Proximal's retained Striatum store is read-only.
+   Striatum migration to Talos. Proximal's retained Striatum store was read-only
+   until the owner requested removal of that mount on 2026-10-25.
    Writing those retired consumer homes raised `EROFS` and stopped the run
    before the later source profile and remote mirrors were reached.
    The source profiles remain on Proximal. `--no-mirror` renews only.

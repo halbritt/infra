@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-10-25 — remove Striatum read-only bind mount
+
+- Owner explicitly rejected keeping the retained Striatum directory mounted
+  read-only after the Talos migration. Disabled and stopped
+  `home-halbritt-.local-share-striatum.mount`, removed its unit from
+  `/etc/systemd/system/`, and reloaded systemd.
+- `~/.local/share/striatum` now resolves to the existing writable root filesystem.
+  A temporary-file write/read/delete check passed as `halbritt`. The retained
+  data remains in place; source scheduling remains retired.
+- This supersedes the migration instruction to preserve the read-only mount.
+
 ## 2026-10-25 — install ugrep
 
 Owner-requested CLI installation: `sudo apt-get install --no-install-recommends

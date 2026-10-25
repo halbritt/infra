@@ -102,10 +102,11 @@ The checkout is `~/git/striatum-next`; the durable instance is
 on Talos. Compiler-generated user units run under `striatum.slice`; the compiler
 owns their generation. Linger keeps the user manager alive after SSH logout.
 
-Proximal's retired instance is read-only and its source scheduling units are
+Proximal's retired instance is a retained directory; the owner requested removal
+of its read-only bind mount on 2026-10-25. Its source scheduling units remain
 masked. Its SSH proxy and the private Cairn/service relays remain for clients;
 the source-only credential timers remain there too. Do not resume scheduling
-against the retired data or remove its read-only fence.
+against the retired data. Do not restore the read-only mount.
 
 Both Claude harnesses consume the existing mirrored access-only profiles via
 [validated links](config/striatum/README.md). No login or refresh token belongs
