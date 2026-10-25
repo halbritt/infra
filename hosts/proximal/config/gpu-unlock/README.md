@@ -2,9 +2,8 @@
 
 Owner-requested installation of <https://github.com/Zagitta/gpu-unlock> to
 `~/git/gpu-unlock`, pinned at `af28cbbfd3d922a659227ecfb7369adfd924cf03`
-(version 1.0.0), on 2026-10-25. Both Debian packages are installed; activation
-and the after-benchmark await a host reboot. Do not describe the GPU as unlocked
-until the current boot's kernel log confirms success for `0000:01:00.0`.
+(version 1.0.0), on 2026-10-25. Both Debian packages are installed. The
+2026-10-25 11:17 PDT boot confirmed `0000:01:00.0: gpu_unlock: unlocked`.
 
 `benchmark.py` runs against the existing local llama.cpp service under a
 gpu-fleet lease. It keeps the serving configuration, uses uncached prompts,
@@ -34,9 +33,10 @@ The upstream module's load completes before NVIDIA binds from the root filesyste
 | `benchmark.py`, `results/before.json` | Read directly from this checkout |
 
 The GRUB drop-in adds `gpu_unlock.targets=0000:01:00.0` to normal boot entries.
-`update-grub` completed. A one-time `grub-reboot` selection retains kernel
-`6.8.0-146-generic` for the comparison; the normal default is the newer 147 kernel.
-No reboot has been issued at this checkpoint.
+`update-grub` completed. A one-time `grub-reboot` selection was configured for
+`6.8.0-146-generic`; the normal default was the newer 147 kernel.
+No reboot had been issued at the installation checkpoint. The subsequent boot
+used kernel 147; the one-time GRUB selection was empty when inspected afterward.
 
 ## Baseline
 
@@ -69,7 +69,7 @@ per-sample GPU clocks, power, temperature and memory usage are retained.
 
 ## After the reboot
 
-`gpu-unlock-benchmark.service` is enabled for the next qualifying boot. It first
+`gpu-unlock-benchmark.service` was enabled for the first qualifying boot. It first
 saves the kernel log, requires a successful unlock, waits up to five minutes for
 a fleet lease, then runs the same benchmark. A partial run is never retried.
 Results go outside Git to `~/.local/state/gpu-unlock/after.json` and
@@ -83,17 +83,43 @@ journalctl -u gpu-unlock-benchmark.service -b --no-pager
 journalctl -k -b --no-pager | grep gpu_unlock
 ```
 
-After success, compare request/output hashes and timing distributions, copy the
-after-results into this subsystem, record the measured change and disable the
-one-time service. A build, kernel or driver mismatch aborts the comparison;
-do not report a GPU-unlock speedup from mismatched runs. If reboot is delayed
-past the daily llama.cpp update, arrange a fresh baseline with matching binaries.
+The automatic run aborted with `Benchmark identity changed: ['kernel']` because
+the baseline used 146 and this boot used 147. The owner explicitly requested
+running on the current kernel and reporting the comparison. The manual run used
+the same script without `--compare`; both recorded identities remain intact.
+The strict automatic comparison behavior is unchanged.
 
 Manual invocation, after resolving any failure and preserving its evidence:
 
 ```sh
 sudo systemctl start gpu-unlock-benchmark.service
 ```
+
+## Measured after-results (2026-10-25)
+
+Raw measurements: [results/after.json](results/after.json). All 15 samples
+completed under a proximal fleet lease; the runner exited 0. Each prompt size
+used five repetitions, 256 generated tokens, and zero cached prompt tokens.
+Request and output hashes match the baseline at every size.
+
+| Prompt tokens | Before prompt tok/s | After prompt tok/s | Change | Before generation tok/s | After generation tok/s | Change |
+|---:|---:|---:|---:|---:|---:|---:|
+| 512 | 1192.69 | 1226.91 | +2.87% | 80.52 | 81.92 | +1.74% |
+| 4096 | 1413.10 | 1439.96 | +1.90% | 69.84 | 70.60 | +1.09% |
+| 16384 | 1370.76 | 1402.18 | +2.29% | 70.56 | 70.99 | +0.62% |
+
+Values are medians. Prompt processing increased 1.90–2.87%; generation increased
+0.62–1.74%. This workload shows a small improvement. The only recorded identity
+difference is kernel 6.8.0-146 versus 6.8.0-147; model, server build, serving
+arguments, driver, GPU power limit, context and corpus match. These measurements
+include the reboot/kernel change and do not isolate its contribution.
+
+The manual command was `gpu-fleet-run --model qwen3.8-27b --max-context 17000
+--job gpu-unlock-after-agent563-20261025 --timeout 1200 -- python3
+/home/halbritt/git/infra/hosts/proximal/config/gpu-unlock/benchmark.py
+/home/halbritt/.local/state/gpu-unlock/after.json` (one shell command).
+Fleet checkout: `2de20079385e9792910c4c8a26da8913db11107b`.
+The one-time benchmark service was disabled after completion.
 
 ## Rollback
 
@@ -118,6 +144,5 @@ Installation checks passed: upstream tests (5), infrastructure tests (43),
 repository validation, shell syntax and systemd unit validation. The systemd
 validator also reported an existing unrelated `systemd-resolved` drop-in with
 an unknown `Resolve` section. The model endpoint remained healthy after installation.
-Activation, after-results, non-target GPU workloads and broad model-quality
-equivalence remain unverified until the reboot and follow-up. No speedup claim
-is made from the baseline alone.
+The current boot's kernel log verifies activation. Non-target GPU workloads and
+broad model-quality equivalence have not been evaluated by this benchmark.

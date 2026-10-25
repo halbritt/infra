@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-10-25 — GPU unlock active; Qwen after-benchmark complete
+
+- Current boot confirms GPU unlock on the RTX 3090. The automatic comparison
+  stopped because kernel 147 differed from baseline kernel 146. At the owner's
+  explicit direction, ran the unchanged benchmark on the current kernel.
+- All 15 samples completed with matching request/output hashes. Median prompt
+  throughput improved 1.90–2.87%; generation improved 0.62–1.74%. Other recorded
+  environment identities match. The kernel difference remains in the raw data.
+- Saved [after-results](config/gpu-unlock/results/after.json) and the
+  [comparison](config/gpu-unlock/README.md); disabled the one-time boot job.
+
+
 ## 2026-10-25 — install GPU unlock and capture Qwen baseline
 
 - At the owner's request, cloned Zagitta/gpu-unlock to `~/git/gpu-unlock` at

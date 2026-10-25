@@ -1,0 +1,376 @@
+{
+  "identity": {
+    "build": "b11870-74bca3950",
+    "model_path": "/home/halbritt/models/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+    "model_sha256": "3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e",
+    "server_sha256": "02f8a01e8d4c49a099a4d965ad5a3ed80d05447d0e0dedb85c43e0c848df71b3",
+    "exec_start": "{ path=/home/halbritt/git/llama.cpp/build/bin/llama-server ; argv[]=/home/halbritt/git/llama.cpp/build/bin/llama-server -m /home/halbritt/models/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf -c 131072 -ctk q8_0 -ctv q8_0 -fa on -np 1 -ngl all -ngld all --fit off --spec-type draft-mtp --spec-draft-n-max 2 --spec-draft-p-min 0.0 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --jinja --metrics --host 0.0.0.0 --port 8081 --alias qwen3.8-27b",
+    "n_ctx": 131072,
+    "kernel": "6.8.0-147-generic",
+    "gpu": "NVIDIA GeForce RTX 3090, GPU-996ce4b4-3487-3fea-2bdd-0d81fe8de701, 615.71.09, 350.00 W",
+    "corpus_sha256": "430983e5a711fbc4c6576edffecacf47ff23d58f62f3923d2386d798e0a794c9"
+  },
+  "started_utc": "2026-10-25T18:32:17Z",
+  "boot_id": "9b050882-17ba-4680-9242-110e02ab6bea",
+  "cmdline": "BOOT_IMAGE=/vmlinuz-6.8.0-147-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv ro gpu_unlock.targets=0000:01:00.0",
+  "lease": {
+    "GPU_FLEET_ENDPOINT_URL": "http://localhost:8081/v1",
+    "GPU_FLEET_SERVED_MODEL": "qwen3.8-27b",
+    "GPU_FLEET_NODE": "proximal",
+    "GPU_FLEET_SLOT_ID": "0",
+    "GPU_FLEET_LEASE_ID": "617caab0-6d4c-4f64-af9b-cba1177dfdfa"
+  },
+  "samples": [
+    {
+      "prompt_tokens": 512,
+      "repetition": 0,
+      "wall_seconds": 3.536835680999957,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 512,
+        "prompt_ms": 425.953,
+        "prompt_per_token_ms": 0.831939453125,
+        "prompt_per_second": 1202.0105504597925,
+        "predicted_n": 256,
+        "predicted_ms": 3109.743,
+        "predicted_per_token_ms": 12.195070588235295,
+        "predicted_per_second": 82.00034536616049,
+        "draft_n": 190,
+        "draft_n_accepted": 160
+      },
+      "request_sha256": "0c474bb7d4d370c507b34a63d492dfa6ab4bc8b49c9c4d5a492650dfff645ce6",
+      "content_sha256": "18495fe83fb17d1bc70d6d3093c1c6b393de446ec794de4549876f10ff78b335",
+      "gpu": "55, 338.71 W, 1620 MHz, 9501 MHz, 95 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 512,
+      "repetition": 1,
+      "wall_seconds": 3.5256894240000065,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 512,
+        "prompt_ms": 418.867,
+        "prompt_per_token_ms": 0.818099609375,
+        "prompt_per_second": 1222.3450403111249,
+        "predicted_n": 256,
+        "predicted_ms": 3105.73,
+        "predicted_per_token_ms": 12.179333333333334,
+        "predicted_per_second": 82.10630029010892,
+        "draft_n": 190,
+        "draft_n_accepted": 160
+      },
+      "request_sha256": "0c474bb7d4d370c507b34a63d492dfa6ab4bc8b49c9c4d5a492650dfff645ce6",
+      "content_sha256": "18495fe83fb17d1bc70d6d3093c1c6b393de446ec794de4549876f10ff78b335",
+      "gpu": "56, 337.77 W, 1620 MHz, 9501 MHz, 96 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 512,
+      "repetition": 2,
+      "wall_seconds": 3.528304319999961,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 512,
+        "prompt_ms": 413.842,
+        "prompt_per_token_ms": 0.80828515625,
+        "prompt_per_second": 1237.1871390530687,
+        "predicted_n": 256,
+        "predicted_ms": 3113.366,
+        "predicted_per_token_ms": 12.20927843137255,
+        "predicted_per_second": 81.90492219674783,
+        "draft_n": 190,
+        "draft_n_accepted": 160
+      },
+      "request_sha256": "0c474bb7d4d370c507b34a63d492dfa6ab4bc8b49c9c4d5a492650dfff645ce6",
+      "content_sha256": "18495fe83fb17d1bc70d6d3093c1c6b393de446ec794de4549876f10ff78b335",
+      "gpu": "57, 338.58 W, 1620 MHz, 9501 MHz, 93 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 512,
+      "repetition": 3,
+      "wall_seconds": 3.534443668999984,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 512,
+        "prompt_ms": 414.726,
+        "prompt_per_token_ms": 0.81001171875,
+        "prompt_per_second": 1234.5500402675502,
+        "predicted_n": 256,
+        "predicted_ms": 3118.535,
+        "predicted_per_token_ms": 12.229549019607843,
+        "predicted_per_second": 81.76916404657958,
+        "draft_n": 190,
+        "draft_n_accepted": 160
+      },
+      "request_sha256": "0c474bb7d4d370c507b34a63d492dfa6ab4bc8b49c9c4d5a492650dfff645ce6",
+      "content_sha256": "18495fe83fb17d1bc70d6d3093c1c6b393de446ec794de4549876f10ff78b335",
+      "gpu": "57, 337.56 W, 1635 MHz, 9501 MHz, 95 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 512,
+      "repetition": 4,
+      "wall_seconds": 3.531271384999968,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 512,
+        "prompt_ms": 417.309,
+        "prompt_per_token_ms": 0.815056640625,
+        "prompt_per_second": 1226.9085977057766,
+        "predicted_n": 256,
+        "predicted_ms": 3112.69,
+        "predicted_per_token_ms": 12.206627450980392,
+        "predicted_per_second": 81.92270993899167,
+        "draft_n": 190,
+        "draft_n_accepted": 160
+      },
+      "request_sha256": "0c474bb7d4d370c507b34a63d492dfa6ab4bc8b49c9c4d5a492650dfff645ce6",
+      "content_sha256": "18495fe83fb17d1bc70d6d3093c1c6b393de446ec794de4549876f10ff78b335",
+      "gpu": "57, 338.08 W, 1605 MHz, 9501 MHz, 95 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 4096,
+      "repetition": 0,
+      "wall_seconds": 6.4637943550000045,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 4096,
+        "prompt_ms": 2837.025,
+        "prompt_per_token_ms": 0.692633056640625,
+        "prompt_per_second": 1443.765916761396,
+        "predicted_n": 256,
+        "predicted_ms": 3624.22,
+        "predicted_per_token_ms": 14.212627450980392,
+        "predicted_per_second": 70.3599671101644,
+        "draft_n": 215,
+        "draft_n_accepted": 147
+      },
+      "request_sha256": "2f3ca25732c73c2120f30369eda7528b1ac62560968f94570c3fe9cecbd718e4",
+      "content_sha256": "c0e5723b4900e0fc3c0cff054f9267a016a07d615afcb2c8b0c9fb5528f1a04e",
+      "gpu": "59, 337.12 W, 1680 MHz, 9501 MHz, 89 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 4096,
+      "repetition": 1,
+      "wall_seconds": 6.442945943000041,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 4096,
+        "prompt_ms": 2844.519,
+        "prompt_per_token_ms": 0.694462646484375,
+        "prompt_per_second": 1439.9622572392732,
+        "predicted_n": 256,
+        "predicted_ms": 3596.128,
+        "predicted_per_token_ms": 14.10246274509804,
+        "predicted_per_second": 70.90960054814511,
+        "draft_n": 213,
+        "draft_n_accepted": 148
+      },
+      "request_sha256": "2f3ca25732c73c2120f30369eda7528b1ac62560968f94570c3fe9cecbd718e4",
+      "content_sha256": "c0e5723b4900e0fc3c0cff054f9267a016a07d615afcb2c8b0c9fb5528f1a04e",
+      "gpu": "60, 339.07 W, 1695 MHz, 9501 MHz, 96 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 4096,
+      "repetition": 2,
+      "wall_seconds": 6.478610842999956,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 4096,
+        "prompt_ms": 2858.662,
+        "prompt_per_token_ms": 0.69791552734375,
+        "prompt_per_second": 1432.8381599503546,
+        "predicted_n": 256,
+        "predicted_ms": 3617.6,
+        "predicted_per_token_ms": 14.186666666666666,
+        "predicted_per_second": 70.48872180451127,
+        "draft_n": 213,
+        "draft_n_accepted": 148
+      },
+      "request_sha256": "2f3ca25732c73c2120f30369eda7528b1ac62560968f94570c3fe9cecbd718e4",
+      "content_sha256": "c0e5723b4900e0fc3c0cff054f9267a016a07d615afcb2c8b0c9fb5528f1a04e",
+      "gpu": "60, 338.65 W, 1695 MHz, 9501 MHz, 95 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 4096,
+      "repetition": 3,
+      "wall_seconds": 6.467341498999986,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 4096,
+        "prompt_ms": 2853.074,
+        "prompt_per_token_ms": 0.69655126953125,
+        "prompt_per_second": 1435.6445013343503,
+        "predicted_n": 256,
+        "predicted_ms": 3611.849,
+        "predicted_per_token_ms": 14.164113725490196,
+        "predicted_per_second": 70.60095812421837,
+        "draft_n": 213,
+        "draft_n_accepted": 148
+      },
+      "request_sha256": "2f3ca25732c73c2120f30369eda7528b1ac62560968f94570c3fe9cecbd718e4",
+      "content_sha256": "c0e5723b4900e0fc3c0cff054f9267a016a07d615afcb2c8b0c9fb5528f1a04e",
+      "gpu": "60, 338.33 W, 1665 MHz, 9501 MHz, 95 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 4096,
+      "repetition": 4,
+      "wall_seconds": 6.457788072999961,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 4096,
+        "prompt_ms": 2843.404,
+        "prompt_per_token_ms": 0.6941904296875,
+        "prompt_per_second": 1440.5269177366283,
+        "predicted_n": 256,
+        "predicted_ms": 3612.147,
+        "predicted_per_token_ms": 14.165282352941176,
+        "predicted_per_second": 70.59513358675602,
+        "draft_n": 213,
+        "draft_n_accepted": 148
+      },
+      "request_sha256": "2f3ca25732c73c2120f30369eda7528b1ac62560968f94570c3fe9cecbd718e4",
+      "content_sha256": "c0e5723b4900e0fc3c0cff054f9267a016a07d615afcb2c8b0c9fb5528f1a04e",
+      "gpu": "61, 339.05 W, 1665 MHz, 9501 MHz, 97 %, 22686 MiB"
+    },
+    {
+      "prompt_tokens": 16384,
+      "repetition": 0,
+      "wall_seconds": 15.22353686200006,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 16384,
+        "prompt_ms": 11633.165,
+        "prompt_per_token_ms": 0.7100320434570313,
+        "prompt_per_second": 1408.3871414185219,
+        "predicted_n": 256,
+        "predicted_ms": 3584.881,
+        "predicted_per_token_ms": 14.058356862745098,
+        "predicted_per_second": 71.1320682611222,
+        "draft_n": 196,
+        "draft_n_accepted": 156
+      },
+      "request_sha256": "7e1de8dbae2cd397b29528489030296faf27bea57a07393064ad50dd73a84c72",
+      "content_sha256": "5c8d7b33888fccbd79235a0c151defba7b877d5bc50172565a2bc0a9bba14724",
+      "gpu": "62, 334.92 W, 1710 MHz, 9501 MHz, 75 %, 22688 MiB"
+    },
+    {
+      "prompt_tokens": 16384,
+      "repetition": 1,
+      "wall_seconds": 15.252243625000006,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 16384,
+        "prompt_ms": 11663.642,
+        "prompt_per_token_ms": 0.7118922119140625,
+        "prompt_per_second": 1404.7070374759444,
+        "predicted_n": 256,
+        "predicted_ms": 3582.204,
+        "predicted_per_token_ms": 14.047858823529413,
+        "predicted_per_second": 71.18522563204105,
+        "draft_n": 196,
+        "draft_n_accepted": 156
+      },
+      "request_sha256": "7e1de8dbae2cd397b29528489030296faf27bea57a07393064ad50dd73a84c72",
+      "content_sha256": "5c8d7b33888fccbd79235a0c151defba7b877d5bc50172565a2bc0a9bba14724",
+      "gpu": "62, 338.86 W, 1665 MHz, 9501 MHz, 96 %, 22688 MiB"
+    },
+    {
+      "prompt_tokens": 16384,
+      "repetition": 2,
+      "wall_seconds": 15.283435137999959,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 16384,
+        "prompt_ms": 11684.643,
+        "prompt_per_token_ms": 0.7131740112304688,
+        "prompt_per_second": 1402.1823345394464,
+        "predicted_n": 256,
+        "predicted_ms": 3591.857,
+        "predicted_per_token_ms": 14.085713725490196,
+        "predicted_per_second": 70.99391763090792,
+        "draft_n": 196,
+        "draft_n_accepted": 156
+      },
+      "request_sha256": "7e1de8dbae2cd397b29528489030296faf27bea57a07393064ad50dd73a84c72",
+      "content_sha256": "5c8d7b33888fccbd79235a0c151defba7b877d5bc50172565a2bc0a9bba14724",
+      "gpu": "63, 338.20 W, 1650 MHz, 9501 MHz, 97 %, 22688 MiB"
+    },
+    {
+      "prompt_tokens": 16384,
+      "repetition": 3,
+      "wall_seconds": 15.302988002999996,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 16384,
+        "prompt_ms": 11702.588,
+        "prompt_per_token_ms": 0.714269287109375,
+        "prompt_per_second": 1400.0321980061162,
+        "predicted_n": 256,
+        "predicted_ms": 3594.158,
+        "predicted_per_token_ms": 14.094737254901961,
+        "predicted_per_second": 70.94846692883284,
+        "draft_n": 196,
+        "draft_n_accepted": 156
+      },
+      "request_sha256": "7e1de8dbae2cd397b29528489030296faf27bea57a07393064ad50dd73a84c72",
+      "content_sha256": "5c8d7b33888fccbd79235a0c151defba7b877d5bc50172565a2bc0a9bba14724",
+      "gpu": "63, 337.59 W, 1680 MHz, 9501 MHz, 94 %, 22688 MiB"
+    },
+    {
+      "prompt_tokens": 16384,
+      "repetition": 4,
+      "wall_seconds": 15.337674237999977,
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 16384,
+        "prompt_ms": 11727.269,
+        "prompt_per_token_ms": 0.7157756958007813,
+        "prompt_per_second": 1397.0857153528243,
+        "predicted_n": 256,
+        "predicted_ms": 3605.102,
+        "predicted_per_token_ms": 14.137654901960783,
+        "predicted_per_second": 70.73308882799988,
+        "draft_n": 196,
+        "draft_n_accepted": 156
+      },
+      "request_sha256": "7e1de8dbae2cd397b29528489030296faf27bea57a07393064ad50dd73a84c72",
+      "content_sha256": "5c8d7b33888fccbd79235a0c151defba7b877d5bc50172565a2bc0a9bba14724",
+      "gpu": "65, 338.80 W, 1665 MHz, 9501 MHz, 96 %, 22688 MiB"
+    }
+  ],
+  "warmup": {
+    "prompt_tokens": 512,
+    "repetition": -1,
+    "wall_seconds": 3.743750277999993,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 512,
+      "prompt_ms": 429.279,
+      "prompt_per_token_ms": 0.838435546875,
+      "prompt_per_second": 1192.697523056101,
+      "predicted_n": 256,
+      "predicted_ms": 3142.581,
+      "predicted_per_token_ms": 12.32384705882353,
+      "predicted_per_second": 81.14349319874331,
+      "draft_n": 192,
+      "draft_n_accepted": 159
+    },
+    "request_sha256": "0c474bb7d4d370c507b34a63d492dfa6ab4bc8b49c9c4d5a492650dfff645ce6",
+    "content_sha256": "18495fe83fb17d1bc70d6d3093c1c6b393de446ec794de4549876f10ff78b335",
+    "gpu": "53, 337.27 W, 1620 MHz, 9501 MHz, 94 %, 22656 MiB"
+  },
+  "medians": {
+    "512": {
+      "prompt_per_second": 1226.9085977057766,
+      "predicted_per_second": 81.92270993899167
+    },
+    "4096": {
+      "prompt_per_second": 1439.9622572392732,
+      "predicted_per_second": 70.59513358675602
+    },
+    "16384": {
+      "prompt_per_second": 1402.1823345394464,
+      "predicted_per_second": 70.99391763090792
+    }
+  },
+  "complete": true
+}
