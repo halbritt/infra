@@ -121,6 +121,53 @@ The manual command was `gpu-fleet-run --model qwen3.8-27b --max-context 17000
 Fleet checkout: `2de20079385e9792910c4c8a26da8913db11107b`.
 The one-time benchmark service was disabled after completion.
 
+## BF16 tensor throughput (2026-10-25)
+
+The owner requested a direct check against published BF16 results after fixing
+the keyboard-free GRUB boot behavior (see [boot](../boot/README.md)).
+`benchmark-bf16.cu` measures dense 8192-by-8192-by-8192 cuBLAS GEMM with BF16
+inputs and FP32 accumulation/output. Reduced-precision reductions are disabled.
+There are 200 warmup multiplications, then five samples of 500 multiplications
+timed with CUDA events. Each GEMM counts as `2*N*N*N` floating-point operations.
+Input initialization, transfers and correctness checks are outside the timings.
+Sixty-four output elements are compared with a CPU FP64 reference before and
+after timing; the observed maximum absolute error was zero.
+
+The median was **126.86 TFLOPS** (126.61–127.32 across samples), or 8.67 ms per
+GEMM. The power limit stayed at 350 W; sampled draw averaged about 345 W and
+sample mean SM clocks ranged from 1583 to 1606 MHz. Maximum sampled temperature
+was 63 C. Median throughput per MHz was **0.07984 TFLOPS/MHz**.
+
+For comparison, the [published RTX 3090 report](https://github.com/Zagitta/gpu-unlock/issues/33)
+at 350 W measured 114.8 TFLOPS at 1425 MHz unlocked (0.08056 TFLOPS/MHz), versus
+72.0 at 1710 MHz locked (0.04211 TFLOPS/MHz). Our per-clock rate is within 1%
+of that unlocked result, consistent with full-rate BF16 operation. This is a
+cross-machine comparison; no locked BF16 baseline was measured on proximal.
+The published report used PyTorch/cuBLAS on CUDA 13, while this test uses direct
+cuBLAS 12.8.5 with CUDA runtime 12.8 and the installed 615.71.09 driver.
+
+[Raw benchmark](results/bf16-unlocked-20261025/benchmark.json),
+[environment](results/bf16-unlocked-20261025/environment.json),
+[200 ms telemetry](results/bf16-unlocked-20261025/telemetry.csv), and
+[summary](results/bf16-unlocked-20261025/summary.json) are retained. Telemetry
+averages use only each sample's timed interval. The run held a proximal GPU
+fleet lease and exited 0. The existing llama-27b process stayed resident and
+healthy; no NVIDIA Xid appeared during the run.
+
+Build and run from the repository root (use a fresh output directory each run):
+
+```sh
+mkdir -p ~/.cache/gpu-unlock-benchmark
+/usr/local/cuda/bin/nvcc -O3 -std=c++17 -arch=sm_86 -Xcompiler=-Wall,-Wextra \
+  hosts/proximal/config/gpu-unlock/benchmark-bf16.cu -lcublas \
+  -o ~/.cache/gpu-unlock-benchmark/benchmark-bf16
+/home/halbritt/git/gpu-fleet/bin/gpu-fleet-run \
+  --model qwen3.8-27b --max-context 17000 --job gpu-unlock-bf16 --timeout 240 -- \
+  python3 hosts/proximal/config/gpu-unlock/run-bf16.py \
+  ~/.cache/gpu-unlock-benchmark/benchmark-bf16 \
+  ~/.local/state/gpu-unlock/bf16-new-run
+```
+
 ## Rollback
 
 For one boot, delete `gpu_unlock.targets=0000:01:00.0` from GRUB's edited Linux

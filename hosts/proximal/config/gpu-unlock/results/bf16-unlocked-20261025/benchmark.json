@@ -1,0 +1,7 @@
+{"gpu":"NVIDIA GeForce RTX 3090","n":8192,"input":"BF16","accumulation":"FP32","output":"FP32","reduced_precision_reduction":false,"cublas_version":120805,"cuda_runtime_version":12080,"cuda_driver_version":13040,"warmup_iterations":200,"iterations_per_sample":500,"samples":[
+{"started_epoch_ms":1792953916945,"finished_epoch_ms":1792953921263,"gemm_ms":8.635487,"tflops":127.324803},
+{"started_epoch_ms":1792953921263,"finished_epoch_ms":1792953925596,"gemm_ms":8.666792,"tflops":126.864893},
+{"started_epoch_ms":1792953925596,"finished_epoch_ms":1792953929938,"gemm_ms":8.683972,"tflops":126.613902},
+{"started_epoch_ms":1792953929938,"finished_epoch_ms":1792953934274,"gemm_ms":8.671741,"tflops":126.792496},
+{"started_epoch_ms":1792953934274,"finished_epoch_ms":1792953938606,"gemm_ms":8.662516,"tflops":126.927520}
+],"median_tflops":126.864893,"max_abs_error":0,"checked_elements":64,"complete":true}

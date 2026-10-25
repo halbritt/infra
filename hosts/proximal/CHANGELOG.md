@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-10-25 — unattended GRUB boot and direct BF16 measurement
+
+- Owner reported GRUB waiting for input with the keyboard disconnected. Installed
+  [boot/99-unattended.cfg](config/boot/99-unattended.cfg) with zero normal and
+  record-failure timeouts, regenerated GRUB and verified its syntax and every
+  generated timeout. Physical keyboard-free boot remains to be checked at the
+  next reboot; the observed wait's exact cause was not established.
+- Ran dense BF16 GEMM with FP32 accumulation/output under a GPU fleet lease:
+  median 126.86 TFLOPS at the existing 350 W limit, 0.07984 TFLOPS/MHz. This is
+  within 1% of a published unlocked 3090's per-clock rate. CPU spot-checks matched
+  exactly; the llama service remained healthy. No local locked BF16 baseline.
+- Added the repeatable [benchmark and results](config/gpu-unlock/README.md).
+
 ## 2026-10-25 — GPU unlock active; Qwen after-benchmark complete
 
 - Current boot confirms GPU unlock on the RTX 3090. The automatic comparison

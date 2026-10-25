@@ -1,0 +1,20 @@
+{
+  "started_utc": "2026-10-25T18:45:14Z",
+  "kernel": "6.8.0-147-generic",
+  "boot_id": "9b050882-17ba-4680-9242-110e02ab6bea",
+  "cmdline": "BOOT_IMAGE=/vmlinuz-6.8.0-147-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv ro gpu_unlock.targets=0000:01:00.0",
+  "gpu": "name, uuid, pci.bus_id, driver_version, power.limit [W]\nNVIDIA GeForce RTX 3090, GPU-996ce4b4-3487-3fea-2bdd-0d81fe8de701, 00000000:01:00.0, 615.71.09, 350.00 W",
+  "compute_processes": "pid, process_name, used_gpu_memory [MiB]\n2082, /home/halbritt/git/llama.cpp/build/bin/llama-server, 22670 MiB",
+  "binary_sha256": "df2621b751d0dc051426ad2a91bf510ab627ecc6074ac1aed39f247cef5cd958",
+  "source_sha256": "2c227c8c02a9599f908943fcc9be95ff438c0428aa0cf2167181e0fe3ccd4242",
+  "lease": {
+    "GPU_FLEET_NODE": "proximal",
+    "GPU_FLEET_SLOT_ID": "0",
+    "GPU_FLEET_LEASE_ID": "74529c23-4ccb-4add-96b8-9c95c7a2ff8c",
+    "GPU_FLEET_ENDPOINT_URL": "http://localhost:8081/v1",
+    "GPU_FLEET_SERVED_MODEL": "qwen3.8-27b"
+  },
+  "unlock_log": [
+    "Oct 25 11:17:32 proximal kernel: pci 0000:01:00.0: gpu_unlock: unlocked"
+  ]
+}

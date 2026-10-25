@@ -1,0 +1,52 @@
+{
+  "samples": [
+    {
+      "sample": 0,
+      "telemetry_samples": 22,
+      "mean_sm_mhz": 1594.7727272727273,
+      "mean_power_w": 345.68363636363637,
+      "max_temperature_c": 59.0,
+      "tflops_per_mhz": 0.0798388389910218
+    },
+    {
+      "sample": 1,
+      "telemetry_samples": 21,
+      "mean_sm_mhz": 1584.2857142857142,
+      "mean_power_w": 345.60571428571427,
+      "max_temperature_c": 60.0,
+      "tflops_per_mhz": 0.0800770289449955
+    },
+    {
+      "sample": 2,
+      "telemetry_samples": 22,
+      "mean_sm_mhz": 1583.1818181818182,
+      "mean_power_w": 345.64181818181817,
+      "max_temperature_c": 61.0,
+      "tflops_per_mhz": 0.07997432799310938
+    },
+    {
+      "sample": 3,
+      "telemetry_samples": 21,
+      "mean_sm_mhz": 1606.4285714285713,
+      "mean_power_w": 345.41809523809525,
+      "max_temperature_c": 62.0,
+      "tflops_per_mhz": 0.07892818781680748
+    },
+    {
+      "sample": 4,
+      "telemetry_samples": 22,
+      "mean_sm_mhz": 1594.090909090909,
+      "mean_power_w": 345.1481818181818,
+      "max_temperature_c": 63.0,
+      "tflops_per_mhz": 0.07962376504134588
+    }
+  ],
+  "median_tflops": 126.864893,
+  "median_tflops_per_mhz": 0.0798388389910218,
+  "reference_url": "https://github.com/Zagitta/gpu-unlock/issues/33",
+  "reference_unlocked_tflops": 114.8,
+  "reference_sm_mhz": 1425,
+  "reference_locked_tflops": 72.0,
+  "reference_locked_sm_mhz": 1710,
+  "note": "Cross-machine comparison; no local locked BF16 baseline measured. Telemetry sampled at 200 ms, only timed GEMM intervals included."
+}
