@@ -13,7 +13,7 @@ After the scheduled mirror has delivered unexpired profiles, install from the
 Talos infra checkout:
 
 ```sh
-python3 hosts/talos/config/striatum/install-credential-links.py
+python3 hosts/talos/config/striatum/install-profile-links.py
 ```
 
 The installer validates both source profiles before replacing credentials with
