@@ -20,7 +20,7 @@
     "linux"
   ],
   "responsibilities": [
-    "agent-ee-fleet-worker"
+    "striatum-next"
   ],
   "paths": {
     "config": "config",

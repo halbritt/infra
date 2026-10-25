@@ -93,3 +93,20 @@ delete the profile dirs.
 
 The root LV was extended to the whole VG (473.9 GiB) on 2026-10-24, outside this
 cleanup.
+
+## Striatum-next runtime — 2026-10-24
+
+The owner moved the Striatum-next engineering runtime from proximal to Talos.
+The checkout is `~/git/striatum-next`; the durable instance is
+`~/.local/share/striatum`. Run compiler operations, engineering checks and deploys
+on Talos. Compiler-generated user units run under `striatum.slice`; the compiler
+owns their generation. Linger keeps the user manager alive after SSH logout.
+
+Proximal's retired instance is read-only and its source scheduling units are
+masked. Its SSH proxy and the private Cairn/service relays remain for clients;
+the source-only credential timers remain there too. Do not resume scheduling
+against the retired data or remove its read-only fence.
+
+Both Claude harnesses consume the existing mirrored access-only profiles via
+[validated links](config/striatum/README.md). No login or refresh token belongs
+on Talos. The root LV already uses the entire volume group, as requested.

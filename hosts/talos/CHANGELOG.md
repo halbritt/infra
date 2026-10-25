@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-10-24 — Striatum-next host responsibility
+
+Replaced the retired agent-ee responsibility with Striatum-next in machine
+metadata and recorded the live checkout, instance, generated-unit ownership,
+source read-only fence and retained relay/credential services.
+
 ## 2026-10-24 — Striatum access-only credential delivery
 
 Linked both Claude harness credential files to the profiles mirrored by the
