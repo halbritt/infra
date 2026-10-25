@@ -8,9 +8,9 @@ other consumer of the profile (the agent-usage dashboard, headless runs) sees
 does, with the CLI's client id, and rewrites the credentials file atomically.
 Running sessions notice the mtime change and reload the file.
 
-After renewing a profile it mirrors that profile's *access* token into the
-consumer profiles declared in MIRRORS (the striatum harness homes), which hold
-no login of their own. The refresh token is deliberately not copied: a second
+After renewing a profile it mirrors that profile's *access* token to the
+existing remote worker profiles. Proximal's retired Striatum harness homes
+are read-only and are no longer selected as local mirror targets. The refresh token is deliberately not copied: a second
 holder of a refresh token destroys the source's lineage the moment either side
 rotates it, which is exactly how the striatum copy self-destructed on
 2026-09-14. A mirror can only read; it can never rotate.
@@ -35,12 +35,9 @@ TOKEN_URL = "https://platform.claude.com/v1/oauth/token"
 CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"  # Claude Code's public OAuth client
 BETA = "oauth-2025-04-20"
 DEFAULT_PROFILES = ("~/.claude", "~/.claude-harm")
-STRIATUM = "~/.local/share/striatum/harness-config"
-# source profile -> (its config file, consumer profiles that mirror its access token)
-MIRRORS = {
-    "~/.claude": (f"{STRIATUM}/claude-code",),
-    "~/.claude-harm": (f"{STRIATUM}/claude-harm",),
-}
+# Proximal's Striatum runtime moved to Talos. Its retained local harness homes
+# are read-only; only the existing remote access-token mirrors remain active.
+MIRRORS = {}
 # Where each source profile's `oauthAccount` block lives. The default profile
 # keeps its config beside $HOME, not inside the config dir.
 SOURCE_CONFIGS = {

@@ -1,5 +1,20 @@
 # Changelog — proximal (system)
 
+## 2026-10-24 — retire local Striatum OAuth mirrors after Talos migration
+
+- The existing refresher failed with `EROFS` while writing Proximal's retained,
+  read-only Striatum harness store. It never reached the later profile or its
+  remote publication step. Talos jobs consequently reported revoked or expired
+  access tokens.
+- Removed those retired local targets from `MIRRORS`. The source profiles keep
+  their separate refresh lineages; the existing remote writer still sends only
+  access fields to the same four hosts. The read-only fence remains installed.
+- An isolated regression invokes the real entry point with fake profile files
+  and mocked network boundaries, requires both source-profile calls and remote
+  publication, and refuses any retired local write. Repository tests and the
+  infrastructure validator are the deployment checks. The existing timer
+  supplies the subsequent live refresh and mirror evidence.
+
 ## 2026-10-24 — ZFS ARC capped at 16 GiB; swap flushed (owner)
 
 - The ARC was at its default half-of-RAM ceiling (61 of 62.9 GiB) caching the backup and

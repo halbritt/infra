@@ -37,6 +37,15 @@ guidance remains in [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md).
   Docker and its `containerd.io` runtime remain in service. The retired cluster
   state and rollback archive were deleted at the owner's request.
 
+## Striatum migration and source authentication
+
+Striatum engineering execution moved to Talos on 2026-10-24. Proximal retains
+its read-only Striatum data fence and the source Claude/Codex authentication
+services. Those services continue publishing access-only remote mirrors;
+refresh tokens stay on Proximal. The Claude refresher selects no retired local
+Striatum harness homes. See
+[claude-oauth-refresh](config/claude-oauth-refresh/README.md).
+
 ## Sensitive metadata
 
 This host record intentionally contains non-secret but sensitive operational

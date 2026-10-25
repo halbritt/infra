@@ -34,12 +34,11 @@ for each profile (`~/.claude`, `~/.claude-harm` by default):
    as `mcpOAuth`. The provider rotates the refresh token on every renewal, so
    the re-read guard matters.
 
-5. Mirrors the renewed **access** token into the consumer profiles listed in
-   `MIRRORS` — striatum's harness homes, `harness-config/claude-code` from
-   `~/.claude` and `harness-config/claude-harm` from `~/.claude-harm` — and
-   copies the source's `oauthAccount` block into the mirror's `.claude.json`
-   so the profile reports the account its token actually belongs to.
-   `--no-mirror` renews only.
+5. Selects no local harness mirrors: `MIRRORS` is empty after the 2026-10-24
+   Striatum migration to Talos. Proximal's retained Striatum store is read-only.
+   Writing those retired consumer homes raised `EROFS` and stopped the run
+   before the later source profile and remote mirrors were reached.
+   The source profiles remain on Proximal. `--no-mirror` renews only.
 
 6. Pushes the same access-token-only copy of `~/.claude` and `~/.claude-harm`
    to the same paths on every host in `REMOTE_HOSTS` (`peecee-wsl`, `archon`, `agent-ee-gate-c4` since 2026-10-22, `talos` since 2026-10-22)
