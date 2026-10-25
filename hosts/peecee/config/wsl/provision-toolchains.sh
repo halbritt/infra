@@ -13,7 +13,7 @@ $S apt-get install -y -q \
   build-essential cmake ninja-build pkg-config ccache gdb \
   python3 python3-venv python3-pip python3-dev \
   git git-lfs curl wget ca-certificates gnupg unzip zip \
-  ripgrep jq tmux shellcheck sqlite3 \
+  ripgrep ugrep jq tmux shellcheck sqlite3 \
   libssl-dev libffi-dev libpq-dev zlib1g-dev libsqlite3-dev \
   postgresql-client docker.io docker-compose-v2 gh \
   bubblewrap slirp4netns uidmap binutils

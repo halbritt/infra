@@ -1,5 +1,11 @@
 # Changelog — proximal (system)
 
+## 2026-10-25 — install ugrep
+
+Owner-requested CLI installation: `sudo apt-get install --no-install-recommends
+ugrep` installed Ubuntu's `5.0.0+dfsg-1` package. Verified `/usr/bin/ugrep`, its
+version, and an exact-line stdin search with line numbers.
+
 ## 2026-10-25 — unattended GRUB boot and direct BF16 measurement
 
 - Owner reported GRUB waiting for input with the keyboard disconnected. Installed

@@ -1,5 +1,12 @@
 # Changelog — peecee
 
+## 2026-10-25 — install ugrep in peecee-wsl
+
+Owner-requested CLI installation over `ssh peecee-wsl`: `sudo apt-get install
+--no-install-recommends ugrep` installed Ubuntu's `7.5.0+dfsg-1` package. Verified
+`/usr/bin/ugrep`, its version, and an exact-line stdin search with line numbers.
+Added the package to the canonical WSL toolchain provisioning list.
+
 ## 2026-10-24 — ollama off the GPU fleet: qwen3.6:27b evicting qwen3-vl:8b (owner: "ollama is down on peecee")
 
 - **Symptom:** the `OllamaServer` task was running and the API answered (0.30.7, up since

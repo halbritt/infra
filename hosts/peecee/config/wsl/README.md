@@ -42,7 +42,7 @@ Chosen from what proximal's `~/git` repos actually use (44 python, 21 node,
 | go | latest stable (1.27) | go.dev tarball → `/usr/local/go` |
 | rust (rustup, minimal profile) | stable | rustup → `~/.cargo` |
 | docker + compose v2 (halbritt in `docker` group) | 29.x | apt `docker.io`, `docker-compose-v2` |
-| gh, ripgrep, jq, tmux, shellcheck, sqlite3, git-lfs, postgresql-client | | apt |
+| gh, ripgrep, ugrep, jq, tmux, shellcheck, sqlite3, git-lfs, postgresql-client | | apt |
 | libssl/libffi/libpq/zlib/libsqlite3 dev headers | | apt |
 | bubblewrap, slirp4netns, uidmap, binutils | | apt — council's isolated-execution suites |
 | `claude`, `codex`, `opencode` CLIs | | `npm -g` (user prefix) |

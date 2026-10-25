@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-10-25 — install ugrep
+
+Owner confirmed Talos as the intended host. `sudo apt-get install
+--no-install-recommends ugrep` installed Ubuntu's `7.5.0+dfsg-1` package. Verified
+`/usr/bin/ugrep`, its version, and an exact-line stdin search with line numbers.
+
 ## 2026-10-24 — Striatum-next host responsibility
 
 Replaced the retired agent-ee responsibility with Striatum-next in machine

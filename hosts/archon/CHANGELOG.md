@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-10-25 — install ugrep
+
+Owner-requested CLI installation: `sudo pacman -S --needed ugrep` installed
+Arch's `7.8.5-1` package from extra. Verified `/usr/bin/ugrep`, its version, and
+an exact-line stdin search with line numbers.
+
 ## 2026-10-24 — agent-ee material removed (owner: "you clean up archon")
 
 The owner replaced the agent-ee campaign with a single agent; archon is no longer an
