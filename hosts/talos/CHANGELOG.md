@@ -1,5 +1,13 @@
 # Host changelog
 
+## 2026-10-24 — Striatum access-only credential delivery
+
+Linked both Claude harness credential files to the profiles mirrored by the
+existing proximal timer. Added a validating installer and installation mapping
+in `config/striatum/`. The standard harness previously retained an expired regular
+file; the Harm harness already used the intended link. No login, new refresher,
+service restart or native account-hold clearance.
+
 ## 2026-10-24 — linger enabled for halbritt (owner)
 
 `sudo loginctl enable-linger halbritt` (`/var/lib/systemd/linger/halbritt`). The user

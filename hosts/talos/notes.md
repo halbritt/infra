@@ -46,3 +46,18 @@ provisioning is not yet recorded here. The update policy was shaped around it.
 ## Retired from agent-ee — 2026-10-24
 
 See README "Retired from agent-ee". The fleet-worker notes above are history.
+
+## Striatum credential delivery repaired — 2026-10-24
+
+The migration left the standard Claude harness with a regular credential file
+that expired while the mirrored source profile continued to change. The Harm
+harness already used a symlink. Proximal's source-only refresher also aborted on
+an obsolete local write into its retired read-only Striatum data; infra commit
+`d307152d430dbae07894a1ea1ccbd211746d3e1c` removed that write. Its existing
+17:15 PDT timer then refreshed Harm and delivered both access-only profiles to
+Talos. No manual login or refresh was invoked.
+
+The canonical installer in `config/striatum/` links both harness credential files
+to those existing mirrored profiles. Validation records only permissions,
+expiry and absence of refresh fields; no token values enter Git or logs.
+Native account holds and attempt history remain unchanged.
