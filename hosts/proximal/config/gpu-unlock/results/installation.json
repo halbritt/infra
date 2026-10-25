@@ -1,0 +1,34 @@
+{
+  "upstream_commit": "af28cbbfd3d922a659227ecfb7369adfd924cf03",
+  "packages": "gpu-unlock-dkms 1.0.0 install ok installed\ngpu-unlock-firmware 1.0.0 install ok installed",
+  "dkms": "gpu-unlock/1.0.0, 6.8.0-146-generic, x86_64: installed\ngpu-unlock/1.0.0, 6.8.0-147-generic, x86_64: installed",
+  "grub_next_entry": "next_entry=Advanced options for Ubuntu>Ubuntu, with Linux 6.8.0-146-generic",
+  "secure_boot": "SecureBoot disabled",
+  "pending": "Reboot, verify unlock, then compare after benchmark",
+  "upstream_tests": 5,
+  "infra_tests": 43,
+  "installed_files": {
+    "/etc/default/grub.d/99-gpu-unlock.cfg": "6ee09efaa5a545f90c046f0e90fd952d513f27a5b5fa39b2011c62f7e416a5b9",
+    "/usr/local/libexec/gpu-unlock-benchmark-after-boot": "170ae2673dde98c12db67ce9073c24b9698e4daf821224a6eb01c3dd60e8a62a",
+    "/etc/systemd/system/gpu-unlock-benchmark.service": "eaec7aacf04c32a533ec1b3f8dfd87aca5d2bae1006af1a360be7c18f233f59b"
+  },
+  "review": {
+    "packet_id": "pkt-5fbc01e6b9ace4f9",
+    "packet_content_sha256": "5fbc01e6b9ace4f9334deab75b270fea58fa3aa1bd84640e1cb43b62216c6a8d",
+    "corpus_version": "corpus-2026-07-12-a11702cc9217",
+    "doctrine_version": "doctrine-f6bbb5196a3f8bf9",
+    "retriever_version": "retriever-ec995ecdd083b2c8",
+    "release_commit": "d3e0c0d4ccd1920b2e045c156f1cf0db4fc5f04f",
+    "authority": "Owner-authorized installation and benchmark; reboot timing remains pending because other host services and sessions will be interrupted.",
+    "conclusion": "Installation and baseline only. No performance-improvement or broad semantic-preservation conclusion before activation and after measurements.",
+    "material_unverified": [
+      "Successful live unlock",
+      "Matched after measurements",
+      "Output equivalence for benchmark requests",
+      "Non-target GPU service behavior after reboot"
+    ],
+    "nonmaterial_omissions": "General refactoring, event-time, API, abstraction and defect-repair obligations do not apply to this bounded installation experiment. Broad production profiling is outside the benchmark claim."
+  },
+  "initramfs_load_list_verified": true,
+  "postboot_service_current_boot_condition": "skipped as expected: no gpu_unlock.targets in current kernel cmdline"
+}

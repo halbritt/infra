@@ -1,5 +1,19 @@
 # Changelog — proximal (system)
 
+## 2026-10-25 — install GPU unlock and capture Qwen baseline
+
+- At the owner's request, cloned Zagitta/gpu-unlock to `~/git/gpu-unlock` at
+  `af28cbbfd3d922a659227ecfb7369adfd924cf03` and installed its 1.0.0 DKMS and
+  firmware packages. Both installed kernels have the module; the initramfs and
+  GRUB opt-in target the local RTX 3090. Activation awaits a reboot.
+- Captured five uncached Qwen3.8-27B measurements per prompt size after aligning
+  the running llama.cpp build with the on-disk executable. Prompt throughput
+  medians: 1192.69 / 1413.10 / 1370.76 tokens/s at 512 / 4096 / 16384 tokens.
+- Prepared a one-time post-boot benchmark with environment identity checks and
+  selected the current kernel for the next boot to avoid a kernel confounder.
+  Installation, raw baseline, pending verification and rollback are in
+  [gpu-unlock](config/gpu-unlock/README.md).
+
 ## 2026-10-24 — retire local Striatum OAuth mirrors after Talos migration
 
 - The existing refresher failed with `EROFS` while writing Proximal's retained,

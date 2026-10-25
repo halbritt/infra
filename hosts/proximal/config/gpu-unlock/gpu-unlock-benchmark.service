@@ -1,0 +1,18 @@
+[Unit]
+Description=One-time Qwen benchmark after GPU unlock activation
+After=network-online.target postgresql.service llama-27b.service
+Wants=network-online.target
+ConditionKernelCommandLine=gpu_unlock.targets=0000:01:00.0
+ConditionPathExists=!/home/halbritt/.local/state/gpu-unlock/after.json
+
+[Service]
+Type=oneshot
+User=halbritt
+Group=halbritt
+Environment=HOME=/home/halbritt
+WorkingDirectory=/home/halbritt/git/infra
+ExecStart=/usr/local/libexec/gpu-unlock-benchmark-after-boot
+TimeoutStartSec=25min
+
+[Install]
+WantedBy=multi-user.target
