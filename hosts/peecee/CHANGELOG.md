@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — first successful GPU unlock and BF16 benchmark
+
+Verified successful USB unlock, clean reset/resource cleanup and Windows handoff.
+NVIDIA driver 610.88 and both display devices are healthy. Dense BF16 GEMM with
+FP32 accumulation/output measured 142.870 TFLOPS at 8192 square and 132.952 TFLOPS
+at 4096 square, with numerical checks passing. Power limit remained 450 W;
+8192 measured 448.39 W mean and 67 °C maximum. No locked baseline exists yet.
+See [results](config/gpu-unlock/results/boot1-20261026/summary.json).
+
 ## 2026-10-26 — stage GPU unlock USB package
 
 Peecee became reachable on the owner's retry. Reverified BIOS/GPU/ESP/USB identity

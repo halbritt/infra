@@ -1,8 +1,9 @@
 # GPU unlock investigation — peecee
 
-Current status: the tested Z690-I/3090 Ti unlock package is **staged on E:**.
-Copied hashes and the saved probe backup are verified. The first hardware boot
-and BF16 comparison remain pending. See the final dated entry below.
+Current status: the first USB unlock boot succeeded and Windows recovered the
+GPU. BF16 measured **142.87 TFLOPS** at 8192 square with a 450 W power limit.
+A matched locked baseline is still needed to calculate speedup. See the final
+dated entry below.
 
 ## Read-only USB probe staged 2026-10-26
 
@@ -272,3 +273,55 @@ unlock was performed. Next is a full shutdown and one-time boot of the Lexar USB
 followed by collecting the handoff/transaction logs and checking Windows driver
 health. The package attempts the unlock automatically after its Esc window;
 the display may stop updating during driver release.
+
+## First successful unlock boot and BF16 measurement — 2026-10-26
+
+The owner returned to Windows after the cold USB boot. Retrieved and verified
+the hashes of `HLS000000.TXT` and `AUTO000000/REPORT.TXT`. The wrapper records
+successful preparation, unlock return, released-state verification and Windows
+handoff. The transaction ends with:
+
+```text
+post-FLR SEC2 reset released, GSP halted, BME=0 pending=0 WPR2=1ffffe00:00000000 SS0=88888888 SS1=00000008
+transaction result=0 containment=0 started=1 quiesced=1 fault=0 retained=0 maps=0 FLR=1
+FINAL status=0 stage=transaction attempted=1 driver_release=0 clean=1
+```
+
+`driver_release=0` is the child report: the wrapper performed the driver release.
+Both Windows display devices report OK and NVIDIA driver 610.88 responds normally.
+This is one successful hardware boot of source `4ecda4a` and the exact EFI hashes
+recorded above. It does not establish repeated-boot or long-term stability.
+Raw logs remain under
+`~/.local/share/infra/evidence/peecee-gpu-unlock-port-20261026/boot1/`.
+
+Ran [benchmark-bf16.py](benchmark-bf16.py) with the installed Marker environment's
+PyTorch 2.12.1+cu130 / CUDA 13.0. The script measures dense BF16 inputs with FP32
+accumulation/output, disables reduced-precision reduction, warms up for 200 GEMMs,
+then times five batches of 500 GEMMs using CUDA events. It checks 64 output
+elements per size against independent CPU FP64 dot products; both sizes have
+zero observed error. The power limit remained 450 W. No model, service, clock or
+power setting was changed. The desktop and existing resident processes remained
+present; initial GPU utilization was 2%, with 11,306 MiB allocated.
+
+| Square size | Median TFLOPS | Sample range | Mean measured power | Maximum temperature |
+| --- | ---: | ---: | ---: | ---: |
+| 8192 | 142.870 | 142.785–144.107 | 448.39 W | 67 °C |
+| 4096 | 132.952 | 129.094–135.402 | 426.17 W | 67 °C |
+
+The 4096 power average has only four telemetry points inside its short timed
+windows. Results are current-state measurements, not a 1.9× claim. This run also
+uses a different GPU and power limit from the quoted RTX 3090 / 300 W report.
+
+The benchmark ran under peecee's `marker` fleet lease
+`a72f83f4-e06c-4c94-91aa-82fe2327a459`, runner revision
+`2de20079385e9792910c4c8a26da8913db11107b`, and exited zero. The lease was released.
+An initial nested lease attempt could not acquire the Qwen slot and exited 75
+before launching any benchmark; the successful invocation used the Marker lease.
+The fleet checkout had unrelated pre-existing changes and was not modified.
+
+[Summary and hashes](results/boot1-20261026/summary.json),
+[raw measurements](results/boot1-20261026/bf16-unlocked-boot1.json), and
+[telemetry](results/boot1-20261026/bf16-unlocked-boot1.telemetry.csv) are retained.
+For a measured speedup, cold-boot Windows Boot Manager directly without the USB
+unlock, rerun this same script/environment at the same power limit, and compare
+matching sizes. A warm restart is not a proven way to clear the unlock.

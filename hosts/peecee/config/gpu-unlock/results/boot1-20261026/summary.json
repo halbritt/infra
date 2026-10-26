@@ -1,0 +1,59 @@
+{
+  "complete": true,
+  "torch": "2.12.1+cu130",
+  "cuda": "13.0",
+  "input": "BF16",
+  "accumulation_output": "FP32",
+  "power_limit_w": 450,
+  "locked_baseline_available": false,
+  "measurements": [
+    {
+      "n": 8192,
+      "median_tflops": 142.86996545978067,
+      "min_tflops": 142.78539683349976,
+      "max_tflops": 144.10734863609008,
+      "mean_power_w": 448.3858064516129,
+      "peak_power_w": 451.19,
+      "max_temp_c": 67.0,
+      "mean_sm_clock_mhz": 1811.774193548387,
+      "telemetry_samples": 93,
+      "max_abs_error": 0.0,
+      "checked_elements": 64
+    },
+    {
+      "n": 4096,
+      "median_tflops": 132.95228452554358,
+      "min_tflops": 129.09423706292802,
+      "max_tflops": 135.40195730257537,
+      "mean_power_w": 426.16999999999996,
+      "peak_power_w": 431.9,
+      "max_temp_c": 67.0,
+      "mean_sm_clock_mhz": 2025.0,
+      "telemetry_samples": 4,
+      "max_abs_error": 0.0,
+      "checked_elements": 64
+    }
+  ],
+  "fleet_repository_revision": "2de20079385e9792910c4c8a26da8913db11107b",
+  "lease_id": "a72f83f4-e06c-4c94-91aa-82fe2327a459",
+  "source_sha256": "79a5b1a2a398e57b2ed91988982f15d76a15eb8ae49073ba4fe19050541e5f1f",
+  "files": {
+    "bf16-unlocked-boot1.json": "d1e325e6ae41754c834d4c2efad78ccb6a6fdf8d75568ac93361683375434b79",
+    "HLS000000.TXT": "2650ee1b57321a13063bd61dcde5f95fc59f94cf0e4281d534c346167dd5a062",
+    "REPORT.TXT": "2a3ab8558969fc19c60e6c7594f76bbd026ddccdef27ee732375f8089a3a2f95",
+    "bf16-unlocked-boot1.telemetry.csv": "582d21b39057da188f08a2cb0d9d81ae5259fbc3295aceded7463f69374e6ffb",
+    "benchmark-console.txt": "0e6b92246ed905161a2ebd5ea59f2313f62a4c8849d38db00e9a3db8df37a841"
+  },
+  "hardware_boot": {
+    "source_commit": "4ecda4a45f3028620a7dac4c4c1407b2b594b34a",
+    "wrapper_sha256": "e976d28cef44dca9841c66f1ea18504f4955a9d7248083d911fe878b6c52e7dd",
+    "child_sha256": "29729569c613e7fed16303a6b7faa3ccd997473a8edbccc59e704855263e0a64",
+    "transaction_status": 0,
+    "clean": true,
+    "maps_retained": 0,
+    "ss0": "88888888",
+    "ss1": "00000008",
+    "windows_driver": "610.88",
+    "windows_gpu_status": "OK"
+  }
+}
