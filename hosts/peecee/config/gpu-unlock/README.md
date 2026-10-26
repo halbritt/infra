@@ -1,9 +1,9 @@
 # GPU unlock investigation — peecee
 
-Current status: the first USB unlock boot succeeded and Windows recovered the
-GPU. BF16 measured **142.87 TFLOPS** at 8192 square with a 450 W power limit.
-A matched locked baseline is still needed to calculate speedup. See the final
-dated entry below.
+Current status: the USB unlock succeeded. Matched BF16 runs at the same 450 W
+limit show **1.68× throughput at 8192 square** and **1.83× at 4096 square**.
+Peecee is currently in the locked baseline boot; another cold USB boot reapplies
+the unlock. See the final dated entry below.
 
 ## Read-only USB probe staged 2026-10-26
 
@@ -325,3 +325,42 @@ The fleet checkout had unrelated pre-existing changes and was not modified.
 For a measured speedup, cold-boot Windows Boot Manager directly without the USB
 unlock, rerun this same script/environment at the same power limit, and compare
 matching sizes. A warm restart is not a proven way to clear the unlock.
+
+## Matched locked baseline — 2026-10-26
+
+The owner confirmed a cold boot directly through Windows Boot Manager without
+the USB unlock. Windows boot time is `2026-10-26T21:09:22.5000000Z`; the USB still
+has only the prior `HLS000000.TXT`, with its previous timestamp and size.
+The benchmark source hash, GPU UUID, driver 610.88, PyTorch/CUDA versions, numerical
+settings and 450 W power limit match the unlocked run. Initial login activity
+settled to the benchmark's 5% utilization threshold before it started.
+
+The identical benchmark completed under Marker lease
+`39c5fd84-b600-4398-b440-c9ca50035610`, exited zero and released the lease.
+Both sizes again passed all 64 CPU FP64 reference checks with zero error.
+
+| Square size | Locked TFLOPS | Unlocked TFLOPS | Throughput ratio | Gain |
+| --- | ---: | ---: | ---: | ---: |
+| 8192 | 85.183 | 142.870 | 1.677× | 67.72% |
+| 4096 | 72.767 | 132.952 | 1.827× | 82.71% |
+
+This is a substantial gain on this RTX 3090 Ti at 450 W. It does not reproduce
+the exact quoted RTX 3090 / 300 W configuration or establish application speedups.
+Each state has one boot and five timed samples per size; the desktop and existing
+resident services remained running. The locked run began with 11,439 MiB used,
+versus 11,306 MiB in the unlocked run.
+
+Available 8192 telemetry averages 447.49 W locked versus 448.39 W unlocked.
+The telemetry subprocess ended with a partial CSV row and did not preserve the
+last part of the run, including all locked 4096 samples. That incomplete row is
+excluded; missing measurements are null, not zero. CUDA timing and numerical
+results completed for both sizes. Do not use this trace for an exact energy
+comparison or claim a measured locked 4096 power average.
+
+[Comparison and hashes](results/boot2-locked-20261026/comparison.json),
+[locked measurements](results/boot2-locked-20261026/bf16-boot2.json), and
+[raw partial telemetry](results/boot2-locked-20261026/bf16-boot2.telemetry.csv)
+are retained. Full evidence is in
+`~/.local/share/infra/evidence/peecee-gpu-unlock-port-20261026/boot2/`.
+The remote output is `C:\gpu-unlock-4ecda4a\bf16-boot2.json`.
+No further reboot was initiated. The card remains in the locked baseline state.

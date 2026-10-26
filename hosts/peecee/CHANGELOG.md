@@ -1,5 +1,13 @@
 # Changelog — peecee
 
+## 2026-10-26 — verify BF16 gain against locked baseline
+
+After the owner cold-booted Windows directly, reran the identical BF16 benchmark
+at the same 450 W limit. Locked results were 85.183 TFLOPS at 8192 square and
+72.767 at 4096; unlocked results were 142.870 and 132.952. Gains are 67.72% and
+82.71%, with numerical checks passing in both states. The card remains locked
+after this baseline boot. See [comparison](config/gpu-unlock/results/boot2-locked-20261026/comparison.json).
+
 ## 2026-10-26 — first successful GPU unlock and BF16 benchmark
 
 Verified successful USB unlock, clean reset/resource cleanup and Windows handoff.

@@ -1,0 +1,10 @@
+{
+  "boot_utc": "2026-10-26T21:09:22.5000000Z",
+  "owner_confirmed": "Cold boot directly through Windows Boot Manager, skipping USB unlock",
+  "latest_usb_log": "HLS000000.TXT",
+  "latest_usb_log_bytes": 874542,
+  "latest_usb_log_write_epoch_ms": 1793048092000,
+  "benchmark_source_sha256": "79a5b1a2a398e57b2ed91988982f15d76a15eb8ae49073ba4fe19050541e5f1f",
+  "driver_version": "610.88",
+  "power_limit_w": 450
+}

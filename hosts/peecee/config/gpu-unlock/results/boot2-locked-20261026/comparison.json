@@ -1,0 +1,64 @@
+{
+  "complete": true,
+  "locked_boot_utc": "2026-10-26T21:09:22.5000000Z",
+  "locked_state_evidence": "Owner confirmed cold boot directly through Windows Boot Manager; no new USB unlock log.",
+  "shared_settings": {
+    "torch": "2.12.1+cu130",
+    "cuda": "13.0",
+    "source_sha256": "79a5b1a2a398e57b2ed91988982f15d76a15eb8ae49073ba4fe19050541e5f1f",
+    "input_dtype": "bfloat16",
+    "output_dtype": "float32",
+    "bf16_reduced_precision_reduction": false
+  },
+  "gpu_identity": [
+    "NVIDIA GeForce RTX 3090 Ti",
+    "GPU-84a77c24-b6c4-b437-6319-debcdddd0e8e",
+    "610.88",
+    "450.00 W"
+  ],
+  "unlocked_lease": "a72f83f4-e06c-4c94-91aa-82fe2327a459",
+  "locked_lease": "39c5fd84-b600-4398-b440-c9ca50035610",
+  "measurements": [
+    {
+      "n": 8192,
+      "locked_tflops": 85.18298014126682,
+      "unlocked_tflops": 142.86996545978067,
+      "speedup": 1.6772125748928504,
+      "throughput_gain_percent": 67.72125748928504,
+      "locked_sample_min_tflops": 83.9903958099109,
+      "locked_sample_max_tflops": 85.26566264183201,
+      "locked_mean_power_w": 447.4934693877551,
+      "locked_peak_power_w": 448.41,
+      "locked_max_temperature_c": 65.0,
+      "locked_mean_sm_clock_mhz": 2015.9183673469388,
+      "locked_telemetry_samples": 147
+    },
+    {
+      "n": 4096,
+      "locked_tflops": 72.76748333406198,
+      "unlocked_tflops": 132.95228452554358,
+      "speedup": 1.8270837252290886,
+      "throughput_gain_percent": 82.70837252290886,
+      "locked_sample_min_tflops": 71.29070678752448,
+      "locked_sample_max_tflops": 73.82811750826339,
+      "locked_mean_power_w": null,
+      "locked_peak_power_w": null,
+      "locked_max_temperature_c": null,
+      "locked_mean_sm_clock_mhz": null,
+      "locked_telemetry_samples": 0
+    }
+  ],
+  "telemetry_incomplete_rows_discarded": 1,
+  "caveats": [
+    "One unlocked boot and one locked boot; five timed samples per matrix size.",
+    "450 W configured limit on RTX 3090 Ti; this is not the quoted RTX 3090 at 300 W configuration.",
+    "Windows desktop and resident services remained running.",
+    "Terminating nvidia-smi left a partial final CSV row and no samples for locked 4096. Available power telemetry does not cover the entire benchmark."
+  ],
+  "files_sha256": {
+    "boot1/bf16-unlocked-boot1.json": "d1e325e6ae41754c834d4c2efad78ccb6a6fdf8d75568ac93361683375434b79",
+    "boot2/bf16-boot2.json": "9e2bc470824778f07489b5581dd18a9c4238123cf7c08344eea94dea9011f210",
+    "boot2/bf16-boot2.telemetry.csv": "dc755d6ca8403ce20287370d59338743299bf6a49ebdd8a4e8ffdebc1e18e10d",
+    "boot2/boot-context.json": "11f320600fee73470c433c7f664acc5661a04a1ea77bf446a8bef426b713c14b"
+  }
+}
