@@ -1,5 +1,24 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-26 13:35 UTC — 5278a868-9ea7-4fdf-b5cc-b4f0f4c5999b
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: Prep op 6a67e593 verified: candidate /var/lib/update-bot/staging/hermes-candidate-daec3cd4 staged with carry 29013c32 on upstream base daec3cd4 (3 files 3-way merged cleanly, no markers); no venv yet, no tests run, install/launcher/receipt not written. Selected/installed generation is hermes-candidate-ad249d9c (carry a80d665b), running gateway pid 3364 on it, Slack connected. No unresolved prior operation.. After: venv built; four focused carry-behavior test files (241 passed/0 failed) + gateway import smoke passed; versioned launcher installed (sha256 8c4846e2); provenance receipt hermes-installed.json written (source candidate-daec3cd4, revision 29013c32, upstream daec3cd4).
+  Verification: operation exit 0/0; finish.log RESULT: INSTALL_OK carry=29013c32 base=daec3cd4; verify.log printed launcher sha 8c4846e2.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/5278a868-9ea7-4fdf-b5cc-b4f0f4c5999b/operations/4898f8a9-c3a0-42ff-9054-2ca172286b8a`.
+
+- **hermes** — verified. Before: Installed/activated generation hermes-candidate-ad249d9c, carry a80d665b on upstream base ad249d9c, selected by ~/.local/bin/hermes; running gateway pid 3364 on that generation, Slack connected (activation verified 2026-10-25, restarted on host boot). Upstream NousResearch/hermes-agent main has advanced to daec3cd4 via git ls-remote. No candidate exists yet at daec3cd4. No unresolved prior operation for this base.. After: isolated candidate /var/lib/update-bot/staging/hermes-candidate-daec3cd4 cloned at daec3cd4 with the stored patch carried (3 files 3-way merged, no markers) committed as carry 29013c32; no build/install/activation.
+  Verification: operation exit 0/0; prep.log RESULT: PORT_OK carry_commit=29013c32 base=daec3cd4; no_markers_in_carried_files; live install/launcher/gateway untouched.
+  Activation: none; candidate staged only.
+  Evidence: `/var/lib/update-bot/runs/5278a868-9ea7-4fdf-b5cc-b4f0f4c5999b/operations/6a67e593-f96a-4d6e-85d4-bdd75b661e2f`.
+
+- **hermes** — verified. Before: Install operation 4898f8a9 verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-daec3cd4, carry 29013c32 on upstream daec3cd4, launcher sha256 8c4846e2, 241 carry behavior tests passed and import smoke passed, provenance receipt written. The running gateway (pid 3364) still uses the previous generation hermes-candidate-ad249d9c. Prior activation receipt status=verified for revision a80d665b. The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: fixed helper performed a fresh native zero-work drain and one supported reload; new gateway pid 1823506 on candidate-daec3cd4, revision 29013c32, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 29013c32 pid 1823506 slack connected; gateway pid 1823506 live on candidate-daec3cd4.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/5278a868-9ea7-4fdf-b5cc-b4f0f4c5999b/operations/cfe1649b-a0d0-49d0-90d7-2d701164d92f`.
+
 ## 2026-10-25 13:31 UTC — 3d04afaa-8129-4bf9-927f-87da728cab55
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
