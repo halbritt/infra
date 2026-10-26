@@ -1,5 +1,13 @@
 # Changelog — peecee
 
+## 2026-10-26 — submit GPU unlock upstream PR
+
+Opened [upstream PR #57](https://github.com/impacifist/Windows-GPU-UNLOCK/pull/57)
+with the Z690-I profile, USB/internal EFI support, tests, sanitized BF16 samples
+and standalone benchmark. Published a reviewed snapshot in a separate public
+fork; original repository and machine-specific configuration remain private.
+All local validation passed; upstream merge is pending.
+
 ## 2026-10-26 — verify internal unlock and enable default boot
 
 Fresh internal ESP logs show clean unlock and Windows recovery. BF16 measured

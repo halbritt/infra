@@ -461,3 +461,29 @@ Full logs remain outside Git under
 `~/.local/share/infra/evidence/peecee-gpu-unlock-internal-20261026/boot1`.
 Use F8 → Windows Boot Manager to bypass unlock, or
 `C:\gpu-efi\internal-boot\Headless.ps1 -RestoreWindowsFirst` to restore that default.
+
+## Upstream contribution submitted — 2026-10-26
+
+Owner requested upstreaming the work. Opened
+[Windows-GPU-UNLOCK PR #57](https://github.com/impacifist/Windows-GPU-UNLOCK/pull/57),
+from the separate public fork
+[halbritt/Windows-GPU-UNLOCK-upstream](https://github.com/halbritt/Windows-GPU-UNLOCK-upstream).
+The original `halbritt/Windows-GPU-UNLOCK` repository remains private.
+
+Public head `d8a0e00bea196902439d646e402f184f62bc4c63` is a single reviewed snapshot
+on upstream `5c98f11eaafdcb7a2a06fb14fcdcde7297eb409e`, with the same tree as private
+source `5da9087`. It contains the exact profile, USB/internal builders, captured
+host tests, installer support, documentation, sanitized BF16 samples and a
+standalone benchmark. The benchmark measurement function is AST-identical to the
+measured script; local fleet enforcement/metadata and device UUID collection were
+removed. Original build hashes/revision labels remain in the evidence.
+
+No private repository history, firmware/PROM/driver dumps, partition GUIDs,
+device UUIDs, credentials, installed EFI binaries or raw system reports were
+published. The host-specific storage preparation script remains in infra.
+
+Before submission, all 12 C host jobs, 12 Python parser tests, 48 PowerShell
+package checks, 18 mocked installer checks and automatic rollback/copy-attribution
+checks passed. All 30 sanitized timing samples and medians were checked.
+GitHub reported OPEN, non-draft, MERGEABLE, 23 changed files and no configured
+status checks. Submission is complete; upstream acceptance/merge is pending.
