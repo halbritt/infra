@@ -13,7 +13,7 @@ ports on `proximal`.
 
 | | |
 |---|---|
-| release | Plane CE `v1.3.1` |
+| release | Plane CE `v1.4.2` (upgraded 2026-10-26) |
 | install root | `/home/halbritt/services/plane-harm-org` |
 | app dir | `/home/halbritt/services/plane-harm-org/plane-app` |
 | compose project | `plane-harm-org` |
@@ -26,6 +26,11 @@ ports on `proximal`.
 | app state | system PostgreSQL 17, host Redis, Garage S3, bundled RabbitMQ |
 
 ## State services
+
+See the [2026-10-26 upgrade report](../plane/upgrade-20261026.md) for backups,
+migrations and verification. The upgrade preserved the existing generated
+secrets, external state services, proxy ports and ingress. Authentication
+throttling is explicit as `AUTHENTICATION_RATE_LIMIT=10/minute`.
 
 The host services remain loopback-only. Plane containers reach them through
 Docker-bridge proxy units bound only on `172.17.0.1`:

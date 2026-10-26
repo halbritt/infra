@@ -3,7 +3,7 @@
 # Do not add passwords, keys, tokens, or DSNs to this file.
 
 APP_DOMAIN=plane.harm.org
-APP_RELEASE=v1.3.1
+APP_RELEASE=v1.4.2
 AWS_REGION=garage
 AWS_S3_BUCKET_NAME=plane-harm-org
 AWS_S3_ENDPOINT_URL=http://172.17.0.1:13900
@@ -25,3 +25,4 @@ REDIS_PORT=16379
 USE_MINIO=0
 USE_STORAGE_PROXY=1
 WEB_URL=https://plane.harm.org
+AUTHENTICATION_RATE_LIMIT=10/minute

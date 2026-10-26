@@ -13,7 +13,7 @@ Captured 2026-06-28 from the setup handoffs in `/tmp/plane-proximal-pilot-handof
 
 | | |
 |---|---|
-| release | Plane CE `v1.3.1` |
+| release | Plane CE `v1.4.2` (upgraded 2026-10-26) |
 | install root | `/home/halbritt/services/plane-selfhost` |
 | app dir | `/home/halbritt/services/plane-selfhost/plane-app` |
 | local URL | `http://127.0.0.1:8090` |
@@ -45,7 +45,8 @@ service.
 | [`plane-selfhost.service`](plane-selfhost.service) | `/etc/systemd/system/plane-selfhost.service` | root:root 0644 | starts/stops the Docker Compose pilot as `halbritt` |
 | [`plane-mcp-proximal`](plane-mcp-proximal) | `/home/halbritt/.local/bin/plane-mcp-proximal` | halbritt:halbritt 0700 | reads the private MCP env file, then execs `plane-mcp-server stdio` |
 | [`plane-public-env.values`](plane-public-env.values) | values inside `/home/halbritt/services/plane-selfhost/plane-app/plane.env` | uncommitted secret-bearing file | only the listed non-secret keys are captured here |
-| [`docker-compose-proxy-loopback.patch`](docker-compose-proxy-loopback.patch) | patch against `plane-app/docker-compose.yaml` | uncommitted generated compose file | documents the loopback-only proxy publish change |
+| [`docker-compose.yaml`](docker-compose.yaml) | `/home/halbritt/services/plane-selfhost/plane-app/docker-compose.yaml` | halbritt:halbritt 0644 | canonical Compose from v1.4.2, preserving loopback ports and existing data services; secrets supplied only by plane.env |
+| [`docker-compose-proxy-loopback.patch`](docker-compose-proxy-loopback.patch) | historical patch | provenance | original loopback-only proxy change; now included in canonical Compose |
 | [`scripts/scaffold_github_repos.py`](scripts/scaffold_github_repos.py) | run from this checkout | - | idempotently scaffolds Plane projects/states/labels and remote `AGENTS.md` tracking blocks for `halbritt/*` repos |
 | [`scripts/migrate_striatum_github_issues.py`](scripts/migrate_striatum_github_issues.py) | run from this checkout | - | idempotently imports open `halbritt/striatum` GitHub issues into the Striatum Plane project |
 | [`API_TOKENS.md`](API_TOKENS.md) | policy only | - | token storage paths and creation boundary; no token values |
@@ -74,6 +75,14 @@ sudo systemctl reload plane-selfhost.service
 ```
 
 ## Current non-secret app config
+
+The 2026-10-26 upgrade is recorded in [the upgrade report](upgrade-20261026.md),
+including verified backups, migration results and rollback requirements.
+`APP_RELEASE=v1.4.2` and `AUTHENTICATION_RATE_LIMIT=10/minute` are explicit in
+`plane.env`. The private instance's old upstream-default application secret and
+missing live-server secret were replaced with generated values. Existing browser
+sessions may need a new login; API-token access was verified after recreation.
+Database and queue DSNs remain only in the private env file.
 
 `plane-app/plane.env` contains generated secrets and must not be copied into git.
 These public values are the desired local/private posture:

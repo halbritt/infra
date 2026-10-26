@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-10-26 — upgrade both Plane CE instances to v1.4.2
+
+- Owner requested the application upgrade and a summarized changelog. Upgraded
+  internal and public Plane from v1.3.1 to v1.4.2 after reviewing upstream changes.
+- Backed up configuration, both databases and object storage outside Git;
+  restored both database dumps into temporary databases and verified counts.
+- Applied both new migrations, recreated the application containers, and checked
+  authenticated API access, public/local routes, container health and data counts.
+- Replaced the private instance's published-default application/live secrets;
+  preserved public secrets and each instance's existing storage and network setup.
+  [Upgrade report and rollback requirements](config/plane/upgrade-20261026.md).
+
 ## 2026-10-26 — install ast-grep
 
 Installed ast-grep `0.51.0` at `/usr/local/bin/ast-grep` for the owner's
