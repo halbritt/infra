@@ -1,5 +1,13 @@
 # Changelog — peecee
 
+## 2026-10-26 — prepare authorized BIOS 4601 update
+
+Downloaded the official ASUS package, matched its published checksum, and
+staged the verified CAP on the existing Lexar E: drive. BitLocker is off.
+Archived pre-update GPU captures separately. The owner must start ASUS EZ Flash
+in firmware; completion and version verification remain pending.
+Provenance: [BIOS](config/bios/README.md).
+
 ## 2026-10-26 — iGPU visible; GPU probe identifies aggregate console
 
 The post-BIOS-change capture succeeds and now sees Intel 8086:4680. Generic

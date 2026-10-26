@@ -1,0 +1,12 @@
+{
+  "source": "https://dlcdnets.asus.com/pub/ASUS/mb/BIOS/ROG-STRIX-Z690-I-GAMING-WIFI-ASUS-4601.zip",
+  "zip_sha256": "a177845de9592a6f72fa450087f8cf9dbe94a5e14ea6b5a125aa6414c20b1f0e",
+  "zip_bytes": 13887318,
+  "cap_name": "ROG-STRIX-Z690-I-GAMING-WIFI-ASUS-4601.CAP",
+  "cap_sha256": "8fd44f642c316429d346a6ce8e49e67e02c9559c502060d311b6623c1d341f06",
+  "cap_bytes": 33558528,
+  "board": "ROG STRIX Z690-I GAMING WIFI",
+  "from_bios": "3501",
+  "to_bios": "4601",
+  "status": "staged and hash-verified on E:; physical EZ Flash action and post-update verification pending"
+}
