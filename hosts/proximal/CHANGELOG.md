@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-10-26 — isolated Hangar evaluation
+
+- Owner requested a test of epics and work-item relationships. Deployed Hangar
+  v0.1.0-rc.64 alongside Plane at tailnet HTTPS port 10001, with an independent
+  database, object storage, secrets and systemd lifecycle.
+- Restored a snapshot of 50 projects, 1,511 work items and 33 uploaded objects;
+  removed copied access tokens, sessions and integration configuration before
+  startup. Backend outbound networking is isolated.
+- Supplied the missing frontend runtime configuration and corrected Caddy's
+  empty ACME setting; used the available MinIO digest after upstream Quay access
+  failed. Verified migrations, browser rendering, epic children and bidirectional
+  dependency/related-item reads in a four-item sample project.
+- Owner explicitly prefers one local password account. Kept password login and
+  disabled signup, magic links and external identity providers. Production Plane
+  remains authoritative. [Deployment and test details](config/hangar-test/README.md).
+
 ## 2026-10-26 — upgrade both Plane CE instances to v1.4.2
 
 - Owner requested the application upgrade and a summarized changelog. Upgraded
