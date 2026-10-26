@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-10-25 — install Probe code search
+
+Installed the verified upstream `v0.6.0-rc343` native binary at
+`/usr/local/bin/probe`. Ten fixture checks passed for Probe and ugrep. Release
+identity, digest, installation and rollback:
+[shared/probe](../../shared/probe/README.md).
+
 ## 2026-10-25 — install ugrep
 
 Owner confirmed Talos as the intended host. `sudo apt-get install

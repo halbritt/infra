@@ -1,5 +1,12 @@
 # Changelog — peecee
 
+## 2026-10-25 — install Probe in peecee-wsl
+
+Installed the verified upstream `v0.6.0-rc343` native binary at
+`/usr/local/bin/probe` in the Linux WSL environment. Ten fixture checks passed
+for Probe and ugrep. Release identity, digest, installation and rollback:
+[shared/probe](../../shared/probe/README.md).
+
 ## 2026-10-25 — install ugrep in peecee-wsl
 
 Owner-requested CLI installation over `ssh peecee-wsl`: `sudo apt-get install

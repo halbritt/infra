@@ -1,5 +1,13 @@
 # Changelog — proximal (system)
 
+## 2026-10-25 — install Probe code search
+
+Installed the verified upstream `v0.6.0-rc343` native binary at
+`/usr/local/bin/probe` for the owner's code-search workflow. Ten fixture checks
+passed for Probe and ugrep. Release identity, digest, installation and rollback:
+[shared/probe](../../shared/probe/README.md). The accompanying skill is managed
+in skillpack as `code-search`.
+
 ## 2026-10-25 — remove Striatum read-only bind mount
 
 - Owner explicitly rejected keeping the retained Striatum directory mounted
