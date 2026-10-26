@@ -95,3 +95,52 @@ Configuration > Graphics Configuration, save and return to Windows, then take
 fresh full-shutdown USB captures. Keep primary display/monitor routing on the
 RTX initially. [ASUS instructions](https://www.asus.com/global/support/faq/1045574/).
 No BIOS setting or unlock was applied remotely.
+
+## Second capture, after enabling integrated graphics — 2026-10-26
+
+The owner enabled iGPU Multi-Monitor and completed another probe boot. Captured
+`DIAG00.TXT` SHA-256 is
+`455b4439a1af0f1e60b9568c43e5ed64d9e47da322d715fa7f68a96cae95118f`.
+All 53 capture files were copied and verified against remote SHA-256 at
+`~/.local/share/infra/evidence/peecee-gpu-probe-20261026/boot2-igpu/`;
+`analysis.json` records the admission result and `fingerprint.json` is the
+upstream offline fingerprint report. Capture-complete is 1 and diagnostic
+result is zero. The current capture remains at the USB diagnostic root.
+
+UEFI now enumerates Intel `8086:4680` alongside NVIDIA `10de:2203`, resolving
+the absent-iGPU condition. Windows shows the Intel device as Microsoft Basic
+Display Adapter with Error status; the NVIDIA device is OK. No Windows driver
+change was made, and Windows driver status does not remove the UEFI observation.
+
+The generic local-profile analyzer now refuses because ConOut is absent, rather
+than exactly the RTX GOP path. Separate read-only ownership inspection finds:
+
+- No SimpleTextOut BY_DRIVER opener on the physical RTX GOP.
+- The physical GOP is owned by AMI combo driver
+  `55987e62-1df6-41d1-9062-334fcac3e54d`, version `0x11`.
+- EDID driver matches the known AMI identity and runtime code class; code SHA-256
+  `a015d52f55fa6441414458e2b699ba2edcb53f03b001ac6367e45bcd908c418e`.
+- NVIDIA GOP remains `0x60010` with the same proven code hash (now IMG50.BIN).
+- PROM hash is unchanged.
+
+This is an aggregate console arrangement. Upstream `docs/COMPATIBILITY.en.md`
+documents an existing aggregate-console release path for ASUS B660M/RTX3070Ti,
+but that profile is not peecee's hardware profile. Do not apply it directly or
+bypass local-profile admission. The next software task is to evaluate adapting
+that existing path to Z690-I/3090Ti with the captured identities and ownership
+graph. It is not established that another identical boot or an Intel Windows
+driver install would resolve this firmware-topology refusal. No unlock or
+further BIOS changes were performed.
+
+### BIOS age checked at owner's suggestion
+
+Live SMBIOS still reports 3501, build date 2024-04-18. ASUS lists 3501 release
+2024-04-24 and current 4601 release 2026-09-29. The later release notes cover
+security, Intel ME, CPU microcode/defaults, and stability, with no stated fix
+for the ConOut/aggregate-console arrangement observed here. Firmware changes
+could change this behavior, but an update is not a demonstrated fix. Updating
+before custom-profile work would require new captures afterward. BIOS 4601
+also updates ME to 16.1.40.2765, which ASUS says does not revert with a BIOS
+rollback. No update has been downloaded, staged, or installed by this task.
+[ASUS BIOS releases](https://www.asus.com/us/supportonly/rog%20strix%20z690-i%20gaming%20wifi/helpdesk_bios/)
+checked 2026-10-26.

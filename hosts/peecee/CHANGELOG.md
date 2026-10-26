@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — iGPU visible; GPU probe identifies aggregate console
+
+The post-BIOS-change capture succeeds and now sees Intel 8086:4680. Generic
+profile generation instead refuses the ASUS aggregate console arrangement;
+NVIDIA GOP still matches the proven hash. Archived and hash-verified 53 capture
+files. The existing upstream B660M aggregate path is a potential adaptation
+starting point, not a compatible ready-made peecee profile. See
+[GPU probe](config/gpu-unlock/README.md).
+
 ## 2026-10-26 — first GPU probe capture succeeds; iGPU absent
 
 Archived and hash-verified the first complete cold-boot capture. NVIDIA GOP
