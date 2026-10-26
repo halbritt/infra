@@ -1,5 +1,11 @@
 # Changelog — peecee
 
+## 2026-10-26 — install ast-grep in peecee-wsl
+
+Installed ast-grep `0.51.0` at `/usr/local/bin/ast-grep` in Linux WSL. Seven
+structural-search checks passed. Preserved the existing `sg` command.
+Provenance and installation: [shared/ast-grep](../../shared/ast-grep/README.md).
+
 ## 2026-10-25 — install Probe in peecee-wsl
 
 Installed the verified upstream `v0.6.0-rc343` native binary at
