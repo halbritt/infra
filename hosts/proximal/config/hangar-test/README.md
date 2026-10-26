@@ -1,7 +1,8 @@
 # Hangar evaluation on proximal
 
 Owner-authorized test instance for simple epic hierarchy and work-item
-relationships, created 2026-10-26. Production Plane remains authoritative.
+relationships, created 2026-10-26. Production is now [Hangar on port 10000](../hangar-prod/README.md); this sandbox
+remains an independent snapshot.
 
 - URL: https://proximal.tail0ecc2e.ts.net:10001/
 - Local listener: `127.0.0.1:8290`, tailnet only via Tailscale Serve.
@@ -98,5 +99,6 @@ smoke check, not a comprehensive upstream test-suite or accessibility review.
 Local browser evidence: `~/.cache/hangar-test-browser/`.
 
 Upstream registration resets the database `is_test` flag; the visible instance
-name and isolated deployment are the test markers. The test is not promoted to
-production or configured as the default agent issue tracker.
+name and isolated deployment are the test markers. The test was not promoted to
+production: a separate Hangar deployment was migrated from a fresh production
+snapshot. This sandbox is not the default agent issue tracker.

@@ -1,5 +1,22 @@
 # Changelog — proximal (system)
 
+## 2026-10-26 — migrate internal production Plane to Hangar
+
+- Owner authorized freezing writes and migrating the actively used internal
+  tracker. Reopened the same port-10000 URL and localhost:8090 on Hangar
+  v0.1.0-rc.64 after an 11m37s maintenance interval.
+- Restored a fresh frozen database into independent production storage; verified
+  preservation of 1,511 work items, 3,253 comments, 209 relationships, 50 projects,
+  existing identities, both API tokens and passwords. Copied and byte-verified
+  all 33 S3 objects. Serialized schema migration; no duplicate migration records.
+- Verified CLI reads/writes/comments/epic children/state changes and an attachment
+  round trip. Fixed CLI state/parent writable-field compatibility in plane-cli
+  fc7f557; tests and vet passed and the installed binary was updated.
+- Published maintenance/resume notices to 18 agent inboxes. Retired the old
+  Plane service and removed its containers without deleting rollback volumes.
+  Public Plane and the test sandbox remain separate.
+  [Production deployment, evidence and rollback](config/hangar-prod/README.md).
+
 ## 2026-10-26 — isolated Hangar evaluation
 
 - Owner requested a test of epics and work-item relationships. Deployed Hangar

@@ -1,0 +1,21 @@
+[Unit]
+Description=Hangar internal production issue tracker (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=halbritt
+Group=halbritt
+SupplementaryGroups=docker
+WorkingDirectory=/home/halbritt/services/hangar-prod
+ExecStart=/bin/bash /home/halbritt/services/hangar-prod/start.sh
+ExecReload=/bin/bash /home/halbritt/services/hangar-prod/start.sh
+ExecStop=/usr/bin/docker compose --env-file hangar.env stop
+TimeoutStartSec=600
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target

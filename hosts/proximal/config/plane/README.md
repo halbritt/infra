@@ -1,5 +1,12 @@
 # proximal/plane - local Plane CE pilot
 
+> **Superseded for internal production on 2026-10-26:** the existing URL and
+> localhost:8090 now serve [Hangar](../hangar-prod/README.md). The old
+> `plane-selfhost` service is disabled; its configuration and data volumes are
+> retained for rollback. Do not start it alongside Hangar. The instructions below
+> describe the retained Plane deployment and its history.
+
+
 Desired-state and provenance for the **local/private Plane Community Edition pilot**
 on host `proximal`. This is the Striatum/meta-operator issue-tracker experiment, not
 the future public personal tracker. Keep the trust boundary local unless the owner

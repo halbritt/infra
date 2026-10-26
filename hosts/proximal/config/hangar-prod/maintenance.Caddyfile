@@ -1,0 +1,9 @@
+{
+    admin off
+    auto_https off
+}
+:80 {
+    header Retry-After "120"
+    header Content-Type "application/json"
+    respond `{"error":"Internal Plane is being migrated to Hangar. Writes are frozen. Retry after the resume notice; the URL and API tokens will stay the same."}` 503
+}
