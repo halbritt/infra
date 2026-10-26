@@ -1,0 +1,52 @@
+{
+  "StagedUtc": "2026-10-26T20:50:02.3622129Z",
+  "Host": "PEECEE",
+  "SourceCommit": "4ecda4a45f3028620a7dac4c4c1407b2b594b34a",
+  "ArchiveSha256": "8429b1d407341bec08344a9c1bc228fca890fbc8cbcc6d952408236c8558930f",
+  "Profile": "ASUS-ROG-STRIX-Z690-I-4601-RTX3090TI",
+  "WindowsEsp": "{c4b263fb-2821-4034-a2b0-3f3a4dfacc15}",
+  "HardwareTested": false,
+  "Rebooted": false,
+  "Files": [
+    {
+      "Path": "E:\\EFI\\BOOT\\BOOTX64.EFI",
+      "Bytes": 39424,
+      "Sha256": "e976d28cef44dca9841c66f1ea18504f4955a9d7248083d911fe878b6c52e7dd"
+    },
+    {
+      "Path": "E:\\EFI\\WindowsGPUUnlock\\UNLOCK-HEADLESS.EFI",
+      "Bytes": 67584,
+      "Sha256": "29729569c613e7fed16303a6b7faa3ccd997473a8edbccc59e704855263e0a64"
+    },
+    {
+      "Path": "E:\\RTX3090-UNLOCK\\backup\\BOOTX64-45f6de8386c8.EFI",
+      "Bytes": 21504,
+      "Sha256": "45f6de8386c8f0b04896a9533906aaa72631bb397e0ee9ea2513bb73c9130adc"
+    },
+    {
+      "Path": "E:\\RTX3090-UNLOCK\\ASSETS\\booter_load_ga102.bin",
+      "Bytes": 61256,
+      "Sha256": "056cbc064a888f80717726c54d7f64fcd68044d123870c95a74f37f4975dcaa4"
+    },
+    {
+      "Path": "E:\\RTX3090-UNLOCK\\ASSETS\\v67-ga102-610.43.03.bin",
+      "Bytes": 64000,
+      "Sha256": "2a0aa1f86d0b6afff5214d641d87d46dc98ef06ed908ff05d0ddbad5ffb7e197"
+    },
+    {
+      "Path": "E:\\RTX3090-UNLOCK\\ASSETS\\gsp_ga10x.bin",
+      "Bytes": 84277400,
+      "Sha256": "572373620a37418f24dc16b5031c39338778c3257e48e8408de9a57291b24f3a"
+    },
+    {
+      "Path": "E:\\RTX3090-UNLOCK\\ASSETS\\gsp_boot_ga102.bin",
+      "Bytes": 24576,
+      "Sha256": "3df651acb174fd5f5561a1996965b192f50c5d763168446ed0d4ead19d895768"
+    },
+    {
+      "Path": "E:\\RTX3090-UNLOCK\\ASSETS\\gsp_boot_desc_ga102.bin",
+      "Bytes": 84,
+      "Sha256": "cc5a3fc1f4c47f2fe107b1b68f0176d8a448e6dec84b575e5560ccef5262bf15"
+    }
+  ]
+}

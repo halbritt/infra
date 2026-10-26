@@ -1,8 +1,8 @@
 # GPU unlock investigation — peecee
 
-Current status: an exact Z690-I/3090 Ti USB unlock package has passed host tests
-and built successfully. It has **not been staged or booted**. Peecee was
-unreachable over SSH during preparation. See the final dated entry below.
+Current status: the tested Z690-I/3090 Ti unlock package is **staged on E:**.
+Copied hashes and the saved probe backup are verified. The first hardware boot
+and BF16 comparison remain pending. See the final dated entry below.
 
 ## Read-only USB probe staged 2026-10-26
 
@@ -251,3 +251,24 @@ The implementation decision and remaining evidence limits are in
 [the decision receipt](port-20261026/decision-receipt.json). Pincite packet and
 unmet, nonmaterial obligations are recorded in
 [doctrine provenance](port-20261026/doctrine-provenance.json).
+
+## USB unlock package staged — 2026-10-26 20:50 UTC
+
+The owner requested another connection attempt. Peecee answered SSH. Live checks
+again found BIOS 4601, healthy Intel UHD 770 and RTX 3090 Ti devices, NVIDIA driver
+610.88, the expected system ESP, Secure Boot off, and the Lexar FAT32 USB at E:
+(disk 2, partition 1). The existing USB boot file still matched the probe hash.
+
+Copied the package to `C:\Users\halbr\Downloads\peecee-z690i-usb.zip`, verified
+the archive hash, and extracted it to `C:\gpu-unlock-4ecda4a`. Verified every
+manifest entry before running the packaged `research/headless/stage-usb.ps1`.
+The wrapper, child and five firmware assets are now installed at the USB paths
+listed in [the staging receipt](port-20261026/staging-result.json); all copied
+hashes match the package. The old probe is preserved and hash-verified at
+`E:\RTX3090-UNLOCK\backup\BOOTX64-45f6de8386c8.EFI`.
+
+This resolves the earlier connectivity/staging blocker. No reboot or hardware
+unlock was performed. Next is a full shutdown and one-time boot of the Lexar USB,
+followed by collecting the handoff/transaction logs and checking Windows driver
+health. The package attempts the unlock automatically after its Esc window;
+the display may stop updating during driver release.

@@ -1,5 +1,13 @@
 # Changelog — peecee
 
+## 2026-10-26 — stage GPU unlock USB package
+
+Peecee became reachable on the owner's retry. Reverified BIOS/GPU/ESP/USB identity
+and Secure Boot, then staged the tested Z690-I/3090 Ti package on E:. Verified
+all copied hashes and the backup of the read-only probe. No reboot or hardware
+unlock was performed; the first cold USB boot remains pending.
+See [the staging receipt](config/gpu-unlock/port-20261026/staging-result.json).
+
 ## 2026-10-26 — build experimental Z690-I GPU unlock port
 
 Added the exact Z690-I/3090 Ti profile in the private owner source repository,
