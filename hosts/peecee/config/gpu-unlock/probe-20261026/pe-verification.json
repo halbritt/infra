@@ -1,0 +1,14 @@
+{
+  "path": "BOOTX64.EFI",
+  "bytes": 21504,
+  "sha256": "45f6de8386c8f0b04896a9533906aaa72631bb397e0ee9ea2513bb73c9130adc",
+  "machine": "AMD64",
+  "subsystem": 10,
+  "entry": "efi_main",
+  "entry_rva": 4096,
+  "imports": 0,
+  "iat": 0,
+  "delay_imports": 0,
+  "nx": true,
+  "dynamic_base": true
+}

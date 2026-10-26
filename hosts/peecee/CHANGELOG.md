@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — stage read-only GPU UEFI probe on owner USB
+
+Prepared the Lexar FAT32 USB at E: with a diagnostic-only executable for the
+RTX 3090 Ti investigation. Verified the staged hash and preserved all 49
+accessible existing files. Upstream generic-probe checks and capture-parser
+regressions passed. No GPU unlock, reboot, or firmware changes performed;
+two physical cold-boot captures remain pending. Build and installed artifact
+provenance: [GPU probe](config/gpu-unlock/README.md).
+
 ## 2026-10-26 — install ast-grep in peecee-wsl
 
 Installed ast-grep `0.51.0` at `/usr/local/bin/ast-grep` in Linux WSL. Seven
