@@ -1,4 +1,19 @@
-# Hangar evaluation on proximal
+# Hangar evaluation — retired
+
+Removed on 2026-10-26 at the owner's request after production migration.
+The test service, containers, volumes, networks, runtime files, test snapshot,
+browser artifacts, and port-10001 Tailscale mapping were removed. This includes
+the sandbox-only Test Epic and baking tasks. Production remains on port 10000;
+production migration backups and rollback volumes are retained.
+
+The deployment files are available in Git history (introduced in `3d5a576`).
+Do not reinstall the test instance without a new owner request.
+
+## Historical evaluation record
+
+The following records the completed evaluation before retirement; its URLs,
+paths and startup commands describe the former deployment, not current state.
+
 
 Owner-authorized test instance for simple epic hierarchy and work-item
 relationships, created 2026-10-26. Production is now [Hangar on port 10000](../hangar-prod/README.md); this sandbox

@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-10-26 — remove Hangar test setup
+
+- Owner requested removal after the production cutover. Removed the port-10001
+  Tailscale mapping, disabled/deleted hangar-test.service, and removed only the
+  hangar-test Compose containers, networks and volumes.
+- Removed test runtime credentials/files, its copied snapshot and browser
+  artifacts, including the sandbox-only Test Epic and baking tasks. Retained
+  evaluation provenance in Git and the retired subsystem README.
+- Production Hangar on port 10000, public Plane, shared images/source checkout,
+  and production migration backups/rollback volumes are retained.
+
 ## 2026-10-26 — migrate internal production Plane to Hangar
 
 - Owner authorized freezing writes and migrating the actively used internal

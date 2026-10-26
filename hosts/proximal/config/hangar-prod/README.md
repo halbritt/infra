@@ -2,7 +2,8 @@
 
 Owner-authorized migration from Plane CE v1.4.2 on 2026-10-26, to provide epics
 and ordinary work-item relationships. This replaces the internal Plane service;
-public `plane.harm.org` and the test sandbox on port 10001 remain separate.
+public `plane.harm.org` remains separate. The port-10001 test sandbox was removed
+at the owner's request after migration.
 
 - URL: https://proximal.tail0ecc2e.ts.net:10000/
 - Workspace: `Proximal`, slug `proximal`.
@@ -46,7 +47,7 @@ unauthorized. TLS terminates at the existing Tailscale Serve mapping.
 The source queue had zero ready/unacknowledged messages. Ingress, API, Live,
 Beat and worker were stopped; the source database was made read-only before the
 final logical dump and object copy. A fresh database was restored and migrated,
-not the earlier test database. Sandbox edits remain on port 10001.
+not the earlier test database. Sandbox edits were excluded from production.
 
 Source backup: `~/.local/share/infra/backups/plane-to-hangar-20261026/`.
 Contains a custom-format PostgreSQL dump, old Compose/environment, the object
@@ -106,6 +107,6 @@ Regression tests cover create/update and flag precedence over `--data`; full Go
 tests and vet passed. The binary installed at `~/.local/bin/plane` includes the fix.
 Raw or remote API clients must use canonical writable fields, or update their CLI.
 
-Production identities and existing work-item IDs did not change. Port 10001 still
-contains the owner's test Epic and baking tasks; those sandbox-only additions
-were not imported into production.
+Production identities and existing work-item IDs did not change. The owner's
+sandbox-only test Epic and baking tasks were not imported into production; they
+were removed with the test setup at the owner's subsequent request.
