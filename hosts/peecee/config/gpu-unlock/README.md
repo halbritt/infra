@@ -144,3 +144,18 @@ also updates ME to 16.1.40.2765, which ASUS says does not revert with a BIOS
 rollback. No update has been downloaded, staged, or installed by this task.
 [ASUS BIOS releases](https://www.asus.com/us/supportonly/rog%20strix%20z690-i%20gaming%20wifi/helpdesk_bios/)
 checked 2026-10-26.
+
+## Capture retrieved after return to Windows on 4601 — chronology pending
+
+Live Windows verifies BIOS4601, both GPUs OK and Secure Boot off. USB root
+contained a new DIAG00.TXT, SHA-256
+`02469daaaadbb739eab9310af47d0e178383ff7c965a6e603ca37f78e8507e0c`.
+Retrieved53 capture files and verified their hashes under
+`~/.local/share/infra/evidence/peecee-gpu-probe-20261026/boot3-bios4601/`.
+Despite that directory's intended label, the owner's confirmation that the USB
+was booted after flashing is still pending; do not treat the name as proof of
+firmware provenance. The capture is complete, diagnostic result0, and fails
+profile admission with the same missing-ConOut/aggregate-console refusal.
+Its reported console-driver fingerprints equal the previous3501capture; NVIDIA
+and EDID code hashes also remain the same. Need boot chronology confirmation
+or a fresh known4601coldboot before concluding the update did not change this.

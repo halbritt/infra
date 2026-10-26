@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — BIOS 4601 confirmed; restore GPU monitoring
+
+Verified BIOS4601, healthy Intel/NVIDIA display devices, Secure Boot off and
+unchanged USB probe/Windows ESP. Started the stopped GPU exporter and verified
+metrics; Ollama and Kev tasks were already running. Recorded Aquacomputer
+cooling and the CPU_FAN monitoring exception needed after reset. A new probe
+capture is archived; its pre/post-flash chronology needs owner confirmation.
+See [BIOS](config/bios/README.md) and [GPU probe](config/gpu-unlock/README.md).
+
 ## 2026-10-26 — prepare authorized BIOS 4601 update
 
 Downloaded the official ASUS package, matched its published checksum, and

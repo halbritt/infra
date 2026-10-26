@@ -51,3 +51,26 @@ same Windows ESP; confirm that partition identity before reusing it.
 Sources checked 2026-10-26:
 [ASUS releases](https://www.asus.com/us/supportonly/rog%20strix%20z690-i%20gaming%20wifi/helpdesk_bios/),
 [ASUS EZ Flash procedure](https://www.asus.com/global/support/faq/1012815/).
+
+## Post-update live verification — 2026-10-26
+
+After the owner's physical flash and return to Windows, SMBIOS reports **4601**.
+Intel UHD Graphics 770 and RTX 3090 Ti both report OK. Secure Boot is disabled,
+Windows ESP GUID is unchanged, and USB probe SHA-256 still matches the staged
+binary. SSH and Tailscale services are running; OllamaServer and KevServer
+Scheduled Tasks report Running. NVIDIA driver remains610.88; the card reported
+35 C at inspection. GPU exporter was stopped at the initial check; started the
+existing service and verified its tailnet metrics endpoint reports the RTX3090Ti.
+No exporter configuration changed.
+
+The owner reported that BIOS settings reset and POST halted for missing CPU fan
+RPM. Cooling uses an Aquacomputer controller. Advised Monitor > Fan Speed
+Monitor > CPU Fan Speed > Ignore for the unused CPU_FAN input, after confirming
+pump/fans run; also restore iGPU Multi-Monitor, Secure Boot off and Windows Boot
+Manager. Owner then reported the box back up. The exact fan setting was not
+read back remotely. Preserve this cooling arrangement when planning future
+BIOS resets; do not infer a failed pump from the unused motherboard RPM input.
+
+A newly created complete USB probe capture was retrieved, but the owner has
+been asked whether it was booted after the flash. File novelty alone does not
+prove which firmware produced it. See GPU investigation for capture identity.
