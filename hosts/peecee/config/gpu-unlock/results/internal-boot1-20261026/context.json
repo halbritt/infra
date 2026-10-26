@@ -1,0 +1,55 @@
+{
+  "BootUtc": "2026-10-26T21:58:38.5000000Z",
+  "Display": [
+    {
+      "Status": "OK",
+      "FriendlyName": "Intel(R) UHD Graphics 770"
+    },
+    {
+      "Status": "OK",
+      "FriendlyName": "NVIDIA GeForce RTX 3090 Ti"
+    }
+  ],
+  "Logs": [
+    {
+      "Path": "U:\\RTX3090-UNLOCK\\HLS000000.TXT",
+      "Bytes": 878766,
+      "ModifiedUtc": "2026-10-26T21:58:34.0000000Z",
+      "Sha256": "0fa511e8fb10029ca74000b229d37036af8892424fba293acaa7f21a6430b940"
+    },
+    {
+      "Path": "U:\\RTX3090-UNLOCK\\AUTO000000\\REPORT.TXT",
+      "Bytes": 14859,
+      "ModifiedUtc": "2026-10-26T21:58:34.0000000Z",
+      "Sha256": "d3c1850e605dbc45a283c3466da90e70657a90c5ed8087fd26e2db12728c46cb"
+    }
+  ],
+  "Efi": [
+    {
+      "Path": "U:\\EFI\\WindowsGPUUnlock\\HEADLESS.EFI",
+      "Sha256": "d1acd8440aa10690a9a1b607d43e423145c049d9cb843644ff84ad19a7105ef4"
+    },
+    {
+      "Path": "U:\\EFI\\WindowsGPUUnlock\\UNLOCK-HEADLESS.EFI",
+      "Sha256": "57697b04acf705b96f3cea1b57b638b35186aa55cdf20a6d6004261b646e72cf"
+    }
+  ],
+  "Disks": [
+    {
+      "Number": 1,
+      "FriendlyName": "Samsung SSD 980 PRO 2TB",
+      "BusType": "NVMe"
+    },
+    {
+      "Number": 0,
+      "FriendlyName": "Samsung SSD 990 PRO 4TB",
+      "BusType": "NVMe"
+    },
+    {
+      "Number": 2,
+      "FriendlyName": "Lexar USB Flash Drive",
+      "BusType": "USB"
+    }
+  ],
+  "BenchmarkSha256": "79a5b1a2a398e57b2ed91988982f15d76a15eb8ae49073ba4fe19050541e5f1f"
+}

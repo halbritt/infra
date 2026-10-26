@@ -2,8 +2,9 @@
 
 Current status: the USB unlock succeeded. Matched BF16 runs at the same 450 W
 limit show **1.68× throughput at 8192 square** and **1.83× at 4096 square**.
-An internal EFI entry is now installed; its first cold-boot test is pending.
-Peecee remains in the locked baseline boot. See the final dated entry below.
+The internal EFI unlock has now passed a cold boot and BF16 verification. It is
+the default firmware entry, with Windows Boot Manager second. See the final dated
+entry below.
 
 ## Read-only USB probe staged 2026-10-26
 
@@ -418,3 +419,45 @@ trial succeeds, run `C:\gpu-efi\internal-boot\Headless.ps1 -EnableAutomatic
 -ConfirmedSuccess`. Recovery is Windows Boot Manager from F8; the installer’s
 `-RestoreWindowsFirst` action works even without build outputs. Internal hardware
 success and unattended default boot remain unverified.
+
+## Internal cold boot verified; default enabled — 2026-10-26
+
+The owner completed the internal-entry boot. Windows boot time is
+`2026-10-26T21:58:38.5000000Z`; fresh U: wrapper/child logs were written immediately
+before that time. Their remote hashes match the archived logs. The wrapper
+completed release, unlock return and Windows preclose verification with status 0;
+the child reports `FINAL status=0 ... clean=1`, `quiesced=1 fault=0 retained=0
+maps=0 FLR=1`, SS0 `88888888`, SS1 `00000008`. Both display devices are healthy.
+EFI hashes match the installed partition-bound build.
+
+The identical benchmark under a peecee/marker fleet lease measured:
+
+| Matrix | Locked TFLOPS | Internal EFI TFLOPS | Speedup |
+| --- | ---: | ---: | ---: |
+| 8192² | 85.183 | 143.228 | 1.681× |
+| 4096² | 72.767 | 133.639 | 1.837× |
+
+All 64 sampled CPU FP64 dot products per size match exactly. GPU, driver 610.88,
+PyTorch 2.12.1+cu130, benchmark source hash, BF16/FP32 policy and 450 W limit match
+the baseline. No model, service, power limit or clock setting was changed.
+[Results and log hashes](results/internal-boot1-20261026/summary.json),
+[boot context](results/internal-boot1-20261026/context.json), and
+[raw benchmark](results/internal-boot1-20261026/bf16-internal-boot1.json).
+
+After these checks, ran the existing installer with
+`-EnableAutomatic -ConfirmedSuccess`. Native readback verifies the GPU entry
+first, Windows Boot Manager second, other entries retained, no BootNext, and
+Fast Startup off. No further reboot was issued.
+[Promotion receipt](results/internal-boot1-20261026/promotion-receipt.json).
+Backup: `C:\ProgramData\WindowsGPUUnlock\HeadlessBackups\20261026-150210012`.
+
+The installed internal path is verified; the next unattended selection through
+the new default order has not yet been observed. Lexar still enumerated in Windows
+at inspection, so physical USB removal was not independently established. The
+fresh U: logs and GUID-bound internal build establish the internal execution.
+The installer’s original `HardwareTested:false` metadata is not updated by its
+promotion action; these dated hardware receipts are the verification authority.
+Full logs remain outside Git under
+`~/.local/share/infra/evidence/peecee-gpu-unlock-internal-20261026/boot1`.
+Use F8 → Windows Boot Manager to bypass unlock, or
+`C:\gpu-efi\internal-boot\Headless.ps1 -RestoreWindowsFirst` to restore that default.

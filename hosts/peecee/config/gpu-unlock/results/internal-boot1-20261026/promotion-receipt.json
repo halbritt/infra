@@ -1,0 +1,35 @@
+{
+  "ObservedUtc": "2026-10-26T22:02:13.3375763Z",
+  "State": {
+    "EntryId": "{6e3de63a-64d9-11f1-9a08-086ac577cd8c}",
+    "Name": "GPU Headless UNLOCK - EXPERIMENTAL",
+    "Path": "\\EFI\\WindowsGPUUnlock\\HEADLESS.EFI",
+    "Mode": "automatic",
+    "BootOrderBefore": [
+      "{bootmgr}",
+      "{ca94f44f-21f2-11ef-99a2-806e6f6e6963}",
+      "{692d78e2-d16c-11f1-9a2c-806e6f6e6963}"
+    ],
+    "BackupRoot": "C:\\ProgramData\\WindowsGPUUnlock\\HeadlessBackups\\20261026-143629305",
+    "EfiSha256": "d1acd8440aa10690a9a1b607d43e423145c049d9cb843644ff84ad19a7105ef4",
+    "ChildSha256": "57697b04acf705b96f3cea1b57b638b35186aa55cdf20a6d6004261b646e72cf",
+    "HiberbootBefore": {
+      "Value": 0,
+      "Exists": true
+    },
+    "HardwareTested": false
+  },
+  "FirmwareManager": [
+    "",
+    "Firmware Boot Manager",
+    "---------------------",
+    "identifier              {fwbootmgr}",
+    "displayorder            {6e3de63a-64d9-11f1-9a08-086ac577cd8c}",
+    "                        {bootmgr}",
+    "                        {ca94f44f-21f2-11ef-99a2-806e6f6e6963}",
+    "                        {692d78e2-d16c-11f1-9a2c-806e6f6e6963}",
+    "timeout                 1"
+  ],
+  "HiberbootEnabled": 0,
+  "PromotionBackup": "C:\\ProgramData\\WindowsGPUUnlock\\HeadlessBackups\\20261026-150210012"
+}

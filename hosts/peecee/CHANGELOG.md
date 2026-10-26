@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — verify internal unlock and enable default boot
+
+Fresh internal ESP logs show clean unlock and Windows recovery. BF16 measured
+143.228 TFLOPS at 8192² and 133.639 at 4096², respectively 1.68× and 1.84× locked,
+with exact numerical checks. Promoted the internal GPU entry first and Windows
+Boot Manager second; Fast Startup remains off. No further reboot issued.
+See [results](config/gpu-unlock/results/internal-boot1-20261026/summary.json) and
+[promotion](config/gpu-unlock/results/internal-boot1-20261026/promotion-receipt.json).
+
 ## 2026-10-26 — install internal GPU-unlock EFI entry
 
 Created a dedicated 1 GiB FAT32 ESP on the system SSD by native C: shrink,

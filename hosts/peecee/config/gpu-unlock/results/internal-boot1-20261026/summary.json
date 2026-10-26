@@ -1,0 +1,39 @@
+{
+  "boot_utc": "2026-10-26T21:58:38.5000000Z",
+  "source_revision": "63e934f",
+  "fleet_revision": "2de20079385e9792910c4c8a26da8913db11107b",
+  "lease_id": "06d8fee4-40e8-4f1d-ac57-4f6afc32d5c6",
+  "child_exit": 0,
+  "unlock_final": "status=0, clean=1, quiesced=1, fault=0, retained=0, maps=0, FLR=1",
+  "windows_display_devices": "Both Intel UHD770 and RTX3090Ti OK",
+  "power_limit_w": 450,
+  "measurements": [
+    {
+      "n": 8192,
+      "internal_tflops": 143.22765328710597,
+      "locked_tflops": 85.18298014126682,
+      "speedup": 1.6814116276464885,
+      "gain_percent": 68.14116276464885,
+      "checked_elements": 64,
+      "max_abs_error": 0.0
+    },
+    {
+      "n": 4096,
+      "internal_tflops": 133.63862148677802,
+      "locked_tflops": 72.76748333406198,
+      "speedup": 1.8365156435776124,
+      "gain_percent": 83.65156435776125,
+      "checked_elements": 64,
+      "max_abs_error": 0.0
+    }
+  ],
+  "log_sha256": {
+    "HLS000000.TXT": "0fa511e8fb10029ca74000b229d37036af8892424fba293acaa7f21a6430b940",
+    "REPORT.TXT": "d3c1850e605dbc45a283c3466da90e70657a90c5ed8087fd26e2db12728c46cb"
+  },
+  "limits": [
+    "One successful physical internal boot; default boot selection is configured separately and not yet exercised.",
+    "Lexar USB still enumerated in Windows; fresh logs on U: and GUID-bound internal EFI prove the internal path executed, not physical USB removal.",
+    "Telemetry may end with an incomplete row because nvidia-smi collector is terminated; no complete energy claim."
+  ]
+}

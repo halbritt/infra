@@ -1,0 +1,94 @@
+{
+  "torch": "2.12.1+cu130",
+  "cuda": "13.0",
+  "source_sha256": "79a5b1a2a398e57b2ed91988982f15d76a15eb8ae49073ba4fe19050541e5f1f",
+  "input_dtype": "bfloat16",
+  "output_dtype": "float32",
+  "bf16_reduced_precision_reduction": false,
+  "gpu_before": "NVIDIA GeForce RTX 3090 Ti, GPU-84a77c24-b6c4-b437-6319-debcdddd0e8e, 610.88, 450.00 W, 11419 MiB, 0 %",
+  "lease_id": "06d8fee4-40e8-4f1d-ac57-4f6afc32d5c6",
+  "measurements": [
+    {
+      "n": 8192,
+      "warmup": 200,
+      "iterations_per_sample": 500,
+      "samples": [
+        {
+          "started_epoch": 1793052068.5923095,
+          "finished_epoch": 1793052072.427853,
+          "gemm_ms": 7.64294970703125,
+          "tflops": 143.85959216302146
+        },
+        {
+          "started_epoch": 1793052072.427853,
+          "finished_epoch": 1793052076.2538996,
+          "gemm_ms": 7.65079931640625,
+          "tflops": 143.71199430342202
+        },
+        {
+          "started_epoch": 1793052076.2538996,
+          "finished_epoch": 1793052080.0998905,
+          "gemm_ms": 7.70218212890625,
+          "tflops": 142.7532625656226
+        },
+        {
+          "started_epoch": 1793052080.0998905,
+          "finished_epoch": 1793052083.9355907,
+          "gemm_ms": 7.67667138671875,
+          "tflops": 143.22765328710597
+        },
+        {
+          "started_epoch": 1793052083.9355907,
+          "finished_epoch": 1793052087.7844539,
+          "gemm_ms": 7.6969453125,
+          "tflops": 142.85038845090534
+        }
+      ],
+      "median_tflops": 143.22765328710597,
+      "checked_elements": 64,
+      "max_abs_error": 0.0
+    },
+    {
+      "n": 4096,
+      "warmup": 200,
+      "iterations_per_sample": 500,
+      "samples": [
+        {
+          "started_epoch": 1793052088.013496,
+          "finished_epoch": 1793052088.5126216,
+          "gemm_ms": 0.9996390380859375,
+          "tflops": 137.48858161358098
+        },
+        {
+          "started_epoch": 1793052088.5283213,
+          "finished_epoch": 1793052089.061058,
+          "gemm_ms": 1.0654739990234374,
+          "tflops": 128.9932495752782
+        },
+        {
+          "started_epoch": 1793052089.061058,
+          "finished_epoch": 1793052089.5877068,
+          "gemm_ms": 1.0537164306640625,
+          "tflops": 130.4325807896766
+        },
+        {
+          "started_epoch": 1793052089.5877068,
+          "finished_epoch": 1793052090.092826,
+          "gemm_ms": 1.0284373779296876,
+          "tflops": 133.63862148677802
+        },
+        {
+          "started_epoch": 1793052090.092826,
+          "finished_epoch": 1793052090.5935366,
+          "gemm_ms": 1.0039476318359375,
+          "tflops": 136.8985284826688
+        }
+      ],
+      "median_tflops": 133.63862148677802,
+      "checked_elements": 64,
+      "max_abs_error": 0.0
+    }
+  ],
+  "gpu_after": "NVIDIA GeForce RTX 3090 Ti, GPU-84a77c24-b6c4-b437-6319-debcdddd0e8e, 610.88, 450.00 W, 12288 MiB, 100 %",
+  "complete": true
+}
