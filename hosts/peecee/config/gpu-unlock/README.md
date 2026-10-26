@@ -159,3 +159,32 @@ profile admission with the same missing-ConOut/aggregate-console refusal.
 Its reported console-driver fingerprints equal the previous3501capture; NVIDIA
 and EDID code hashes also remain the same. Need boot chronology confirmation
 or a fresh known4601coldboot before concluding the update did not change this.
+
+## Confirmed BIOS4601 reboot capture — 2026-10-26
+
+After verifying4601 live, the owner requested a reboot; issued
+`shutdown.exe /r /t 0`. The owner returned from the USB probe to Windows.
+New DIAG01.TXT SHA-256 is
+`3eb513670d446b5b33c01c7f2eede9a3c048ab27f54880659fd2927e88e06658`.
+Retrieved54 root capture files and verified remote SHA-256, archived at
+`~/.local/share/infra/evidence/peecee-gpu-probe-20261026/boot4-confirmed4601/`.
+The authoritative new log is DIAG01; DIAG00 was already present. Analysis and
+upstream fingerprint reports are beside the captures.
+
+Complete=1, diagnostic result0. Although this was an ordinary reboot rather
+than a full shutdown, the observed GPU registers meet the current generator's
+cold-state checks: PLMffffff8f, GFW8b8f/3ff/10, WPR2zero, SS000452002, SS1six.
+This is evidence for this reboot only, not a general guarantee for warm resets.
+The generator proceeds to and refuses the same ConOut/aggregate-console check.
+Console-driver fingerprints, NVIDIA GOP code hash and EDID code hash match3501.
+The BIOS update therefore did not resolve the observed compatibility problem.
+There is no need for another identical capture merely to rediscover this refusal.
+
+Next implementation work would adapt and validate the existing upstream
+aggregate-console release route for this machine's GA102/3090Ti profile; the
+ready-made B660M/3070Ti profile is not suitable to deploy directly. No write-capable
+unlock was built or staged in this investigation.
+
+The GPU exporter was again stopped after reboot despite StartModeAuto. Started
+it and verified its tailnet RTX3090Ti metric. Recurring startup failure remains
+undiagnosed; service configuration was not changed.

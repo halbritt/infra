@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — confirmed4601 probe retains console compatibility blocker
+
+Archived and hash-verified DIAG01 after an owner-requested reboot with4601
+already verified installed. Probe succeeds and GPU cold-state checks pass, but
+the generic profile generator still rejects the ASUS aggregate console. Firmware
+update did not resolve this mismatch. Restored the stopped GPU exporter again;
+its recurring boot-start issue remains undiagnosed.
+Details: [GPU probe](config/gpu-unlock/README.md).
+
 ## 2026-10-26 — BIOS 4601 confirmed; restore GPU monitoring
 
 Verified BIOS4601, healthy Intel/NVIDIA display devices, Secure Boot off and

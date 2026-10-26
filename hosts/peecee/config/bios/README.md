@@ -74,3 +74,8 @@ BIOS resets; do not infer a failed pump from the unused motherboard RPM input.
 A newly created complete USB probe capture was retrieved, but the owner has
 been asked whether it was booted after the flash. File novelty alone does not
 prove which firmware produced it. See GPU investigation for capture identity.
+
+Follow-up: a subsequent owner-requested reboot produced DIAG01 with BIOS4601
+known installed before reboot. That complete capture confirms the same firmware
+console mismatch. The earlier DIAG00 chronology is no longer needed to establish
+that4601 did not resolve it. See GPU investigation's confirmed4601 section.

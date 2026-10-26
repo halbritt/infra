@@ -8,5 +8,5 @@
   "board": "ROG STRIX Z690-I GAMING WIFI",
   "from_bios": "3501",
   "to_bios": "4601",
-  "status": "BIOS 4601 verified live in Windows on 2026-10-26; probe capture boot chronology awaiting owner confirmation"
+  "status": "BIOS 4601 verified live; subsequent confirmed-4601 probe retains aggregate-console refusal"
 }
