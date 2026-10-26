@@ -1,0 +1,126 @@
+{
+  "ObservedUtc": "2026-10-26T21:37:18.2127021Z",
+  "State": {
+    "EntryId": "{6e3de63a-64d9-11f1-9a08-086ac577cd8c}",
+    "Name": "GPU Headless UNLOCK - EXPERIMENTAL",
+    "Path": "\\EFI\\WindowsGPUUnlock\\HEADLESS.EFI",
+    "Mode": "registered",
+    "BootOrderBefore": [
+      "{bootmgr}",
+      "{ca94f44f-21f2-11ef-99a2-806e6f6e6963}",
+      "{692d78e2-d16c-11f1-9a2c-806e6f6e6963}"
+    ],
+    "BackupRoot": "C:\\ProgramData\\WindowsGPUUnlock\\HeadlessBackups\\20261026-143629305",
+    "EfiSha256": "d1acd8440aa10690a9a1b607d43e423145c049d9cb843644ff84ad19a7105ef4",
+    "ChildSha256": "57697b04acf705b96f3cea1b57b638b35186aa55cdf20a6d6004261b646e72cf",
+    "HiberbootBefore": null,
+    "HardwareTested": false
+  },
+  "Files": [
+    {
+      "Path": "U:\\EFI\\WindowsGPUUnlock\\HEADLESS.EFI",
+      "Bytes": 38400,
+      "Sha256": "d1acd8440aa10690a9a1b607d43e423145c049d9cb843644ff84ad19a7105ef4"
+    },
+    {
+      "Path": "U:\\EFI\\WindowsGPUUnlock\\UNLOCK-HEADLESS.EFI",
+      "Bytes": 67584,
+      "Sha256": "57697b04acf705b96f3cea1b57b638b35186aa55cdf20a6d6004261b646e72cf"
+    },
+    {
+      "Path": "U:\\RTX3090-UNLOCK\\ASSETS\\booter_load_ga102.bin",
+      "Bytes": 61256,
+      "Sha256": "056cbc064a888f80717726c54d7f64fcd68044d123870c95a74f37f4975dcaa4"
+    },
+    {
+      "Path": "U:\\RTX3090-UNLOCK\\ASSETS\\gsp_boot_desc_ga102.bin",
+      "Bytes": 84,
+      "Sha256": "cc5a3fc1f4c47f2fe107b1b68f0176d8a448e6dec84b575e5560ccef5262bf15"
+    },
+    {
+      "Path": "U:\\RTX3090-UNLOCK\\ASSETS\\gsp_boot_ga102.bin",
+      "Bytes": 24576,
+      "Sha256": "3df651acb174fd5f5561a1996965b192f50c5d763168446ed0d4ead19d895768"
+    },
+    {
+      "Path": "U:\\RTX3090-UNLOCK\\ASSETS\\gsp_ga10x.bin",
+      "Bytes": 84277400,
+      "Sha256": "572373620a37418f24dc16b5031c39338778c3257e48e8408de9a57291b24f3a"
+    },
+    {
+      "Path": "U:\\RTX3090-UNLOCK\\ASSETS\\v67-ga102-610.43.03.bin",
+      "Bytes": 64000,
+      "Sha256": "2a0aa1f86d0b6afff5214d641d87d46dc98ef06ed908ff05d0ddbad5ffb7e197"
+    }
+  ],
+  "Firmware": [
+    "",
+    "Firmware Boot Manager",
+    "---------------------",
+    "identifier              {fwbootmgr}",
+    "displayorder            {bootmgr}",
+    "                        {ca94f44f-21f2-11ef-99a2-806e6f6e6963}",
+    "                        {692d78e2-d16c-11f1-9a2c-806e6f6e6963}",
+    "                        {6e3de63a-64d9-11f1-9a08-086ac577cd8c}",
+    "timeout                 1",
+    "",
+    "Windows Boot Manager",
+    "--------------------",
+    "identifier              {6e3de63a-64d9-11f1-9a08-086ac577cd8c}",
+    "device                  partition=U:",
+    "path                    \\EFI\\WindowsGPUUnlock\\HEADLESS.EFI",
+    "description             GPU Headless UNLOCK - EXPERIMENTAL",
+    "locale                  en-US",
+    "inherit                 {globalsettings}",
+    "default                 {current}",
+    "resumeobject            {4893ddc5-c109-11ef-971c-e78ba24907c0}",
+    "displayorder            {current}",
+    "toolsdisplayorder       {memdiag}",
+    "timeout                 30",
+    "",
+    "Windows Boot Manager",
+    "--------------------",
+    "identifier              {bootmgr}",
+    "device                  partition=\\Device\\HarddiskVolume1",
+    "path                    \\EFI\\MICROSOFT\\BOOT\\BOOTMGFW.EFI",
+    "description             Windows Boot Manager",
+    "locale                  en-US",
+    "inherit                 {globalsettings}",
+    "default                 {current}",
+    "resumeobject            {4893ddc5-c109-11ef-971c-e78ba24907c0}",
+    "displayorder            {current}",
+    "toolsdisplayorder       {memdiag}",
+    "timeout                 30",
+    "",
+    "Firmware Application (101fffff)",
+    "-------------------------------",
+    "identifier              {692d78e2-d16c-11f1-9a2c-806e6f6e6963}",
+    "device                  partition=E:",
+    "description             UEFI: Lexar USB Flash Drive, Partition 1",
+    "",
+    "Firmware Application (101fffff)",
+    "-------------------------------",
+    "identifier              {ca94f44f-21f2-11ef-99a2-806e6f6e6963}",
+    "device                  partition=\\Device\\HarddiskVolume1",
+    "path                    \\EFI\\MICROSOFT\\BOOT\\BOOTMGFW.EFI",
+    "description             New Entry"
+  ],
+  "WindowsLoaderSha256": "2d60a2203865122dad22772136b3d905167d9dcf926d602bb5f48b3b6668abec",
+  "Partition": {
+    "DiskNumber": 0,
+    "PartitionNumber": 4,
+    "Guid": "{a1dc70bc-249a-4a2f-8486-ad1ac37d366e}",
+    "Offset": 3998711021568,
+    "Size": 1073741824,
+    "GptType": "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}"
+  },
+  "Volume": {
+    "FileSystem": "FAT32",
+    "FileSystemLabel": "GPUUNLOCK",
+    "HealthStatus": "Healthy",
+    "Size": 1069547520,
+    "SizeRemaining": 984973312
+  },
+  "SecureBoot": false,
+  "BootTime": "2026-10-26T14:09:22.5-07:00"
+}

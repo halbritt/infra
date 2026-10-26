@@ -1,0 +1,101 @@
+{
+  "packet_id": "pkt-03030068aa1294d8",
+  "packet_content_sha256": "03030068aa1294d8bc96f7132b2515dd00f03bc6a776a87b81cf27934d9293ce",
+  "corpus_version": "corpus-2026-07-12-a11702cc9217",
+  "doctrine_version": "doctrine-f6bbb5196a3f8bf9",
+  "retriever_version": "retriever-ec995ecdd083b2c8",
+  "release_commit": "d3e0c0d4ccd1920b2e045c156f1cf0db4fc5f04f",
+  "unmet_obligations": [
+    {
+      "requirement": "a dry-run enumeration with counts compared against expectation",
+      "classification": "nonmaterial",
+      "rationale": "No bulk data ingest. The installer already compared the full build input inventory and count against this exact Windows source tree successfully before staging; deployment is the narrower verified claim."
+    },
+    {
+      "requirement": "attribution recorded at discharge",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the decision each gate protects and its authorized principal",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the decision the gate protects and its authorized principal",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the surface's declared purpose",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "an enumeration of lifecycle phases with a designed state for each",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "content lifecycle phases enumerated",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "explicit handlers where platform defaults were overridden",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "geometry reserved independent of the async payload",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "a prioritization key tied to the consumer's decision",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "proof canonical data is unchanged by presentation",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the bound stated and enforced",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the consumer and budget named",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the consumer and their budget named",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the match-text composition enumerated field by field",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the scan shown to score the full bounded set before truncation",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the selection contract stated",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    },
+    {
+      "requirement": "the selection contract stated - relevance-ordered top-N versus first-N",
+      "classification": "nonmaterial",
+      "rationale": "No application UI, ranked search, or authorization surface is being designed; direct owner instruction and existing installer policy govern this bounded deployment."
+    }
+  ],
+  "authority_ceiling": "Bounded installation; physical success and promotion are not asserted."
+}

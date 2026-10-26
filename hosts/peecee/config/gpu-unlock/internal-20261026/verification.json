@@ -1,0 +1,10 @@
+{
+  "source_commit": "63e934f03ed62f0d003ad6e28924f81018608b32",
+  "host_jobs": 12,
+  "powershell_package_checks": 48,
+  "powershell_installer_checks": 18,
+  "automatic_policy": "Partial mutation and verification failures recover; success and boot-copy attribution tests pass",
+  "toolchain": "Clang/LLD20.1.2 cross-target x86_64-pc-windows-msvc; PowerShell7 tests on peecee",
+  "actual_windows_package_validation": "Passed as prerequisite of successful Headless.ps1 -Register",
+  "hardware_internal_boot_tested": false
+}

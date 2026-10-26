@@ -2,8 +2,8 @@
 
 Current status: the USB unlock succeeded. Matched BF16 runs at the same 450 W
 limit show **1.68× throughput at 8192 square** and **1.83× at 4096 square**.
-Peecee is currently in the locked baseline boot; another cold USB boot reapplies
-the unlock. See the final dated entry below.
+An internal EFI entry is now installed; its first cold-boot test is pending.
+Peecee remains in the locked baseline boot. See the final dated entry below.
 
 ## Read-only USB probe staged 2026-10-26
 
@@ -364,3 +364,57 @@ are retained. Full evidence is in
 `~/.local/share/infra/evidence/peecee-gpu-unlock-port-20261026/boot2/`.
 The remote output is `C:\gpu-unlock-4ecda4a\bf16-boot2.json`.
 No further reboot was initiated. The card remains in the locked baseline state.
+
+## Internal EFI entry installed — 2026-10-26
+
+Owner requested the internal EFI bootloader after the matched BF16 comparison.
+Source [63e934f](https://github.com/halbritt/Windows-GPU-UNLOCK/commit/63e934f)
+adds Z690-I to the existing dedicated-ESP installer and Linux cross-builder.
+Runtime release/unlock algorithms and admission guards are unchanged.
+
+The existing Windows ESP had ~63 MiB free; firmware assets require ~81 MiB and
+the installer requires a separate ESP of at least 1 GiB. Native NTFS resize
+reduced C: by 1 GiB plus 859136 bytes for MiB alignment. Created disk0 partition4,
+1 GiB GPT/FAT32, label GPUUNLOCK, mounted U:, GUID
+`a1dc70bc-249a-4a2f-8486-ad1ac37d366e`. Original Windows ESP and recovery
+partition identity/geometry, Windows loader hash and existing firmware entries
+were verified unchanged. [Storage receipt](internal-20261026/storage-receipt.json).
+The one-time [preparation script](prepare-internal-esp.ps1) defaults to inspection
+and intentionally refuses another apply after the geometry changes.
+
+Installed two EFI executables and five firmware assets, all hash verified:
+
+- `U:\EFI\WindowsGPUUnlock\HEADLESS.EFI`, SHA-256
+  `d1acd8440aa10690a9a1b607d43e423145c049d9cb843644ff84ad19a7105ef4`.
+- `U:\EFI\WindowsGPUUnlock\UNLOCK-HEADLESS.EFI`, SHA-256
+  `57697b04acf705b96f3cea1b57b638b35186aa55cdf20a6d6004261b646e72cf`.
+- Firmware assets: `U:\RTX3090-UNLOCK\ASSETS`.
+
+Registered **GPU Headless UNLOCK - EXPERIMENTAL**, entry
+`{6e3de63a-64d9-11f1-9a08-086ac577cd8c}`, appended to the firmware menu.
+Windows Boot Manager remains first. No reboot, automatic promotion or USB change
+was performed. [Installation receipt](internal-20261026/install-receipt.json).
+
+The corresponding Windows source/config/build tree is `C:\gpu-efi`.
+Storage backups: `C:\ProgramData\WindowsGPUUnlock\StorageBackups\20261026-143407159`.
+Registration backups: `C:\ProgramData\WindowsGPUUnlock\HeadlessBackups\20261026-143629305`.
+Full private source/build archive, generated config/header and build log are at
+`~/.local/share/infra/evidence/peecee-gpu-unlock-internal-20261026` on proximal.
+Do not distribute the partition-bound EFI or firmware files.
+
+Verification: 12 RAM-only host jobs, 48 package checks, 18 mocked installer
+checks, automatic-transition recovery checks, both EFI PE checks, actual Windows
+package validation, installed hashes and native boot/partition readbacks passed.
+PowerShell7 was used because PowerShell5 fixture paths exceed MAX_PATH.
+[Build manifest](internal-20261026/manifest.json),
+[verification](internal-20261026/verification.json),
+[decision receipt](internal-20261026/decision-receipt.json) and
+[doctrine scope](internal-20261026/doctrine-scope.json) retain the evidence and limits.
+
+Next: full shutdown (`shutdown /s /t 0`), unplug USB, power on and select the new
+entry with F8. Retrieve fresh logs from `U:\RTX3090-UNLOCK`, verify clean unlock,
+Windows display recovery and the same BF16 benchmark. Only after that internal
+trial succeeds, run `C:\gpu-efi\internal-boot\Headless.ps1 -EnableAutomatic
+-ConfirmedSuccess`. Recovery is Windows Boot Manager from F8; the installer’s
+`-RestoreWindowsFirst` action works even without build outputs. Internal hardware
+success and unattended default boot remain unverified.

@@ -1,0 +1,14 @@
+{
+  "path": "HEADLESS.EFI",
+  "bytes": 38400,
+  "sha256": "d1acd8440aa10690a9a1b607d43e423145c049d9cb843644ff84ad19a7105ef4",
+  "machine": "AMD64",
+  "subsystem": 10,
+  "entry": "efi_main",
+  "entry_rva": 4096,
+  "imports": 0,
+  "iat": 0,
+  "delay_imports": 0,
+  "nx": true,
+  "dynamic_base": true
+}

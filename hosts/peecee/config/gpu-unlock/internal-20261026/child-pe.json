@@ -1,0 +1,14 @@
+{
+  "path": "RTX3090-EXPERIMENTAL-entryLatchedSs1Full-INTERNAL-AUTO-HEADLESS-RESEARCH.EFI",
+  "bytes": 67584,
+  "sha256": "57697b04acf705b96f3cea1b57b638b35186aa55cdf20a6d6004261b646e72cf",
+  "machine": "AMD64",
+  "subsystem": 10,
+  "entry": "efi_main",
+  "entry_rva": 4096,
+  "imports": 0,
+  "iat": 0,
+  "delay_imports": 0,
+  "nx": true,
+  "dynamic_base": true
+}

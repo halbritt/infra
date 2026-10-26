@@ -1,0 +1,269 @@
+{
+  "schema_version": "decision-receipt/2",
+  "receipt_id": "peecee-internal-efi-20261026",
+  "question": "How should the verified Z690-I GPU unlock be added to the existing dedicated-ESP installer while preserving Windows Boot Manager, partition identity guards, package provenance and recovery?",
+  "scope": [
+    "Exact Z690-I BIOS4601 RTX3090Ti internal EFI installation",
+    "Physical internal cold boot and default promotion are pending"
+  ],
+  "status": "verified",
+  "authority_boundary": {
+    "owner": "halbritt",
+    "authority_source": "User requested now the EFI bootloader after verified USB unlock and baseline comparison",
+    "authorized_scope": [
+      "Implement and install internal EFI unlock with Windows recovery preserved"
+    ]
+  },
+  "evidence": [
+    {
+      "schema_version": "evidence-record/1",
+      "id": "internal-authority",
+      "evidence_class": "evidence-explicit-user-requirements",
+      "summary": "Owner halbritt requested \"now the EFI bootloader\" following successful USB unlock and locked comparison. Install an internal boot option to remove USB dependence. Preserve Windows recovery; physical cold boot and default promotion remain separate validation steps.",
+      "provenance": [
+        {
+          "locator": "conversation:agent-563/user-now-the-EFI-bootloader",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "decision owner",
+        "explicit task authority",
+        "task scope and authority statement",
+        "accepted problem and outcome",
+        "accepted behavior",
+        "user instruction and authority",
+        "accepted desired behavior and semantic authority",
+        "expected future change from accepted plans"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "internal-contracts",
+      "evidence_class": "evidence-repository-contracts",
+      "summary": "Infra requires host-scoped canonical operational provenance, validation, commit and push. Existing HEADLESS guide and installer require separate >=1GiB FAT32 GPT ESP, exact profile, source inventory, Windows ESP preserved, BitLocker off, secure boot off. Registration appends entry; default promotion requires real success. Configure writes only ignored partition-bound configuration.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/docs/HEADLESS.en.md",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/Configure.ps1",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/AGENTS.md",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/hosts/peecee/AGENTS.md",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "repository contract",
+        "language and repository convention",
+        "repository placement constraints",
+        "task scope and repository orientation",
+        "verification and integration route",
+        "repository instructions from root through target path",
+        "target repository and task scope",
+        "accepted ADR, RFC, API, compatibility, generation, build, and test contracts",
+        "accepted contract or explicitly labeled characterization target"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "internal-source",
+      "evidence_class": "evidence-static-source-structure",
+      "summary": "Changes route only the exact Z690-I profile into existing internal headless build/install. GPU algorithms unchanged. GPT identity checked before effects. Source inventories and child hashes retained; normalize ordering only and reject duplicate/missing input. Existing registration saves BCD and verifies unrelated entries; recovery restores Windows first without package. Storage prep verifies exact disk/GUID/geometry, backs up BCD/loader, shrinks NTFS via native API and formats only a newly created partition. Apply refuses repeat geometry. Failed storage operations stop with phase receipt, no blind deletion. Windows EFI/recovery, original menu prefix, USB files and GPU runtime guards are preservation boundaries. EFI boot can still fail; physical acceptance is explicitly pending. Input inventory enumerates every runtime .c/.h/.ps1 outside build directories, all EDK2 include headers, local-config, assets.json, PowerShell headless builder, optional Python builder, plus generated child contract. Exact path/hash sets and count are compared; duplicates cannot replace a required path. Configure resolves enum to exact board/BIOS, and validates native partition/volume identity; installer rechecks those live values and encryption/SecureBoot plus package hashes. Runtime uses GPT device path GUID and existing hardware/graph guards, not display output. Host tests exercise production sources but mock real firmware operations; deployment runs actual native queries. No-change retains proven USB route but fails the owner request to remove USB dependence.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/Headless.ps1",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/install/headless-package.ps1",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/research/profile/build_z690i.py",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/hosts/peecee/config/gpu-unlock/prepare-internal-esp.ps1",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "affected behavior and state",
+        "reversibility and verification",
+        "caller recovery needs",
+        "cleanup obligations",
+        "operation and caller contract",
+        "product correctness and availability policy",
+        "side effects and idempotency",
+        "current relevant behavior",
+        "risk class",
+        "risk and boundary inventory",
+        "client-facing contract of the system under test",
+        "change-type classification",
+        "per-edit change classification",
+        "preservation boundary and semantic authority",
+        "preservation matrix and consumers",
+        "proc-establish-preservation-boundaries",
+        "latent security, safety, data, durability, and compatibility check",
+        "the discovery pattern shown to match the specification's depth and class constraints",
+        "the input population specification",
+        "the specified input population stated precisely",
+        "logical-identity definition of the affected record",
+        "an explicit enumeration of the record's identity dimensions matched against the key's columns",
+        "the conflict-handling semantics at that key - abort update or silent drop",
+        "a load-time or gate check resolving every reference against them",
+        "a named-identifier failure on mismatch",
+        "the consumer's defined identifier and enum sets",
+        "eval-versus-serving configuration parity",
+        "inventory of gates and the signals they observe",
+        "proof the check reads that signal rather than a derived view",
+        "the authoritative signal named for each gate",
+        "proc-decide-leave-code-alone"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "internal-tests",
+      "evidence_class": "evidence-tests",
+      "summary": "Twelve RAM-only production host jobs pass including internal GPT acceptance, wrong GUID/USB refusal before effects, USB regressions, graph/transaction faults. PowerShell7 package48 checks, installer18 checks, automatic rollback/copy attribution tests pass. New Z690 admission initially failed unknown profile. Existing installer test failed missing profile, fixed fixture to actual Z690 identity. Assertions cover files, boot ordering, rollback and GPU effects, not helper call counts alone. Firmware/disk/registry shared dependencies are mocked; actual runtime entry and Windows recovery still require cold hardware trial.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/research/profile/build/z690i/test-results.json",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/unlock/tests/test_headless.c",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/install/test-headless-package.ps1",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/install/test-headless-installer.ps1",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "current suite",
+        "defect reproduction when applicable",
+        "observable oracle",
+        "the client-visible outcome the test should verify",
+        "which asserted facts are implementation details",
+        "out-of-process dependency map and unit-coverage evidence",
+        "which edge cases unit tests already cover",
+        "dependency classification of the system under test",
+        "dependency classification per the shared/private/out-of-process taxonomy",
+        "whether the dependency is mutable shared state or a value",
+        "behavior contract in domain terms",
+        "the behavior's boundary independent of the current class decomposition",
+        "the observable behavior the test verifies stated in domain terms",
+        "tests, characterization, probes, or explicit residual risk",
+        "checkpoint verification"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "internal-live",
+      "evidence_class": "evidence-runtime-observation",
+      "summary": "Read-only live inspection: old Windows ESP100MiB has ~63MiB free, assets ~81MiB; existing installer requires >=1GiB. C on Samsung990PRO4TB has ~2TiB free, native shrink supported, BitLocker off. Dedicated1GiB partition4 created by shrinking C 1GiB+859136 bytes for alignment. Receipt verifies Windows ESP/recovery geometry and bootmgfw SHA unchanged, firmware enum unchanged. No-change retains USB dependence; using old ESP cannot fit assets; dedicated system-SSD ESP satisfies installer. This adds partitioning/UEFI risk; current claim is preparation/installation, not cold-boot success.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/git/infra/hosts/peecee/config/gpu-unlock/internal-20261026/storage-receipt.json",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/hosts/peecee/config/gpu-unlock/results/boot2-locked-20261026/comparison.json",
+          "method": "direct source, output or user instruction inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "current source, configuration, and relevant runtime state",
+        "a bounded decision question",
+        "alternatives including no change where viable",
+        "claim-relative observation such as accepted requirement, reproduction, incident, recurring change, operational constraint, or representative measurement",
+        "evidence connecting the proposed action to the condition",
+        "actual current cost/risk or absence within a stated interval",
+        "intervention cost and uncertainty"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "internal-installed",
+      "type": "verification",
+      "text": "Dedicated ESP created; package and installed files verified; separate firmware entry appended while Windows remains first. Internal hardware boot not yet tested.",
+      "depends_on": [
+        "internal-authority",
+        "internal-contracts",
+        "internal-source",
+        "internal-tests",
+        "internal-live"
+      ],
+      "evidence": [
+        "internal-tests",
+        "internal-live"
+      ],
+      "criteria": [
+        "12 host jobs and package/installer checks pass",
+        "Original Windows ESP/recovery and loader preserved",
+        "Internal files and entry verified"
+      ]
+    }
+  ],
+  "alternatives": [
+    {
+      "option": "Dedicated system-SSD ESP using existing guarded installer",
+      "disposition": "selected",
+      "evidence": [
+        "internal-contracts",
+        "internal-live"
+      ]
+    },
+    {
+      "option": "Install on existing100MiB Windows ESP",
+      "disposition": "rejected",
+      "evidence": [
+        "internal-live"
+      ]
+    },
+    {
+      "option": "Keep USB-only boot",
+      "disposition": "rejected",
+      "evidence": [
+        "internal-authority"
+      ]
+    }
+  ],
+  "source_locators": [
+    "storage-receipt.json",
+    "install-receipt.json",
+    "manifest.json",
+    "host-tests.json",
+    "../prepare-internal-esp.ps1",
+    "https://github.com/halbritt/Windows-GPU-UNLOCK/commit/63e934f"
+  ],
+  "corpus_version": "corpus-2026-07-12-a11702cc9217",
+  "retriever_version": "retriever-ec995ecdd083b2c8",
+  "verification_criteria": [
+    "Input and installed hash validation",
+    "Native partition/boot entry readbacks",
+    "Physical cold boot and BF16 measurement required before automatic promotion"
+  ],
+  "reopening_conditions": [
+    "Any partition/profile/package identity mismatch",
+    "Internal unlock, Windows recovery or benchmark failure"
+  ],
+  "residual_risk": [
+    "No internal cold boot has occurred; host mocks and successful USB boot do not establish internal-media success.",
+    "Storage resize completed and verified; reversing it requires separately reviewed deletion of only the new ESP and extending C, not automatic rollback."
+  ]
+}

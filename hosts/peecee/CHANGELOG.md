@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — install internal GPU-unlock EFI entry
+
+Created a dedicated 1 GiB FAT32 ESP on the system SSD by native C: shrink,
+preserving Windows EFI and recovery partitions. Installed the Z690-I headless
+package and appended its firmware entry, retaining Windows first. Twelve host
+jobs, package/installer recovery tests and live installation checks pass.
+First internal cold boot and default promotion remain pending.
+See [installation evidence](config/gpu-unlock/internal-20261026/install-receipt.json).
+
 ## 2026-10-26 — verify BF16 gain against locked baseline
 
 After the owner cold-booted Windows directly, reran the identical BF16 benchmark

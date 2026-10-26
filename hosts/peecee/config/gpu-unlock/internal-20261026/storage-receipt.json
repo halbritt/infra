@@ -1,0 +1,84 @@
+{
+  "DiskUniqueId": "eui.002538414143DCE7",
+  "Before": [
+    {
+      "DiskNumber": 0,
+      "PartitionNumber": 1,
+      "Guid": "{c4b263fb-2821-4034-a2b0-3f3a4dfacc15}",
+      "Offset": 1048576,
+      "Size": 104857600,
+      "GptType": "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}",
+      "IsSystem": true,
+      "IsBoot": false
+    },
+    {
+      "DiskNumber": 0,
+      "PartitionNumber": 2,
+      "Guid": "{80d78185-e526-4157-ac38-0b058085c66d}",
+      "Offset": 105906176,
+      "Size": 3999679716352,
+      "GptType": "{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}",
+      "IsSystem": false,
+      "IsBoot": true
+    },
+    {
+      "DiskNumber": 0,
+      "PartitionNumber": 3,
+      "Guid": "{6b435d17-6163-4a67-b1e8-370cd6c69d22}",
+      "Offset": 3999785811968,
+      "Size": 999292928,
+      "GptType": "{de94bba4-06d1-4d40-a16a-bfd50179d6ac}",
+      "IsSystem": false,
+      "IsBoot": false
+    }
+  ],
+  "NewCSize": 3998605115392,
+  "NewEspOffset": 3998711021568,
+  "NewEspSize": 1073741824,
+  "WindowsLoaderSha256": "2D60A2203865122DAD22772136B3D905167D9DCF926D602BB5F48B3B6668ABEC",
+  "Phase": "verified",
+  "NewPartitionGuid": "{a1dc70bc-249a-4a2f-8486-ad1ac37d366e}",
+  "NewPartitionNumber": 4,
+  "After": [
+    {
+      "DiskNumber": 0,
+      "PartitionNumber": 1,
+      "Guid": "{c4b263fb-2821-4034-a2b0-3f3a4dfacc15}",
+      "Offset": 1048576,
+      "Size": 104857600,
+      "GptType": "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}",
+      "IsSystem": true,
+      "IsBoot": false
+    },
+    {
+      "DiskNumber": 0,
+      "PartitionNumber": 2,
+      "Guid": "{80d78185-e526-4157-ac38-0b058085c66d}",
+      "Offset": 105906176,
+      "Size": 3998605115392,
+      "GptType": "{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}",
+      "IsSystem": false,
+      "IsBoot": true
+    },
+    {
+      "DiskNumber": 0,
+      "PartitionNumber": 4,
+      "Guid": "{a1dc70bc-249a-4a2f-8486-ad1ac37d366e}",
+      "Offset": 3998711021568,
+      "Size": 1073741824,
+      "GptType": "{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}",
+      "IsSystem": false,
+      "IsBoot": false
+    },
+    {
+      "DiskNumber": 0,
+      "PartitionNumber": 3,
+      "Guid": "{6b435d17-6163-4a67-b1e8-370cd6c69d22}",
+      "Offset": 3999785811968,
+      "Size": 999292928,
+      "GptType": "{de94bba4-06d1-4d40-a16a-bfd50179d6ac}",
+      "IsSystem": false,
+      "IsBoot": false
+    }
+  ]
+}
