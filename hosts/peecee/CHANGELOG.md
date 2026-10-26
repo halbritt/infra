@@ -1,5 +1,12 @@
 # Changelog — peecee
 
+## 2026-10-26 — first GPU probe capture succeeds; iGPU absent
+
+Archived and hash-verified the first complete cold-boot capture. NVIDIA GOP
+0x60010 matches the proven code hash; the local-profile analyzer refuses because
+UEFI exposes no integrated display controller. Further compatible captures need
+iGPU enabled in BIOS. Details: [GPU probe](config/gpu-unlock/README.md).
+
 ## 2026-10-26 — stage read-only GPU UEFI probe on owner USB
 
 Prepared the Lexar FAT32 USB at E: with a diagnostic-only executable for the
