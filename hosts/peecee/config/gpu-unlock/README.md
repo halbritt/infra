@@ -1,5 +1,9 @@
 # GPU unlock investigation — peecee
 
+Current status: an exact Z690-I/3090 Ti USB unlock package has passed host tests
+and built successfully. It has **not been staged or booted**. Peecee was
+unreachable over SSH during preparation. See the final dated entry below.
+
 ## Read-only USB probe staged 2026-10-26
 
 The owner supplied the USB at E: and authorized preparing the diagnostic probe
@@ -188,3 +192,62 @@ unlock was built or staged in this investigation.
 The GPU exporter was again stopped after reboot despite StartModeAuto. Started
 it and verified its tailnet RTX3090Ti metric. Recurring startup failure remains
 undiagnosed; service configuration was not changed.
+
+## Experimental aggregate-console port built — 2026-10-26
+
+The owner requested implementation after the confirmed BIOS 4601 capture.
+Created the private owner repository
+[`halbritt/Windows-GPU-UNLOCK`](https://github.com/halbritt/Windows-GPU-UNLOCK)
+with upstream history preserved. The upstream remote remains `upstream`; the
+owner repository is `origin`. The implementation is committed and pushed on
+`main` at `4ecda4a` (upstream base `5c98f11`). Local source:
+`~/git/gpu-unlock-winport/Windows-GPU-UNLOCK/`.
+
+The new `z690i-3090ti` profile selects the existing aggregate-console release
+path with the captured GPU identity, BAR0, PROM and display path. Captured AMI
+binding fingerprints and the EDID/NVIDIA code hashes match that path. No runtime
+release algorithm or generic local-profile admission check was changed.
+The Windows build script restricts this profile's write build to headless USB.
+
+All 11 host jobs pass against the confirmed DIAG01 capture and verified 610.43.03
+assets: 244 PCI preflight checks, 65 graph/driver checks, 197 cold prechecks,
+39 handoff cases, port/write locks, 29 bus-master scenarios, transaction fault
+injection and the automatic USB child. The old B660M profile rejects the card,
+as expected. The existing 12 Python parsing tests pass. These execute production
+code with RAM-only firmware mocks; they do not establish hardware unlock success.
+
+Clang/LLD 20.1.2 built the wrapper and child with the previously verified Windows
+ESP GUID `c4b263fb-2821-4034-a2b0-3f3a4dfacc15`. Both pass PE verification:
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| USB wrapper | 39424 | `e976d28cef44dca9841c66f1ea18504f4955a9d7248083d911fe878b6c52e7dd` |
+| Unlock child | 67584 | `29729569c613e7fed16303a6b7faa3ccd997473a8edbccc59e704855263e0a64` |
+
+The package archive on proximal is
+`~/.local/share/infra/evidence/peecee-gpu-unlock-port-20261026/peecee-z690i-usb.zip`.
+It contains the two EFIs, all five verified assets, the existing Windows staging
+script, test evidence and a provenance manifest. Archive entries were read back
+and checked against their hashes. Firmware and binaries remain outside Git.
+[Package provenance](port-20261026/package-provenance.json) and
+[host results](port-20261026/test-results.json) are retained here.
+
+SSH timed out on both `100.113.63.58:22` and `192.168.1.118:22`; no remote files,
+boot entries or firmware settings were changed during this implementation.
+E: therefore still has the read-only probe. Do not tell the owner to boot the
+unlock yet. Once Windows is reachable, recheck the machine, system ESP and USB,
+copy/extract the archive, and run its `research/headless/stage-usb.ps1` with
+`-Drive E -Assets <extracted-package>\assets`. This preserves the old probe
+under `RTX3090-UNLOCK\backup\` and verifies copied hashes.
+
+The first test uses the one-time firmware USB selection. It automatically
+attempts the unlock after a five-second Esc window and may blank the display.
+The existing failure path stops without retry or Windows handoff after release
+or unlock errors. Recovery is a full power-off and Windows Boot Manager; collect
+the logs before another attempt. A hardware boot, NVIDIA driver recovery and a
+controlled locked/unlocked BF16 comparison remain pending.
+
+The implementation decision and remaining evidence limits are in
+[the decision receipt](port-20261026/decision-receipt.json). Pincite packet and
+unmet, nonmaterial obligations are recorded in
+[doctrine provenance](port-20261026/doctrine-provenance.json).

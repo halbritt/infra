@@ -1,0 +1,184 @@
+{
+  "packet_id": "pkt-15e1cc995550ab7f",
+  "packet_content_sha256": "15e1cc995550ab7fadfd90f53903b27048a7a703910183339f0e636d5cba3239",
+  "corpus_version": "corpus-2026-07-12-a11702cc9217",
+  "doctrine_version": "doctrine-f6bbb5196a3f8bf9",
+  "retriever_version": "retriever-ec995ecdd083b2c8",
+  "release_commit": "d3e0c0d4ccd1920b2e045c156f1cf0db4fc5f04f",
+  "unmet_obligations": [
+    {
+      "requirement": "an explicit enumeration of the record's identity dimensions matched against the key's columns",
+      "required_by": "data-dedup-key-identity-completeness",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "logical-identity definition of the affected record",
+      "required_by": "data-dedup-key-identity-completeness",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the conflict-handling semantics at that key - abort update or silent drop",
+      "required_by": "data-dedup-key-identity-completeness",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "a dry-run enumeration with counts compared against expectation",
+      "required_by": "data-ingest-population-scoping",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the discovery pattern shown to match the specification's depth and class constraints",
+      "required_by": "data-ingest-population-scoping",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the input population specification",
+      "required_by": "data-ingest-population-scoping",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the specified input population stated precisely",
+      "required_by": "data-ingest-population-scoping",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "attribution recorded at discharge",
+      "required_by": "domain-authorization-embodied-in-action",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the decision each gate protects and its authorized principal",
+      "required_by": "domain-authorization-embodied-in-action",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the decision the gate protects and its authorized principal",
+      "required_by": "domain-authorization-embodied-in-action",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the surface's declared purpose",
+      "required_by": "domain-authorization-embodied-in-action",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "an enumeration of lifecycle phases with a designed state for each",
+      "required_by": "implementation-async-ui-state-design",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "content lifecycle phases enumerated",
+      "required_by": "implementation-async-ui-state-design",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "explicit handlers where platform defaults were overridden",
+      "required_by": "implementation-async-ui-state-design",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "geometry reserved independent of the async payload",
+      "required_by": "implementation-async-ui-state-design",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "a prioritization key tied to the consumer's decision",
+      "required_by": "implementation-attention-budget-presentation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "proof canonical data is unchanged by presentation",
+      "required_by": "implementation-attention-budget-presentation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the bound stated and enforced",
+      "required_by": "implementation-attention-budget-presentation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the consumer and budget named",
+      "required_by": "implementation-attention-budget-presentation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the consumer and their budget named",
+      "required_by": "implementation-attention-budget-presentation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "a load-time or gate check resolving every reference against them",
+      "required_by": "implementation-config-reference-validation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "a named-identifier failure on mismatch",
+      "required_by": "implementation-config-reference-validation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the consumer's defined identifier and enum sets",
+      "required_by": "implementation-config-reference-validation",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the match-text composition enumerated field by field",
+      "required_by": "implementation-rank-before-truncate",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the scan shown to score the full bounded set before truncation",
+      "required_by": "implementation-rank-before-truncate",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the selection contract stated",
+      "required_by": "implementation-rank-before-truncate",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "the selection contract stated - relevance-ordered top-N versus first-N",
+      "required_by": "implementation-rank-before-truncate",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "expected future change from accepted plans",
+      "required_by": "universal-no-change-option",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    },
+    {
+      "requirement": "proc-decide-leave-code-alone",
+      "required_by": "universal-no-change-option",
+      "classification": "nonmaterial for host-only profile/build conclusion",
+      "rationale": "No new data ingestion, ranking, UI, authorization model or generic configuration architecture is being recommended. This decision preserves the existing runtime guards and does not establish hardware support."
+    }
+  ]
+}

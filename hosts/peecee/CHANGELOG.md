@@ -1,5 +1,14 @@
 # Changelog — peecee
 
+## 2026-10-26 — build experimental Z690-I GPU unlock port
+
+Added the exact Z690-I/3090 Ti profile in the private owner source repository,
+reusing the existing aggregate-console release path. Eleven host jobs and twelve
+Python tests pass; wrapper and child pass PE verification. Prepared a verified
+USB package on proximal. Peecee's SSH timed out over Tailscale and LAN, so the
+package is not on E: and no hardware unlock was attempted.
+See [GPU unlock provenance](config/gpu-unlock/README.md).
+
 ## 2026-10-26 — confirmed4601 probe retains console compatibility blocker
 
 Archived and hash-verified DIAG01 after an owner-requested reboot with4601

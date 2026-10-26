@@ -1,0 +1,78 @@
+{
+  "source_repository": "https://github.com/halbritt/Windows-GPU-UNLOCK",
+  "source_commit": "4ecda4a45f3028620a7dac4c4c1407b2b594b34a",
+  "profile": "ASUS-ROG-STRIX-Z690-I-4601-RTX3090TI",
+  "hardware_tested": false,
+  "staged": false,
+  "files": {
+    "research/headless/stage-usb.ps1": {
+      "bytes": 2663,
+      "sha256": "c56407157d3f05a4be1f0e18cd73c6bc399c3302c5991418c8f35e740faed8a1"
+    },
+    "internal-boot/unlock/local-profile.ps1": {
+      "bytes": 10732,
+      "sha256": "17bd1baea5d9ec7aa7d3313dce44447c4b861f6fd865b01301858ecb97c08b94"
+    },
+    "internal-boot/unlock/assets.json": {
+      "bytes": 626,
+      "sha256": "644849b375f7c37f0a46118aac1d55c8c1428b0c29cc017fcaa94b462cc924b0"
+    },
+    "internal-boot/boot/build/headless/HEADLESS.EFI": {
+      "bytes": 39424,
+      "sha256": "e976d28cef44dca9841c66f1ea18504f4955a9d7248083d911fe878b6c52e7dd"
+    },
+    "internal-boot/boot/build/headless/usb-manifest.json": {
+      "bytes": 624,
+      "sha256": "8b6b355a1841fc2e9e749e0374d5c17bc969cd0d27653f2b82409c4b63505efe"
+    },
+    "internal-boot/boot/build/headless/pe-verification.json": {
+      "bytes": 300,
+      "sha256": "660c2c3397cf7b9d814d6f199258db28fe6845caa17dbca55200066e29f080a0"
+    },
+    "internal-boot/unlock/build/experimental/entryLatchedSs1Full/internal/automatic/headless-research/usb/RTX3090-EXPERIMENTAL-entryLatchedSs1Full-INTERNAL-AUTO-HEADLESS-RESEARCH-USB.EFI": {
+      "bytes": 67584,
+      "sha256": "29729569c613e7fed16303a6b7faa3ccd997473a8edbccc59e704855263e0a64"
+    },
+    "internal-boot/unlock/build/experimental/entryLatchedSs1Full/internal/automatic/headless-research/usb/pe-verification.json": {
+      "bytes": 368,
+      "sha256": "f56bf113329aa3e9e3ec75ea1544c3d7f9a07cc4850b875e2c8c64505e1e15d1"
+    },
+    "evidence/z690i-3090ti-usb/README.md": {
+      "bytes": 5336,
+      "sha256": "a991fd703150b17b86c7b82ea4a8ddebc04c5f7d422fe4e8d52869d2f5bed8f0"
+    },
+    "research/profile/build/z690i/test-results.json": {
+      "bytes": 14741,
+      "sha256": "bd39d8629876885abc67407a4495d57b9f1010ad05c2054395a813495ffad452"
+    },
+    "research/profile/build/z690i/build-commands.json": {
+      "bytes": 27359,
+      "sha256": "900d17369d66dd90dc181f744e2e7989c4ca5e73f24d3205cf26e9b50ddec1e9"
+    },
+    "assets/booter_load_ga102.bin": {
+      "bytes": 61256,
+      "sha256": "056cbc064a888f80717726c54d7f64fcd68044d123870c95a74f37f4975dcaa4"
+    },
+    "assets/v67-ga102-610.43.03.bin": {
+      "bytes": 64000,
+      "sha256": "2a0aa1f86d0b6afff5214d641d87d46dc98ef06ed908ff05d0ddbad5ffb7e197"
+    },
+    "assets/gsp_ga10x.bin": {
+      "bytes": 84277400,
+      "sha256": "572373620a37418f24dc16b5031c39338778c3257e48e8408de9a57291b24f3a"
+    },
+    "assets/gsp_boot_ga102.bin": {
+      "bytes": 24576,
+      "sha256": "3df651acb174fd5f5561a1996965b192f50c5d763168446ed0d4ead19d895768"
+    },
+    "assets/gsp_boot_desc_ga102.bin": {
+      "bytes": 84,
+      "sha256": "cc5a3fc1f4c47f2fe107b1b68f0176d8a448e6dec84b575e5560ccef5262bf15"
+    }
+  },
+  "archive": {
+    "path": "/home/halbritt/.local/share/infra/evidence/peecee-gpu-unlock-port-20261026/peecee-z690i-usb.zip",
+    "bytes": 73390073,
+    "sha256": "8429b1d407341bec08344a9c1bc228fca890fbc8cbcc6d952408236c8558930f"
+  }
+}

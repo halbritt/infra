@@ -1,0 +1,241 @@
+{
+  "schema_version": "decision-receipt/2",
+  "receipt_id": "peecee-z690i-usb-20261026",
+  "question": "Can the captured Z690-I/3090 Ti identities use the existing ASUS aggregate-console release path with unchanged runtime guards, sufficient host replay to build an experimental USB package, and no claim of physical unlock support?",
+  "scope": [
+    "Exact Z690-I BIOS4601 / RTX3090Ti profile",
+    "Host replay and experimental USB build"
+  ],
+  "status": "verified",
+  "authority_boundary": {
+    "owner": "halbritt",
+    "authority_source": "Owner requested starting the proposed port after the confirmed BIOS4601 probe",
+    "authorized_scope": [
+      "Implement and verify the exact-machine port",
+      "Prepare the USB package"
+    ]
+  },
+  "evidence": [
+    {
+      "schema_version": "evidence-record/1",
+      "id": "peecee-authority",
+      "evidence_class": "evidence-explicit-user-requirements",
+      "summary": "Owner halbritt requested starting the previously proposed exact-machine aggregate-console port after BIOS4601 capture. Scope: source profile, host verification, USB package preparation. No claim of hardware unlock support until physical test; do not alter unrelated services or boot configuration.",
+      "provenance": [
+        {
+          "locator": "conversation:agent-563/user-get-started",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/AGENTS.md",
+          "method": "direct inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "decision owner",
+        "explicit task authority",
+        "task scope and authority statement",
+        "accepted problem and outcome",
+        "user instruction and authority",
+        "accepted desired behavior and semantic authority",
+        "accepted behavior"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "peecee-contracts",
+      "evidence_class": "evidence-repository-contracts",
+      "summary": "No additional AGENTS files in source ancestry. PORTABILITY stage4 requires exact hardware profile, positive/negative host evidence and separate hardware evidence. Infra requires canonical dated provenance, validation, commit/push. Reuse existing aggregate release path and retain generic local-profile admission policy.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/docs/PORTABILITY.en.md",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/hosts/peecee/AGENTS.md",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/AGENTS.md",
+          "method": "direct inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "repository contract",
+        "repository placement constraints",
+        "task scope and repository orientation",
+        "verification and integration route",
+        "language and repository convention",
+        "repository instructions from root through target path",
+        "target repository and task scope",
+        "accepted ADR, RFC, API, compatibility, generation, build, and test contracts"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "peecee-release-source",
+      "evidence_class": "evidence-static-source-structure",
+      "summary": "The existing aggregate release and full-flow code authenticate identity, driver bindings, code and ownership graphs before transitions. Release failures stop; no retry or Windows continuation after failed release/unlock. New production changes select immutable profile constants only; build scripts restrict this profile to USB headless writes. Hardware functions and failure policy are unchanged. No new abstraction or performance claim. USB preparation is reversible by restoring the prior BOOTX64.EFI; no internal ESP or NVRAM changes are required. The wrapper validates the actual firmware PCI/driver graph at each release stage; host mocks exercise this same source but cannot prove real Stop callbacks succeed. Windows handoff is allowed only after successful unlock and fresh released-state verification.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/boot/full-release.c",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/boot/full-flow.c",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/boot/handoff.c",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/unlock/machine-profile.h",
+          "method": "direct inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "affected behavior and state",
+        "caller recovery needs",
+        "cleanup obligations",
+        "operation and caller contract",
+        "containment boundary",
+        "side effects and idempotency",
+        "restart and recovery behavior",
+        "current relevant behavior",
+        "risk class",
+        "risk and boundary inventory",
+        "change-type classification",
+        "per-edit change classification",
+        "preservation boundary and semantic authority",
+        "preservation matrix and consumers",
+        "accepted contract or explicitly labeled characterization target",
+        "reversibility and verification",
+        "inventory of gates and the signals they observe",
+        "proof the check reads that signal rather than a derived view",
+        "the authoritative signal named for each gate",
+        "eval-versus-serving configuration parity",
+        "latent security, safety, data, durability, and compatibility check",
+        "proc-establish-preservation-boundaries"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "peecee-capture-tests",
+      "evidence_class": "evidence-tests",
+      "summary": "Captured PCI acceptance failed 3/244 checks before new profile and passes 244 afterward; 65 captured aggregate graph checks accept actual ownership and reject modified driver code, versions, missing/extra owners and incomplete release. Eleven host jobs pass including transaction fault injection and automatic headless USB app. RAM-only firmware mocks do not establish real driver detach, GPU unlock or Windows recovery; that remains the next experiment.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/research/profile/build/z690i/test-results.json",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/gpu-unlock-winport/Windows-GPU-UNLOCK/internal-boot/boot/test_aggregate_capture.c",
+          "method": "direct inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "current suite",
+        "defect reproduction when applicable",
+        "observable oracle",
+        "which edge cases unit tests already cover",
+        "tests, characterization, probes, or explicit residual risk",
+        "checkpoint verification",
+        "the observable behavior the test verifies stated in domain terms",
+        "behavior contract in domain terms",
+        "the behavior's boundary independent of the current class decomposition"
+      ]
+    },
+    {
+      "schema_version": "evidence-record/1",
+      "id": "peecee-capture",
+      "evidence_class": "evidence-runtime-observation",
+      "summary": "Confirmed BIOS4601 DIAG01 capture completed with result zero. PCI2203:10de subsystem1618:10de, PROM586baad14e09c28019499c7270aa608b878f8a87c457de13490fa7a855cfb30a. Active console aggregate topology and AMI/NVIDIA fingerprints match the existing B660M path; hardware IDs, BAR and path differ. Generic local generator refuses missing ConOut. No further identical probe is needed to reproduce this refusal. A profile experiment is narrower than loosening generic admission; no-change leaves this exact machine unsupported. Physical unlock and speedup unmeasured.",
+      "provenance": [
+        {
+          "locator": "/home/halbritt/.local/share/infra/evidence/peecee-gpu-probe-20261026/boot4-confirmed4601/DIAG01.TXT",
+          "method": "direct inspection in agent-563"
+        },
+        {
+          "locator": "/home/halbritt/git/infra/hosts/peecee/config/gpu-unlock/README.md",
+          "method": "direct inspection in agent-563"
+        }
+      ],
+      "satisfies": [
+        "trustworthiness of current state",
+        "current source, configuration, and relevant runtime state",
+        "a bounded decision question",
+        "alternatives including no change where viable",
+        "claim-relative observation such as accepted requirement, reproduction, incident, recurring change, operational constraint, or representative measurement",
+        "evidence connecting the proposed action to the condition",
+        "actual current cost/risk or absence within a stated interval",
+        "intervention cost and uncertainty"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "host-only-verification",
+      "type": "verification",
+      "text": "The profile passes 11 RAM-only host jobs and the two EFI executables pass PE verification. Physical unlock and Windows handoff remain untested.",
+      "depends_on": [
+        "peecee-capture-tests",
+        "peecee-capture"
+      ],
+      "evidence": [
+        "peecee-capture-tests"
+      ],
+      "criteria": [
+        "Captured PCI and console graph accepted",
+        "Wrong card and graph mutations rejected",
+        "Existing transaction failure cases retained",
+        "PE subsystem and import checks pass"
+      ]
+    }
+  ],
+  "alternatives": [
+    {
+      "option": "Reuse the existing aggregate release algorithm with exact captured profile constants",
+      "disposition": "selected",
+      "evidence": [
+        "peecee-capture",
+        "peecee-release-source"
+      ]
+    },
+    {
+      "option": "Loosen generic local-profile admission",
+      "disposition": "rejected",
+      "evidence": [
+        "peecee-contracts"
+      ]
+    },
+    {
+      "option": "Leave this machine unsupported",
+      "disposition": "rejected",
+      "evidence": [
+        "peecee-authority"
+      ]
+    }
+  ],
+  "source_locators": [
+    "internal-boot/unlock/machine-profile.h",
+    "internal-boot/boot/full-release.c",
+    "research/profile/test_z690i.py",
+    "evidence/z690i-3090ti-usb/README.md"
+  ],
+  "corpus_version": "corpus-2026-07-12-a11702cc9217",
+  "retriever_version": "retriever-ec995ecdd083b2c8",
+  "verification_criteria": [
+    "All host jobs pass",
+    "PE verification passes",
+    "Hardware acceptance requires a separate observed boot and benchmark"
+  ],
+  "reopening_conditions": [
+    "BIOS, GPU, display path, driver fingerprints or PROM change",
+    "Any runtime ownership, identity, cold-state or cleanup refusal"
+  ],
+  "residual_risk": [
+    "Host mocks cannot establish real firmware Stop callback behavior, GPU unlock, driver recovery or BF16 performance.",
+    "SSH was unreachable while packaging; live staging and a hardware test remain pending."
+  ]
+}

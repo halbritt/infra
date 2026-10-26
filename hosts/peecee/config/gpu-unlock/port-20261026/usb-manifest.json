@@ -1,0 +1,15 @@
+{
+  "Format": 2,
+  "HardwareProfile": "ASUS-ROG-STRIX-Z690-I-4601-RTX3090TI",
+  "Mode": "single-rtx-headless-unlock-then-windows-usb",
+  "CanUnlock": true,
+  "RequiresHumanKey": false,
+  "HardwareTested": false,
+  "ChildSha256": "29729569c613e7fed16303a6b7faa3ccd997473a8edbccc59e704855263e0a64",
+  "ChildBytes": 67584,
+  "EfiSha256": "e976d28cef44dca9841c66f1ea18504f4955a9d7248083d911fe878b6c52e7dd",
+  "EfiBytes": 39424,
+  "BuiltUtc": "2026-10-26T20:38:01.018467+00:00",
+  "WindowsEspGuid": "c4b263fb-2821-4034-a2b0-3f3a4dfacc15",
+  "HostTestsSha256": "bd39d8629876885abc67407a4495d57b9f1010ad05c2054395a813495ffad452"
+}
