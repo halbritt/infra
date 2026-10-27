@@ -77,7 +77,7 @@ tunnel.
 
 ## Cards on the index
 
-Sweep of 2026-09-15 — 17 cards, all reachable
+Sweep of 2026-10-27 — 18 cards, all reachable
 (`check-links.sh` exit 0). Card names are the `<h2>` text.
 
 | card | target | status |
@@ -92,6 +92,7 @@ Sweep of 2026-09-15 — 17 cards, all reachable
 | BinKeeper: Register Labeled Bin | `:8766/register` | 200 |
 | BinKeeper: Sort a Stash | `:8766/stash` | 200 |
 | Pastebin | `:18080/` | 200 |
+| Artifact | `https://artifact.harm.org/` | 200 |
 | Markdown Browser | `:8444/` | 200 |
 | Grafana — proximal dashboards | `:8853/` | 302 (login) |
 | VictoriaMetrics — proximal | `:9491/` | 200 |
@@ -100,7 +101,8 @@ Sweep of 2026-09-15 — 17 cards, all reachable
 | Council | `:7331/` | 200 |
 | Genome Report | `:8786/` | 200 |
 
-All targets are `https://proximal.tail0ecc2e.ts.net`.
+All port-only targets use `https://proximal.tail0ecc2e.ts.net`.
+The Artifact card targets public `https://artifact.harm.org/`.
 
 ### Removed cards
 
@@ -258,3 +260,13 @@ Stop and ask before:
 - deleting a card for a retired service — ask first, then record it under
   [Removed cards](#removed-cards) so it stays restorable
 - putting anything on this page that is not a URL: it is world-readable
+
+## Public Artifact service — 2026-10-26
+
+Added the verified public Artifact card at the owner’s request. Unlike the
+private genome report, this service explicitly allows anonymous publication and
+reads. Only its homepage URL appears in the index; artifact data lives outside
+Git. See [artifact](../artifact/README.md) for the CLI and deployment.
+
+Verified 2026-10-27 03:18 UTC: all 18 cards reachable (17 HTTP 200, Grafana
+HTTP 302), link sweep exit 0.

@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-10-26 — public Artifact service and CLI
+
+- Owner explicitly requested `artifact.harm.org`, anonymous uploads/reads, short
+  random paths with original filenames, and local/GitHub software repositories.
+  Deployed `halbritt/artifact` revision `0100361` from `~/git/artifact` as an enabled
+  user systemd service on loopback port 8879; installed CLI and daemon binaries.
+- Files and folders publish as immutable six-character-ID snapshots with HTML/JS,
+  relative assets, individual downloads, ZIP and checksum manifests. Data lives
+  outside Git under `~/.local/share/artifact`; publications do not expire.
+- Added a hostname-specific route to both Cloudflare tunnel configs using existing
+  wildcard DNS, and a verified Artifact card on the Tailscale index.
+- Verified anonymous public CLI publication, interactive browser behavior, exact
+  CSV/ZIP bytes, restart persistence, and desktop/phone UI checks. All 18 index
+  links reachable. Software race tests/vet and 43 infra tests/validation passed.
+  [Deployment and verification](config/artifact/README.md).
+
 ## 2026-10-26 — remove Hangar test setup
 
 - Owner requested removal after the production cutover. Removed the port-10001

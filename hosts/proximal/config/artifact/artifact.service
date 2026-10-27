@@ -1,0 +1,19 @@
+[Unit]
+Description=Public artifact publishing and downloads
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/artifactd --listen 127.0.0.1:8879 --data %h/.local/share/artifact --base-url https://artifact.harm.org
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0022
+MemoryMax=512M
+TasksMax=128
+
+[Install]
+WantedBy=default.target

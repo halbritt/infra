@@ -41,6 +41,7 @@ no explicit DNS record of its own — onto Pages. Do not point it back at `harm.
 
 | public hostname | local service |
 |---|---|
+| `artifact.harm.org` | `http://127.0.0.1:8879` ([`../artifact`](../artifact/)) |
 | `tailscale.harm.org` | `http://localhost:3912` ([`../tailscale-index`](../tailscale-index/)) |
 | `newsroom.harm.org` | `http://localhost:3913` ([`../ai-newsroom`](../ai-newsroom/)) |
 | `morning.harm.org` | `http://127.0.0.1:8878` ([`../morning`](../morning/)) |
@@ -156,3 +157,10 @@ configs validate; installed ingress parity is exact. Newsroom root, topic pages,
 CSS, RSS and the first editorial return 200; private archive/draft paths return
 404. Tailscale index, tokens, dram, Plane and Pastebin remain reachable (200).
 No DNS records or tunnel credentials were changed.
+
+Verified 2026-10-26 (2026-10-27 UTC): installed the owner-authorized
+`artifact.harm.org` hostname route to `127.0.0.1:8879` in both configurations.
+Existing wildcard DNS resolved without changes. Ingress validation and parity
+(excluding comments and credential paths) passed. Anonymous public CLI upload,
+HTML/JS/CSS, individual download and ZIP download passed. Tailscale index,
+Pastebin and Plane instances endpoint each returned HTTP 200 after restart.
