@@ -1,5 +1,22 @@
 # striatum-next
 
+## Current deployment — Talos
+
+Engineering execution moved to Talos on 2026-10-24. On 2026-10-28 the owner
+confirmed Striatum-next is the current project and deprecated Striatum may be
+removed. Proximal's old local wake, warmtier and exchange-GC units are masked;
+the captured installation instructions below are historical, not instructions
+to reactivate scheduling here. A read-only Talos check on 2026-10-28 confirmed
+its 94 GiB store and active wake/warmtier/exchange timers.
+
+Proximal still runs `striatum-talos-cairn-relay.service` and
+`striatum-talos-compat-relay.service`. They forward Cairn, PostgreSQL and local
+inference services to Talos. Preserve them and shared authentication mirrors.
+Proximal's retired 89 GiB store, installed successor binaries and source
+checkouts remain; removal of local successor runtime leftovers was asked
+separately from the authorized legacy daemon cleanup.
+
+
 Host wiring for **striatum-next** (`~/git/striatum-next`) — the successor to the
 retired `striatumd` (see [`../striatum/README.md`](../striatum/README.md), retired
 2026-07-21). Unlike the old daemon there is no long-running service: `striatum drive`

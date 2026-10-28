@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-10-28 — verify boot and remove retired PostgreSQL/Striatum resources
+
+- Verified new kernel, NVIDIA driver, ZFS, PG18, archiving and application
+  endpoints. Fixed the boot check's false failure for socket-activated SSH.
+- At the owner's request, removed PG16/PG17 clusters and packages, the 25 GiB
+  deprecated Striatum database and its two roles, old daemon wiring/state,
+  and the lane account/home. Root free space increased from 170 to 464 GiB.
+- Repointed PostgreSQL monitoring to `postgres`; removed retired metrics/panels.
+  Preserved Talos relays, shared authentication and historical source records.
+- All 20 connectable databases pass index, extension and collation checks;
+  both exporters and the full boot check pass. All 43 repo tests and validation pass.
+- [Execution and recovery evidence](ubuntu-26.04-upgrade.md#postboot-verification-and-owner-authorized-cleanup--2026-10-28).
+
 ## 2026-10-28 — Ubuntu 26.04 and PostgreSQL 18
 
 - Installed Ubuntu 26.04.1 and migrated PostgreSQL 17.11 to 18.6 in copy mode;

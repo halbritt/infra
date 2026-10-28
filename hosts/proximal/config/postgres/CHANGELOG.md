@@ -6,6 +6,16 @@ provenance repo. Newest first. Config changes record the live cluster (`proximal
 `7652478211804703267`/17.11 and `7628053153555146077`/16.14); see `reports/` and `inventory/` for the evidence behind each
 entry, and `git log` for granular history.
 
+## 2026-10-28 — remove old clusters and deprecated Striatum database
+
+After successful reboot verification and explicit owner authorization, removed
+PG16/PG17 clusters and packages, `striatum_daemon`, `striatumd_rw`, and
+`striatumd_rw_test`. Monitoring now connects to `postgres`; obsolete repack
+wiring and supervisor metrics were removed. PG18 has 21 databases, 39 roles
+and 30 memberships. All 20 connectable databases pass index/extension/collation
+checks; archiving and both exporters pass. The pre-cleanup PG18 full backup is
+retained. [Execution record](../../ubuntu-26.04-upgrade.md).
+
 ## 2026-10-28 — PostgreSQL 18 migration and orphan-role cleanup
 
 - Native copy-mode upgrade completed; 18/main online on 5432, 17/main retained

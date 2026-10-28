@@ -44,7 +44,8 @@ Enable the timer without starting it; it runs two minutes into the next boot.
 
 The check refuses to report success in the original boot. It checks the OS,
 kernel, package consistency, NVIDIA, ZFS, PostgreSQL and collation state,
-archiving, core services and application HTTP endpoints. Output is retained in
+archiving, core services and application HTTP endpoints. SSH is checked with a protocol
+handshake so socket activation is exercised before testing availability. Output is retained in
 `postboot-check.log`; success creates `postboot-check.passed` and disables the
 timer. Failure leaves the native service failed and the timer enabled for a
 subsequent boot. Inspect the log and fix actual failures before rerunning.

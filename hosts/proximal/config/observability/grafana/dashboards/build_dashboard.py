@@ -137,22 +137,11 @@ panels.append(ts("Buffers / s", [
 ], 12, y, unit="ops"))
 y += 8
 
-# --- Bloat & Longevity ---
-panels.append(row("Bloat & Longevity (striatum#421 / pg-repack-bloated.timer)", y)); y += 1
-panels.append(ts("Supervisor table size (total)", [
-    ("pg_supervisor_tables_total_bytes", "{{table_name}}"),
-], 0, y, unit="bytes"))
-panels.append(ts("Supervisor dead tuples", [
-    ("pg_supervisor_tables_dead_tuples", "{{table_name}}"),
-], 12, y, unit="short"))
-y += 8
+# --- Database longevity ---
+panels.append(row("Database Longevity", y)); y += 1
 panels.append(ts("XID wraparound age (% of 2^31)", [
     ("topk(10, max by (datname)(pg_database_wraparound_age_datfrozenxid_seconds)) / 2147483648 * 100", "{{datname}}"),
-], 0, y, unit="percent", fill=0))
-panels.append(ts("Supervisor heap vs index bytes", [
-    ("pg_supervisor_tables_heap_bytes", "heap {{table_name}}"),
-    ("pg_supervisor_tables_index_bytes", "index {{table_name}}"),
-], 12, y, unit="bytes"))
+], 0, y, w=24, unit="percent", fill=0))
 y += 8
 
 # --- Top queries ---
@@ -176,7 +165,7 @@ panels.append(ts("Filesystem free bytes (/)", [
 dashboard = {
     "uid": "pg-proximal-health",
     "title": "PostgreSQL — proximal (17/main)",
-    "tags": ["postgresql", "proximal", "striatum"],
+    "tags": ["postgresql", "proximal"],
     "timezone": "browser",
     "schemaVersion": 39,
     "version": 1,

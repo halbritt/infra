@@ -1,5 +1,12 @@
 # maintenance/
 
+## Retired — 2026-10-28
+
+The owner authorized deletion of `striatum_daemon` after PG18 boot verification.
+The installed `pg-repack-bloated` script, service and timer were removed.
+The files and instructions below are historical provenance, not desired state.
+
+
 Runnable ops artifacts for the proximal cluster. The repo holds the **canonical**
 copies; the box runs installed copies (paths below). Edit here, then re-install.
 

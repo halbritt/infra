@@ -17,12 +17,14 @@ How to reach the PostgreSQL instance on **proximal**. **No passwords here** — 
 Minor update to 17.11 activated on 2026-09-29; system identifier unchanged.
 See [the execution report](reports/PG17_11_UPGRADE_2026-09-29.md).
 
-Upgraded 17.11 → 18.6 on 2026-10-28 alongside Ubuntu 26.04. PG17 is retained
-stopped on 5434 with manual startup; PG16 remains stopped on 5433. The original
+Upgraded 17.11 → 18.6 on 2026-10-28 alongside Ubuntu 26.04. After successful
+postboot verification, the owner authorized removal of both old clusters and
+the deprecated `striatum_daemon` database. Only `18/main` remains. The original
 access policy and durability settings are preserved. See the
 [October execution report](../../ubuntu-26.04-upgrade.md), including removal of
 21,557 verified orphan test roles, extension updates and collation reindexing.
-There are 41 roles and 33 membership grants after cleanup. Historical inventories
+There are 39 roles and 30 membership grants after deleting the two dedicated
+Striatum roles. The exporter now connects to `postgres`. Historical inventories
 below retain their original dates; they are not a current size or workload census.
 
 ## Cairn consolidation — 2026-09-29

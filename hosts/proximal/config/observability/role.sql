@@ -20,7 +20,7 @@ END $$;
 ALTER ROLE postgres_exporter WITH LOGIN CONNECTION LIMIT 5 PASSWORD 'REDACTED_SET_FROM_GENERATED_SECRET';
 
 GRANT proximal_monitor TO postgres_exporter;            -- inherits pg_monitor
-GRANT CONNECT ON DATABASE striatum_daemon TO postgres_exporter;
+GRANT CONNECT ON DATABASE postgres TO postgres_exporter;
 
 -- gpu-fleet registry metrics (PROXIMAL-5): the SECOND exporter instance (:9188, see
 -- exporter/prometheus-postgres-exporter-gpufleet.*) connects to gpu_fleet with this same

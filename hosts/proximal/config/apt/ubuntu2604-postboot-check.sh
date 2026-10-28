@@ -43,7 +43,9 @@ END $$;
 SQL
 check archiving runuser -u postgres -- pgbackrest --stanza=proximal check
 
-for unit in ssh tailscaled docker postgresql@18-main nvidia-persistenced binkeeper llama-27b plane-harm-org; do
+# ssh.socket starts sshd on demand; an idle service is not a boot failure.
+check ssh bash -o pipefail -ec 'ssh-keyscan -T 5 127.0.0.1 2>/dev/null | grep -q "^127.0.0.1 "'
+for unit in tailscaled docker postgresql@18-main nvidia-persistenced binkeeper llama-27b plane-harm-org; do
     check "$unit.service" systemctl is-active --quiet "$unit.service"
 done
 for unit in cairn-api cairn-scheduler praxisd praxis-slack praxis-sms gpu-fleet-heartbeat token-dashboard-api; do

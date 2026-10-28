@@ -131,7 +131,7 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `grafana/dashboards/pg-proximal-health.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/node-exporter-full-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/nvidia-gpu-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
-| `grafana/dashboards/striatum-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
+| `grafana/dashboards/striatum-proximal.json` | Historical only; removed from Grafana on 2026-10-28 |
 | `grafana/dashboards/gpu-fleet-proximal.json` | `/var/lib/grafana/dashboards/` (provisioned, folder "proximal") |
 | `grafana/dashboards/plant-moisture.json` | `/var/lib/grafana/dashboards-homeassistant/` (provisioned, folder "Home Assistant" — appliance data, not proximal metrics); built by `build_plant_moisture_dashboard.py` |
 | `grafana/dashboards/indoor-environment.json` | `/var/lib/grafana/dashboards-homeassistant/` (folder "Home Assistant"); built by `build_indoor_environment_dashboard.py` — ambient temp/humidity/pressure/light |
@@ -141,7 +141,7 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `role.sql` | run once via `sudo -u postgres psql` |
 | `tailscale-index-card.patch` | **superseded 2026-07-29** — historical record of the Grafana/Prometheus/Alertmanager cards, from when the index dir was not a git repo. The page is now versioned at [`../tailscale-index/`](../tailscale-index/); make index changes there as ordinary commits. |
 
-The port-pin that makes `striatumd` scrapeable lives in the **striatum** subsystem, not here:
+The historical port-pin that made `striatumd` scrapeable lives in the **striatum** subsystem, not here:
 `Environment=STRIATUM_DAEMON_MCP_HTTP_ADDR=127.0.0.1:9464` in
 [`../striatum/striatumd.service`](../striatum/striatumd.service).
 
@@ -246,9 +246,12 @@ custom queries in `queries.yaml`:
 - `stat_statements`: `blk_read_time` was split (`shared_blk_read_time`, …) in pg_stat_statements 1.11.
 
 **`queries.yaml` custom metrics**
-- `pg_supervisor_tables_*` — size / dead-tuples of `process_supervisor_pointers`,
-  `process_supervisors`, `daemon_supervisors`. The bloat watch for `striatum#421` +
-  `pg-repack-bloated.timer` (regrows 2.5 MB → ~150 MB in ~90 min under load, plateaus ~150–255 MB).
+
+The primary exporter connects to `postgres` as of 2026-10-28. The owner authorized
+deletion of the deprecated `striatum_daemon` database. Its supervisor-table
+metrics and dashboard panels were removed before deletion; all remaining
+collectors pass on PG18. The separate gpu-fleet exporter is unchanged.
+
 - `pg_checkpointer_*` — `num_requested` should stay ~0 (validates `max_wal_size=16GB`).
 - `pg_bgwriter_*`, `pg_stat_statements_top_*` (top 25 by total exec time).
 
@@ -258,7 +261,7 @@ not seconds; ÷2^31 ≈ 1.4% baseline), `statio_user_indexes`, `process_idle`.
 
 **Dashboard** — `pg-proximal-health.json` (Grafana folder "proximal"): pg_up, backends vs
 `max_connections`, cache-hit ratio, transactions/deadlocks/temp per db, checkpoints (forced vs
-timed), bgwriter buffers, supervisor table size + dead tuples, XID wraparound %, top-15
+timed), bgwriter buffers, XID wraparound %, top-15
 statements by mean time, and a host row (CPU/mem/disk from node_exporter). Regenerate with
 `python3 dashboards/build_dashboard.py > dashboards/pg-proximal-health.json`. It's set as the
 Grafana **home** dashboard (org pref `homeDashboardUID` + `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH`).

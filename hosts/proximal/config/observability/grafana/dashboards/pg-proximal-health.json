@@ -3,8 +3,7 @@
   "title": "PostgreSQL \u2014 proximal (17/main)",
   "tags": [
     "postgresql",
-    "proximal",
-    "striatum"
+    "proximal"
   ],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -807,7 +806,7 @@
     },
     {
       "type": "row",
-      "title": "Bloat & Longevity (striatum#421 / pg-repack-bloated.timer)",
+      "title": "Database Longevity",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -820,7 +819,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Supervisor table size (total)",
+      "title": "XID wraparound age (% of 2^31)",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-proximal"
@@ -828,129 +827,9 @@
       "id": 16,
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 32
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus-proximal"
-          },
-          "expr": "pg_supervisor_tables_total_bytes",
-          "legendFormat": "{{table_name}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "fillOpacity": 10,
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            }
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": [
-            "last",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "Supervisor dead tuples",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus-proximal"
-      },
-      "id": 17,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 32
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus-proximal"
-          },
-          "expr": "pg_supervisor_tables_dead_tuples",
-          "legendFormat": "{{table_name}}",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "fillOpacity": 10,
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            }
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": [
-            "last",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "XID wraparound age (% of 2^31)",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus-proximal"
-      },
-      "id": 18,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 40
       },
       "targets": [
         {
@@ -999,75 +878,6 @@
       }
     },
     {
-      "type": "timeseries",
-      "title": "Supervisor heap vs index bytes",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus-proximal"
-      },
-      "id": 19,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 40
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus-proximal"
-          },
-          "expr": "pg_supervisor_tables_heap_bytes",
-          "legendFormat": "heap {{table_name}}",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus-proximal"
-          },
-          "expr": "pg_supervisor_tables_index_bytes",
-          "legendFormat": "index {{table_name}}",
-          "refId": "B"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "fillOpacity": 10,
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            }
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": [
-            "last",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      }
-    },
-    {
       "type": "row",
       "title": "Top Queries (pg_stat_statements)",
       "collapsed": false,
@@ -1075,9 +885,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 40
       },
-      "id": 20,
+      "id": 17,
       "panels": []
     },
     {
@@ -1087,12 +897,12 @@
         "type": "prometheus",
         "uid": "prometheus-proximal"
       },
-      "id": 21,
+      "id": 18,
       "gridPos": {
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 41
       },
       "targets": [
         {
@@ -1195,9 +1005,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 51
       },
-      "id": 22,
+      "id": 19,
       "panels": []
     },
     {
@@ -1207,12 +1017,12 @@
         "type": "prometheus",
         "uid": "prometheus-proximal"
       },
-      "id": 23,
+      "id": 20,
       "gridPos": {
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 60
+        "y": 52
       },
       "targets": [
         {
@@ -1267,12 +1077,12 @@
         "type": "prometheus",
         "uid": "prometheus-proximal"
       },
-      "id": 24,
+      "id": 21,
       "gridPos": {
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 60
+        "y": 52
       },
       "targets": [
         {
@@ -1327,12 +1137,12 @@
         "type": "prometheus",
         "uid": "prometheus-proximal"
       },
-      "id": 25,
+      "id": 22,
       "gridPos": {
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 60
+        "y": 52
       },
       "targets": [
         {

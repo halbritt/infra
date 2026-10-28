@@ -1,5 +1,21 @@
 # striatum
 
+## Removal completed — 2026-10-28
+
+After successful Ubuntu 26.04 / PG18 boot verification, the owner authorized
+removal of deprecated Striatum resources. Deleted `striatum_daemon`, the
+`striatumd_rw` and `striatumd_rw_test` roles, installed daemon/support units,
+maintenance scripts, shell profile, daemon binaries and backups, and the
+`striatum-lane` account, home and sudo rule. The main PostgreSQL exporter now
+connects to `postgres`; the old dashboard and supervisor metrics are removed.
+The healthy PG18 full backup predates deletion. Historical source and this
+configuration record remain as provenance. Token-dashboard remains active.
+
+The July retirement record below describes the earlier retained state; it no
+longer authorizes reinstalling the removed daemon. Talos relays and shared
+source-authentication services remain active for the remote deployment.
+
+
 > ## ⚠️ RETIRED — 2026-07-21
 >
 > Striatum (the Go daemon `striatumd` and its host wiring — what this directory
@@ -57,9 +73,10 @@
 >
 > The rest of this file is preserved as historical record of how it was wired.
 
-## Live Striatum-next exchange retention
+## Historical proximal Striatum-next exchange retention
 
-The user-scope `striatum-exchange-gc.timer` belongs to **Striatum-next**, not the
+The user-scope `striatum-exchange-gc.timer` is now masked after migration to
+Talos (see `../striatum-next/README.md`). It belongs to **Striatum-next**, not the
 retired daemon. Its installed service and timer originate in
 `~/git/striatum-next/tools/systemd/`. This host's canonical override is
 [`striatum-exchange-gc.service.d-override.conf`](striatum-exchange-gc.service.d-override.conf),

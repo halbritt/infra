@@ -1,7 +1,8 @@
 # Ubuntu 26.04 upgrade — 2026-10-28
 
 Owner request: upgrade this box to Ubuntu 26.04. Operator: agent-684.
-This record tracks execution; it is not a claim that the upgrade is complete.
+Postboot activation was verified on 2026-10-28 by agent-687. The preparation
+and migration sections below retain their original chronology.
 
 The owner subsequently authorized migrating the managed PostgreSQL cluster to
 18 as well. Install the OS first, then migrate the database with extension
@@ -225,3 +226,57 @@ reboot and its automatic verification; do not treat installed kernel/driver
 packages as evidence of successful boot activation. Read
 `/var/backups/ubuntu-26.04-20261028/postboot-check.log` and require the matching
 `postboot-check.passed` marker from the new boot before recording completion.
+
+
+## Postboot verification and owner-authorized cleanup — 2026-10-28
+
+The host booted at 09:52:24 PDT with kernel `7.0.0-42-generic`, NVIDIA
+615.71.10 and Ubuntu 26.04.1. The automatic check at 09:54 passed everything
+except `ssh.service`: SSH was socket-activated and had not received its first
+connection. The first SSH connection at 09:54:58 started sshd successfully.
+The canonical check now performs an SSH protocol handshake, which exercises
+socket activation. The installed check subsequently passed, including after
+cleanup at 10:04:42: native service `Result=success`, `ExecMainStatus=0`, and
+`postboot-check.passed` in the private recovery directory. The one-time timer
+is disabled after success.
+
+The owner then explicitly authorized removing old PostgreSQL clusters and
+all deprecated Striatum resources, and clarified that `striatum-next` is the
+current project deployed on another host. This supersedes the earlier
+retention boundary for PG16/PG17 and the deprecated daemon database.
+
+- Removed stopped `16/main` (31 GiB) and `17/main` (227 GiB) with
+  `pg_dropcluster`, then purged their version-specific server, client and
+  extension packages. The old `postgresql-contrib` metapackage depended on
+  PG16 and was also removed; PG18's installed extensions remain intact.
+- Moved the main postgres exporter to `postgres` before deleting
+  `striatum_daemon` (26,620,901,055 bytes). Removed supervisor-table metrics
+  and panels and the installed retired Striatum dashboard. Both PostgreSQL
+  exporters report `pg_up 1` and zero scrape errors; every main collector passes.
+- Confirmed no application sessions remained in the legacy database. Its
+  dedicated roles had no dependencies outside that database. Plain
+  `DROP DATABASE` and `DROP ROLE` removed the database, `striatumd_rw`, and
+  `striatumd_rw_test`; no force, cascade, or shared ownership deletion was used.
+- Removed installed daemon/support units, repack job, helper scripts, shell
+  profile, daemon binaries/backups, obsolete private daemon configuration,
+  SQLite state and cached client token. Removed the idle `striatum-lane`
+  account, its 11 GiB home and sudo rule. `visudo -c` passed.
+- Preserved application source checkouts and historical configuration evidence.
+  The retired local Striatum-next store and its binaries remain pending the
+  separately asked cleanup-scope question. Two active Talos relay services,
+  shared authentication/mirroring, Hippo and token-dashboard remain in service.
+
+Only `18/main` remains online on 5432. There are 21 databases (20 connectable),
+39 roles and 30 memberships. All 20 connectable databases have zero invalid
+indexes, extension-version mismatches, or collation mismatches. Durability
+remains `fsync=on`, `full_page_writes=on`, `synchronous_commit=on`,
+`wal_level=replica`. WAL archiving passes. The full PG18 backup
+`20261028-093231F` predates deletion and remains available under normal retention.
+A post-cleanup incremental backup `20261028-093231F_20261028-100505I` also
+completed successfully; pgBackRest reports `status: ok`.
+
+Root free space increased from about 170 GiB to 464 GiB. Native dpkg audit is
+clean. All boot-check services and endpoints pass; `openipmi.service` remains
+an unrelated pre-existing failure. All 43 repository tests and infrastructure
+validation pass. Private cleanup evidence is alongside the upgrade logs:
+`old-postgres-purge.log` and `removed-legacy-files.txt`.

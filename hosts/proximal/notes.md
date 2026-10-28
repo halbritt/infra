@@ -39,6 +39,13 @@ guidance remains in [`PLANE_AGENT_GUIDE.md`](PLANE_AGENT_GUIDE.md).
 
 ## Striatum migration and source authentication
 
+The owner confirmed on 2026-10-28 that Striatum is deprecated and
+Striatum-next is the current project running elsewhere. Following successful
+PG18 boot verification, the legacy daemon database, roles, installed wiring,
+private daemon state and lane account/home were removed. PG16/PG17 were also
+removed. Preserve the active Talos relays and shared source authentication.
+
+
 Striatum engineering execution moved to Talos on 2026-10-24. At the owner's
 request on 2026-10-25, the read-only bind mount over
 `~/.local/share/striatum` and its systemd mount unit were removed. The retained

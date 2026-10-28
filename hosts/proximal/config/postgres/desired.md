@@ -45,37 +45,12 @@ ALTER SYSTEM SET effective_cache_size = '32GB';
 ALTER SYSTEM SET maintenance_work_mem = '1GB';
 ```
 
-## Database- and table-scoped settings (not `ALTER SYSTEM`) — applied 2026-06-17
+## Retired Striatum database settings
 
-Targeted at the `striatum_daemon` DB and its hot tables to contain the `append_event_row`
-57014 lock-contention incident (see
-`reports/INCIDENT_57014_append_event_row_lock_contention_2026-06-17.md`). Take effect on the
-daemon's next connections (post-restart).
-
-```sql
--- Fail blocked appends fast (55P03, retryable) instead of burning the 60 s statement_timeout
--- (57014); bound transactions left idle so they can't hold the per-repo
--- repo_event_chain_heads FOR UPDATE lock / pin xmin for minutes.
--- DB level, NOT role level: the daemon's L0 bootstrap re-asserts striatumd_rw's role GUCs on
--- startup (resets to statement_timeout=600s) and wipes ALTER ROLE settings; ALTER DATABASE
--- survives it (verified across a restart).
-ALTER DATABASE striatum_daemon SET lock_timeout = '3s';
-ALTER DATABASE striatum_daemon SET idle_in_transaction_session_timeout = '15s';
--- (statement_timeout=600s on role+db is pre-existing; the daemon sets 60 s per session.)
-
--- Hot churned tables: vacuum on small absolute dead counts, full speed, HOT headroom.
-ALTER TABLE striatumd.repo_event_chain_heads      SET (fillfactor=70, autovacuum_vacuum_scale_factor=0.0,  autovacuum_vacuum_threshold=25, autovacuum_analyze_scale_factor=0.05, autovacuum_vacuum_cost_delay=0);  -- owned by postgres
-ALTER TABLE striatumd.process_supervisor_pointers SET (fillfactor=80, autovacuum_vacuum_scale_factor=0.05, autovacuum_vacuum_threshold=50, autovacuum_analyze_scale_factor=0.05, autovacuum_vacuum_cost_delay=0);
-ALTER TABLE striatumd.daemon_supervisors          SET (fillfactor=80, autovacuum_vacuum_scale_factor=0.05, autovacuum_vacuum_threshold=50, autovacuum_analyze_scale_factor=0.05, autovacuum_vacuum_cost_delay=0);
-ALTER TABLE striatumd.process_supervisors         SET (fillfactor=80, autovacuum_vacuum_scale_factor=0.05, autovacuum_vacuum_threshold=50, autovacuum_analyze_scale_factor=0.05, autovacuum_vacuum_cost_delay=0);
--- Append-only big tables: insert-driven autovacuum (VM/freeze) + keep stats fresh.
-ALTER TABLE striatumd.events    SET (autovacuum_vacuum_insert_scale_factor=0.05, autovacuum_vacuum_insert_threshold=10000, autovacuum_analyze_scale_factor=0.02, autovacuum_analyze_threshold=5000);
-ALTER TABLE striatumd.audit_log SET (autovacuum_vacuum_insert_scale_factor=0.05, autovacuum_vacuum_insert_threshold=10000, autovacuum_analyze_scale_factor=0.02, autovacuum_analyze_threshold=5000);
-```
-
-Revert: `ALTER DATABASE striatum_daemon RESET lock_timeout; ALTER DATABASE striatum_daemon
-RESET idle_in_transaction_session_timeout;` and `ALTER TABLE … RESET (…)` per table. Durable
-root-cause fix is app-side (striatum#198/#355) + a PG 17 upgrade for `transaction_timeout`.
+The owner authorized deletion of `striatum_daemon` on 2026-10-28 after successful
+PG18 boot verification. Its database and table overrides no longer apply.
+The prior SQL remains in Git history and the
+[June incident report](reports/INCIDENT_57014_append_event_row_lock_contention_2026-06-17.md).
 
 ## Evaluated and deliberately left at default (2026-06-17)
 
@@ -88,7 +63,7 @@ for this CPU-bound, ~100%-cached OLTP workload, so **no change**:
   ~zero physical I/O). Revisit only after the deferred indexes land.
 - `effective_io_concurrency` (1) — 132 physical-read blocks total; nothing to prefetch.
 
-The real bottleneck is **missing indexes in `striatum_daemon`** (different surface —
+The June workload bottleneck was **missing indexes in `striatum_daemon`** (different surface —
 see `reports/PROXIMAL_16_MAIN_POSTGRES_TUNING_REPORT_CLAUDE_OPUS_4_8_2026-06-17.md` and
 `inventory/2026-06-16/deferred-findings.md` DF-2). Do not re-propose these GUCs without
 new evidence.
