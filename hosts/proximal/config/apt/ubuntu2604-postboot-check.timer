@@ -1,0 +1,9 @@
+[Unit]
+Description=Check Ubuntu 26.04 upgrade two minutes after boot
+
+[Timer]
+OnBootSec=2min
+Unit=ubuntu2604-postboot-check.service
+
+[Install]
+WantedBy=timers.target

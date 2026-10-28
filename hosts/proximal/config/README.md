@@ -20,7 +20,7 @@ Each directory beside this file is one subsystem, self-contained with its own `R
 | dir | subsystem | what it tracks |
 |---|---|---|
 | [`update-bot/`](update-bot/) | Daily software and OS maintenance | Hermes/DeepSeek updater for approved tools and Ubuntu packages; protected sessions, Cairn/Git receipts and independent Slack monitoring |
-| [`postgres/`](postgres/) | PostgreSQL 17 (`:5432`) | GUC baseline/desired/known-bad, inventory snapshots, tuning reports, pg-repack maintenance, vendored best-practices skill |
+| [`postgres/`](postgres/) | PostgreSQL 18 (`:5432`) | GUC baseline/desired/known-bad, inventory snapshots, tuning reports, pg-repack maintenance, vendored best-practices skill |
 | [`observability/`](observability/) | Prometheus + Grafana + exporters | node_exporter (host) + postgres_exporter (PG) + nvidia_gpu_exporter (RTX 3090) → Prometheus → Grafana dashboards; all systemd, tailnet-bound |
 | [`cloudflared/`](cloudflared/) | Cloudflare Tunnel edge for `harm.org` | public hostname ingress to selected loopback services, including `plane.harm.org` -> Plane on `127.0.0.1:8190`; tunnel credentials stay root-only under `/etc/cloudflared` |
 | [`harm-enterprises/`](harm-enterprises/) | `harm.org` static site | **retired 2026-07-25** after moving to Cloudflare Pages; origin content and rollback unit remain preserved, public ingress was removed, and the `:8890` Tailscale Serve mirror was torn down 2026-07-29 |

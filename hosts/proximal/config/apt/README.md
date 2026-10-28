@@ -32,3 +32,20 @@ compatibility requirement rather than carried forward automatically.
 
 NVIDIA package provenance stays with NVIDIA. The exact-source DKMS compatibility
 repair is documented in `../nvidia/`; it does not prevent package updates.
+
+## One-time upgrade boot check
+
+Install `ubuntu2604-postboot-check.sh` as root-owned mode 0755 at
+`/usr/local/sbin/ubuntu2604-postboot-check`, and the matching service/timer as
+root-owned mode 0644 under `/etc/systemd/system/`. Before reboot, write the current
+boot ID to `preboot-id` and the installed target kernel release to
+`expected-kernel`, both in the private recovery directory named above.
+Enable the timer without starting it; it runs two minutes into the next boot.
+
+The check refuses to report success in the original boot. It checks the OS,
+kernel, package consistency, NVIDIA, ZFS, PostgreSQL and collation state,
+archiving, core services and application HTTP endpoints. Output is retained in
+`postboot-check.log`; success creates `postboot-check.passed` and disables the
+timer. Failure leaves the native service failed and the timer enabled for a
+subsequent boot. Inspect the log and fix actual failures before rerunning.
+This checks boot activation; it does not prove complete application behavior.

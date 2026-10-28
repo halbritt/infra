@@ -146,3 +146,82 @@ plain `DROP ROLE` in separate transactions; do not use `DROP OWNED`, cascade,
 or delete application databases. Preserve the private globals backup and old
 cluster. Record actual counts and remaining application-role checks below once
 the cleanup has completed.
+
+## PG18 migration and validation results
+
+The native copy-mode migration ran from approximately 08:56 to 09:24 PDT and
+completed successfully. Most elapsed time was the avoidable globals restore.
+All 22 databases were preserved. PG18 is online on 5432; PG17 is stopped on
+5434 with manual startup, and the earlier PG16 copy is stopped on 5433.
+No old cluster or application database was deleted.
+
+The complete target catalogs confirmed 21,557 exact test-role matches with no
+matching databases, active sessions, or shared dependencies. Plain `DROP ROLE`
+in individual transactions removed them, reducing the PG18 catalog from 21,598
+roles / 64,124 memberships to **41 roles / 33 memberships**. Comparisons found
+zero changes to retained role attributes and unrelated memberships. The
+historical `halbritt` grant on `striatumd.repo_event_chain_heads` remains effective.
+
+The generated extension-update script encountered the known dependency of
+`pg_stat_kcache` on the `pg_stat_statements` view being replaced. All affected
+extensions were owned by postgres in public with standard grants. The initial
+schema-dump restore attempt included unrelated application types and failed;
+its transaction rolled back. The successful repair transaction used plain
+`DROP EXTENSION pg_stat_kcache`, updated `pg_stat_statements`, and recreated
+`pg_stat_kcache` with the same effective privileges. No CASCADE was used. The
+native extension script then completed, and all installed extension SQL
+versions match their available defaults, including pgvector 0.8.7.
+
+Reindexed all 20 connectable databases with changed default glibc collations,
+then refreshed their version metadata from 2.39 to 2.43. Cairn uses C and has
+no objects depending on changed explicit collations, so its indexes did not
+need a locale rebuild. All 21 connectable databases have zero invalid indexes,
+zero extension-version mismatches and zero collation-version mismatches. Native
+missing-statistics and full ANALYZE passes completed successfully. Durability
+and shared-preload settings remain unchanged.
+
+Installed the canonical PG18 pgBackRest configuration and completed offline
+`stanza-upgrade`. Native checks confirmed WAL archive delivery to `18-3/`,
+including another successful check after applications returned. The original
+HBA policy was restored byte-for-byte on PG18 and the retained PG17 cluster;
+the temporary cluster-creation override was removed. The first full PG18 backup,
+**`20261028-093231F`**, completed successfully at 09:44 PDT: 220.6 GiB of database
+files, 29.8 GiB compressed. Normal retention cleanup completed at 09:45, and
+`ubuntu2604-pg18-fullbackup.service` exited successfully. Native pgBackRest info
+reports `status: ok`; the preceding PG17 full and pre-upgrade incremental backup
+remain available. Private log: `pg18-fullbackup.log`.
+
+## Services and boot activation
+
+The remaining vendor packages were upgraded to Ubuntu 26.04 builds, and the
+OpenFOAM development/default packages removed by the release upgrader were
+restored. `apt-get -s dist-upgrade` reports zero pending upgrades, dpkg audit is
+clean, and no APT holds remain. The routine update helper now permits resolute
+release/security/updates packages; its original protected-package scope remains.
+
+All baseline user services returned to active state. Restarted Python HTTP and
+Praxis services passed startup with the new system interpreter; retained Python
+3.12 environments also start successfully. Cairn authenticated reads/writes,
+both Plane instance APIs, BinKeeper's root page and the token-dashboard API
+respond successfully. The token-dashboard privacy canary passed. Transient
+database-outage failures in Cairn delivery alerts recovered on their normal
+timer. The previously failed email canary remains a baseline issue.
+
+ZFS reports healthy. NVIDIA persistence/CDI failures reflect the still-loaded
+old driver versus newly installed userspace; activation requires reboot.
+The installed target kernel is 7.0.0-42-generic, while 6.8.0-147 is still running.
+New initramfs contains GPU-unlock and excludes early NVIDIA driver loading.
+The [one-time boot check](config/apt/README.md#one-time-upgrade-boot-check)
+is enabled for the next boot; its private log and success marker distinguish
+installation from verified activation. Shell syntax and native systemd-unit
+validation passed; the same-boot guard correctly refuses premature verification.
+Native unit validation also reported pre-existing warnings: an ignored
+`[Resolve]` section in a service drop-in and a deprecated XFS accounting option.
+Live DNS works; those unrelated settings were not changed.
+
+The four maintenance timers stopped for the upgrade are active again. All 43
+repository tests and infrastructure validation pass. The remaining step is the
+reboot and its automatic verification; do not treat installed kernel/driver
+packages as evidence of successful boot activation. Read
+`/var/backups/ubuntu-26.04-20261028/postboot-check.log` and require the matching
+`postboot-check.passed` marker from the new boot before recording completion.

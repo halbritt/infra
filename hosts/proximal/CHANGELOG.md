@@ -1,5 +1,23 @@
 # Changelog — proximal (system)
 
+## 2026-10-28 — Ubuntu 26.04 and PostgreSQL 18
+
+- Installed Ubuntu 26.04.1 and migrated PostgreSQL 17.11 to 18.6 in copy mode;
+  PG17 remains stopped for rollback. Kernel 7.0.0-42 and NVIDIA 615.71.10 are
+  installed; boot activation is tracked separately in the execution report.
+- Retained NVIDIA's vendor packaging and GPU-unlock boot order. A narrow DKMS
+  CXL capability-guard patch resolved the observed kernel build failure.
+- Removed arbitrary APT holds and the temporary database version preferences,
+  restored vendor sources for resolute, and updated the routine OS helper's
+  distribution allowlist. APT has no pending upgrades; dpkg audit is clean.
+- Corrected a missed preflight instruction after the owner challenged the role
+  buildup: removed 21,557 verified orphan Striatum test roles after migration,
+  leaving 41 roles and 33 memberships. Retained-role checks passed.
+- Updated extensions, rebuilt indexes in all 20 databases affected by glibc
+  collation changes, refreshed collation metadata afterwards, and refreshed
+  statistics. Restored original database access rules; application checks pass.
+- [Execution, recovery and postboot verification](ubuntu-26.04-upgrade.md).
+
 ## 2026-10-26 — public Artifact service and CLI
 
 - Owner explicitly requested `artifact.harm.org`, anonymous uploads/reads, short

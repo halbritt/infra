@@ -2,9 +2,22 @@
 
 Notable changes to the **proximal** PostgreSQL cluster's configuration and to this
 provenance repo. Newest first. Config changes record the live cluster (`proximal:5432`,
-`system_identifier 7652478211804703267`, PG 17.11 — was `7628053153555146077`/16.14 before
-the 2026-06-16/17 pg_upgrade); see `reports/` and `inventory/` for the evidence behind each
+`system_identifier 7701748156229123175`, PG 18.6 — previously
+`7652478211804703267`/17.11 and `7628053153555146077`/16.14); see `reports/` and `inventory/` for the evidence behind each
 entry, and `git log` for granular history.
+
+## 2026-10-28 — PostgreSQL 18 migration and orphan-role cleanup
+
+- Native copy-mode upgrade completed; 18/main online on 5432, 17/main retained
+  stopped/manual on 5434. Original access policy and durability preserved.
+- Removed 21,557 verified orphan Striatum test roles, leaving 41 roles and 33
+  memberships. This cleanup should have preceded migration: the June report
+  warned about this exact problem, and the owner corrected the missed preflight.
+- Updated all extension SQL versions, reindexed the 20 databases affected by
+  the glibc collation change, refreshed metadata afterwards, and analyzed all
+  databases. Zero invalid indexes or extension/collation mismatches remain.
+- pgBackRest now targets PG18; stanza upgrade and live WAL checks succeeded.
+- [Full execution, validation and recovery record](../../ubuntu-26.04-upgrade.md).
 
 ## 2026-09-29
 

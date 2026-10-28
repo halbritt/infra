@@ -7,7 +7,7 @@ How to reach the PostgreSQL instance on **proximal**. **No passwords here** — 
 |---|---|
 | host | `localhost` (proximal; also LAN `192.168.1.92`, tailnet `100.85.100.81`) |
 | port | `5432` (listening `127.0.0.1:5432` + unix socket `/var/run/postgresql/.s.PGSQL.5432`) |
-| version | PostgreSQL 17.11, cluster `17/main`, `system_identifier 7652478211804703267` |
+| version | PostgreSQL 18.6, cluster `18/main`, `system_identifier 7701748156229123175` |
 | topology | standalone primary (`pg_is_in_recovery()=false`, no slots/standbys) |
 
 > Upgraded PG 16.14 → 17.10 on 2026-06-16/17 (pg_upgrade — note the **new
@@ -16,6 +16,14 @@ How to reach the PostgreSQL instance on **proximal**. **No passwords here** — 
 
 Minor update to 17.11 activated on 2026-09-29; system identifier unchanged.
 See [the execution report](reports/PG17_11_UPGRADE_2026-09-29.md).
+
+Upgraded 17.11 → 18.6 on 2026-10-28 alongside Ubuntu 26.04. PG17 is retained
+stopped on 5434 with manual startup; PG16 remains stopped on 5433. The original
+access policy and durability settings are preserved. See the
+[October execution report](../../ubuntu-26.04-upgrade.md), including removal of
+21,557 verified orphan test roles, extension updates and collation reindexing.
+There are 41 roles and 33 membership grants after cleanup. Historical inventories
+below retain their original dates; they are not a current size or workload census.
 
 ## Cairn consolidation — 2026-09-29
 

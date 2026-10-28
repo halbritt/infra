@@ -4,6 +4,23 @@ Physical backups + point-in-time recovery via **pgBackRest**, landing directly o
 the **`nvr` ZFS pool** (10 TB spinning disk) — not through Garage/S3. Mirrors the
 existing `nvr/engram-backups` pattern; the pool is then replicated off-site.
 
+## Current target — 2026-10-28
+
+The active cluster is now **PostgreSQL 18/main**, on port 5432. Canonical
+[`pgbackrest.conf`](pgbackrest.conf) is installed at
+`/etc/pgbackrest/pgbackrest.conf` as `root:postgres`, mode 0640.
+pgBackRest 2.60.0 completed `stanza-upgrade` offline, then native checks verified
+WAL archival to `18-3/`. The pre-upgrade PG17 recovery backup is
+`20261025-010451F_20261028-081942I`; old database files remain intact.
+The first PG18 full backup, `20261028-093231F`, completed successfully at 09:44 PDT
+(220.6 GiB database files, 29.8 GiB compressed); retention cleanup also succeeded.
+Further execution evidence is tracked in the
+[October execution report](../../ubuntu-26.04-upgrade.md).
+
+The architecture, activation and restore examples below are historical June
+records. For the current cluster use `postgresql@18-main` and the installed
+PG18 configuration; do not copy their old PG16 data path.
+
 ## Architecture
 
 ```

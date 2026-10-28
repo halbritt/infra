@@ -1,0 +1,11 @@
+[Unit]
+Description=One-time Ubuntu 26.04 upgrade boot verification
+Wants=network-online.target
+After=network-online.target postgresql@18-main.service docker.service user@1000.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ubuntu2604-postboot-check
+StandardOutput=append:/var/backups/ubuntu-26.04-20261028/postboot-check.log
+StandardError=inherit
+TimeoutStartSec=5min
