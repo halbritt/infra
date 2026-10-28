@@ -6,6 +6,9 @@ This record tracks execution; it is not a claim that the upgrade is complete.
 The owner subsequently authorized migrating the managed PostgreSQL cluster to
 18 as well. Install the OS first, then migrate the database with extension
 parity and a retained PG17 copy for rollback.
+The owner also directed that versions must not be pinned arbitrarily, and asked
+to preserve the reason for using NVIDIA's own driver packaging. No APT holds
+remain after preparation of the PG18 migration.
 
 ## Before the upgrade
 
@@ -75,6 +78,40 @@ must match during `pg_upgrade`. Required extensions include pgvector,
 pg_qualstats, pg_stat_kcache, hypopg and pg_repack, plus PostgreSQL contrib.
 The Ubuntu pgvector package (0.8.1) is older than the installed 0.8.6; use a
 compatible PGDG build for PG18 rather than downgrading the extension.
+
+## OS installation and NVIDIA repair
+
+The release upgrader installed Ubuntu 26.04.1, but reported errors because NVIDIA
+615.71.10's CXL header detection failed against kernel 7.0.0-42. The GPU-unlock
+and nct6687d modules built successfully. The [NVIDIA compatibility patch](config/nvidia/README.md)
+corrects five CXL capability guards through DKMS, retaining NVIDIA's packages.
+All five NVIDIA modules subsequently built and installed successfully, and
+`dpkg --configure -a` completed successfully. The package database is clean.
+This is a source compatibility repair, not a driver or kernel version hold.
+
+The [vendor APT sources](config/apt/README.md) were restored for 26.04. Native
+APT signature verification passed, including NVIDIA's new Ubuntu 26.04 key.
+SSH configuration was preserved, native `sshd -t` passed and SSH was started.
+The existing GRUB menu and GPU-unlock command line were preserved.
+
+Four existing virtual environments (`/opt/binkeeper/venv`, `~/agent-board/.venv`,
+`~/git/engram/.venv`, `~/git/ai-newsroom/.venv`) had unversioned interpreter links
+that would silently switch their Python ABI. Their links now explicitly use
+their original Python 3.12 interpreter. System Python is 3.14. This preserves
+the environments' existing dependencies; it is not an APT version hold.
+
+## Database maintenance state
+
+The original PG17 `pg_hba.conf` is privately saved as `pg17-hba.original` in the
+recovery directory. Temporary rules allow only local peer-authenticated
+`postgres` and reject all other connections during migration. Restore the
+original access policy on the validated PG18 cluster before restarting clients.
+
+The temporary exact-version preference file and all 17 original APT holds were
+removed. `create_main_cluster = false` temporarily prevents package installation
+from creating an unrelated empty PG18 cluster; its original configuration is
+saved as `createcluster.conf.original`. Package installation runs as
+`ubuntu2604-pg18-packages.service`, with private output in `pg18-packages.log`.
 
 Before accepting the release upgrade, review its calculated removals. Afterwards
 check dpkg consistency, Python services, PostgreSQL and collation versions,
