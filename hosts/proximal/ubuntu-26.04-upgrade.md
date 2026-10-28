@@ -3,6 +3,10 @@
 Owner request: upgrade this box to Ubuntu 26.04. Operator: agent-684.
 This record tracks execution; it is not a claim that the upgrade is complete.
 
+The owner subsequently authorized migrating the managed PostgreSQL cluster to
+18 as well. Install the OS first, then migrate the database with extension
+parity and a retained PG17 copy for rollback.
+
 ## Before the upgrade
 
 - Ubuntu 24.04.5 LTS, kernel `6.8.0-147-generic`, amd64.
@@ -14,7 +18,8 @@ This record tracks execution; it is not a claim that the upgrade is complete.
   cap and do not upgrade pool feature flags as part of the OS upgrade.
 - Managed PostgreSQL `17/main` is online on 5432; retained `16/main` is down
   on 5433. Existing package holds protect the database major version and
-  extensions. An OS upgrade does not require migrating the database to PG18.
+  extensions. These remain in place for the OS transaction; the separately
+  authorized PG18 migration follows it.
 - Most databases use glibc `en_US.UTF-8` collation version 2.39. After the
   libc upgrade, inspect actual collation versions and rebuild affected indexes
   before refreshing version metadata. Cairn itself uses `C` collation.
@@ -35,8 +40,9 @@ They are recovery inputs, not a complete bootable disk image.
 The scheduled restic backup completed successfully at 03:33 PDT on October 28.
 The PostgreSQL differential backup completed at 01:37 PDT. A native pgBackRest
 check under the postgres account verified WAL archival at 08:19 PDT. A fresh
-incremental backup runs as `ubuntu2604-pgbackup.service`; inspect its result
-and `pgbackup.log` before proceeding.
+incremental backup `20261025-010451F_20261028-081942I` completed successfully at
+08:20 PDT (23.2 GB changed). Its log is `pgbackup.log`.
+`pg17-globals.sql` privately preserves role definitions and privileges.
 
 ## Execution
 
@@ -48,6 +54,27 @@ Prerequisite package updates run independently of the interactive session as
 `ubuntu2604-prerequisites.service`, with output in `prerequisites.log` in the
 private recovery directory. The reviewed transaction upgrades 32 packages,
 removes none, preserves configuration files and leaves PostgreSQL holds intact.
+This prerequisite transaction completed successfully. Native dpkg audit was clean.
+
+The release upgrader runs in the dedicated tmux server `ubuntu2604`, session
+`upgrade`; attach with `tmux -L ubuntu2604 attach -t upgrade`. Native logs are
+under `/var/log/dist-upgrade/`. Its reviewed initial plan removes 24 packages,
+installs 289 and upgrades 1,525, downloading 2.8 GB. Removals include superseded
+libraries and `openfoam2512-default`/`openfoam2512-dev`; inspect OpenFOAM after
+the upgrade. Database packages and Python 3.12 are retained. Temporary exact
+version pins in `/etc/apt/preferences.d/99-proximal-db-release-upgrade` preserve
+the existing database holds through the OS transaction; remove them when
+preparing the authorized PG18 package installation.
+
+The managed PG17 cluster was stopped before accepting the OS installation to
+avoid writes across the glibc collation transition. Its on-disk size is 227 GiB;
+root has enough space for a copy-mode migration with the old cluster retained.
+There are 21,597 roles and no replication slots. Preserve the roles; allow time
+for the native globals restore. Data checksums are off, so the target cluster
+must match during `pg_upgrade`. Required extensions include pgvector,
+pg_qualstats, pg_stat_kcache, hypopg and pg_repack, plus PostgreSQL contrib.
+The Ubuntu pgvector package (0.8.1) is older than the installed 0.8.6; use a
+compatible PGDG build for PG18 rather than downgrading the extension.
 
 Before accepting the release upgrade, review its calculated removals. Afterwards
 check dpkg consistency, Python services, PostgreSQL and collation versions,
