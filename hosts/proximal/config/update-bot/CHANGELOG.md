@@ -1,5 +1,39 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-28 13:33 UTC — 104cdde0-22c4-48a6-80dd-515dc2c15611
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: Install operation 5977e91f verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-0431192d, carry fca9e6fb5925b36eae962eb843d4846447c77636 on upstream 0431192d69d4afd2443a7da15bb9e129a424414c, launcher sha256 f7d7f488, four focused carry-behavior test files passed (241) and gateway import smoke passed, provenance receipt written. The running gateway still uses the previous generation hermes-candidate-11a75355 (carry c82d3e5b). Prior activation receipt status=verified for revision c82d3e5b (2026-10-27). The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: fixed helper performed a fresh native zero-work drain and one supported reload; new gateway pid 2091886 on candidate-0431192d, revision fca9e6fb, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision fca9e6fb pid 2091886 slack connected; gateway pid 2091886 live on candidate-0431192d.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/104cdde0-22c4-48a6-80dd-515dc2c15611/operations/30db771a-fc78-4114-b9fa-54e2f7d0f553`.
+
+- **hermes** — verified. Before: Prep op eedfd8e5 verified: candidate /var/lib/update-bot/staging/hermes-candidate-0431192d staged with carry fca9e6fb5925b36eae962eb843d4846447c77636 on upstream base 0431192d69d4afd2443a7da15bb9e129a424414c (3 files 3-way merged cleanly, no markers); no venv yet, no tests run, install/launcher/receipt not written. Selected/installed generation is hermes-candidate-11a75355 (carry c82d3e5b), running gateway on it, Slack connected. No unresolved prior operation.. After: venv built; four focused carry-behavior test files (241 passed/0 failed) + gateway import smoke passed; versioned launcher installed (sha256 f7d7f488); provenance receipt hermes-installed.json written (source candidate-0431192d, revision fca9e6fb, upstream 0431192d).
+  Verification: operation exit 0/0; finish.log RESULT: INSTALL_OK carry=fca9e6fb base=0431192d; 241 passed/0 failed; launcher sha f7d7f488.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/104cdde0-22c4-48a6-80dd-515dc2c15611/operations/5977e91f-154a-4c35-9a3b-397e40d82949`.
+
+- **claude** — verified. Before: Claude Code 2.1.311 installed via the native versioned installer: /home/halbritt/.local/bin/claude is a symlink -> /home/halbritt/.local/share/claude/versions/2.1.311. npm @anthropic-ai/claude-code latest is 2.1.312, so an update is warranted. Config (~/.claude.json, ~/.claude/) and session stores are preserved by the native updater, which installs a new versioned directory and repoints the launcher symlink.. After: Claude Code 2.1.312 installed; symlink -> versions/2.1.312; prior version dir retained.
+  Verification: operation exit 0/0; install.log 'Successfully updated from 2.1.311 to version 2.1.312'; verify.log 2.1.312 + CLAUDE_VERIFY_OK.
+  Activation: running for new sessions; config/session stores preserved.
+  Evidence: `/var/lib/update-bot/runs/104cdde0-22c4-48a6-80dd-515dc2c15611/operations/6f18989d-2ce5-4c14-9f77-9cfec0f50e42`.
+
+- **codex** — verified. Before: Global npm @openai/codex@0.164.0 (verified via `/home/halbritt/.local/bin/codex --version` = codex-cli 0.164.0); npm registry @openai/codex latest = 0.165.0, so an update is warranted. The Cairn coordination wrapper /home/halbritt/.local/bin/codex is a separate shim and is untouched by npm. No codex install in progress.. After: @openai/codex@0.165.0 installed; `codex --version` = codex-cli 0.165.0; Cairn wrapper untouched.
+  Verification: operation exit 0/0; install.log 'changed 2 packages'; verify.log codex-cli 0.165.0.
+  Activation: running for new invocations; no restart of any session.
+  Evidence: `/var/lib/update-bot/runs/104cdde0-22c4-48a6-80dd-515dc2c15611/operations/86034499-e163-4d9a-906d-05a33b323122`.
+
+- **opencode** — verified. Before: Installed ELF ~/.npm-global/lib/node_modules/opencode-ai/bin/opencode.exe version 1.19.4+cairn.148842e sha256 66209749ccbe28bd46d14b4ef992f7d1f6750f874147476e581b0223ec0015c5; npm opencode-ai latest 1.19.5 (upstream tag v1.19.5 = 810c0eba1a7348036f8bdf61e6632d0c36c6876c). No opencode process currently running. Carries the stored 3-patch cairn series onto the 1.19.5 tag; existing ELF backup retained.. After: fresh candidate at v1.19.5 with stored 3-patch cairn series applied cleanly; 102 focused tests passed/0 fail; ELF smoke 1.19.5+cairn.810c0eb; atomic install sha 977b43dd..., old ELF backed up.
+  Verification: operation exit 0/0; build.log 102 pass/0 fail, 'Smoke test passed: 1.19.5+cairn.810c0eb', RESULT: BUILD_OK; verify `opencode --version` = 1.19.5+cairn.810c0eb; receipt /var/lib/update-bot/opencode-installed.json.
+  Activation: running for new launches; old inode preserved for any existing process, no restart.
+  Evidence: `/var/lib/update-bot/runs/104cdde0-22c4-48a6-80dd-515dc2c15611/operations/aae17663-ff6a-4ebd-b6e0-70ed4ef33365`.
+
+- **hermes** — verified. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-11a75355, carry c82d3e5b767613fd698abc82828053f066c09376 on upstream base 11a75355a4c5540154597c7ea23cbc2a933539f5, selected by ~/.local/bin/hermes (sha256 4abaec5e); running gateway on that generation, Slack connected (activation receipt 2026-10-27 status=verified). Upstream NousResearch/hermes-agent main has advanced to 0431192d69d4afd2443a7da15bb9e129a424414c via git ls-remote. No candidate exists yet at 0431192d. No unresolved prior operation for this base.. After: isolated candidate /var/lib/update-bot/staging/hermes-candidate-0431192d cloned at 0431192d with the stored patch carried (3 files 3-way merged, no markers) committed as carry fca9e6fb5925b36eae962eb843d4846447c77636; no build/install/activation.
+  Verification: operation exit 0/0; prep.log RESULT: PORT_OK carry_commit=fca9e6fb base=0431192d; no_markers_in_carried_files; live install/launcher/gateway untouched.
+  Activation: none; candidate staged only.
+  Evidence: `/var/lib/update-bot/runs/104cdde0-22c4-48a6-80dd-515dc2c15611/operations/eedfd8e5-0197-4e46-8644-d4229b4158f1`.
+
 ## 2026-10-27 13:38 UTC — ae6e0568-9b94-4807-b605-99837d48cf82
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
