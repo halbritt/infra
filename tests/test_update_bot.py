@@ -330,9 +330,9 @@ class MaintenanceBoundaryTests(unittest.TestCase):
             self.assertFalse(os_update.PROTECTED.match(name), name)
         def version(origin, archive):
             return SimpleNamespace(origins=[SimpleNamespace(origin=origin, archive=archive)])
-        self.assertTrue(os_update.approved_origin(version('Ubuntu', 'noble-security')))
-        self.assertFalse(os_update.approved_origin(version('Ubuntu', 'noble-proposed')))
-        self.assertFalse(os_update.approved_origin(version('PostgreSQL', 'noble-pgdg')))
+        self.assertTrue(os_update.approved_origin(version('Ubuntu', 'resolute-security')))
+        self.assertFalse(os_update.approved_origin(version('Ubuntu', 'resolute-proposed')))
+        self.assertFalse(os_update.approved_origin(version('PostgreSQL', 'resolute-pgdg')))
 
 
 if __name__ == '__main__':

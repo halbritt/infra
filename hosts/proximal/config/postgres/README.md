@@ -16,6 +16,11 @@ reverted. Start with [`AGENTS.md`](AGENTS.md).
 - `inventory/` — dated read-only snapshots
 - `reports/` — dated tuning reports
 - [`connection.md`](connection.md) — how to reach the instance (no secrets)
+- [`pgbackrest.conf`](pgbackrest.conf) — PG18 backup target; install as
+  `/etc/pgbackrest/pgbackrest.conf`, owner `root:postgres`, mode `0640`, after
+  migration. Run `pgbackrest --stanza=proximal --no-online stanza-upgrade` as
+  postgres while the new cluster is stopped, then verify archiving and take a
+  full backup after startup. The October upgrade report records activation.
 - [`skills/`](skills/) — vendored Postgres best-practices reference skill (see [`skills/README.md`](skills/README.md))
 
 **Values, never credentials.** No passwords, `pg_hba.conf`, or secret-bearing

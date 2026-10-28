@@ -36,7 +36,7 @@ Approved targets and channels:
   uses only the fixed update-bot-herdr-archon.service, whose installed remote
   helper updates /usr/bin/herdr with its native updater and retains rollback.
   This does not authorize Archon OS updates, broad remote shell work or reboots.
-- OS: ordinary Ubuntu noble release/security/update packages and kernel packages
+- OS: ordinary Ubuntu resolute release/security/update packages and kernel packages
   through update-bot-os.service. That fixed root helper rejects package removals,
   third-party/dependency scope expansion and managed database, Kubernetes,
   container-runtime and NVIDIA/CUDA stack transitions. It suppresses package-script

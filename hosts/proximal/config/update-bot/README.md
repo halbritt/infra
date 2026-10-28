@@ -15,7 +15,7 @@ held without stopping unrelated updates.
 | llama.cpp | Invoke the existing canonical updater under its native lock when warranted; its existing timer stays authoritative. Install binaries without restarting inference. |
 | Codex, Claude Code, OpenCode, Agy | Update existing installations on their current stable channels, with native methods. Preserve wrappers, configuration and live session resources. Gemini CLI is covered only if installed. |
 | Herdr (proximal and Archon) | Maintain stable binaries, inspect installed and running versions separately, retain live sessions. Archon uses a fixed remote helper; no broad SSH access for the agent. |
-| Ubuntu | Refresh metadata and install routine noble/security/updates packages through the fixed root helper. Preserve config files; no removals, release upgrade or reboot. |
+| Ubuntu | Refresh metadata and install routine resolute/security/updates packages through the fixed root helper. Preserve config files; no removals, release upgrade or reboot. |
 
 The OS helper also checks simulated dependencies. Database, Kubernetes,
 container-runtime, NVIDIA/CUDA and third-party package transitions remain held for

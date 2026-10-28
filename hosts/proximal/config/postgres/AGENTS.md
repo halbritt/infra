@@ -44,6 +44,14 @@ primary, `wal_level`) and **reliability blockers outrank performance wins**.
 
 ## Conventions
 
+- **Before any major upgrade, audit test-role debris.** The June and October
+  2026 upgrades both encountered tens of thousands of abandoned Striatum test
+  roles. Read the prior as-run reports, count roles and memberships, and resolve
+  confirmed orphans before dumping globals. A test-like name alone does not
+  authorize deletion: check the matching database, sessions and `pg_shdepend`.
+  Use plain `DROP ROLE` for verified orphans, with separate transactions; do not
+  cascade or delete owned objects to force cleanup. Keep a private globals backup.
+
 - **Values, never credentials.** Commit GUC values, settings, and rationale. Never
   commit passwords, `.pgpass`, `pg_hba.conf`, connection strings with secrets, or
   `.env`. The `.gitignore` catches the obvious cases; you enforce the rest.

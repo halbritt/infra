@@ -72,8 +72,11 @@ preparing the authorized PG18 package installation.
 The managed PG17 cluster was stopped before accepting the OS installation to
 avoid writes across the glibc collation transition. Its on-disk size is 227 GiB;
 root has enough space for a copy-mode migration with the old cluster retained.
-There are 21,597 roles and no replication slots. Preserve the roles; allow time
-for the native globals restore. Data checksums are off, so the target cluster
+There are 21,597 roles and no replication slots. The initial decision was to
+preserve all roles and allow time for the native globals restore. That was a
+preflight error: the June upgrade report explicitly required checking and
+cleaning abandoned test roles before another migration (see correction below).
+Data checksums are off, so the target cluster
 must match during `pg_upgrade`. Required extensions include pgvector,
 pg_qualstats, pg_stat_kcache, hypopg and pg_repack, plus PostgreSQL contrib.
 The Ubuntu pgvector package (0.8.1) is older than the installed 0.8.6; use a
@@ -117,3 +120,29 @@ Before accepting the release upgrade, review its calculated removals. Afterwards
 check dpkg consistency, Python services, PostgreSQL and collation versions,
 Docker containers, ZFS, NVIDIA, SSH/Tailscale and the new boot image. Reboot is
 required to activate the new kernel; verify the host again after boot.
+
+## Test-role cleanup correction
+
+The owner challenged the roughly 64,000 restored role grants. Investigation
+found 21,557 roles with the exact Striatum test naming patterns, with embedded
+creation timestamps from June 17 through July 2. The
+[June as-run report](config/postgres/reports/PG17_UPGRADE_ASRUN_2026-06-17.md)
+already documented the same failure and the companion plan explicitly required
+pre-upgrade cleanup. This instruction was missed during this run's preflight.
+
+The local historical Striatum harness (`go/pkg/pgtest/pgtest.go`) registers
+`DROP ROLE` cleanup after database cleanup registration, so Go's reverse cleanup
+order attempts to drop a role while its database CONNECT grant still exists.
+The error is ignored; the subsequent database deletion leaves the role behind.
+Its stale-database sweep also does not remove roles. The old Striatum daemon was
+retired in July; this is accumulated historical debris, not evidence of an
+active leak in the current Talos deployment.
+
+The native migration was already restoring globals when this was identified.
+Let it finish before mutating catalogs. Audit the complete target cluster for
+exact test-role names, absent corresponding databases, absence of sessions,
+and absence of shared dependencies. Remove only verified orphan roles using
+plain `DROP ROLE` in separate transactions; do not use `DROP OWNED`, cascade,
+or delete application databases. Preserve the private globals backup and old
+cluster. Record actual counts and remaining application-role checks below once
+the cleanup has completed.

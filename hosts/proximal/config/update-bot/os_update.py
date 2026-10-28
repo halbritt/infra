@@ -13,7 +13,7 @@ PROTECTED = re.compile(r'^(postgresql|mysql|mariadb|redis|pgbackrest|kube|docker
 
 
 def approved_origin(version):
-    return any(o.origin == 'Ubuntu' and o.archive in ('noble', 'noble-security', 'noble-updates')
+    return any(o.origin == 'Ubuntu' and o.archive in ('resolute', 'resolute-security', 'resolute-updates')
                for o in version.origins)
 
 
