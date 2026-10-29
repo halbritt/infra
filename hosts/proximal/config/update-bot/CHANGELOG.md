@@ -1,5 +1,34 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-29 13:37 UTC — f996abab-7f9e-4196-8f25-f1f00491a004
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: Install operation f51730f3 verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-e298669b, carry 4e46147a1f483de1447af4feaa2f9434f57e8133 on upstream e298669b44ce032a995c8a67ceae025801b0f4bf, launcher sha256 d4110980, four focused carry-behavior test files passed (241 passed/0 failed/4 skipped) and gateway import smoke passed, provenance receipt written. The running gateway still uses the previous generation hermes-candidate-0431192d (carry fca9e6fb); prior activation receipt status=verified (2026-10-28). The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 2518424 on candidate-e298669b, revision 4e46147a, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 4e46147a pid 2518424 slack connected; gateway process live on candidate-e298669b.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/f996abab-7f9e-4196-8f25-f1f00491a004/operations/1b5a5db7-3b8b-4127-97d3-e62e4250dfd3`.
+
+- **hermes** — failed. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-0431192d (carry fca9e6fb5925b36eae962eb843d4846447c77636 on upstream base 0431192d69d4afd2443a7da15bb9e129a424414c), selected by ~/.local/bin/hermes and the running gateway (PID 3923, Slack connected; activation receipt 2026-10-28 status=verified). Upstream NousResearch/hermes-agent main advanced to e298669b44ce032a995c8a67ceae025801b0f4bf. A first prep attempt (op 6e7aced1, exit 4) carried 8 of 10 files cleanly but hit one genuine conflict in tools/process_registry.py (upstream added restore_login_path; carry adds request_id/turn_id) and a carry-added test file absent at prevbase; both are resolved in this combined prep+install. No venv/tests/install existed for e298669b.. After: Port still aborted with exit 4: the resolver dropped the spawn_local docstring's closing triple-quote, failing the AST syntax check.
+  Verification: operation exit 4; prep.log SYNTAX_FAIL 'unterminated string literal' at the resolution block; no live artifact changed.
+  Activation: none; read-only.
+  Evidence: `/var/lib/update-bot/runs/f996abab-7f9e-4196-8f25-f1f00491a004/operations/6bbc8828-f751-4ba9-aa54-11bc2fb0ea25`.
+
+- **hermes** — failed. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-0431192d, carry fca9e6fb5925b36eae962eb843d4846447c77636 on upstream base 0431192d69d4afd2443a7da15bb9e129a424414c, selected by ~/.local/bin/hermes and the running gateway (PID 3923, Slack connected; activation receipt 2026-10-28 status=verified). Upstream NousResearch/hermes-agent main has advanced to e298669b44ce032a995c8a67ceae025801b0f4bf via git ls-remote. No candidate exists yet at e298669b. No unresolved prior operation for this base.. After: Isolated clone staged at e298669b; 8 of 10 carried files 3-way merged cleanly but the port aborted with exit 4 on a genuine conflict in tools/process_registry.py and a carry-added test file absent at the previous base.
+  Verification: operation exit 4; prep.log showed MERGE_CONFLICT tools/process_registry.py and NO_PREV_BASE tests/hermes_cli/test_cli_queue_message.py; no live artifact changed.
+  Activation: none; read-only w.r.t. live install/gateway.
+  Evidence: `/var/lib/update-bot/runs/f996abab-7f9e-4196-8f25-f1f00491a004/operations/6e7aced1-c982-49ab-8e8c-b05d6f80cd3f`.
+
+- **hermes** — failed. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-0431192d (carry fca9e6fb5925b36eae962eb843d4846447c77636 on upstream base 0431192d69d4afd2443a7da15bb9e129a424414c), selected by ~/.local/bin/hermes and the running gateway (PID 3923, Slack connected; activation receipt 2026-10-28 status=verified). Upstream NousResearch/hermes-agent main advanced to e298669b44ce032a995c8a67ceae025801b0f4bf. A first prep attempt (op 6e7aced1, exit 4) carried 8 of 10 files cleanly but hit one genuine conflict in tools/process_registry.py (upstream added restore_login_path; carry adds request_id/turn_id) and a carry-added test file absent at prevbase; both are resolved in this combined prep+install. No venv/tests/install existed for e298669b.. After: Port still aborted with exit 4: the closing triple-quote sat before the request_id/turn_id docstring line, leaving invalid syntax.
+  Verification: operation exit 4; prep.log SYNTAX_FAIL 'invalid syntax' at the request_id/turn_id line; resolution validated offline (SYNTAX_OK) before the successful retry; no live artifact changed.
+  Activation: none; read-only.
+  Evidence: `/var/lib/update-bot/runs/f996abab-7f9e-4196-8f25-f1f00491a004/operations/8ac95ae8-5a3d-4883-9964-e27731f3e3b9`.
+
+- **hermes** — verified. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-0431192d (carry fca9e6fb5925b36eae962eb843d4846447c77636 on upstream base 0431192d69d4afd2443a7da15bb9e129a424414c), selected by ~/.local/bin/hermes and the running gateway (PID 3923, Slack connected; activation receipt 2026-10-28 status=verified). Upstream NousResearch/hermes-agent main advanced to e298669b44ce032a995c8a67ceae025801b0f4bf. A first prep attempt (op 6e7aced1, exit 4) carried 8 of 10 files cleanly but hit one genuine conflict in tools/process_registry.py (upstream added restore_login_path; carry adds request_id/turn_id) and a carry-added test file absent at prevbase; both are resolved in this combined prep+install. No venv/tests/install existed for e298669b.. After: Carry 4e46147a built on upstream e298669b (10 files; process_registry conflict resolved combining restore_login_path with request_id/turn_id); venv built; 241 carry-behavior tests passed/0 failed/4 skipped + gateway import smoke; versioned launcher installed (sha d4110980) and provenance receipt written.
+  Verification: operation exit 0/0; prep.log PORT_OK + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK carry=4e46147a base=e298669b; verify receipt source/upstream match e298669b; hermes --version ok.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/f996abab-7f9e-4196-8f25-f1f00491a004/operations/f51730f3-c9b7-4efa-b6c5-bfcea6aeb595`.
+
 ## 2026-10-28 13:33 UTC — 104cdde0-22c4-48a6-80dd-515dc2c15611
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
