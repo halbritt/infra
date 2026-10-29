@@ -1,0 +1,41 @@
+rule_files:
+  - ../rules/postgres-alerting.rules.yml
+evaluation_interval: 1m
+
+tests:
+  - name: transaction age is a duration and must persist for five minutes
+    interval: 1m
+    input_series:
+      # exporter 0.19 reports durations despite the timestamp metric name.
+      - series: 'pg_long_running_transactions_oldest_timestamp_seconds{instance="short"}'
+        values: '0.01+0x20'
+      - series: 'pg_long_running_transactions{instance="short"}'
+        values: '1+0x20'
+      - series: 'pg_long_running_transactions_oldest_timestamp_seconds{instance="long"}'
+        values: '700+0x20'
+      - series: 'pg_long_running_transactions{instance="long"}'
+        values: '1+0x20'
+      - series: 'pg_long_running_transactions_oldest_timestamp_seconds{instance="none"}'
+        values: '700+0x20'
+      - series: 'pg_long_running_transactions{instance="none"}'
+        values: '0+0x20'
+      - series: 'pg_long_running_transactions_oldest_timestamp_seconds{instance="boundary"}'
+        values: '600+0x20'
+      - series: 'pg_long_running_transactions{instance="boundary"}'
+        values: '1+0x20'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: PostgresLongRunningTransaction
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: PostgresLongRunningTransaction
+        exp_alerts: &long_transaction
+          - exp_labels:
+              instance: long
+              severity: warning
+            exp_annotations:
+              summary: "PostgreSQL has a transaction running >10m"
+              description: "The oldest long-running transaction is 11m 40s old — it pins the vacuum horizon and holds locks."
+      - eval_time: 20m
+        alertname: PostgresLongRunningTransaction
+        exp_alerts: *long_transaction

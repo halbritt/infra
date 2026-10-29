@@ -401,7 +401,7 @@ severities and route through Alertmanager to `#proximal-alerts`.
 |---|---|---|
 | `node-alerting` | filesystem low/critical space, low inodes, read-only fs, memory low, OOM kills, high load | pseudo-fs excluded; read-only fs excluded from space alerts (it's its own alert); load normalized by core count via `group_left` |
 | `gpu-alerting` | high/critical temp, HW thermal throttling | **no VRAM alert** — the LLM pins ~22.8 GiB by design, so VRAM-full would fire forever; temp + the driver's thermal-slowdown flag are the real hardware-risk signals. Fires per-GPU (proximal 3090, peecee 3090 Ti, and enceladus 3060) |
-| `postgres-alerting` | pg down, connections >80/90%, deadlocks, long-running txn, XID wraparound warn/crit | wraparound metric is **XID age** (not seconds) → thresholds 1.5e9/1.9e9 of the 2³¹ limit; long-txn "oldest" is a Unix **timestamp** → age is `time() - it`, guarded by `count>0` |
+| `postgres-alerting` | pg down, connections >80/90%, deadlocks, long-running txn, XID wraparound warn/crit | wraparound metric is **XID age** (not seconds) → thresholds 1.5e9/1.9e9 of the 2³¹ limit; exporter 0.19 long-txn "oldest" is an **age in seconds** despite its timestamp suffix → compare directly with 600, guarded by `count>0` |
 | `infra-alerting` | `TargetDown` (any `up==0` for 10m); `LlamaServerDown` (`up{job="llama"}==0` for 1m, `page`); `LlamaSlotSaturated` (`llamacpp:requests_deferred>0` for 5m) | `TargetDown` covers every job uniformly; the off-box peecee GPU target can flap when that host sleeps — silence there, don't loosen the rule. llama gets its own fast down-alert (1m — primary inference endpoint; a normal restart stays pending) and a queue-pressure alert: **no KV-cache-usage series exists** in this llama.cpp build (upstream removed `kv_cache_usage_ratio`), so deferred requests behind the single `-np 1` slot are the pressure signal. Down-alert fire-tested 2026-07-20 (90s deliberate stop, fired at 75s, reached Alertmanager). Also hosts `gpu_fleet_alerts`: `GpuFleetZeroRoutableSlots` (`==0` for 3m, `page`) + `GpuFleetHeartbeatStale` (`>90s` for 1m) — see "gpu-fleet exporter" above |
 
 Refresh/verify after editing with the installed `vmalert-prod` binary, then reload `vmalert`:
@@ -500,3 +500,34 @@ journalctl -u prometheus-alertmanager -n 20 | grep -i slack                     
   Grafana receives only the reader in `/etc/grafana/ha-victoriametrics.env`;
   Home Assistant's config entry receives only the writer. The plant bridge
   uses the reader and retains its old Influx credential for rollback.
+
+
+## Transaction alert correction — 2026-10-28
+
+The Ubuntu upgrade installed postgres_exporter 0.19.0. Its
+`pg_long_running_transactions_oldest_timestamp_seconds` metric is a duration,
+confirmed by the live HELP text and
+[versioned collector SQL](https://github.com/prometheus-community/postgres_exporter/blob/v0.19.0/collector/pg_long_running_transactions.go).
+The previous `time() - metric` rule interpreted millisecond transactions as
+roughly 20,755 days old. Live `pg_stat_activity` had no long-running transaction.
+The corrected rule compares the duration directly with 600 seconds and keeps
+the five-minute persistence and nonzero-count guard. Scrape labels now identify
+`18/main` in both active VictoriaMetrics and rollback Prometheus configuration.
+
+Native rule regression coverage checks a short transaction, a genuine long
+transaction, the exact ten-minute boundary, a stale age with zero transactions,
+and the five-minute firing delay:
+
+```sh
+promtool test rules hosts/proximal/config/observability/prometheus/tests/postgres-alerting.test.yml
+```
+
+The test failed against the old expression (false positive and missed long
+transaction), then passed with the corrected expression. Install the rule in
+`/etc/victoria-metrics/rules/` and the scrape config at
+`/etc/victoria-metrics/promscrape.yml`; reload `vmalert` and `victoriametrics`.
+
+Live verification at 18:04 PDT: the corrected rule is healthy and inactive,
+Alertmanager has no remaining `PostgresLongRunningTransaction` alert, and both
+PostgreSQL scrape targets are up with `cluster="18/main"`. No database sessions
+were cancelled or terminated. All 43 repository tests and validation pass.

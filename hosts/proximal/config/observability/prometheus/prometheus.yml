@@ -47,7 +47,7 @@ scrape_configs:
       - targets: ['100.85.100.81:9187']
         labels:
           instance: proximal
-          cluster: '17/main'
+          cluster: '18/main'
 
   - job_name: node
     static_configs:
@@ -86,7 +86,7 @@ scrape_configs:
       - targets: ['100.85.100.81:9188']
         labels:
           instance: proximal
-          cluster: '17/main'
+          cluster: '18/main'
 
   # (striatumd scrape job removed 2026-07-21 — striatum retired, daemon stopped;
   # the infra up==0 alert would page on the dead target. Restore from git history

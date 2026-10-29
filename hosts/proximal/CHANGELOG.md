@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-10-28 — correct false long-transaction alerts after upgrade
+
+- postgres_exporter 0.19 reports transaction age as a duration despite the
+  `oldest_timestamp_seconds` name. The old timestamp subtraction turned a
+  millisecond transaction into a 20,755-day alarm. No long transaction was
+  present in live `pg_stat_activity`.
+- Compare the metric directly with 600 seconds, retaining the five-minute
+  persistence and nonzero-count guard. Correct scrape labels to `18/main`.
+- Installed and reloaded the canonical rule and scrape configuration. The
+  rule is healthy and inactive; native regression tests cover short/long
+  transactions, the threshold boundary, count guard and firing delay.
+- All 43 repository tests and infrastructure validation pass.
+
 ## 2026-10-28 — verify boot and remove retired PostgreSQL/Striatum resources
 
 - Verified new kernel, NVIDIA driver, ZFS, PG18, archiving and application

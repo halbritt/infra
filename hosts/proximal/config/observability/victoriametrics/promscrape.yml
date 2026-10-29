@@ -25,7 +25,7 @@ scrape_configs:
       - targets: ['100.85.100.81:9187']
         labels:
           instance: proximal
-          cluster: '17/main'
+          cluster: '18/main'
 
   - job_name: node
     static_configs:
@@ -61,7 +61,7 @@ scrape_configs:
       - targets: ['100.85.100.81:9188']
         labels:
           instance: proximal
-          cluster: '17/main'
+          cluster: '18/main'
 
   # llama.cpp exposes /metrics on the same loopback endpoint as its API.
   - job_name: llama

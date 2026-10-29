@@ -14,7 +14,7 @@ groups:
           severity: page
         annotations:
           summary: "PostgreSQL on {{ $labels.instance }} is down"
-          description: "pg_up=0 — the exporter cannot connect to the PG17 cluster."
+          description: "pg_up=0 — the exporter cannot connect to the managed PostgreSQL cluster."
 
       # Connection pool nearing max_connections. numbackends summed across dbs vs the setting.
       - alert: PostgresHighConnections
@@ -45,11 +45,11 @@ groups:
           summary: "PostgreSQL is detecting deadlocks"
           description: "{{ $value | printf \"%.3f\" }} deadlocks/sec over 5m — concurrent transactions are conflicting."
 
-      # A genuinely long transaction (well past transaction_timeout=120s) holds locks and pins
-      # the vacuum horizon. The custom metric reports the OLDEST qualifying txn's start as a Unix
-      # timestamp, so age = time() - it; guard with count>0 so a stale/absent timestamp can't fire.
+      # Exporter 0.19 reports a duration, despite the historical timestamp suffix.
+      # Its HELP and SQL define this as max(clock_timestamp() - xact_start).
+      # Compare directly; subtracting from time() turns short transactions into epoch age.
       - alert: PostgresLongRunningTransaction
-        expr: (time() - pg_long_running_transactions_oldest_timestamp_seconds > 600) and (pg_long_running_transactions > 0)
+        expr: (pg_long_running_transactions_oldest_timestamp_seconds > 600) and (pg_long_running_transactions > 0)
         for: 5m
         labels:
           severity: warning
