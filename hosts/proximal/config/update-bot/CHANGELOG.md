@@ -1,5 +1,24 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-30 13:33 UTC — 92f27bf8-fb26-49d9-92fc-f94484924374
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **wigolo** — verified. Before: Global npm wigolo@0.3.1 built from upstream main source at ~/git/wigolo HEAD 9180e934442255fac68377c5537dc9b4fbc75469 (clean checkout, detached). Upstream KnockOutEZ/wigolo main has advanced to 138613f59d3fc1cd742cc97f4ba6f1fa15e7a299 via git ls-remote. Node v24.22.1, npm 11.17.0. This script fetches origin main, checks out the target detached, builds and reinstalls the global package; it preserves ~/.wigolo data/cache and provider config and never installs the older published npm version.. After: Fetched origin main, checked out target detached, installed deps and built, packed, and reinstalled global npm package as 0.3.1 from source 138613f5 (383 packages changed); data/cache and provider config preserved.
+  Verification: operation exit 0/0; log RESULT: WIGOLO_BUILD_OK target=138613f59d3fc1cd742cc97f4ba6f1fa15e7a299; ~/git/wigolo HEAD starts 138613f5; wigolo --version 0.3.1; npm ls -g wigolo = 0.3.1.
+  Activation: installed global package; new launches use it, no running service to restart.
+  Evidence: `/var/lib/update-bot/runs/92f27bf8-fb26-49d9-92fc-f94484924374/operations/381c5a74-f8a0-4db8-80ac-ced2998ab91f`.
+
+- **hermes** — verified. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-e298669b (carry 4e46147a1f483de1447af4feaa2f9434f57e8133 on upstream e298669b44ce032a995c8a67ceae025801b0f4bf), selected by ~/.local/bin/hermes (sha d4110980) and the running gateway (PID 2518424, Slack connected; activation receipt 2026-10-29 status=verified). Upstream NousResearch/hermes-agent main advanced to d4865574e47497e9a9cd1d21333b8c008a9e8a34 (cron/desktop/webapp/plugins fixes) via git ls-remote; e298669b is an ancestor. No candidate exists yet at d4865574. None of the 10 carried files were changed upstream between the two bases (git diff --name-only), so the per-file 3-way carry is expected clean.. After: Carry 56a243f980c5db9e9e5d0dd7665d6216cac21c00 built on upstream d4865574 (10 files, clean 3-way merge); venv built; 241 carry-behavior tests passed/0 failed/4 skipped + gateway import smoke; versioned launcher installed (sha 5dff000e) and provenance receipt written.
+  Verification: operation exit 0/0; prep log PORT_OK + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK carry=56a243f9 base=d4865574; verify receipt upstream_revision matches d4865574; hermes --version ok.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/92f27bf8-fb26-49d9-92fc-f94484924374/operations/42ef1b20-f2da-460e-9742-213135183339`.
+
+- **hermes** — verified. Before: Install operation 42ef1b20 verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-d4865574, carry 56a243f980c5db9e9e5d0dd7665d6216cac21c00 on upstream d4865574e47497e9a9cd1d21333b8c008a9e8a34, launcher sha256 5dff000e, four focused carry-behavior test files passed (241 passed/0 failed/4 skipped) and gateway import smoke passed, provenance receipt written. The running gateway still uses the previous generation hermes-candidate-e298669b (carry 4e46147a); prior activation receipt status=verified (2026-10-29). The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 861168 on candidate-d4865574, revision 56a243f9, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 56a243f9 pid 861168 slack connected; gateway process live on candidate-d4865574.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/92f27bf8-fb26-49d9-92fc-f94484924374/operations/774d2514-ab9e-417f-97fc-4229cb726462`.
+
 ## 2026-10-29 13:37 UTC — f996abab-7f9e-4196-8f25-f1f00491a004
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
