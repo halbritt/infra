@@ -115,7 +115,7 @@ The server serves `site/` statically with `Cache-Control: no-cache`, so edits ar
 | `victoriametrics/vmalert.default` | `/etc/default/vmalert` |
 | `victoriametrics/vmalert.service` | `/etc/systemd/system/vmalert.service` |
 | `victoriametrics-homeassistant/*` | paths listed in [`victoriametrics-homeassistant/README.md`](victoriametrics-homeassistant/README.md) |
-| `prometheus/rules/*.yml` | `/etc/victoria-metrics/rules/` (Prometheus-format rules evaluated by vmalert) |
+| `prometheus/rules/*.yml` | `/etc/victoria-metrics/rules/` (active vmalert); keep `/etc/prometheus/rules/` synchronized for the disabled rollback service |
 | `prometheus/prometheus.yml` | `/etc/prometheus/prometheus.yml` (disabled rollback service) |
 | `prometheus/prometheus.default` | `/etc/default/prometheus` (disabled rollback service) |
 | `prometheus/10-tailnet-bind.conf` | `/etc/systemd/system/prometheus.service.d/` (disabled rollback service) |
@@ -531,3 +531,18 @@ Live verification at 18:04 PDT: the corrected rule is healthy and inactive,
 Alertmanager has no remaining `PostgresLongRunningTransaction` alert, and both
 PostgreSQL scrape targets are up with `cluster="18/main"`. No database sessions
 were cancelled or terminated. All 43 repository tests and validation pass.
+
+
+Follow-up on 2026-10-29 at 20:06 PDT: a quoted notification still showed
+`cluster=17/main` and a 20,755-day age. The bogus duration corresponds to
+2026-10-28 17:37:14 PDT; retained `ALERTS` history has its last firing sample
+at 18:03 that day. The current rule remained healthy/inactive, Alertmanager
+had no matching alert, both targets used `18/main`, and PostgreSQL had no
+open application transactions. This is evidence of the earlier alarm, not a
+reverted live rule; the notification's delivery time was not independently checked.
+
+The disabled Prometheus rollback service still had the old expression under
+`/etc/prometheus/rules/`. Installed the same corrected canonical rule there
+and verified byte equality and native rule checks. Keep both installed rule
+directories synchronized when changing rules, so rollback cannot restore this
+bug. Prometheus remains disabled; no production database sessions were changed.

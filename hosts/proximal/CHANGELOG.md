@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-10-29 — verify transaction alert resolution and synchronize rollback rule
+
+- Rechecked a notification carrying the old `17/main` label and epoch-sized
+  duration. Retained firing history ends October 28 at 18:03 PDT; the current
+  rule is healthy/inactive and Alertmanager has no transaction alert.
+- Updated the disabled Prometheus rollback rule copy to match the corrected
+  canonical and active vmalert rule. Native rule checks and regression tests pass.
+- PostgreSQL has no open application transactions; both scrape targets are
+  healthy with `18/main` labels. No database sessions were changed.
+
 ## 2026-10-28 — correct false long-transaction alerts after upgrade
 
 - postgres_exporter 0.19 reports transaction age as a duration despite the
