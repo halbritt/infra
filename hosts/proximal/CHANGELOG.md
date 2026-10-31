@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-10-31 — reclaim root-disk space
+
+- Increased free space from about 168 to 356 GiB; root usage fell from 91% to
+  80%. Pruned unused Docker build cache, package caches and archived journals.
+- Moved the retired 89 GiB Striatum store and two inactive Agent EE run series
+  to the existing ZFS archive, preserving data, permissions and original paths
+  through writable symlinks. Native transfer checksums and post-copy comparisons
+  passed after resolving one copy residue and refreshed SQLite shared-memory files.
+- Preserved the active 214 GiB Agent EE run, source checkouts, databases,
+  model files, Docker volumes and shared authentication. Live health checks,
+  all 43 repository tests and infrastructure validation pass.
+- [Paths, verification and backup coverage](config/archive/README.md#root-disk-cleanup--2026-10-31).
+
 ## 2026-10-29 — verify transaction alert resolution and synchronize rollback rule
 
 - Rechecked a notification carrying the old `17/main` label and epoch-sized

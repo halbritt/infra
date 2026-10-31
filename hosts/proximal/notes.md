@@ -49,8 +49,9 @@ removed. Preserve the active Talos relays and shared source authentication.
 Striatum engineering execution moved to Talos on 2026-10-24. At the owner's
 request on 2026-10-25, the read-only bind mount over
 `~/.local/share/striatum` and its systemd mount unit were removed. The retained
-directory is writable on the root filesystem; do not restore the read-only
-mount. Source scheduling remains retired. Proximal retains the source
+store remains writable. On 2026-10-31 it moved to
+`/nvr/archive/striatum-proximal-retired-20261031`, with a symlink at the original
+path to reclaim root-disk space. Do not restore the read-only mount. Source scheduling remains retired. Proximal retains the source
 Claude/Codex authentication services, which publish access-only remote mirrors;
 refresh tokens stay on Proximal. The Claude refresher selects no retired local
 Striatum harness homes. See

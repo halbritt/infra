@@ -12,9 +12,10 @@ its 94 GiB store and active wake/warmtier/exchange timers.
 Proximal still runs `striatum-talos-cairn-relay.service` and
 `striatum-talos-compat-relay.service`. They forward Cairn, PostgreSQL and local
 inference services to Talos. Preserve them and shared authentication mirrors.
-Proximal's retired 89 GiB store, installed successor binaries and source
-checkouts remain; removal of local successor runtime leftovers was asked
-separately from the authorized legacy daemon cleanup.
+Proximal's retired 89 GiB store was moved to the ZFS cold archive on
+2026-10-31, preserving its original path as a writable symlink. See
+[the archive record](../archive/README.md). Installed successor binaries and
+source checkouts remain; the cold store was preserved, not deleted.
 
 
 Host wiring for **striatum-next** (`~/git/striatum-next`) — the successor to the
