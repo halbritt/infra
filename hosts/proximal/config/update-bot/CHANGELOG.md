@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-10-31 13:30 UTC — e085fe65-5c11-4a5b-8703-e9c5e9eeca81
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **claude** — verified. Before: Claude Code 2.1.314 installed via the native versioned installer: /home/halbritt/.local/bin/claude -> /home/halbritt/.local/share/claude/versions/2.1.314. npm view @anthropic-ai/claude-code version reports 2.1.316, so an update is available. Config (~/.claude.json, ~/.claude/) and session stores are preserved by the native updater, which installs a new versioned directory and repoints the launcher symlink.. After: Claude Code 2.1.316 installed; launcher symlink repointed.
+  Verification: operation exit 0/0; claude --version 2.1.316; prior 2.1.314 directory retained.
+  Activation: installed; new launches use 2.1.316.
+  Evidence: `/var/lib/update-bot/runs/e085fe65-5c11-4a5b-8703-e9c5e9eeca81/operations/0d8fe193-1d17-4735-b7c6-fc2fcfda092d`.
+
+- **hermes** — failed. Before: Install operation 59b6fca8 verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-c419cf7c, carry 56a243f9 ported per-file onto upstream c419cf7c, PORT_OK + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK, focused carry-behavior tests and gateway import smoke passed, provenance receipt written. The running gateway still uses the previous generation hermes-candidate-d4865574 (carry 56a243f9); prior activation receipt status=verified changed=true pid 861168. The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 2396997 on candidate-c419cf7c, revision 6fbb9c81, Slack connected.
+  Verification: command exit 0; native hermes-activation-latest.json status=verified changed=true revision 6fbb9c81 pid 2396997 slack connected; gateway process live. Operation marked failed because verify_argv asserted carry id 56a243f9 instead of 6fbb9c81 — verification mismatch, activation itself verified.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/e085fe65-5c11-4a5b-8703-e9c5e9eeca81/operations/4d1817e0-2e32-46ef-93f8-9292e28323cb`.
+
+- **hermes** — verified. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-d4865574 (carry 56a243f980c5db9e9e5d0dd7665d6216cac21c00 on upstream d4865574e47497e9a9cd1d21333b8c008a9e8a34), selected by ~/.local/bin/hermes (sha 5dff000e) and the running gateway (PID 861168, Slack connected; activation receipt 2026-10-30 status=verified changed=true). Upstream NousResearch/hermes-agent main advanced to c419cf7c864ac0ee511dbd9f7091a8bba0b567ee (85 commits, secrets/config-lock/desktop-webapp notification work) via git ls-remote and the GitHub compare API; d4865574 is an ancestor. None of the 10 carried files were changed upstream between the two bases, so the per-file 3-way carry is expected clean. No candidate exists yet at c419cf7c.. After: Carry 6fbb9c81612e2d67e908a7f0c364ee3b5163552a built on upstream c419cf7c (10 files, clean per-file 3-way merge); venv built; focused carry-behavior tests and gateway import smoke passed; versioned launcher installed and provenance receipt written.
+  Verification: operation exit 0/0; prep log PORT_OK + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK carry=6fbb9c81 base=c419cf7c; receipt upstream_revision matches c419cf7c; hermes --version ok.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/e085fe65-5c11-4a5b-8703-e9c5e9eeca81/operations/59b6fca8-352d-4596-813f-20dc4a89bd36`.
+
+- **wigolo** — verified. Before: Global npm wigolo@0.3.1 built from upstream main source at ~/git/wigolo HEAD 138613f59d3fc1cd742cc97f4ba6f1fa15e7a299 (clean detached checkout). Upstream KnockOutEZ/wigolo main has advanced to 0b38aebe471952c4412a07d7a08e615824ff36e1 via git ls-remote; published npm latest remains 0.3.1. Node v24.22.1, npm 11.17.0. This script fetches origin main, checks out the target detached, builds and reinstalls the global package; it preserves ~/.wigolo data/cache and provider config and never installs the older published npm version.. After: Fetched origin main, checked out target detached, installed deps and built, packed, and reinstalled global npm package as 0.3.1 from source 0b38aebe; data/cache and provider config preserved.
+  Verification: operation exit 0/0; log RESULT: WIGOLO_BUILD_OK target=0b38aebe; ~/git/wigolo HEAD starts 0b38aebe; wigolo --version 0.3.1; npm ls -g wigolo = 0.3.1.
+  Activation: installed global package; new launches use it, no running service to restart.
+  Evidence: `/var/lib/update-bot/runs/e085fe65-5c11-4a5b-8703-e9c5e9eeca81/operations/fd2e1a6a-f104-49bf-8d02-475d692c204b`.
+
 ## 2026-10-30 13:33 UTC — 92f27bf8-fb26-49d9-92fc-f94484924374
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
