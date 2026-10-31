@@ -1,5 +1,19 @@
 # Changelog — proximal (system)
 
+## 2026-10-31 — update local document conversion
+
+- Rebuilt the broken Python environment and installed Marker 2.1.0 with Surya
+  0.23.0. Provisioned Surya OCR 2.5 GGUF weights and a `marker-local` launcher
+  using CPU llama.cpp with the vision projector also on CPU.
+- Installed Docling 2.145.0 as an isolated uv tool with CPU Torch and RapidOCR.
+  Kept its dependencies separate from Marker.
+- Verified direct Surya OCR, Marker balanced-mode PDF OCR, the skillpack
+  helper's fast-mode JSON output, and Docling PDF OCR to Markdown/JSON using a
+  locally generated scanned page. Expected text was present in every output.
+- Recorded reproducible package pins, installation mapping and shared-model
+  lifecycle in [document conversion](config/document-conversion/README.md).
+  The existing LLM stayed active. All 43 tests and repository validation pass.
+
 ## 2026-10-31 — reclaim root-disk space
 
 - Increased free space from about 168 to 356 GiB; root usage fell from 91% to
