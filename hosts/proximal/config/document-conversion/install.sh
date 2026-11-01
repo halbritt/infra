@@ -14,6 +14,8 @@ install -Dm755 "$source_dir/run-marker.sh" "$HOME/.local/bin/marker-local"
 install -Dm644 "$source_dir/mineru-config.yaml" "$HOME/.mineru/config.yaml"
 MINERU_TELEMETRY_DISABLED=1 mineru-kit models download --tier standard --source huggingface
 MINERU_TELEMETRY_DISABLED=1 mineru-kit models verify --tier standard
+# The managed API currently resolves its empty upload path against its cwd.
+cd "$HOME/.mineru"
 mineru_was_running="$(mineru server status --json | python3 -c 'import json,sys; print("yes" if json.load(sys.stdin)["running"] else "no")')"
 if [ "$mineru_was_running" = no ]; then
   MINERU_TELEMETRY_DISABLED=1 mineru server start

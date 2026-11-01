@@ -152,4 +152,8 @@ default is disabled even when models are installed. After startup, inspect
 before submitting a library parse. The library and parser are loopback/local.
 Telemetry was persistently disabled using the native command and verified as
 `disabled`, source `user`, after restart. No standing systemd service was
-installed. Start the library explicitly for a session and stop it when finished.
+installed. Start the library explicitly for a session and stop it when finished. Start
+it with `(cd ~/.mineru && mineru server start)`: the managed parser's empty
+upload-directory default currently resolves to its working directory and
+creates `blobs/` and `.mineru-service.lock` there. The installer starts it from
+`~/.mineru` to keep runtime files outside source checkouts.
