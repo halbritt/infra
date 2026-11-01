@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-11-01 — reclaim root-disk space
+
+- Increased free root space from about 204 to 259 GiB (89% to 86% used).
+  Removed unused Docker build cache and APT/update-bot package downloads.
+- Archived the inactive 30 GiB October 26 Agent EE campaign on ZFS. Transfer
+  checksums and a complete post-copy comparison passed; its original path
+  remains writable through a symlink and the archive has existing backup coverage.
+- Preserved the growing 340 GiB Agent EE run, engineering evidence, source
+  worktrees, databases, models, installed update candidates and Docker volumes.
+- ZFS, PostgreSQL, Docker, Cairn and inference checks passed without restarts.
+  All 43 repository tests and infrastructure validation passed.
+- [Cleanup details and archive path](config/archive/README.md#root-disk-cleanup--2026-11-01).
+
 ## 2026-10-31 — install and verify MinerU
 
 - On the owner's follow-up request, installed MinerU 4.1.3 in its own Python 3.12
