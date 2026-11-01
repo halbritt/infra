@@ -15,6 +15,7 @@ upgrade and could no longer find its Python 3.12 packages.
 | Inference | `~/git/llama.cpp/build/bin/llama-server`, auto-spawned on loopback |
 | Docling | 2.145.0, uv tool environment `~/.local/share/uv/tools/docling` |
 | Torch | 2.15.0+cpu in both environments |
+| MinerU | No local installation found in the inventory below |
 
 The upstream Marker checkout was fast-forwarded to `71dd5fd`. Runtime packages
 come from PyPI, independently of that checkout. Docling has its own environment:
@@ -62,10 +63,13 @@ OCR-error CPU servers persist for reuse even without that flag (upstream shared
 batch-service behavior). The servers started by these smoke checks were stopped
 after verification; no permanent service was installed.
 
-The skillpack `marker-convert` helper supports local conversion and an optional
-Windows peecee bridge. That remote installation was not updated or verified by
-this Proximal change. Maintain skill instructions in `~/git/skillpack`, then run
-its `install.sh` to deploy them.
+The skillpack `document-convert` skill covers Marker, Surya, Docling and MinerU.
+The older `marker` and `marker-convert` skill names point there; the existing
+`marker-convert/scripts/` helper paths remain stable. The Windows peecee Marker
+bridge was not updated or verified by this Proximal change. Infra also records a
+separate CUDA Docling installation on peecee-wsl under the peecee WSL subsystem;
+check its host notes and GPU lease requirements before use. Maintain skill
+instructions in `~/git/skillpack`, then run its `install.sh` to deploy them.
 
 ## Verification (2026-10-31)
 
@@ -89,3 +93,21 @@ inspection; it is not a runnable rollback environment.
 Upstream references: [Marker](https://github.com/datalab-to/marker),
 [Surya inference backends](https://github.com/datalab-to/surya#inference-backends),
 [Docling installation](https://docling-project.github.io/docling/getting_started/installation/).
+
+## MinerU inventory — 2026-10-31
+
+The owner recalled a possible MinerU installation and requested verification
+before consolidating the document-conversion skills. Neither `mineru` nor the
+older `magic-pdf` command was on PATH. No MinerU package was found in 35 checked
+Python package locations across project venvs, worktrees, user uv tools, other
+user venvs and standard site-package roots. Bounded source/tool directory scans,
+Docker container/image listings, and system/user unit listings found no MinerU
+installation. `~/git/marker/benchmarks/competitors/mineru_infer.sh` is an upstream
+comparison script, not an installed runtime.
+
+This is a local inventory, not a check of every remote host or archive. No
+MinerU package or model was installed by this verification task. The combined
+skill marks MinerU unavailable locally and provides conditional 4.1 setup and
+usage based on upstream docs (PyPI 4.1.3 at inspection). Its proposed MinerU
+commands have not passed local inference. Use the installed engines until an
+installation task provisions and verifies that route.

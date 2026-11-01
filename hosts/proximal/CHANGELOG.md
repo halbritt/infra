@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-10-31 — verify MinerU availability and consolidate conversion guidance
+
+- Checked PATH, 35 Python package locations, expected project/tool directories,
+  Docker containers/images and system/user service units. Found no local
+  MinerU or legacy magic-pdf installation; the Marker competitor benchmark
+  script is not a runtime.
+- Recorded the inventory and routed skill guidance to skillpack's combined
+  `document-convert` skill, covering Marker, Surya, Docling and conditional
+  MinerU setup/usage. No MinerU package, weights or service was installed.
+
 ## 2026-10-31 — update local document conversion
 
 - Rebuilt the broken Python environment and installed Marker 2.1.0 with Surya
