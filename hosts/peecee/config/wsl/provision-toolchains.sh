@@ -47,15 +47,20 @@ if [ ! -x ~/.local/bin/uv ]; then
   curl -fsSL https://astral.sh/uv/install.sh | sh >/dev/null
 fi
 
-# PATH for login + non-login shells
+# Docling GPU document conversion (CUDA 12.8 PyTorch wheels for WSL2 RTX 3090 Ti)
+~/.local/bin/uv tool install --upgrade --python 3.12 --torch-backend cu128 "docling==2.145.0"
+
+# PATH and WSL2 CUDA library path for login + non-login shells
 cat > ~/.profile.d-toolchains.sh <<'P'
-export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.cargo/bin:/usr/local/go/bin:$HOME/go/bin:$PATH"
+export PATH="/usr/lib/wsl/lib:$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.cargo/bin:/usr/local/go/bin:$HOME/go/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/lib/wsl/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 P
 grep -q profile.d-toolchains ~/.bashrc || echo '. ~/.profile.d-toolchains.sh' >> ~/.bashrc
 grep -q profile.d-toolchains ~/.profile || echo '. ~/.profile.d-toolchains.sh' >> ~/.profile
 # non-interactive `ssh peecee-wsl <cmd>` sources neither; sshd applies /etc/environment via PAM
 $S tee /etc/environment >/dev/null <<'ENV'
-PATH="/home/halbritt/.local/bin:/home/halbritt/.npm-global/bin:/home/halbritt/.cargo/bin:/usr/local/go/bin:/home/halbritt/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+PATH="/usr/lib/wsl/lib:/home/halbritt/.local/bin:/home/halbritt/.npm-global/bin:/home/halbritt/.cargo/bin:/usr/local/go/bin:/home/halbritt/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+LD_LIBRARY_PATH="/usr/lib/wsl/lib"
 ENV
 . ~/.profile.d-toolchains.sh
 

@@ -1,5 +1,17 @@
 # peecee host notes
 
+## WSL2 CUDA Docling 2.145.0 provisioned — 2026-10-31
+
+Installed `docling==2.145.0` (`docling-core==2.105.0`, `docling-ibm-models==4.0.4`,
+`docling-parse==7.24.2`, `torch==2.11.0+cu128`, `rapidocr==3.10.0`) in an isolated
+`uv` Python 3.12 tool environment on `peecee-wsl` (`~/.local/bin/docling`) for
+Pincite corpus conversion on the RTX 3090 Ti. Added `/usr/lib/wsl/lib` to `PATH`
+and `LD_LIBRARY_PATH` in `/etc/environment` and `~/.profile.d-toolchains.sh` so
+non-interactive SSH invocations locate WSL2 `nvidia-smi` and `libcuda.so.1`.
+Acquire the `gpu-fleet` `marker` slot lease before running batch CUDA conversions
+so VRAM contention with Windows GPU workloads is avoided. See
+[config/wsl/README.md](config/wsl/README.md).
+
 ## Zwift uninstalled — 2026-09-23
 
 The owner said Zwift had not been used in years and requested its removal.

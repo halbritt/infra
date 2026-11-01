@@ -47,8 +47,10 @@ Chosen from what proximal's `~/git` repos actually use (44 python, 21 node,
 | bubblewrap, slirp4netns, uidmap, binutils | | apt — council's isolated-execution suites |
 | `claude`, `codex`, `opencode` CLIs | | `npm -g` (user prefix) |
 | `git-wt` / `git-land` | | wrappers around `~/git/cairn/scripts/git_trunk_tools.py` (cairn cloned to `~/git/cairn`) |
+| `docling` / `docling-tools` | 2.145.0 (`torch 2.11.0+cu128`, `rapidocr 3.10.0`) | `uv tool install --python 3.12 --torch-backend cu128 docling==2.145.0` → `~/.local/bin` |
 
-PATH for all of the above is set in **`/etc/environment`** (literal `/home/halbritt/...`
+PATH and `LD_LIBRARY_PATH=/usr/lib/wsl/lib` (for WSL2 `nvidia-smi` and `libcuda.so.1`)
+are set in **`/etc/environment`** (literal `/home/halbritt/...`
 entries) because non-interactive `ssh peecee-wsl <cmd>` sources neither `.bashrc`
 nor `.profile`; interactive shells also get `~/.profile.d-toolchains.sh`.
 

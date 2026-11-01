@@ -1,5 +1,13 @@
 # Changelog — peecee
 
+## 2026-10-31 — provision CUDA Docling 2.145.0 in WSL2
+
+Installed `docling==2.145.0` (`torch 2.11.0+cu128`, `rapidocr 3.10.0`) via `uv tool`
+on `peecee-wsl` and added `/usr/lib/wsl/lib` to `PATH` and `LD_LIBRARY_PATH` in
+`/etc/environment` and `~/.profile.d-toolchains.sh`. Verified RTX 3090 Ti CUDA
+visibility and GPU `DoclingDocument` JSON conversion under a `gpu-fleet` lease.
+See [WSL2 toolchains](config/wsl/README.md).
+
 ## 2026-10-26 — submit GPU unlock upstream PR
 
 Opened [upstream PR #57](https://github.com/impacifist/Windows-GPU-UNLOCK/pull/57)
