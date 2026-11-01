@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-01 14:36 UTC — c6aa909c-0a33-4cb5-bce4-869ff76276f1
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **llama.cpp** — failed. Before: Repo /home/halbritt/git/llama.cpp on branch master, clean (no uncommitted/untracked). Local HEAD 8ca4060b7e30e76baaa5670ee1ec1b760b7f8552 (llama-server build 11946); installed binaries dated 2026-10-27 22:07. Upstream origin/master dde879bc4f954b809892fd0d660515f42536394a (git ls-remote). No cmake/nvcc running; native update.lock not held. The daily llama-cpp-update user timer IS still fetching (FETCH_HEAD mtime 2026-10-31 21:55 PDT ~ 2026-11-01 04:55 UTC, matching its 04:50 UTC schedule) but has NOT fast-forwarded main since Oct 27, so recent timer runs are failing at configure/build. Active inference llama-27b.service (pid 2250) keeps the old binary; the updater never restarts it.. After: Updater fetched and began configure, then FAILED: nvcc 12.8 rejects default host compiler gcc 15.2.0 ('unsupported GNU version, later than 14 not supported'); main not fast-forwarded.
+  Verification: operation exit 1; install.log shows CMake CUDA compiler-id failure; local HEAD still 8ca4060b.
+  Activation: not installed; running llama-27b.service unchanged.
+  Evidence: `/var/lib/update-bot/runs/c6aa909c-0a33-4cb5-bce4-869ff76276f1/operations/5dde4b4e-5a86-45f6-abfc-c0a39deced6c`.
+
+- **llama.cpp** — failed. Before: First attempt (op 5dde4b4e) failed at CMake configure: nvcc 12.8 (V12.8.93) rejects the default host compiler gcc 15.2.0 ('unsupported GNU version! gcc versions later than 14 are not supported'). Ubuntu upgraded gcc 13->15 on 2026-10-28 (dpkg.log), which is why the daily timer has fetched but not fast-forwarded main since the last good build 2026-10-27 22:07 (llama-server build 11946, commit 8ca4060b). g++-13 is present and supported. This attempt pins nvcc's host compiler via CUDAHOSTCXX=/usr/bin/g++-13 while keeping the canonical updater, its lock, clean-tree checks and atomic install unchanged. Repo on master, clean; upstream origin/master dde879bc.. After: Updater FAILED at CMake configure: CUDA 12.8 headers vs glibc noexcept conflict ('exception specification is incompatible ... rsqrtf'); main not fast-forwarded.
+  Verification: operation exit 1; install.log shows CMake CUDA compiler-id failure (rsqrtf); local HEAD still 8ca4060b.
+  Activation: not installed; running llama-27b.service unchanged.
+  Evidence: `/var/lib/update-bot/runs/c6aa909c-0a33-4cb5-bce4-869ff76276f1/operations/6df9b30e-6b00-4db0-bfca-de4f6cb94ccf`.
+
+- **hermes** — verified. Before: Installed/activated generation /var/lib/update-bot/staging/hermes-candidate-c419cf7c (carry 6fbb9c81612e2d67e908a7f0c364ee3b5163552a on upstream c419cf7c864ac0ee511dbd9f7091a8bba0b567ee), selected by ~/.local/bin/hermes (sha b146fb72) and the running gateway (PID 2396997, Slack connected; activation receipt 2026-10-31 status=verified changed=true). Upstream NousResearch/hermes-agent main advanced to 57864bb220d481594384819cff0a3570659879f9 via git ls-remote; c419cf7c is an ancestor. Carried delta is the same 10 files whose per-file 3-way carry is expected clean. No candidate exists yet at 57864bb2.. After: Carry 37d29799507f6e7458ae2848f8463d95af55b155 built on upstream 57864bb2 (10 files, clean per-file 3-way merge); venv built; 241 carry-behavior tests passed + gateway import smoke; versioned launcher installed and provenance receipt written.
+  Verification: operation exit 0/0; log PORT_OK + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK carry=37d29799 base=57864bb2; receipt upstream_revision matches; hermes --version ok.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/c6aa909c-0a33-4cb5-bce4-869ff76276f1/operations/c4c56029-f89a-4652-be14-dff1450d40a6`.
+
+- **hermes** — verified. Before: Install operation c4c56029 verified: ~/.local/bin/hermes now selects /var/lib/update-bot/staging/hermes-candidate-57864bb2, carry 37d29799507f6e7458ae2848f8463d95af55b155 ported per-file onto upstream 57864bb2, PORT_OK + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK, 241 carry-behavior tests passed + gateway import smoke, provenance receipt written. The running gateway still uses the previous generation hermes-candidate-c419cf7c (carry 6fbb9c81); prior activation receipt status=verified changed=true pid 2396997. The fixed helper performs a fresh native zero-work drain and a single supported reload; it refuses busy/stale/foreign state.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 340199 on candidate-57864bb2, revision 37d29799, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 37d29799 pid 340199 slack connected; gateway process live on candidate-57864bb2.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/c6aa909c-0a33-4cb5-bce4-869ff76276f1/operations/f1c93cea-fd16-465b-9f32-bd0f8a430d09`.
+
 ## 2026-10-31 13:30 UTC — e085fe65-5c11-4a5b-8703-e9c5e9eeca81
 
 Host: proximal. Policy: maintenance-v2. Run status: completed.
