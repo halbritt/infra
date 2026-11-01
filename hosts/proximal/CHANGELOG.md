@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-10-31 — install and verify MinerU
+
+- On the owner's follow-up request, installed MinerU 4.1.3 in its own Python 3.12
+  uv tool environment. Downloaded and verified Basic/Standard assets: ONNX small
+  models and the 1.2B GGUF VLM (about 2 GiB total).
+- Added canonical CPU/local model configuration and repeatable installation to
+  the document-conversion subsystem. Persistently disabled telemetry through the
+  native CLI; the temporary library service was stopped after setup.
+- Basic and Standard converted a generated scanned PDF and recovered all three
+  expected text lines. Both used CPU; the resident LLM stayed active and GPU
+  memory use was unchanged. Updated skillpack guidance to the installed route.
+
 ## 2026-10-31 — verify MinerU availability and consolidate conversion guidance
 
 - Checked PATH, 35 Python package locations, expected project/tool directories,

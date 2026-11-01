@@ -1,6 +1,6 @@
 # Local document conversion
 
-Marker and Docling run locally on Proximal. The owner requested a Marker update,
+Marker, Docling and MinerU run locally on Proximal. The owner requested a Marker update,
 a working Surya backend, and installation of current Docling on 2026-10-31.
 The old Marker venv followed `/usr/bin/python3` to Python 3.14 after the OS
 upgrade and could no longer find its Python 3.12 packages.
@@ -15,7 +15,8 @@ upgrade and could no longer find its Python 3.12 packages.
 | Inference | `~/git/llama.cpp/build/bin/llama-server`, auto-spawned on loopback |
 | Docling | 2.145.0, uv tool environment `~/.local/share/uv/tools/docling` |
 | Torch | 2.15.0+cpu in both environments |
-| MinerU | No local installation found in the inventory below |
+| MinerU | 4.1.3, isolated uv tool `~/.local/share/uv/tools/mineru` (Python 3.12) |
+| MinerU models | `MinerU-4_models_onnx` and `MinerU2.5-Pro-2605-1.2B-GGUF`, under `~/.mineru/models` |
 
 The upstream Marker checkout was fast-forwarded to `71dd5fd`. Runtime packages
 come from PyPI, independently of that checkout. Docling has its own environment:
@@ -31,7 +32,12 @@ server. No resident service needs to stop.
 ## Install and update
 
 Run `bash install.sh` from this directory. It installs the pinned packages with
-CPU Torch and installs `run-marker.sh` as `~/.local/bin/marker-local`.
+CPU Torch for Marker/Docling and installs `run-marker.sh` as
+`~/.local/bin/marker-local`. MinerU uses its own ONNX/llama.cpp environment. The
+installer installs `mineru-config.yaml`, downloads/verifies Standard-tier assets
+(including Basic), and disables telemetry through the native library service.
+It enables the library's managed local parser and temporarily starts/stops the
+library service when none was running; an existing service is left running.
 `uv` and the existing llama.cpp build are prerequisites. Change the package pins
 in the installer when updating; rerun conversion checks before recording success.
 Do not reuse an environment whose interpreter has changed underneath it.
@@ -39,6 +45,7 @@ Do not reuse an environment whose interpreter has changed underneath it.
 | Canonical file | Installed path |
 |---|---|
 | `run-marker.sh` | `~/.local/bin/marker-local` |
+| `mineru-config.yaml` | `~/.mineru/config.yaml` |
 | `install.sh` | Run from this repository; not copied |
 
 ```bash
@@ -52,6 +59,11 @@ marker-local surya_table table.png --output_dir tables
 
 # Current Docling uses the convert subcommand
 docling convert file.pdf --device cpu --to md --to json --output out --fail-on partial
+
+# MinerU stateless local parsing; output parent must exist
+mkdir -p out
+mineru-kit parse file.pdf --tier basic -o out/mineru-basic.md
+mineru-kit parse file.pdf --tier standard -o out/mineru-standard.md
 ```
 
 Marker defaults to fast mode on CPU. Use `--mode balanced` to exercise VLM layout
@@ -105,9 +117,39 @@ Docker container/image listings, and system/user unit listings found no MinerU
 installation. `~/git/marker/benchmarks/competitors/mineru_infer.sh` is an upstream
 comparison script, not an installed runtime.
 
-This is a local inventory, not a check of every remote host or archive. No
-MinerU package or model was installed by this verification task. The combined
-skill marks MinerU unavailable locally and provides conditional 4.1 setup and
-usage based on upstream docs (PyPI 4.1.3 at inspection). Its proposed MinerU
-commands have not passed local inference. Use the installed engines until an
-installation task provisions and verifies that route.
+This initial inventory was local, not a check of every remote host or archive.
+It preceded the authorized installation below; it is retained as provenance.
+
+
+## MinerU installation and verification — 2026-10-31
+
+The owner subsequently explicitly requested installation. Installed MinerU
+4.1.3 using `uv tool install --python 3.12 mineru==4.1.3` with its base dependencies
+(116 compatible packages), including ONNX Runtime 1.31.1 and mineru-llama-cpp
+0.2.0. The approximately 2 GiB of downloaded model assets provide Basic and
+Standard tiers. No Torch/VLM GPU environment was added.
+
+`mineru-config.yaml` selects local cached assets, ONNX small models on CPU, and
+the bundled llama.cpp VLM engine. In this version llama.cpp follows the ONNX CPU
+device selection. Basic performs OCR, formulas and tables without the VLM;
+Standard uses the additional 1.2B VLM. The general chat server and Surya weights
+are independent of this model stack.
+
+Verified Basic and Standard parsing of the generated scanned PDF. Both exported
+all three expected text lines; logs showed ONNX `CPUExecutionProvider` and
+Standard's `llama.cpp device policy: cpu`. `models verify --tier standard` passed
+for both bundles. Basic also exported valid full-document `middle_json` with
+one page and the expected text, and the library CLI passed a complete export
+after enabling its managed parser and waiting for readiness. The resident LLM
+stayed active, with GPU free memory unchanged
+at 958 MiB. Logs and outputs are in `~/.cache/document-conversion-skill/`.
+
+The optional library CLI (`mineru parse`) requires `mineru server start`; the
+stateless `mineru-kit parse` command works without that daemon. The installer
+sets `parse_server.local.mode=managed` through `mineru config set`; the upstream
+default is disabled even when models are installed. After startup, inspect
+`mineru server status --json` and wait for `parse_server.local.healthy=true`
+before submitting a library parse. The library and parser are loopback/local.
+Telemetry was persistently disabled using the native command and verified as
+`disabled`, source `user`, after restart. No standing systemd service was
+installed. Start the library explicitly for a session and stop it when finished.

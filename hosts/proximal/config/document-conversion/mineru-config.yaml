@@ -1,0 +1,6 @@
+model:
+  source: local
+  small_backend: onnx
+  onnx_device: cpu
+  vlm:
+    engine: llama-cpp
