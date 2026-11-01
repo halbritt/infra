@@ -1,0 +1,398 @@
+{
+  "uid": "cairn-storage-proximal",
+  "title": "Cairn storage \u2014 proximal",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": [
+    "cairn",
+    "postgresql"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Cairn database size",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_database_size_bytes{datname=\"cairn\"}",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Database growth trend (GiB/day)",
+      "description": "Six-hour linear trend; not a forecast. Gaps may follow cluster-label changes.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:GiB/day"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "deriv(pg_database_size_bytes{datname=\"cairn\"}[6h]) * 86400 / 1024^3",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Table sizes including indexes and TOAST",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_cairn_table_total_bytes{job=\"cairn-postgresql\",datname=\"cairn\"}",
+          "legendFormat": "{{table}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Table index sizes",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_cairn_table_index_bytes{job=\"cairn-postgresql\",datname=\"cairn\"}",
+          "legendFormat": "{{table}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Estimated live rows",
+      "description": "PostgreSQL estimates, not exact counts.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_cairn_table_estimated_live_rows{job=\"cairn-postgresql\",datname=\"cairn\"}",
+          "legendFormat": "{{table}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Estimated dead rows",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_cairn_table_estimated_dead_rows{job=\"cairn-postgresql\",datname=\"cairn\"}",
+          "legendFormat": "{{table}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Inserted rows per second",
+      "description": "Statistics counters; rate handles counter resets. New series need samples before rates appear.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(pg_cairn_table_inserted_total{job=\"cairn-postgresql\",datname=\"cairn\"}[15m])",
+          "legendFormat": "{{table}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Deleted rows per second",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(pg_cairn_table_deleted_total{job=\"cairn-postgresql\",datname=\"cairn\"}[15m])",
+          "legendFormat": "{{table}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Table growth trend (GiB/day)",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:GiB/day"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "deriv(pg_cairn_table_total_bytes{job=\"cairn-postgresql\",datname=\"cairn\"}[6h]) * 86400 / 1024^3",
+          "legendFormat": "{{table}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Exporter scrape errors",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-proximal"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_exporter_last_scrape_error{job=\"cairn-postgresql\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    }
+  ]
+}

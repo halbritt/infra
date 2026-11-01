@@ -1,0 +1,27 @@
+groups:
+  - name: cairn_storage
+    rules:
+      - alert: CairnDatabaseLarge
+        expr: pg_database_size_bytes{datname="cairn"} > 150 * 1024 * 1024 * 1024
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cairn database exceeds 150 GiB"
+          description: "Inspect the Cairn storage dashboard and retrieval-candidate retention; do not delete audit rows without checking consumers."
+      - alert: CairnDatabaseGrowingFast
+        expr: deriv(pg_database_size_bytes{datname="cairn"}[6h]) * 86400 > 2 * 1024 * 1024 * 1024
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cairn database growing faster than 2 GiB/day"
+          description: "The six-hour size trend exceeds 2 GiB/day. Check candidate insert/delete rates and table sizes."
+      - alert: CairnStorageMetricsUnavailable
+        expr: (pg_exporter_last_scrape_error{job="cairn-postgresql"} > 0) or absent(pg_cairn_table_total_bytes{job="cairn-postgresql",table="retrieval_candidate"})
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cairn table storage metrics unavailable"
+          description: "Check prometheus-postgres-exporter-cairn and its read-only database connection."

@@ -36,3 +36,6 @@ GRANT CONNECT ON DATABASE postgres TO postgres_exporter;
 
 -- Revert:
 --   DROP ROLE postgres_exporter;
+
+-- Cairn table storage exporter (:9189): catalogs only; no SELECT on Cairn records.
+GRANT CONNECT ON DATABASE cairn TO postgres_exporter;

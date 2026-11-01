@@ -1,0 +1,26 @@
+# Catalog-only metrics: no COUNT(*) or scans of Cairn application tables.
+pg_cairn_table:
+  query: |
+    SELECT current_database() AS datname, s.schemaname AS schema, s.relname AS table,
+      pg_total_relation_size(s.relid) AS total_bytes,
+      pg_table_size(s.relid) AS data_bytes,
+      pg_indexes_size(s.relid) AS index_bytes,
+      s.n_live_tup AS estimated_live_rows, s.n_dead_tup AS estimated_dead_rows,
+      s.n_tup_ins AS inserted_total, s.n_tup_del AS deleted_total,
+      COALESCE(EXTRACT(EPOCH FROM s.last_autovacuum), 0) AS last_autovacuum_timestamp_seconds
+    FROM pg_stat_user_tables s
+    WHERE s.schemaname = 'cairn'
+      AND s.relname IN ('retrieval_candidate', 'retrieval_receipt', 'recall_miss_candidate',
+                       'record_version', 'semantic_passage', 'mutation_request', 'record_use', 'index_handle')
+  metrics:
+    - datname: {usage: LABEL, description: Database}
+    - schema: {usage: LABEL, description: Schema}
+    - table: {usage: LABEL, description: Table}
+    - total_bytes: {usage: GAUGE, description: Total relation bytes including indexes and TOAST}
+    - data_bytes: {usage: GAUGE, description: Table bytes including TOAST and auxiliary forks but excluding main indexes}
+    - index_bytes: {usage: GAUGE, description: Main table index bytes}
+    - estimated_live_rows: {usage: GAUGE, description: Estimated live rows from PostgreSQL statistics; not an exact count}
+    - estimated_dead_rows: {usage: GAUGE, description: Estimated dead rows from PostgreSQL statistics}
+    - inserted_total: {usage: COUNTER, description: Rows inserted since PostgreSQL statistics reset}
+    - deleted_total: {usage: COUNTER, description: Rows deleted since PostgreSQL statistics reset}
+    - last_autovacuum_timestamp_seconds: {usage: GAUGE, description: Last autovacuum epoch or zero if unavailable since statistics reset}

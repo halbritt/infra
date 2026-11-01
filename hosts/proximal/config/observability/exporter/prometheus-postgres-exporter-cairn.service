@@ -1,0 +1,13 @@
+[Unit]
+Description=Prometheus exporter for Cairn table storage and row growth
+After=network.target postgresql.service
+
+[Service]
+User=prometheus
+EnvironmentFile=/etc/default/prometheus-postgres-exporter-cairn
+ExecStart=/usr/bin/prometheus-postgres-exporter $ARGS
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

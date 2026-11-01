@@ -546,3 +546,54 @@ The disabled Prometheus rollback service still had the old expression under
 and verified byte equality and native rule checks. Keep both installed rule
 directories synchronized when changing rules, so rollback cannot restore this
 bug. Prometheus remains disabled; no production database sessions were changed.
+
+## Cairn storage monitoring — 2026-11-01
+
+The owner requested table-level attribution and growth alerts after Cairn reached
+192 GiB. [Cairn storage — proximal](https://proximal.tail0ecc2e.ts.net:8853/d/cairn-storage-proximal)
+shows database/table sizes, index bytes, estimated live/dead rows, insert/delete
+rates and growth trends. Existing database-size history covers 15 days; table
+history starts with this deployment. Rates require at least two scrapes; a full
+six-hour trend needs six hours of observations.
+
+A dedicated `prometheus-postgres-exporter-cairn.service` listens on loopback
+`:9189`, scraped as `cairn-postgresql` every 60 seconds. It uses the existing
+read-only `postgres_exporter` role plus CONNECT on Cairn. There are no application
+table SELECT grants. Eight allowlisted tables are measured through PostgreSQL
+catalogs, with a five-second SQL timeout and ten-second scrape timeout. No table
+counts or data scans run during scraping. Row counts are estimates; insert/delete
+rates use PostgreSQL counters and handle statistics resets. Data bytes include
+TOAST; total bytes additionally include the main table's indexes.
+
+Canonical files and installation:
+
+- `exporter/queries-cairn.yaml` → `/etc/prometheus-postgres-exporter/queries-cairn.yaml`.
+- `exporter/prometheus-postgres-exporter-cairn.service` → `/etc/systemd/system/`.
+- `exporter/prometheus-postgres-exporter-cairn.default.template` → root-only
+  `/etc/default/prometheus-postgres-exporter-cairn`, populated with the existing
+  exporter credential outside Git. The template contains no usable credential.
+- The job is in both VictoriaMetrics and rollback Prometheus scrape configs.
+- `prometheus/rules/cairn-storage.rules.yml` → active `/etc/victoria-metrics/rules/`
+  and rollback `/etc/prometheus/rules/`.
+- `grafana/dashboards/cairn-storage.json` → `/var/lib/grafana/dashboards/`.
+
+Warnings use the existing Alertmanager route: database size above 150 GiB for
+30 minutes; a six-hour database-size trend above 2 GiB/day for 30 minutes; missing
+candidate metrics or exporter query failure for five minutes. The size threshold
+is intentionally below the observed 192 GiB so this incident remains visible.
+Growth is a trend, not a disk-exhaustion forecast. Both thresholds are review
+triggers, not permission to delete data. Host disk alerts remain independent.
+
+Validation: native VictoriaMetrics config and vmalert rule checks, promtool
+boundary/sustained-growth/shrinkage/missing-metric cases, exporter output, live
+scrape/rule health, Grafana provisioning, and repository checks. Reloading scrape
+and rule configuration does not restart PostgreSQL or Cairn.
+
+Rollback: remove the Cairn job from both scrape configurations and its rule file
+from both rule directories, reload VictoriaMetrics/vmalert, stop and disable the
+new exporter, and remove its unit, private environment, query and dashboard files.
+Revoke its database-specific CONNECT grant if no other monitoring uses it. The
+main PostgreSQL exporter and its database-size history remain unchanged.
+
+The retention investigation and its limits are recorded in
+[cairn-storage-20261101.md](cairn-storage-20261101.md).

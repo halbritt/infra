@@ -1,5 +1,20 @@
 # Changelog — proximal (system)
 
+## 2026-11-01 — monitor Cairn storage growth
+
+- Added a loopback PostgreSQL exporter for eight Cairn table sizes, estimated
+  row counts and insert/delete counters; scrape every minute with bounded
+  catalog queries. Reused the read-only monitoring role and granted CONNECT.
+- Installed the Cairn storage Grafana dashboard and warnings for size above
+  150 GiB, growth above 2 GiB/day over six hours, and missing/erroring metrics.
+  Existing Alertmanager routing and 15-day retention apply.
+- Traced 189 GiB of candidate audit data to persistence of all evaluated
+  candidates. Historical explanation/recompilation consume this data; no
+  automatic pruning path was found. No application data was deleted.
+- Live metric ingestion, exporter health and Grafana provisioning pass. Native
+  config/rule checks, alert regression cases, 43 repo tests and validation pass.
+- [Deployment and retention findings](config/observability/cairn-storage-20261101.md).
+
 ## 2026-11-01 — reclaim root-disk space
 
 - Increased free root space from about 204 to 259 GiB (89% to 86% used).

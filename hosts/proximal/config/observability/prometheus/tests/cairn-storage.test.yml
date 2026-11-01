@@ -1,0 +1,103 @@
+rule_files:
+- ../rules/cairn-storage.rules.yml
+evaluation_interval: 1m
+tests:
+- name: large steady
+  interval: 1m
+  input_series:
+  - series: pg_database_size_bytes{instance="proximal",datname="cairn",cluster="18/main",job="postgresql"}
+    values: 171798691840+0x500
+  alert_rule_test:
+  - eval_time: 29m
+    alertname: CairnDatabaseLarge
+    exp_alerts: []
+  - eval_time: 30m
+    alertname: CairnDatabaseLarge
+    exp_alerts:
+    - exp_labels: &id001
+        instance: proximal
+        datname: cairn
+        cluster: 18/main
+        job: postgresql
+        severity: warning
+      exp_annotations:
+        summary: Cairn database exceeds 150 GiB
+        description: Inspect the Cairn storage dashboard and retrieval-candidate retention;
+          do not delete audit rows without checking consumers.
+  - eval_time: 7h
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts: []
+- name: threshold boundary
+  interval: 1m
+  input_series:
+  - series: pg_database_size_bytes{instance="proximal",datname="cairn",cluster="18/main",job="postgresql"}
+    values: 161061273600+0x500
+  alert_rule_test:
+  - eval_time: 29m
+    alertname: CairnDatabaseLarge
+    exp_alerts: []
+  - eval_time: 30m
+    alertname: CairnDatabaseLarge
+    exp_alerts: []
+  - eval_time: 7h
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts: []
+- name: fast growth
+  interval: 1m
+  input_series:
+  - series: pg_database_size_bytes{instance="proximal",datname="cairn",cluster="18/main",job="postgresql"}
+    values: 107374182400+3000000x500
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts: []
+  - eval_time: 7h
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts:
+    - exp_labels: *id001
+      exp_annotations:
+        summary: Cairn database growing faster than 2 GiB/day
+        description: The six-hour size trend exceeds 2 GiB/day. Check candidate insert/delete
+          rates and table sizes.
+- name: slow growth
+  interval: 1m
+  input_series:
+  - series: pg_database_size_bytes{instance="proximal",datname="cairn",cluster="18/main",job="postgresql"}
+    values: 107374182400+1000000x500
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts: []
+  - eval_time: 7h
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts: []
+- name: shrinking
+  interval: 1m
+  input_series:
+  - series: pg_database_size_bytes{instance="proximal",datname="cairn",cluster="18/main",job="postgresql"}
+    values: 107374182400-1000000x500
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts: []
+  - eval_time: 7h
+    alertname: CairnDatabaseGrowingFast
+    exp_alerts: []
+- name: missing table metrics
+  interval: 1m
+  input_series: []
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CairnStorageMetricsUnavailable
+    exp_alerts: []
+  - eval_time: 5m
+    alertname: CairnStorageMetricsUnavailable
+    exp_alerts:
+    - exp_labels:
+        job: cairn-postgresql
+        table: retrieval_candidate
+        severity: warning
+      exp_annotations:
+        summary: Cairn table storage metrics unavailable
+        description: Check prometheus-postgres-exporter-cairn and its read-only database
+          connection.
