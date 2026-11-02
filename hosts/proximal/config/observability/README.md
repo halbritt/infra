@@ -596,4 +596,10 @@ Revoke its database-specific CONNECT grant if no other monitoring uses it. The
 main PostgreSQL exporter and its database-size history remain unchanged.
 
 The retention investigation and its limits are recorded in
-[cairn-storage-20261101.md](cairn-storage-20261101.md).
+[cairn-storage-20261101.md](cairn-storage-20261101.md). Retention itself is now
+deployed; see [candidate-retention.md](../cairn/candidate-retention.md). The
+`CairnCandidateRetentionStalled` warning fires when rows were inserted for four days
+with none deleted, sustained for a day, and stays quiet on a store with no searches.
+Its promtool cases are in `prometheus/tests/cairn-storage.test.yml`. A table rewrite
+temporarily raises the database size, so `CairnDatabaseGrowingFast` can fire during
+one and clears afterward.

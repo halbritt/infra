@@ -17,6 +17,14 @@ groups:
         annotations:
           summary: "Cairn database growing faster than 2 GiB/day"
           description: "The six-hour size trend exceeds 2 GiB/day. Check candidate insert/delete rates and table sizes."
+      - alert: CairnCandidateRetentionStalled
+        expr: increase(pg_cairn_table_inserted_total{job="cairn-postgresql",table="retrieval_candidate"}[4d]) > 0 and increase(pg_cairn_table_deleted_total{job="cairn-postgresql",table="retrieval_candidate"}[4d]) == 0
+        for: 1d
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cairn candidate detail is not being expired"
+          description: "Rows were inserted for four days with none deleted. Check cairn-candidate-retention.timer and its journal; see hosts/proximal/config/cairn/candidate-retention.md."
       - alert: CairnStorageMetricsUnavailable
         expr: (pg_exporter_last_scrape_error{job="cairn-postgresql"} > 0) or absent(pg_cairn_table_total_bytes{job="cairn-postgresql",table="retrieval_candidate"})
         for: 5m

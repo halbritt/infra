@@ -54,3 +54,11 @@ and explicitly report expired/unavailable explanations instead of silently
 returning an empty candidate set. It also needs bounded deletion and a separate
 space-reclamation plan: ordinary DELETE/VACUUM does not guarantee returning the
 existing relation allocation to the root filesystem.
+
+## Outcome — 2026-11-01 evening
+
+The retention implementation this document called for is deployed. The owner chose a
+14-day window. Daily expiry runs on a timer, and a rewrite reduced `cairn` from 193 GB
+to 89 GB and returned the space to the root filesystem. See
+[candidate-retention.md](../cairn/candidate-retention.md). The findings above stand as
+the record of the investigation.

@@ -32,6 +32,12 @@ The API and scheduling services retain their existing binaries and native behavi
 No source rebuild, migration-version change, token provisioning, or session
 re-registration is part of this relocation.
 
+## Candidate detail retention
+
+Search diagnostics expire after 14 days, by a daily timer. See
+[candidate-retention.md](candidate-retention.md) for the decision, operation and
+recovery.
+
 ## Backup and recovery
 
 The managed cluster's pgBackRest backup/WAL schedule now covers the Cairn database.

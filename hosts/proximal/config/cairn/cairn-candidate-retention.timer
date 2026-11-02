@@ -1,0 +1,11 @@
+[Unit]
+Description=Expire Cairn candidate detail daily, after the backup and off-site jobs
+
+[Timer]
+OnCalendar=*-*-* 04:20:00
+Persistent=true
+RandomizedDelaySec=10min
+Unit=cairn-candidate-retention.service
+
+[Install]
+WantedBy=timers.target

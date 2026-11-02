@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-11-01 — bound Cairn candidate storage
+
+- Deployed Cairn `0f2917a` with migration 074 and a daily
+  `cairn-candidate-retention.timer` at a 14-day window, chosen by the owner.
+- Rewrote `retrieval_candidate` online: `cairn` 193 GB to 89 GB, root filesystem free
+  from 101 to 293 GiB at the drop, about 92 GiB net of where it started. The swap held
+  ordinary work for 73 ms. The copy slowed some searches for about 44 minutes.
+- Added the `CairnCandidateRetentionStalled` warning.
+- Archived all 267M candidate rows to `/nvr/archive/cairn/` (14.7 GB, local only) and
+  proved a full restore of the same backup chain on PG18 first.
+- [Decision, operation and recovery](config/cairn/candidate-retention.md).
+
 ## 2026-11-01 — monitor Cairn storage growth
 
 - Added a loopback PostgreSQL exporter for eight Cairn table sizes, estimated

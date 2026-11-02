@@ -1,0 +1,15 @@
+[Unit]
+Description=Expire Cairn candidate detail older than this host's retention window
+Documentation=file://%h/git/infra/hosts/proximal/config/cairn/candidate-retention.md
+
+[Service]
+Type=oneshot
+# The window is host policy with a recorded rationale; see Documentation. A stopped
+# or interrupted run resumes on the next timer. Result JSON goes to the journal.
+StandardInput=data
+StandardInputText={"window_days":14,"max_runtime_seconds":3000,"pause_ms":5}
+ExecStart=%h/.local/bin/cairn candidate-retention
+TimeoutStartSec=1h
+Nice=10
+UMask=0077
+NoNewPrivileges=yes

@@ -101,3 +101,64 @@ tests:
         summary: Cairn table storage metrics unavailable
         description: Check prometheus-postgres-exporter-cairn and its read-only database
           connection.
+- name: candidate retention running
+  interval: 1h
+  input_series:
+  - series: pg_cairn_table_inserted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 0+5000x200
+  - series: pg_cairn_table_deleted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 0+5000x200
+  alert_rule_test:
+  - eval_time: 7d
+    alertname: CairnCandidateRetentionStalled
+    exp_alerts: []
+- name: first expiry within a day of a new relation does not alert
+  interval: 1h
+  input_series:
+  - series: pg_cairn_table_inserted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 0+5000x200
+  - series: pg_cairn_table_deleted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 0+0x12 1000+5000x187
+  alert_rule_test:
+  - eval_time: 1d
+    alertname: CairnCandidateRetentionStalled
+    exp_alerts: []
+  - eval_time: 7d
+    alertname: CairnCandidateRetentionStalled
+    exp_alerts: []
+- name: candidate retention stalled
+  interval: 1h
+  input_series:
+  - series: pg_cairn_table_inserted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 0+5000x300
+  - series: pg_cairn_table_deleted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 0+5000x120 600000+0x180
+  alert_rule_test:
+  - eval_time: 8d
+    alertname: CairnCandidateRetentionStalled
+    exp_alerts: []
+  - eval_time: 10d2h
+    alertname: CairnCandidateRetentionStalled
+    exp_alerts:
+    - exp_labels:
+        job: cairn-postgresql
+        instance: proximal
+        datname: cairn
+        schema: cairn
+        table: retrieval_candidate
+        severity: warning
+      exp_annotations:
+        summary: Cairn candidate detail is not being expired
+        description: Rows were inserted for four days with none deleted. Check cairn-candidate-retention.timer
+          and its journal; see hosts/proximal/config/cairn/candidate-retention.md.
+- name: quiet store is not a stalled store
+  interval: 1h
+  input_series:
+  - series: pg_cairn_table_inserted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 500000+0x200
+  - series: pg_cairn_table_deleted_total{job="cairn-postgresql",instance="proximal",datname="cairn",schema="cairn",table="retrieval_candidate"}
+    values: 500000+0x200
+  alert_rule_test:
+  - eval_time: 7d
+    alertname: CairnCandidateRetentionStalled
+    exp_alerts: []
