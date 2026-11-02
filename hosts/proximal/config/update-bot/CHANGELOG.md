@@ -1,5 +1,24 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-02 14:30 UTC — 768ead03-d312-4e24-bdb2-0553c1ca1140
+
+Host: proximal. Policy: maintenance-v2. Run status: failed.
+
+- **llama.cpp** — failed. Before: Local llama.cpp master clean at 8ca4060b7 (llama-server build 11946, built 2026-10-27 with GNU 13.3.0); upstream origin/master advanced to 3f8af15a7. Host default gcc is now 15.2.0 (Ubuntu upgraded gcc 13->15 on 2026-10-28) and nvcc is CUDA 12.8; glibc 2.43. Prior run attempts failed at CMake configure: default g++-15 rejected by nvcc, and CUDAHOSTCXX=/usr/bin/g++-13 hit the CUDA-12.8-header-vs-glibc rsqrtf noexcept conflict. This attempt is the untried /usr/bin/g++-12 (12.5.0, libstdc++-12) host compiler via the canonical updater and its native update.lock; running llama-27b.service (PID 2250) is not restarted.. After: see operation receipt.
+  Verification: native verification exit None.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/768ead03-d312-4e24-bdb2-0553c1ca1140/operations/0d4c21b8-f1e0-40f5-b7b1-b3a9443b2e0b`.
+
+- **hermes** — verified. Before: Installed and activated generation /var/lib/update-bot/staging/hermes-candidate-57864bb2 (carry 37d29799507f6e7458ae2848f8463d95af55b155 on upstream 57864bb220d481594384819cff0a3570659879f9), selected by ~/.local/bin/hermes and running as gateway PID 340199 with Slack connected; upstream main advanced 57864bb2 -> fbf6c6c91d8a9ce3008e05c4b51ca60ad05bb85f. Gateway active_agents 0. Port script fetches main and builds an isolated candidate at staging/hermes-candidate-fbf6c6c9, carries the 10-file local delta via per-file 3-way merge, builds the venv, runs 4 focused test files plus gateway import smoke, then installs the versioned launcher and provenance receipt.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/768ead03-d312-4e24-bdb2-0553c1ca1140/operations/6ac416f8-b74d-462a-bf4f-9ac86d26f4e7`.
+
+- **hermes** — verified. Before: Gateway PID 340199 running generation candidate-57864bb2 (carry 37d29799) with Slack connected and active_agents 0; ~/.local/bin/hermes now selects the tested candidate /var/lib/update-bot/staging/hermes-candidate-fbf6c6c9 (carry 6fbd3e707b352a2814d6087f93892e83f2a9933e on upstream fbf6c6c91d8a9ce3008e05c4b51ca60ad05bb85f). Fixed helper requires a fresh native zero-work drain before its single supported reload.. After: see operation receipt.
+  Verification: native verification exit 0.
+  Activation: not established by this receipt.
+  Evidence: `/var/lib/update-bot/runs/768ead03-d312-4e24-bdb2-0553c1ca1140/operations/81e22645-ca28-4af2-904f-1db399ca70d7`.
+
 ## 2026-11-01 14:36 UTC — c6aa909c-0a33-4cb5-bce4-869ff76276f1
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
