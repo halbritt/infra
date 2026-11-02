@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-02 — install codeaf
+
+- Cloned `Agent-Field/CodeAF` into `~/git/codeaf` at the owner's request.
+- Installed stable `v0.8.2` at `~/.local/bin/codeaf` using the upstream installer
+  with release checksum verification. Source compilation was blocked by the
+  local Go version and disabled toolchain downloads.
+- Version, help, doctor and fresh-login PATH checks passed. No model requests
+  were made; provider configuration and the host Go setup were left unchanged.
+- [Installation paths, checksum and routing policy](config/codeaf/README.md).
+
 ## 2026-11-01 — bound Cairn candidate storage
 
 - Deployed Cairn `0f2917a` with migration 074 and a daily
