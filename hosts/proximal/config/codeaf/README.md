@@ -1,5 +1,19 @@
 # codeaf
 
+## Retired 2026-11-02
+
+The owner rejected codeaf after inspection because its human-facing workflow
+overlaps with Herdr and does not fill the desired tool-running harness role.
+Although codeaf has headless commands, no additional role justified keeping it.
+
+Removed `/home/halbritt/.local/bin/codeaf` and the clean upstream checkout at
+`/home/halbritt/git/codeaf`. The checkout had no local changes, ignored files,
+additional worktrees or unpublished branch commits. No codeaf process or systemd
+unit was present, and `/home/halbritt/.codeaf` did not exist. Retain the historical
+installation evidence below; it does not describe an active installation.
+
+## Historical installation
+
 Installed on 2026-11-02 at the owner's request to clone codeaf into `~/git`
 and install it on Proximal.
 
@@ -43,6 +57,3 @@ must use that subscription route. Available OpenRouter credentials do not
 authorize routing those models through OpenRouter. The CLI provides
 `codeaf connect codex` for ChatGPT subscription sign-in. Authentication or quota
 failure must stop the affected operation rather than fall back to OpenRouter.
-
-Remove `/home/halbritt/.local/bin/codeaf` to uninstall the executable; keep the
-checkout and any later runtime state unless their removal is separately wanted.

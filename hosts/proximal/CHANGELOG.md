@@ -1,5 +1,12 @@
 # Changelog — proximal (system)
 
+## 2026-11-02 — retire codeaf
+
+- Removed the codeaf executable and clean source checkout at the owner's request:
+  its human-facing workflow overlaps with Herdr and adds no needed harness role.
+- No runtime directory, running codeaf process or systemd unit was present.
+- Preserved [installation and retirement evidence](config/codeaf/README.md).
+
 ## 2026-11-02 — install codeaf
 
 - Cloned `Agent-Field/CodeAF` into `~/git/codeaf` at the owner's request.
