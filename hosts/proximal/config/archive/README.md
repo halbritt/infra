@@ -19,6 +19,7 @@ symlink in its place, so existing paths still work.
 | `~/.local/share/agent-ee/zeroasic-20261028-agent688` | `/nvr/archive/agent-ee/zeroasic-20261028-agent688` |
 | `~/.local/share/agent-ee/zeroasic-20261029-agent706` | `/nvr/archive/agent-ee/zeroasic-20261029-agent706` |
 | `/tmp/claude-1000/-home-halbritt-git-quartermaster/bdaec7d9-…` (dead session, Oct 8–9) | `/nvr/archive/claude-scratch/quartermaster-bdaec7d9-20261009` (no symlink) |
+| untracked notes in `~/git/ik_llama.cpp` (May 2026 CUDA wedge and Gemma context-shift investigation, upstream issue/PR drafts) plus the unpushed `llama-bench` MTP-toggle patch (the `halbritt/ik_llama.cpp` fork no longer exists) | `/nvr/archive/ik_llama-wedge-notes-20260502` (no symlink; moved 2026-11-03) |
 | locally built Docker images (runpod-jobrunner-noop, checkout-refs-runner, kayakgen-*, harbor-prebuilt) | `/nvr/archive/docker-images/local-images-20261017.tar` (`docker load -i`) |
 
 Off-site backup: restic does not follow symlinks, so
