@@ -11,31 +11,48 @@
   kept up to date."
 - Change ([`shared/agent-ee/`](../../shared/agent-ee/README.md#image-tag-and-build)),
   following image_for, which already builds every time:
-  - every run builds under the existing `image-<key>` flock, and the build moves
-    `agent-ee:exec-<key>`;
+  - every run builds under the existing `image-<key>` flock, or shares the build of a
+    run it waited for. A successful build moves the new alias
+    `agent-ee:exec-<key>-current`;
   - each run resolves one image ID, prints it on stderr, and uses only that image's
     never-moved tag `agent-ee:exec-<key>-<12 hex>`;
-  - runs that wait for a build reuse its result;
-  - when the build fails, the run falls back, with a loud warning, to the existing image
-    for the same inputs. When no such image exists it fails as before;
+  - `agent-ee:exec-<key>`, the tag of earlier versions and image_for, is created when
+    missing and never moved. A Sol cross-review (FIX REQUIRED, finding 2) showed why:
+    moving it would put callers of the earlier version on a new image while they still
+    mount their old input-keyed kicad-route copy;
+  - when the build fails and `-current` names an image for the same inputs, the run
+    falls back to it with a loud warning. The warning says the image was not
+    refreshed, and gives the build log, the image ID and its creation time. In that
+    case the default is 2 attempts with one 30 s backoff. Otherwise it is 6 attempts
+    with 15.5 minutes of backoff. Without such an image the run exits 2, as before;
   - kicad-route copies are keyed by image ID;
-  - no images are pruned.
-- Verified on proximal, using the worktree copy (not the installed one) on a
-  `git archive` export of agent-ee main ece75c1a (key `fa17728480fe069a`):
+  - nothing is pruned. Storage is unbounded, and GC is manual (README). Copies keyed
+    by input hash are deleted only after callers of the old version have drained.
+- Verified on proximal after the review fixes. The tests used the worktree copy (sha256
+  `3d90925d…`, not the installed one) on a `git archive` export of agent-ee main
+  ece75c1a (key `fa17728480fe069a`):
   - Two sequential runs of `strict_suite.py --jobs 1 test_tree_hygiene` passed (6
-    tests each). Each build took 1 s: all 45 Dockerfile steps were CACHED, and only the
-    two remote ADD checks fetched (0.2 to 0.7 s each). Both runs printed the same image,
+    tests each). Each build took about 1 s: all 45 Dockerfile steps were CACHED, and
+    only the two remote ADD checks fetched. Both runs printed the same image,
     `sha256:aec53e7865102c2948d8905bcacb4d2c59106a9b522af877a759895f67c80cc7`, which
-    holds KiCad 10.0.8 and kicad-happy v2.3.2. Wall times were 11.4 s (including the
-    first kicad-route extraction for this image ID) and 4.8 s.
-  - A caller started 1 s after another run's build took the lock. A test shim held
-    that build 30 s before the real build ran. The caller waited 31 s and reused the
-    image without building. A caller that reached the lock after a build had finished
-    built again (0 s, cached).
-  - Fallback, using a shim that fails `docker buildx build` (`BUILD_ATTEMPTS=1`): the
-    building run fell back to the same image and printed the warning. A run that
-    waited 39 s for that build shared its failure without building. Inputs with no
-    image exited 2.
+    holds KiCad 10.0.8 and kicad-happy v2.3.2. The first run created `-current` with a
+    default of 6 attempts. The second run's default was 2. Wall times were 4.0 s and 3.7 s.
+  - Mixed versions: this version built image B and moved `-current` to it, while
+    `exec-<key>` stayed on A. A test shim added a label so that B's ID changed, as an
+    upstream release would. The old version then ran (8098091, the bytes of the
+    installed copy), and `docker inspect` showed its container on A. `docker ps`
+    showed the image as `agent-ee:exec-fa17728480fe069a`. B and its kicad-route copy
+    were removed after the test.
+  - Sharing: a caller started 1 s after another run's build took the lock, and a test
+    shim held that build for 30 s. The caller waited 30 s and reused the image without
+    building.
+  - Fallback, with a shim that fails each build: with `-current` present there were 2
+    attempts and one 30 s backoff. Then came the warning, which names the build log.
+    A run that waited for that build printed its last lines and the same warning.
+    `BUILD_ATTEMPTS=1` overrode the default. For a key with no image there were 6
+    attempts, with backoffs of 30 to 480 s (logged by a sleep shim), then exit 2.
+  - A real Launchpad 503 on the PPA check failed one build attempt, and the retry
+    30 s later succeeded.
 - Not installed yet: `~/.local/bin/ae-ci-exec` on proximal is still the previous version,
   sha256 `85444e87de4adab93ca87ccc69d22035e3e3fe4d5ce1ca51729e6e1842b37090`. peecee-wsl
   was not checked. The integrator installs the new copy on both hosts.
