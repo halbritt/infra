@@ -85,11 +85,13 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   one image ID and never moves. Before a build moves `-current`, the image it named
   gets its own tag, so old images never become dangling.
 - `agent-ee:exec-<key>` is the tag that earlier ae-ci-exec versions and image_for use.
-  A build creates it when it is missing, as image_for does, and never moves it. This
-  version checks only whether it exists and never selects an image through it. The
-  2026-11-03 cross-review found why: an earlier version reads this tag again after
-  releasing its lock, and it mounts a kicad-route copy keyed by input hash, extracted
-  from the image the tag named earlier. Moving the tag would put those callers on a
+  A build creates it when it is missing, as image_for does, and never moves it. When
+  `-current` is missing, a run seeds it once from `exec-<key>`, under the lock. It does
+  this only if that image is labelled with the same full input hash, so the first run
+  of this version has an image to fall back to. Runs never use `exec-<key>` directly.
+  The 2026-11-03 cross-review found why the tag must not move: an earlier version
+  reads this tag again after releasing its lock, and it mounts a kicad-route copy
+  keyed by input hash, extracted from the image the tag named earlier. Moving the tag would put those callers on a
   new image with an old router copy. So older callers (an installed copy that has not
   been replaced, or a run admitted before the replacement) keep a consistent image and
   copy.
@@ -114,8 +116,8 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   has its own lock, and each kicad-route extraction has a lock for its image ID.
 - Build failures: each nonzero `docker buildx build` result is retried; there is no
   error classifier. The default is 2 attempts, with one 30 s backoff, when `-current`
-  names an image labelled `ae-ci-exec.inputs=<the same hash>`. In that case the run
-  has an image to fall back to. Otherwise the default is 6 attempts, with backoffs of
+  names an image labelled `ae-ci-exec.inputs=<the same hash>`. `-current` may have
+  just been seeded from `exec-<key>`. In that case the run has an image to fall back to. Otherwise the default is 6 attempts, with backoffs of
   30, 60, 120, 240 and 480 s (15.5 minutes), as in ci-run.sh. `BUILD_ATTEMPTS`
   overrides both. No limit applies to the build itself.
 - Fallback: when every attempt fails and that image exists, the run uses it. First it

@@ -23,9 +23,11 @@
 #   agent-ee:exec-KEY-ID12     one image, ID12 = the first 12 hex of its ID; never moved.
 #   agent-ee:exec-KEY          the tag of ae-ci-exec versions before 2026-11-03 and of
 #                              image_for. A build creates it when it is missing and never
-#                              moves it. This version checks only whether it exists and
-#                              never selects an image through it. Callers of older
-#                              versions therefore keep a matching image and input-keyed
+#                              moves it. When exec-KEY-current is missing, this version
+#                              seeds it once from exec-KEY, if that image is labelled with
+#                              these exact inputs, so its first run has a fallback image.
+#                              Runs never use exec-KEY directly. Callers of older versions
+#                              therefore keep a matching image and input-keyed
 #                              kicad-route copy while this version rebuilds.
 # Each run resolves one image ID at its start and prints it on stderr
 # ("ae-ci-exec: image sha256:..."). After that it names the image only by its
@@ -41,10 +43,11 @@
 # Build failures: "docker buildx build" is retried for transient mirror errors
 # (snapshot.ubuntu.com, Launchpad, GitHub). The default number of attempts is 2, with
 # one 30 s backoff, when exec-KEY-current names an image labelled with these exact
-# inputs, so the run has an image to fall back to. Otherwise it is 6, with backoffs of
-# 30, 60, 120, 240 and 480 s (15.5 minutes). BUILD_ATTEMPTS overrides both. There is no
-# error classifier, so every nonzero build result counts: unreachable upstream, a new
-# release that breaks a RUN step, a daemon error.
+# inputs (possibly just seeded from exec-KEY), so the run has an image to fall back to.
+# Otherwise it is 6, with backoffs of 30, 60, 120, 240 and 480 s (15.5 minutes).
+# BUILD_ATTEMPTS overrides both. There is no error classifier, so every nonzero build
+# result counts: unreachable upstream, a new release that breaks a RUN step, a daemon
+# error.
 #   Fall back: when every attempt fails and exec-KEY-current names an image labelled
 #     with these exact inputs, the run uses that image. First it prints a loud stderr
 #     warning: the image was not refreshed because the build failed, the build log, the
@@ -185,11 +188,12 @@ record_build() {  # record_build STATUS IMAGE LOG: the next generation of the re
   mv -f "$BUILDS.$$" "$BUILDS"
 }
 
-# The image exec-KEY-current names, if it is labelled with these exact inputs (the
-# fallback candidate); nothing otherwise.
-current_image() {
+# labelled_image REF: the ID of the image REF names, if that image is labelled with these
+# exact inputs; nothing otherwise. Used for the fallback candidate ($CURRENT) and the
+# one-time seed of $CURRENT from $LEGACY.
+labelled_image() {
   local id
-  id=$(image_id "$CURRENT")
+  id=$(image_id "$1")
   [ -n "$id" ] && [ "$(docker image inspect -f '{{index .Config.Labels "ae-ci-exec.inputs"}}' "$id" 2>/dev/null)" = "$input_hash" ] &&
     echo "$id"
   return 0
@@ -247,7 +251,7 @@ build_image() {
 # inputs, and say so loudly; otherwise fail as before.
 fallback() {
   local created url
-  id=$(current_image)
+  id=$(labelled_image "$CURRENT")
   [ -n "$id" ] || die "$1, and no image for these inputs exists ($CURRENT); build log $2"
   created=$(docker image inspect -f '{{.Created}}' "$id")
   {
@@ -269,9 +273,10 @@ fallback() {
 #   - Only holders of locks/image-KEY.lock build, read exec-KEY-current or move it, so a
 #     run never sees it half-moved. The build moves it when it loads its image. Before
 #     that, the image it named is pinned under its own tag, so it stays reachable.
-#   - exec-KEY, the tag older versions use, is only created (when missing, after a
-#     successful build) and never moved. A caller of an older version therefore keeps
-#     the image it resolved and the kicad-route copy it extracted from that image.
+#   - exec-KEY, the tag older versions use, is never moved. It is created when missing,
+#     after a successful build, and it is read once to seed a missing exec-KEY-current
+#     (label-checked). A caller of an older version therefore keeps the image it
+#     resolved and the kicad-route copy it extracted from that image.
 #   - A run reads the record's GEN (ASKED_GEN) before it asks for any lock. If GEN has
 #     grown when the run gets the image lock, a build for KEY finished while the run
 #     waited, and the run takes that build's outcome instead of building again. Callers
@@ -283,7 +288,7 @@ fallback() {
 #   - The chosen image is pinned (pin) before the lock is released. After that, the run
 #     uses only that pinned tag.
 resolve_image() {
-  local asked=$1 result=$2 id='' how='' prev
+  local asked=$1 result=$2 id='' how='' prev seed
   read_build
   if [ "$rec_gen" -gt "$asked" ] && [ "$rec_inputs" = "$input_hash" ]; then
     if [ "$rec_status" = built ] && [ "$(image_id "$rec_image")" = "$rec_image" ]; then
@@ -297,11 +302,21 @@ resolve_image() {
     fi
   fi
   if [ -z "$id" ]; then
+    # The first run of this version for KEY seeds exec-KEY-current, once, from the image
+    # exec-KEY names, if that image is labelled with these exact inputs. That gives the
+    # run an image to fall back to. exec-KEY itself is not moved.
+    if [ -z "$(image_id "$CURRENT")" ]; then
+      seed=$(labelled_image "$LEGACY")
+      if [ -n "$seed" ]; then
+        docker tag "$seed" "$CURRENT"
+        echo "$prog: seeded $CURRENT from $LEGACY: $seed" >&2
+      fi
+    fi
     prev=$(image_id "$CURRENT")
     [ -z "$prev" ] || pin "$prev"
     # With an image to fall back to, keep an outage short: 2 attempts, one 30 s backoff.
     # Without one the run cannot go on, so it retries longer: 6 attempts.
-    if [ -n "$(current_image)" ]; then build_image 2; else build_image 6; fi
+    if [ -n "$(labelled_image "$CURRENT")" ]; then build_image 2; else build_image 6; fi
     if [ "$build_ok" = 1 ]; then
       record_build built "$build_id" "$build_log"
       # Older versions and image_for know only exec-KEY: create it once, never move it.

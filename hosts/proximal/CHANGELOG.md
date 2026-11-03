@@ -19,7 +19,9 @@
   - `agent-ee:exec-<key>`, the tag of earlier versions and image_for, is created when
     missing and never moved. A Sol cross-review (FIX REQUIRED, finding 2) showed why:
     moving it would put callers of the earlier version on a new image while they still
-    mount their old input-keyed kicad-route copy;
+    mount their old input-keyed kicad-route copy. When `-current` is missing, a run
+    seeds it once from `exec-<key>`, under the lock, if the full input labels match.
+    The first run of this version then has a fallback image;
   - when the build fails and `-current` names an image for the same inputs, the run
     falls back to it with a loud warning. The warning says the image was not
     refreshed, and gives the build log, the image ID and its creation time. In that
@@ -53,6 +55,11 @@
     attempts, with backoffs of 30 to 480 s (logged by a sleep shim), then exit 2.
   - A real Launchpad 503 on the PPA check failed one build attempt, and the retry
     30 s later succeeded.
+  - Seed, with the final copy (sha256 `bcee9f39…`): only `exec-<key>` was present,
+    and every build failed. The run seeded `-current` from `exec-<key>` (image A) and
+    used the 2-attempt default. It then fell back to A with the usual warning and ran
+    the command, and `exec-<key>` stayed on A. Rechecks with the same copy: a key with
+    neither tag still used 6 attempts and exited 2, and a normal run built A in 1 s.
 - Not installed yet: `~/.local/bin/ae-ci-exec` on proximal is still the previous version,
   sha256 `85444e87de4adab93ca87ccc69d22035e3e3fe4d5ce1ca51729e6e1842b37090`. peecee-wsl
   was not checked. The integrator installs the new copy on both hosts.
