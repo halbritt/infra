@@ -10,11 +10,42 @@
 #   ae-ci-exec . -- python3 -m unittest tests.test_x
 #   ae-ci-exec . -- python3 scripts/strict_suite.py --jobs 3 test_x test_y
 #
-# Image: agent-ee:exec-<16 hex>, the SHA-256 of the image build inputs (the
-# Dockerfile plus every file its COPY instructions name, except "COPY ." whose
-# /opt/agent-ee is replaced by the worktree mount). It is built once per input
-# version under a flock, so concurrent callers share one image. Tags agent-ee:ci-*
-# belong to the release gate and are never touched.
+# Image: every run runs the BuildKit build, also when an image for the same inputs
+# exists (owner, 2026-11-03: nothing pinned; versions fixed per run, recorded, kept
+# up to date). The Dockerfile ADDs remote files that follow upstream releases (the
+# KiCad 10.0 PPA InRelease, kicad-happy's git refs), and BuildKit rechecks them only
+# when a build runs. When nothing changed, every layer comes from the cache. KEY is the
+# first 16 hex of the SHA-256 of the build inputs: the Dockerfile plus every file its
+# COPY instructions name, except "COPY ." whose /opt/agent-ee is replaced by the
+# worktree mount. Tags (agent-ee:ci-* belong to the release gate and are never touched):
+#   agent-ee:exec-KEY         the newest image ae-ci-exec built for these inputs; each
+#                             successful build moves it to its result.
+#   agent-ee:exec-KEY-ID12    one image, ID12 = the first 12 hex of its ID; never moved.
+# Each run resolves one image ID at its start and prints it on stderr
+# ("ae-ci-exec: image sha256:..."). After that it names the image only by its
+# exec-KEY-ID12 tag, so a later build cannot change the image of a run in progress.
+# The tag is a name, not a bare ID, because native-admit finds agent-ee containers by
+# the agent-ee: image name. The build log records the ID of each build. ae-ci-exec
+# writes no other run record. Old images are never removed (GC is manual, README).
+#
+# Concurrency: builds, and every read or move of agent-ee:exec-KEY, run under the
+# flock locks/image-KEY.lock. image_for takes the same lock. Runs that start together
+# share one build (see resolve_image).
+#
+# Build failures: each build is tried BUILD_ATTEMPTS times (default 6, 30-600 s
+# backoff) for transient mirror errors (snapshot.ubuntu.com, Launchpad, GitHub 503s).
+#   Fall back: when every attempt fails (upstream unreachable, a new upstream release
+#     that breaks a RUN step, a full disk, any other BuildKit error) and
+#     agent-ee:exec-KEY names an image labelled with these exact inputs, the run uses
+#     that image. It prints a loud stderr warning with the image ID, its creation time,
+#     and that upstream was not rechecked. Runs that waited for that build share its
+#     failure and fall back in the same way. With the full schedule a fallback comes
+#     after about 16 minutes of backoff; with BUILD_ATTEMPTS=1 it comes after the first
+#     failed attempt.
+#   Fail (exit 2, as before): no image exists for these inputs yet; the inputs changed
+#     while they were copied; the build reported no image ID, or agent-ee:exec-KEY does
+#     not name the image just built; docker failed outside the build (tag, inspect,
+#     kicad-route extraction or its verify). INT, TERM or HUP during a build ends the run.
 #
 # Container, as in the gate's strict-suite step:
 #   --network none, seccomp/systempaths/AppArmor unconfined (owner, 2026-10-23: no
@@ -24,7 +55,7 @@
 #   the J1 drawing (ci.yml J1_DRAWING_SHA256), read-only at /opt/j1/te-776228-1.pdf.
 # Differences, all for running as the caller (--user UID:GID) on a live tree:
 #   - the image's kicad-route pin checkout (/opt/kicad-route, owned by the image
-#     user 10001) is extracted once per image into a caller-owned copy and mounted
+#     user 10001) is extracted once per image ID into a caller-owned copy and mounted
 #     read-only over /opt/kicad-route, so git ownership checks behave as in the gate;
 #   - a private scratch dir is mounted at /tmp (TMPDIR=/tmp, HOME=/tmp, as in the
 #     CI fixture step) and removed afterwards (AE_CI_KEEP_TMP=1 keeps it);
@@ -36,8 +67,9 @@
 #     Object alternates are mounted read-only. Plain checkouts need nothing extra.
 # AGENT_EE_SKIP_VISUALS is passed through when set.
 #
-# State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies,
-# locks, build logs, scratch). No sudo. On an AppArmor host, bwrap in the container
+# State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies, locks,
+# build logs, the latest build record per KEY in builds/, scratch). No sudo. On an
+# AppArmor host, bwrap in the container
 # needs kernel.apparmor_restrict_unprivileged_userns=0 (set in /etc/sysctl.d).
 # Exit status: COMMAND's, or 125 for a docker run error, 2 for usage/setup errors.
 set -euo pipefail
@@ -72,12 +104,17 @@ fi
 unset AE_CI_EXEC_ADMITTED
 
 STATE=${AE_CI_EXEC_HOME:-$HOME/.cache/ae-ci-exec}
-mkdir -p "$STATE"/{inputs,kicad-route,locks,logs,tmp,ctx}
+mkdir -p "$STATE"/{inputs,kicad-route,locks,logs,tmp,ctx,builds}
 locked() {  # locked NAME COMMAND...: run COMMAND holding $STATE/locks/NAME.lock
   local name=$1; shift
   (
     exec 9>"$STATE/locks/$name.lock"
-    flock -n 9 || { echo "$prog: waiting for lock $name" >&2; flock 9; }
+    if ! flock -n 9; then
+      echo "$prog: waiting for lock $name" >&2
+      local asked=$SECONDS
+      flock 9
+      echo "$prog: got lock $name after $(( SECONDS - asked ))s" >&2
+    fi
     "$@"
   )
 }
@@ -90,7 +127,7 @@ J1_DRAWING_URL=$(ci_env J1_DRAWING_URL)
 [[ $FOME_MC_COMMIT =~ ^[0-9a-f]{40}$ ]] && [[ $J1_DRAWING_SHA256 =~ ^[0-9a-f]{64}$ ]] ||
   die "cannot read the CI pins from $wt/.github/workflows/ci.yml"
 
-# --- image tag: hash of the build inputs ---------------------------------------
+# --- image key: hash of the build inputs ---------------------------------------
 # COPY sources other than "." and other than --from stages, relative to the context.
 mapfile -t copy_srcs < <(awk 'toupper($1) == "COPY" {
     n = 0; from = 0
@@ -108,13 +145,45 @@ mapfile -t inputs < <(printf '%s\n' "${inputs[@]}" | LC_ALL=C sort -u)
 # in umask, so only the executable bit is kept (the context uses 775/664 like git archive).
 hash_line() { local x=0; [ -x "$wt/$1" ] && x=1; printf '%s %s %s\n' "$1" "$x" "$(sha256sum < "$wt/$1" | cut -c1-64)"; }
 input_hash=$(for f in "${inputs[@]}"; do hash_line "$f"; done | sha256sum | cut -c1-64)
-TAG=agent-ee:exec-${input_hash:0:16}
-KR=$STATE/kicad-route/${input_hash:0:16}
+KEY=${input_hash:0:16}
+TAG=agent-ee:exec-$KEY
+BUILDS=$STATE/builds/$KEY
+# The remote files the build rechecks (for the fallback warning).
+mapfile -t remote_adds < <(awk 'toupper($1) == "ADD" { for (i = 2; i <= NF; i++) if ($i ~ /^https?:\/\//) print $i }' "$wt/Dockerfile")
 
+image_id() { docker image inspect -f '{{.Id}}' "$1" 2>/dev/null || true; }
+
+# The latest build for KEY, one line "GEN STATUS INPUT_HASH IMAGE FINISHED LOG": STATUS is
+# built or failed, IMAGE is "-" for failed, FINISHED is epoch seconds. Written only under
+# the image lock and replaced by rename, so a reader without the lock sees a whole line.
+# GEN is 0 when there is no record.
+read_build() {
+  rec_gen=0 rec_status='' rec_inputs='' rec_image='' rec_finished='' rec_log=''
+  if [ -f "$BUILDS" ]; then
+    read -r rec_gen rec_status rec_inputs rec_image rec_finished rec_log < "$BUILDS" || true
+  fi
+  [[ $rec_gen =~ ^[0-9]+$ ]] || rec_gen=0
+}
+record_build() {  # record_build STATUS IMAGE LOG: the next generation of the record
+  read_build
+  printf '%s %s %s %s %s %s\n' "$(( rec_gen + 1 ))" "$1" "$input_hash" "$2" "$(date +%s)" "$3" > "$BUILDS.$$"
+  mv -f "$BUILDS.$$" "$BUILDS"
+}
+
+pin() {  # pin ID: give the image its own tag $TAG-<first 12 hex of ID>, which never moves
+  local tag=$TAG-${1:7:12} have
+  have=$(image_id "$tag")
+  if [ -z "$have" ]; then docker tag "$1" "$tag"
+  elif [ "$have" != "$1" ]; then die "$tag names $have, not $1"; fi
+}
+
+# build_image: one BuildKit build of the inputs, retried for transient mirror errors. A
+# successful build loads its image as $TAG, which moves the tag. Sets build_ok (1 or 0),
+# build_id and build_log. Not called as a condition, so set -e stays in force inside.
 build_image() {
-  docker image inspect "$TAG" >/dev/null 2>&1 && return 0
-  local ctx=$STATE/ctx/${input_hash:0:16}.$$ log=$STATE/logs/build-${input_hash:0:16}-$(date -u +%Y%m%dT%H%M%SZ).log f
-  rm -rf "$ctx"; mkdir -p "$ctx"
+  local ctx=$STATE/ctx/$KEY.$$ f start n=1 attempts=${BUILD_ATTEMPTS:-6} delay=30
+  build_ok=0 build_id='' build_log=$STATE/logs/build-$KEY-$(date -u +%Y%m%dT%H%M%SZ).log
+  rm -rf "$ctx" "$ctx.iid"; mkdir -p "$ctx"
   for f in "${inputs[@]}"; do
     mkdir -p "$ctx/$(dirname "$f")"; cp "$wt/$f" "$ctx/$f"
     if [ -x "$wt/$f" ]; then chmod 775 "$ctx/$f"; else chmod 664 "$ctx/$f"; fi
@@ -122,40 +191,112 @@ build_image() {
   # Recheck the copied bytes against the hash (the worktree is live).
   [ "$(cd "$ctx" && for f in "${inputs[@]}"; do x=0; [ -x "$f" ] && x=1; printf '%s %s %s\n' "$f" "$x" "$(sha256sum < "$f" | cut -c1-64)"; done | sha256sum | cut -c1-64)" = "$input_hash" ] ||
     { rm -rf "$ctx"; die "build inputs changed while copying; retry"; }
-  echo "$prog: building $TAG from $wt (log $log)" >&2
-  local attempts=${BUILD_ATTEMPTS:-6} delay=30 n=1 start
+  echo "$prog: building $TAG from $wt (log $build_log)" >&2
   while :; do
     start=$(date +%s)
-    if docker buildx build --builder default --progress=plain --load \
-        --label ae-ci-exec.inputs="$input_hash" -t "$TAG" "$ctx" >>"$log" 2>&1; then
-      echo "=== built $TAG in $(( $(date +%s) - start ))s (attempt $n)" | tee -a "$log" >&2
+    if docker buildx build --builder default --progress=plain --load --iidfile "$ctx.iid" \
+        --label ae-ci-exec.inputs="$input_hash" -t "$TAG" "$ctx" >>"$build_log" 2>&1; then
+      build_ok=1
       break
     fi
     # Mirror 503s fail a layer; BuildKit keeps finished layers, so a retry resumes.
     if [ "$n" -ge "$attempts" ]; then
-      tail -n 30 "$log" >&2; rm -rf "$ctx"; die "image build failed after $n attempts; log $log"
+      tail -n 30 "$build_log" >&2
+      echo "=== build failed after $n attempts" | tee -a "$build_log" >&2
+      break
     fi
-    echo "$prog: build attempt $n failed; retrying in ${delay}s (log $log)" >&2
+    echo "$prog: build attempt $n failed; retrying in ${delay}s (log $build_log)" >&2
     sleep "$delay"; delay=$(( delay * 2 > 600 ? 600 : delay * 2 )); n=$(( n + 1 ))
   done
-  rm -rf "$ctx"
+  build_id=$(cat "$ctx.iid" 2>/dev/null || true)
+  rm -rf "$ctx" "$ctx.iid"
+  [ "$build_ok" = 1 ] || return 0
+  [[ $build_id =~ ^sha256:[0-9a-f]{64}$ ]] || die "the build reported no image ID (log $build_log)"
+  [ "$(image_id "$TAG")" = "$build_id" ] || die "$TAG does not name the image just built, $build_id (log $build_log)"
+  echo "=== built $TAG = $build_id in $(( $(date +%s) - start ))s (attempt $n)" | tee -a "$build_log" >&2
+}
+
+# fallback WHY LOG: the build failed. Set id to the image $TAG names, if it was built from
+# these exact inputs, and say so loudly; otherwise fail as before.
+fallback() {
+  local created url
+  id=$(image_id "$TAG")
+  [ -n "$id" ] && [ "$(docker image inspect -f '{{index .Config.Labels "ae-ci-exec.inputs"}}' "$id")" = "$input_hash" ] ||
+    die "$1, and no image for these inputs exists ($TAG); log $2"
+  created=$(docker image inspect -f '{{.Created}}' "$id")
+  {
+    echo "$prog: WARNING ======================================================================"
+    echo "$prog: WARNING: $1."
+    echo "$prog: WARNING: this run uses the existing image $id"
+    echo "$prog: WARNING: ($TAG), created $created."
+    echo "$prog: WARNING: upstream was NOT rechecked for this run; the image may lag newer releases of:"
+    for url in "${remote_adds[@]}"; do echo "$prog: WARNING:   $url"; done
+    echo "$prog: WARNING ======================================================================"
+  } >&2
+  [ -z "$2" ] || echo "=== run $$ fell back to $id (created $created)" >> "$2" || true
+}
+
+# resolve_image ASKED_GEN RESULT: under the image lock, choose this run's image and write
+# "ID HOW" to RESULT.
+# How concurrent callers stay consistent:
+#   - Only holders of locks/image-KEY.lock build, read $TAG or move it, so a run never
+#     sees $TAG half-moved. The build moves $TAG when it loads its image. Before that,
+#     the image $TAG named is pinned under its own tag, so it stays reachable.
+#   - A run reads the record's GEN (ASKED_GEN) before it asks for any lock. If GEN has
+#     grown when the run gets the image lock, a build for KEY finished while the run
+#     waited, and the run takes that build's outcome instead of building again. Callers
+#     that start together therefore share one build: the first builds, the others wait
+#     and reuse its image, or share its failure. A run that starts after a build has
+#     finished builds again, which rechecks upstream.
+#   - image_for builds under the same lock but writes no record. A run that waited for it
+#     builds again, from the cache.
+#   - The chosen image is pinned (pin) before the lock is released. After that, the run
+#     uses only that pinned tag.
+resolve_image() {
+  local asked=$1 result=$2 id='' how='' prev
+  read_build
+  if [ "$rec_gen" -gt "$asked" ] && [ "$rec_inputs" = "$input_hash" ]; then
+    if [ "$rec_status" = built ] && [ "$(image_id "$rec_image")" = "$rec_image" ]; then
+      echo "$prog: reusing $rec_image from the build that finished while this run waited (log $rec_log)" >&2
+      id=$rec_image how=reused
+    elif [ "$rec_status" = failed ]; then
+      fallback "the build this run waited for failed" "$rec_log"
+      how=fallback
+    fi
+  fi
+  if [ -z "$id" ]; then
+    prev=$(image_id "$TAG")
+    [ -z "$prev" ] || pin "$prev"
+    build_image
+    if [ "$build_ok" = 1 ]; then
+      record_build built "$build_id" "$build_log"
+      id=$build_id how=built
+    else
+      record_build failed - "$build_log"
+      fallback "the image build failed after every attempt" "$build_log"
+      how=fallback
+    fi
+  fi
+  pin "$id"
+  printf '%s %s\n' "$id" "$how" > "$result"
 }
 
 # The image's kicad-route checkout, owned by the caller (the gate's runtime user owns it).
+# Keyed by image ID: a rebuild can change the image under the same KEY.
 extract_kicad_route() {
   [ -f "$KR.ready" ] && return 0
   rm -rf "$KR" "$KR.partial"; mkdir -p "$KR.partial"
   local cid
-  cid=$(docker create --network none "$TAG" true)
+  cid=$(docker create --network none "$PINNED" true)
   docker cp "$cid:/opt/kicad-route" - | tar -x -p -C "$KR.partial" || { docker rm "$cid" >/dev/null; die "cannot extract /opt/kicad-route"; }
   docker rm "$cid" >/dev/null
   mv "$KR.partial/kicad-route" "$KR"; rmdir "$KR.partial"
   # Refresh the index stat data for the caller-owned copy, then verify it offline
   # with the image's own installer check, read-only as it is mounted later.
   docker run --rm --network none --user "$(id -u):$(id -g)" -e HOME=/tmp -w / -v "$KR:/opt/kicad-route" \
-    "$TAG" git -C /opt/kicad-route update-index -q --refresh >/dev/null 2>&1 || true
+    "$PINNED" git -C /opt/kicad-route update-index -q --refresh >/dev/null 2>&1 || true
   docker run --rm --network none --user "$(id -u):$(id -g)" -e HOME=/tmp -w / -v "$KR:/opt/kicad-route:ro" \
-    "$TAG" /usr/local/share/agent-ee/kicad-route/install.sh verify >&2 ||
+    "$PINNED" /usr/local/share/agent-ee/kicad-route/install.sh verify >&2 ||
     { rm -rf "$KR"; die "kicad-route copy failed install.sh verify"; }
   touch "$KR.ready"
 }
@@ -187,9 +328,21 @@ fetch_inputs() {
   printf '%s  %s\n' "$J1_DRAWING_SHA256" "$j1" | sha256sum --check --strict --quiet || die "J1 drawing $j1 hash mismatch"
 }
 
+read_build
+asked_gen=$rec_gen  # before any lock wait: see resolve_image
 locked "inputs" fetch_inputs
-locked "image-${input_hash:0:16}" build_image
-locked "image-${input_hash:0:16}" extract_kicad_route
+resolved=$STATE/tmp/image-$$
+trap 'rm -f "$resolved"' EXIT
+resolve_start=$SECONDS
+locked "image-$KEY" resolve_image "$asked_gen" "$resolved"
+IMAGE_ID='' image_how=''
+read -r IMAGE_ID image_how < "$resolved" || true
+rm -f "$resolved"; trap - EXIT
+[[ $IMAGE_ID =~ ^sha256:[0-9a-f]{64}$ ]] || die "no image resolved"
+PINNED=$TAG-${IMAGE_ID:7:12}
+echo "$prog: image $IMAGE_ID ($PINNED, $image_how, resolved in $(( SECONDS - resolve_start ))s)" >&2
+KR=$STATE/kicad-route/sha256-${IMAGE_ID#sha256:}
+locked "kicad-route-${IMAGE_ID#sha256:}" extract_kicad_route
 
 # --- sandbox options (ci.yml "Permit container user namespaces") ---------------
 if [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" != 0 ]; then
@@ -203,7 +356,7 @@ SANDBOX_OPTS=(--network none --security-opt seccomp=unconfined --security-opt ap
 LIMIT_OPTS=(--label "native-admission.lease=${NATIVE_ADMISSION_LEASE:-}")
 [ -z "${NATIVE_ADMISSION_CPUS:-}" ] || LIMIT_OPTS+=(--cpus "$NATIVE_ADMISSION_CPUS")
 [ -z "${NATIVE_ADMISSION_PIDS:-}" ] || LIMIT_OPTS+=(--pids-limit "$NATIVE_ADMISSION_PIDS")
-[[ $(docker image inspect -f '{{json .Config.Entrypoint}}' "$TAG") == *tini* ]] || LIMIT_OPTS+=(--init)
+[[ $(docker image inspect -f '{{json .Config.Entrypoint}}' "$IMAGE_ID") == *tini* ]] || LIMIT_OPTS+=(--init)
 
 scratch=$(mktemp -d "$STATE/tmp/run-XXXXXXXX")
 name=ae-ci-exec-$(basename "$scratch" | tr 'A-Z' 'a-z')
@@ -257,6 +410,8 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
+# The pinned tag must still name the image resolved at the start of this run.
+[ "$(image_id "$PINNED")" = "$IMAGE_ID" ] || die "$PINNED no longer names $IMAGE_ID"
 status=0
 docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
   --user "$(id -u):$(id -g)" "${env_opts[@]}" \
@@ -264,6 +419,6 @@ docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[
   -v "$STATE/inputs/fome-mc-$FOME_MC_COMMIT:/opt/fome-mc:ro" \
   -v "$STATE/inputs/te-776228-1.pdf:/opt/j1/te-776228-1.pdf:ro" \
   -v "$KR:/opt/kicad-route:ro" \
-  -w /opt/agent-ee "$TAG" "$@" <&0 &
+  -w /opt/agent-ee "$PINNED" "$@" <&0 &
 wait $! || status=$?
 exit "$status"
