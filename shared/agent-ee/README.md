@@ -91,10 +91,17 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   of this version has an image to fall back to. Runs never use `exec-<key>` directly.
   The 2026-11-03 cross-review found why the tag must not move: an earlier version
   reads this tag again after releasing its lock, and it mounts a kicad-route copy
-  keyed by input hash, extracted from the image the tag named earlier. Moving the tag would put those callers on a
-  new image with an old router copy. So older callers (an installed copy that has not
-  been replaced, or a run admitted before the replacement) keep a consistent image and
-  copy.
+  keyed by input hash, extracted from the image the tag named earlier. Moving the tag
+  would put those callers on a new image with an old router copy. So older callers (an
+  installed copy that has not been replaced, or a run admitted before the replacement)
+  keep a consistent image and copy.
+- Lookups: "missing" means that Docker answered `No such image: <tag>` for exactly that
+  tag. Any other failure of `docker image inspect` aborts the run with exit 2, before
+  the tag write the lookup guards, and names the Docker error. Examples are an
+  unreachable daemon, a connection reset or a timeout. So a transient daemon error
+  never creates, seeds or moves a tag. The second Sol review (finding 1) showed that
+  the previous code read every inspect error as "missing". It could then retag
+  `exec-<key>` after a successful build.
 - One image per run: a run resolves its image once and prints
   `ae-ci-exec: image sha256:<64 hex> (agent-ee:exec-<key>-<12 hex>, built|reused|fallback, resolved in N s)`
   on stderr. After that, the kicad-route extraction and `docker run` use only the
@@ -117,19 +124,21 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
 - Build failures: each nonzero `docker buildx build` result is retried; there is no
   error classifier. The default is 2 attempts, with one 30 s backoff, when `-current`
   names an image labelled `ae-ci-exec.inputs=<the same hash>`. `-current` may have
-  just been seeded from `exec-<key>`. In that case the run has an image to fall back to. Otherwise the default is 6 attempts, with backoffs of
-  30, 60, 120, 240 and 480 s (15.5 minutes), as in ci-run.sh. `BUILD_ATTEMPTS`
-  overrides both. No limit applies to the build itself.
+  just been seeded from `exec-<key>`. In that case the run has an image to fall back
+  to. Otherwise the default is 6 attempts, with backoffs of 30, 60, 120, 240 and
+  480 s (15.5 minutes), as in ci-run.sh. `BUILD_ATTEMPTS` overrides both. No limit
+  applies to the build itself.
 - Fallback: when every attempt fails and that image exists, the run uses it. First it
   prints a warning block on stderr. The block says the run's image was not refreshed
   because the build failed. It gives the build log, the image ID and creation time,
   and the remote ADDs the image may lag. A run that waited for the failed build first
   prints that build's last log lines, then the same warning with the same log.
 - No fallback, exit 2 (die): no image for the inputs; the inputs changed during the
-  copy; the build gave no image ID, or `-current` does not name it; copying
-  `/opt/kicad-route` out of the image failed, or its `install.sh verify` failed.
+  copy; the build gave no image ID, or `-current` does not name it; an image lookup
+  failed other than with `No such image`; copying `/opt/kicad-route` out of the image
+  failed, or its `install.sh verify` failed.
 - No fallback, the failing command's own status (`set -e`, usually 1): other docker
-  commands outside the build (tag, create, inspect), writes to
+  commands outside the build (tag, create), writes to
   `~/.cache/ae-ci-exec` (on a full disk even the failure record cannot be written),
   git and curl. When `docker run` cannot start the container, the exit is 125.
   native-admit returns 1 for a refused weight and 75 when `AE_CI_MAX_WAIT` runs out.

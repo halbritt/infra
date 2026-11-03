@@ -36,6 +36,10 @@
 # the agent-ee: image name. The build log records the ID of each build. ae-ci-exec
 # writes no other run record. Old images are never removed (GC is manual, README).
 #
+# "Missing" above means that Docker answered "No such image" for exactly that tag. Any
+# other failure of an image lookup (docker image inspect) aborts the run with exit 2
+# before the tag write it guards, so an unknown answer never creates or moves a tag.
+#
 # Concurrency: builds, every read or move of exec-KEY-current, and every tag write run
 # under the flock locks/image-KEY.lock. image_for takes the same lock. Runs that start
 # together share one build (see resolve_image).
@@ -54,12 +58,12 @@
 #     image ID and creation time, and the remote ADDs the image may lag. Runs that waited
 #     for that build share its failure, print its last log lines, and fall back the same way.
 #   Exit 2, no fallback: no such image exists; the inputs changed while being copied;
-#     the build reported no image ID, or exec-KEY-current does not name it; copying
-#     /opt/kicad-route out of the image (docker cp | tar) or its install.sh verify
-#     failed. Each of these calls die.
+#     the build reported no image ID, or exec-KEY-current does not name it; an image
+#     lookup failed other than with "No such image"; copying /opt/kicad-route out of the
+#     image (docker cp | tar) or its install.sh verify failed. Each of these calls die.
 #   The command's own nonzero status, no fallback (set -e): any other failing command,
-#     such as docker tag, create or inspect outside the build, a write to the state
-#     directory (a full disk), git or curl.
+#     such as docker tag or create outside the build, a write to the state directory (a
+#     full disk), git or curl.
 #   INT, TERM or HUP during a build ends the run.
 #
 # Container, as in the gate's strict-suite step:
@@ -169,7 +173,23 @@ BUILDS=$STATE/builds/$KEY
 # The remote files the build rechecks (for the fallback warning).
 mapfile -t remote_adds < <(awk 'toupper($1) == "ADD" { for (i = 2; i <= NF; i++) if ($i ~ /^https?:\/\//) print $i }' "$wt/Dockerfile")
 
-image_id() { docker image inspect -f '{{.Id}}' "$1" 2>/dev/null || true; }
+# Image lookups. An answer of "absent" allows tag writes (create a missing tag, seed a
+# missing exec-KEY-current), so absence must be positive: only Docker's own
+# "No such image: REF" for exactly this REF counts. Any other inspect failure (daemon
+# unreachable, connection reset, timeout) aborts the run with die (exit 2) before the
+# tag write it guards. The helpers set the variable "found" instead of printing, because a
+# die inside $(...) would end only that subshell, and a test such as [ -z "$(...)" ]
+# discards that status.
+# inspect_image FORMAT REF: found = docker image inspect -f FORMAT REF, or '' when REF is absent.
+inspect_image() {
+  local err=$STATE/tmp/inspect-$$.err msg
+  if found=$(docker image inspect -f "$1" "$2" 2>"$err"); then rm -f "$err"; return 0; fi
+  found=''
+  if grep -qF "No such image: $2" "$err"; then rm -f "$err"; return 0; fi
+  msg=$(tr '\n' ' ' < "$err"); rm -f "$err"
+  die "docker could not inspect $2: ${msg:-no error message}. Aborting: a failed lookup is not taken for \"absent\", so no tag is created or moved on it; rerun when docker answers"
+}
+lookup() { inspect_image '{{.Id}}' "$1"; }  # lookup REF: found = the image ID REF names, or ''
 
 # The latest build for KEY, one line "GEN STATUS INPUT_HASH IMAGE FINISHED LOG": STATUS is
 # built or failed, IMAGE is "-" for failed, FINISHED is epoch seconds. Written only under
@@ -188,22 +208,22 @@ record_build() {  # record_build STATUS IMAGE LOG: the next generation of the re
   mv -f "$BUILDS.$$" "$BUILDS"
 }
 
-# labelled_image REF: the ID of the image REF names, if that image is labelled with these
-# exact inputs; nothing otherwise. Used for the fallback candidate ($CURRENT) and the
-# one-time seed of $CURRENT from $LEGACY.
-labelled_image() {
-  local id
-  id=$(image_id "$1")
-  [ -n "$id" ] && [ "$(docker image inspect -f '{{index .Config.Labels "ae-ci-exec.inputs"}}' "$id" 2>/dev/null)" = "$input_hash" ] &&
-    echo "$id"
-  return 0
+# lookup_labelled REF: found = the ID of the image REF names, if that image is labelled
+# with these exact inputs; '' otherwise. Used for the fallback candidate ($CURRENT) and
+# the one-time seed of $CURRENT from $LEGACY.
+lookup_labelled() {
+  local ref_id
+  lookup "$1"; ref_id=$found
+  [ -n "$ref_id" ] || return 0
+  inspect_image '{{index .Config.Labels "ae-ci-exec.inputs"}}' "$ref_id"
+  if [ "$found" = "$input_hash" ]; then found=$ref_id; else found=''; fi
 }
 
 pin() {  # pin ID: give the image its own tag agent-ee:exec-KEY-<first 12 hex of ID>, never moved
-  local tag=agent-ee:exec-$KEY-${1:7:12} have
-  have=$(image_id "$tag")
-  if [ -z "$have" ]; then docker tag "$1" "$tag"
-  elif [ "$have" != "$1" ]; then die "$tag names $have, not $1"; fi
+  local tag=agent-ee:exec-$KEY-${1:7:12}
+  lookup "$tag"
+  if [ -z "$found" ]; then docker tag "$1" "$tag"
+  elif [ "$found" != "$1" ]; then die "$tag names $found, not $1"; fi
 }
 
 # build_image DEFAULT_ATTEMPTS: one BuildKit build of the inputs, tried BUILD_ATTEMPTS or
@@ -242,7 +262,8 @@ build_image() {
   rm -rf "$ctx" "$ctx.iid"
   [ "$build_ok" = 1 ] || return 0
   [[ $build_id =~ ^sha256:[0-9a-f]{64}$ ]] || die "the build reported no image ID (log $build_log)"
-  [ "$(image_id "$CURRENT")" = "$build_id" ] || die "$CURRENT does not name the image just built, $build_id (log $build_log)"
+  lookup "$CURRENT"
+  [ "$found" = "$build_id" ] || die "$CURRENT does not name the image just built, $build_id (log $build_log)"
   echo "=== built $CURRENT = $build_id in $(( $(date +%s) - start ))s (attempt $n of $attempts)" | tee -a "$build_log" >&2
 }
 
@@ -251,9 +272,9 @@ build_image() {
 # inputs, and say so loudly; otherwise fail as before.
 fallback() {
   local created url
-  id=$(labelled_image "$CURRENT")
+  lookup_labelled "$CURRENT"; id=$found
   [ -n "$id" ] || die "$1, and no image for these inputs exists ($CURRENT); build log $2"
-  created=$(docker image inspect -f '{{.Created}}' "$id")
+  inspect_image '{{.Created}}' "$id"; created=$found
   {
     echo "$prog: WARNING ======================================================================"
     echo "$prog: WARNING: $1 (build log $2),"
@@ -291,7 +312,9 @@ resolve_image() {
   local asked=$1 result=$2 id='' how='' prev seed
   read_build
   if [ "$rec_gen" -gt "$asked" ] && [ "$rec_inputs" = "$input_hash" ]; then
-    if [ "$rec_status" = built ] && [ "$(image_id "$rec_image")" = "$rec_image" ]; then
+    found=''
+    if [ "$rec_status" = built ]; then lookup "$rec_image"; fi
+    if [ "$rec_status" = built ] && [ "$found" = "$rec_image" ]; then
       echo "$prog: reusing $rec_image from the build that finished while this run waited (log $rec_log)" >&2
       id=$rec_image how=reused
     elif [ "$rec_status" = failed ]; then
@@ -305,22 +328,25 @@ resolve_image() {
     # The first run of this version for KEY seeds exec-KEY-current, once, from the image
     # exec-KEY names, if that image is labelled with these exact inputs. That gives the
     # run an image to fall back to. exec-KEY itself is not moved.
-    if [ -z "$(image_id "$CURRENT")" ]; then
-      seed=$(labelled_image "$LEGACY")
+    lookup "$CURRENT"
+    if [ -z "$found" ]; then
+      lookup_labelled "$LEGACY"; seed=$found
       if [ -n "$seed" ]; then
         docker tag "$seed" "$CURRENT"
         echo "$prog: seeded $CURRENT from $LEGACY: $seed" >&2
       fi
     fi
-    prev=$(image_id "$CURRENT")
+    lookup "$CURRENT"; prev=$found
     [ -z "$prev" ] || pin "$prev"
     # With an image to fall back to, keep an outage short: 2 attempts, one 30 s backoff.
     # Without one the run cannot go on, so it retries longer: 6 attempts.
-    if [ -n "$(labelled_image "$CURRENT")" ]; then build_image 2; else build_image 6; fi
+    lookup_labelled "$CURRENT"
+    if [ -n "$found" ]; then build_image 2; else build_image 6; fi
     if [ "$build_ok" = 1 ]; then
       record_build built "$build_id" "$build_log"
       # Older versions and image_for know only exec-KEY: create it once, never move it.
-      [ -n "$(image_id "$LEGACY")" ] || docker tag "$build_id" "$LEGACY"
+      lookup "$LEGACY"
+      [ -n "$found" ] || docker tag "$build_id" "$LEGACY"
       id=$build_id how=built
     else
       record_build failed - "$build_log"
@@ -407,7 +433,8 @@ SANDBOX_OPTS=(--network none --security-opt seccomp=unconfined --security-opt ap
 LIMIT_OPTS=(--label "native-admission.lease=${NATIVE_ADMISSION_LEASE:-}")
 [ -z "${NATIVE_ADMISSION_CPUS:-}" ] || LIMIT_OPTS+=(--cpus "$NATIVE_ADMISSION_CPUS")
 [ -z "${NATIVE_ADMISSION_PIDS:-}" ] || LIMIT_OPTS+=(--pids-limit "$NATIVE_ADMISSION_PIDS")
-[[ $(docker image inspect -f '{{json .Config.Entrypoint}}' "$IMAGE_ID") == *tini* ]] || LIMIT_OPTS+=(--init)
+inspect_image '{{json .Config.Entrypoint}}' "$IMAGE_ID"
+[[ $found == *tini* ]] || LIMIT_OPTS+=(--init)
 
 scratch=$(mktemp -d "$STATE/tmp/run-XXXXXXXX")
 name=ae-ci-exec-$(basename "$scratch" | tr 'A-Z' 'a-z')
@@ -462,7 +489,8 @@ trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
 # The pinned tag must still name the image resolved at the start of this run.
-[ "$(image_id "$PINNED")" = "$IMAGE_ID" ] || die "$PINNED no longer names $IMAGE_ID"
+lookup "$PINNED"
+[ "$found" = "$IMAGE_ID" ] || die "$PINNED no longer names $IMAGE_ID"
 status=0
 docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
   --user "$(id -u):$(id -g)" "${env_opts[@]}" \
