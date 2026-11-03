@@ -174,19 +174,22 @@ BUILDS=$STATE/builds/$KEY
 mapfile -t remote_adds < <(awk 'toupper($1) == "ADD" { for (i = 2; i <= NF; i++) if ($i ~ /^https?:\/\//) print $i }' "$wt/Dockerfile")
 
 # Image lookups. An answer of "absent" allows tag writes (create a missing tag, seed a
-# missing exec-KEY-current), so absence must be positive: only Docker's own
-# "No such image: REF" for exactly this REF counts. Any other inspect failure (daemon
-# unreachable, connection reset, timeout) aborts the run with die (exit 2) before the
-# tag write it guards. The helpers set the variable "found" instead of printing, because a
-# die inside $(...) would end only that subshell, and a test such as [ -z "$(...)" ]
-# discards that status.
+# missing exec-KEY-current), so absence must be positive. Only Docker's exact reply for
+# exactly this REF counts: the whole stderr, trailing newline aside, must equal
+# "Error response from daemon: No such image: REF". Every other failed inspect aborts the
+# run with die (exit 2) before the tag write it guards: an unreachable daemon, a
+# connection reset, a timeout, a reply naming another REF (such as REF-current), or a
+# not-found line mixed with other output. The helpers set the variable "found" instead of
+# printing, because a die inside $(...) would end only that subshell, and a test such as
+# [ -z "$(...)" ] discards that status.
 # inspect_image FORMAT REF: found = docker image inspect -f FORMAT REF, or '' when REF is absent.
 inspect_image() {
   local err=$STATE/tmp/inspect-$$.err msg
   if found=$(docker image inspect -f "$1" "$2" 2>"$err"); then rm -f "$err"; return 0; fi
   found=''
-  if grep -qF "No such image: $2" "$err"; then rm -f "$err"; return 0; fi
-  msg=$(tr '\n' ' ' < "$err"); rm -f "$err"
+  msg=$(<"$err"); rm -f "$err"  # $(<...) drops the trailing newline
+  if [ "$msg" = "Error response from daemon: No such image: $2" ]; then return 0; fi
+  msg=${msg//$'\n'/ | }
   die "docker could not inspect $2: ${msg:-no error message}. Aborting: a failed lookup is not taken for \"absent\", so no tag is created or moved on it; rerun when docker answers"
 }
 lookup() { inspect_image '{{.Id}}' "$1"; }  # lookup REF: found = the image ID REF names, or ''

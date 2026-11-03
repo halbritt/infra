@@ -65,7 +65,7 @@
     2-attempt default. It then fell back to A with the usual warning and ran the
     command, and `exec-<key>` stayed on A. Rechecks with the same copy: a key with
     neither tag still used 6 attempts and exited 2, and a normal run built A in 1 s.
-  - Lookup errors, with the final copy (sha256 `c3fe87df…`). A shim failed
+  - Lookup errors, with copy `c3fe87df…`. A shim failed
     `docker image inspect` of one exact tag with a connection reset, and recorded
     every `docker tag` call. It covered three cases. In the `-current` check that
     guards the seed and the per-image tag check in pin, the run stopped before any
@@ -74,6 +74,17 @@
     to B. Each run exited 2 and named the Docker error. No `docker tag` ran, and
     `exec-<key>` stayed on A. B was removed afterwards. The seed and no-image tests
     passed again with this copy, using Docker's real `No such image` answers.
+  - Final classifier (sha256 `2e1a6567…`), after a third Sol review. A lookup now
+    counts as absent only when its whole stderr, trailing newline aside, is
+    `Error response from daemon: No such image: <requested ref>`. An offline check ran
+    the old and new function against a fake docker. The old function took two replies
+    for absence: a not-found reply naming `<ref>-current`, and the exact not-found line
+    followed by a connection reset. The new function aborts on both. Live, with the
+    shim: the `-current` and per-image checks failed with a connection reset, and the
+    `exec-<key>` check after building a new image failed with a reset, the suffix
+    reply and the mixed reply. Every run exited 2, no `docker tag` ran, and
+    `exec-<key>` stayed on A. The seed and no-image tests, which rely on Docker's real
+    replies, passed again with this copy.
 - Not installed yet: `~/.local/bin/ae-ci-exec` on proximal is still the previous version,
   sha256 `85444e87de4adab93ca87ccc69d22035e3e3fe4d5ce1ca51729e6e1842b37090`. peecee-wsl
   was not checked. The integrator installs the new copy on both hosts.
