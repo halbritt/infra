@@ -1,5 +1,19 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-03 14:38 UTC — c41fd9ec-448f-4de8-a17b-67d16efd2248
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **hermes** — verified. Before: Gateway PID 493622 running generation candidate-fbf6c6c9 (carry 6fbd3e70) with Slack connected; ~/.local/bin/hermes now selects the tested candidate /var/lib/update-bot/staging/hermes-candidate-c314285f (carry 0ee805b2e0581b35a3939256adeabb3875064fdb on upstream c314285f077e91937c995d419b9fa40af9eb4981). Fixed helper requires a fresh native zero-work drain before its single supported reload.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 2018596 on candidate-c314285f, revision 0ee805b2, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 0ee805b2 old_pid 493622 pid 2018596 slack connected; gateway process live on candidate-c314285f.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/c41fd9ec-448f-4de8-a17b-67d16efd2248/operations/607e6ab7-6147-475e-b85c-e01f4eceb849`.
+
+- **hermes** — verified. Before: Installed and activated generation /var/lib/update-bot/staging/hermes-candidate-fbf6c6c9 (carry 6fbd3e707b352a2814d6087f93892e83f2a9933e on upstream fbf6c6c91d8a9ce3008e05c4b51ca60ad05bb85f), selected by ~/.local/bin/hermes (sha 68fafcc4) and running as gateway PID 493622 with Slack connected; upstream main advanced fbf6c6c9 -> c314285f077e91937c995d419b9fa40af9eb4981. Port script fetches main and builds an isolated candidate at staging/hermes-candidate-c314285f, carries the 10-file local delta via per-file 3-way merge, builds the venv, runs 4 focused test files plus gateway import smoke, then installs the versioned launcher and provenance receipt. Running gateway untouched by this operation.. After: Carry 0ee805b2e0581b35a3939256adeabb3875064fdb built on upstream c314285f (10 files, clean per-file 3-way merge); venv built; 241 carry-behavior tests passed + gateway import smoke; versioned launcher installed and provenance receipt written.
+  Verification: operation exit 0/0; log PORT_OK carry=0ee805b2 base=c314285f... + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK; '241 tests passed, 0 failed'; receipt hermes-installed.json upstream_revision matches; hermes --version ok.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/c41fd9ec-448f-4de8-a17b-67d16efd2248/operations/629f9bdc-746e-448b-91af-d8ddc83c09c7`.
+
 ## 2026-11-02 14:30 UTC — 768ead03-d312-4e24-bdb2-0553c1ca1140
 
 Host: proximal. Policy: maintenance-v2. Run status: failed.
