@@ -20,6 +20,9 @@ symlink in its place, so existing paths still work.
 | `~/.local/share/agent-ee/zeroasic-20261029-agent706` | `/nvr/archive/agent-ee/zeroasic-20261029-agent706` |
 | `/tmp/claude-1000/-home-halbritt-git-quartermaster/bdaec7d9-…` (dead session, Oct 8–9) | `/nvr/archive/claude-scratch/quartermaster-bdaec7d9-20261009` (no symlink) |
 | untracked notes in `~/git/ik_llama.cpp` (May 2026 CUDA wedge and Gemma context-shift investigation, upstream issue/PR drafts) plus the unpushed `llama-bench` MTP-toggle patch (the `halbritt/ik_llama.cpp` fork no longer exists) | `/nvr/archive/ik_llama-wedge-notes-20260502` (no symlink; moved 2026-11-03) |
+| unpushed commit `43c41b3` (SkillOpt stage4 adapter) on `~/git/agent-artifact-miner` `main`, made after retirement; the GitHub repo is archived read-only | `/nvr/archive/agent-artifact-miner-unpushed-20260720` (patch + git bundle; no symlink; moved 2026-11-03) |
+| heads of the 109 retired Striatum campaign worktrees under `~/git/{cam-analyzer,gpu-fleet,hippo,kayak-gen,praxis,prompts,striatum,striatum-warmtier}/.striatum/worktrees` that no branch reached (uncommitted edits were discarded) | `/nvr/archive/striatum-v1-campaign-worktrees-20261103` (one git bundle per repo; no symlink) |
+| old git stashes (May–Oct 2026) from `cairn`, `engram`, `gpu-fleet`, `kayak-gen`, `praxis`, `prompts`, `striatum` | `/nvr/archive/stashes-20261103` (one bundle + stash list per repo; restore with `git fetch <bundle> refs/archive/stash/N` then `git stash apply FETCH_HEAD`) |
 | locally built Docker images (runpod-jobrunner-noop, checkout-refs-runner, kayakgen-*, harbor-prebuilt) | `/nvr/archive/docker-images/local-images-20261017.tar` (`docker load -i`) |
 
 Off-site backup: restic does not follow symlinks, so
