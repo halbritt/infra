@@ -85,9 +85,12 @@
     reply and the mixed reply. Every run exited 2, no `docker tag` ran, and
     `exec-<key>` stayed on A. The seed and no-image tests, which rely on Docker's real
     replies, passed again with this copy.
-- Not installed yet: `~/.local/bin/ae-ci-exec` on proximal is still the previous version,
-  sha256 `85444e87de4adab93ca87ccc69d22035e3e3fe4d5ce1ca51729e6e1842b37090`. peecee-wsl
-  was not checked. The integrator installs the new copy on both hosts.
+- Installed on proximal at 2026-11-03T23:54:08Z by atomic rename: `~/.local/bin/ae-ci-exec`
+  changed from sha256 `85444e87de4adab93ca87ccc69d22035e3e3fe4d5ce1ca51729e6e1842b37090` to
+  `2e1a656702d8643c2cbfb8cf2b34f8ddbe784b7bf1a8ba80f75e9edd8fc70c73` (master d988c8d). One
+  previous-version run was in flight; it keeps its open inode and the legacy tag, which the
+  new version never moves. peecee-wsl was not updated or checked (not used by the current
+  single-agent campaign). Reviews: agent-ee goal-20261103/ae-ci-exec-review/REPORT*.md.
 
 ## 2026-11-02 — retire codeaf
 
