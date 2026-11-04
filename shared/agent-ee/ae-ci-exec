@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # ae-ci-exec WORKTREE -- COMMAND [ARG...]
+# ae-ci-exec --hold IMAGE [--router] -- COMMAND [ARG...]
+#                                   run COMMAND while IMAGE (and its kicad-route copy) is held
 # ae-ci-exec --router-copy IMAGE    print the path of IMAGE's verified kicad-route copy
 # ae-ci-exec --gc [--dry-run]       evict unused images and router copies now
 #
@@ -32,21 +34,20 @@
 #                              moves it. When exec-KEY-current is missing, this version
 #                              seeds it once from exec-KEY, if that image is labelled with
 #                              these exact inputs, so its first run has a fallback image.
-#                              Runs never use exec-KEY directly. Keeping it fixed protected
-#                              callers of versions before d988c8d, which reread it after
-#                              releasing the lock. That transition is over: d988c8d is
-#                              installed and no older copy runs. A stale key loses this
-#                              tag with its other heads (Retention).
+#                              Keeping it fixed protected callers of versions before
+#                              d988c8d, which reread it after releasing the lock. That
+#                              transition is over: d988c8d is installed and no older copy
+#                              runs. A stale key loses this tag with its other heads.
 # "Missing" above means that Docker answered "No such image" for exactly that tag. Any
 # other failure of an image lookup (docker image inspect) aborts the run with exit 2
 # before the tag write it guards, so an unknown answer never creates or moves a tag.
 # Each run resolves one image ID at its start and prints it on stderr
-# ("ae-ci-exec: image sha256:..."). After that it names the image only by its
-# exec-KEY-ID12 tag, so a later build cannot change the image of a run in progress.
-# The tag is a name, not a bare ID, because native-admit finds agent-ee containers by
-# the agent-ee: image name. builds/KEY records the latest build and the last successful
-# upstream check; each build log records its image ID. ae-ci-exec writes no other run
-# record.
+# ("ae-ci-exec: image sha256:..."). Tags only find an image. Every later read,
+# extraction, verification and container uses the full image ID (sha256:...), so a tag
+# that moves cannot change what a run reads or runs. Containers carry the label
+# ae-ci-exec=1, by which native-admit counts them, since they show no agent-ee: name.
+# builds/KEY records the latest build and the last successful upstream check; each
+# build log records its image ID. ae-ci-exec writes no other run record.
 #
 # Concurrency: builds, every read or move of exec-KEY-current, and every tag write run
 # under the flock locks/image-KEY.lock. image_for takes the same lock. Runs that start
@@ -68,7 +69,8 @@
 #   Exit 2, no fallback: no such image exists; the inputs changed while being copied;
 #     the build reported no image ID, or exec-KEY-current does not name it; an image
 #     lookup failed other than with "No such image"; copying /opt/kicad-route out of the
-#     image (docker cp | tar) or its install.sh verify failed. Each of these calls die.
+#     image (docker cp | tar), its tree identity check, or its install.sh verify failed.
+#     Each of these calls die.
 #   The command's own nonzero status, no fallback (set -e): any other failing command,
 #     such as docker tag or create outside the build, a write to the state directory (a
 #     full disk), git or curl.
@@ -76,49 +78,75 @@
 #
 # kicad-route copies: the image's kicad-route checkout (/opt/kicad-route, owned by the
 # image user 10001) is extracted into a caller-owned copy and mounted read-only over
-# /opt/kicad-route, so git ownership checks behave as in the gate. A copy is keyed by
-# the image's router state: the SHA-256 over /opt/kicad-route/manifest.json (the state
-# manifest) and /opt/kicad-route.install.json, read from the image without extracting the
-# tree (cached per image ID in route-key/). Images with the same router state share one
-# copy, kicad-route/state-RKEY, so a rebuild that changes only later layers (kicad-happy,
-# say) adds no copy. Each new copy is verified offline with the install.sh verify of the
-# image that asked for it. "ae-ci-exec --router-copy IMAGE" does the same for another
-# tool (image_for, the benchmark harness): it ensures the verified copy, marks it used,
-# and prints its path on stdout. It runs under a native-admit lease like a run.
+# /opt/kicad-route, so git ownership checks behave as in the gate. A copy is keyed by the
+# tree identity of /opt/kicad-route in the image: the SHA-256 of a listing of every entry
+# (path, type, permission bits, size, and content SHA-256 or symlink target; mtimes and
+# owners excluded). One container step started from the image ID computes it, inside
+# the caller's lease, and the result is cached per image ID in tree-id/. Equal identities
+# mean byte-identical trees, so images with the same tree share one copy,
+# kicad-route/tree-IDENTITY. A rebuild that changes only later layers (kicad-happy, say)
+# adds no copy. A new copy must show the same identity on the host before it is
+# published. Then it is verified offline with the install.sh verify of the image that
+# asked for it, and its .ready record holds the identity, the entry count and that image.
+#
+# Other tools (image_for, the benchmark, review and run_in_image harnesses):
+#   --hold IMAGE [--router] -- COMMAND: claims IMAGE as a run does and holds its use
+#     lock for COMMAND's whole life. With --router it also holds the use lock of IMAGE's
+#     verified copy and exports AE_CI_ROUTER_COPY with its path. It exports
+#     AE_CI_IMAGE_ID, marks use when it starts and ends, and returns COMMAND's status.
+#     It takes no native-admit lease: run it inside the caller's admitted job, which
+#     also pays for a copy it may extract.
+#   --router-copy IMAGE: ensures and prints the verified copy's path, marked used. It
+#     holds nothing once it exits, so a caller that keeps using the copy should use
+#     --hold. It runs under a native-admit lease like a run, or under the caller's.
+#   Both take gc.lock shared before their first image lookup, then the image's key lock
+#     (from its ae-ci-exec.inputs label) while they claim it, as runs do.
 #
 # Retention: at the end of every run (AE_CI_AUTO_GC=0 skips it), and on
-# "ae-ci-exec --gc", unused images and router copies are evicted. --dry-run only reports.
+# "ae-ci-exec --gc", unused images and router copies are evicted.
 #   Images: only repository agent-ee, only tags exec-* and run-*. An image is kept while
 #     a container (running or stopped) uses it, while it is the target of exec-KEY,
-#     exec-KEY-current or run-KEY for any KEY, while a run holds it (its use lock), and
-#     for AE_CI_KEEP_DAYS (default 3) after it was created or last used. Otherwise its
-#     exec-* and run-* tags are removed, and Docker deletes the image when no tag is left.
-#     AE_CI_GC_KEYS (16-hex keys, space or comma separated) limits this, and the heads
-#     rule below, to those keys.
+#     exec-KEY-current or run-KEY for a key in use (below), while a run or a --hold holds
+#     it (its use lock), and for AE_CI_KEEP_DAYS (default 3) after it was created or last
+#     used. Otherwise its exec-* and run-* tags are removed, and Docker deletes the image
+#     when no tag is left. AE_CI_GC_KEYS (16-hex keys, space or comma separated) limits
+#     this, and the heads rule, to those keys.
 #   Heads: a key with no sign of use within AE_CI_KEEP_HEAD_DAYS (default 7) loses its
 #     heads exec-KEY, exec-KEY-current and run-KEY. A container that uses one of its images
-#     prevents this, and so does a build or run that holds its image lock or the use lock
-#     of one of its images. The signs of use are a use marker of one of its images, its
-#     build record, and an ae-ci-exec or image_for build log for the key. A build counts as
-#     a use, because image_for and d988c8d write no use markers. Its images then fall
-#     under the image rule, in the same pass.
-#   Router copies: kept while a container mounts the copy, while a run holds it, and for
-#     AE_CI_KEEP_DAYS after its last use; otherwise removed. Copies of earlier versions
-#     (kicad-route/sha256-ID and kicad-route/KEY), which record no use, count from their
-#     .ready time.
-#   Use: each run, and each --router-copy, touches used/image/ID and used/route/NAME.
-#   Locks: a run holds locks/gc.lock shared while it resolves its image and ensures its
-#     copy, and the image's and the copy's use locks shared until it exits. Eviction
-#     holds gc.lock exclusively; it skips any image or copy whose use or extraction lock
-#     it cannot take at once. A run's eviction does not wait for gc.lock (it is skipped
-#     when a run is claiming); --gc waits up to AE_CI_GC_WAIT seconds (default 60).
+#     prevents this, and so does a build, run or --hold that holds its image lock or the
+#     use lock of one of its images. The signs of use are a use marker of one of its
+#     images, its build record, and an ae-ci-exec or image_for build log for the key. A
+#     build counts as a use, because image_for and d988c8d write no use markers. After the
+#     pass takes the key's lock, it reads these again and rechecks each head tag's image
+#     before it removes the tag. Its images then fall under the image rule, in the same pass.
+#   Router copies: kept while a container mounts the copy, while a run or --hold holds it,
+#     and for AE_CI_KEEP_DAYS after its last use; otherwise removed. Copies of earlier
+#     versions (kicad-route/sha256-ID and kicad-route/KEY), which record no use, count
+#     from their .ready time. Other names are left alone.
+#   Use: each run, --hold and --router-copy touches used/image/ID and used/route/NAME.
+#   Locks: a run or --hold holds locks/gc.lock shared while it resolves its image and
+#     ensures its copy, and the image's and the copy's use locks shared until it exits.
+#     Eviction holds gc.lock exclusively; it skips any image or copy whose use or
+#     extraction lock it cannot take at once, and it lists the containers again right
+#     before each removal. A run's eviction does not wait for gc.lock (it is skipped
+#     while a run is claiming); --gc waits up to AE_CI_GC_WAIT seconds (default 60).
+#   Versions: no pass runs while a process runs an ae-ci-exec script whose SHA-256
+#     differs from this one (bash's open script, or the script a waiting native-admit
+#     will start). Older versions take no use locks, so eviction waits until they have
+#     drained, and logs that it skipped. AE_CI_GC_IGNORE_OLD_VERSIONS=1 runs a pass
+#     anyway; it is only for tests on private keys (AE_CI_GC_KEYS) and a private state.
+#   --gc --dry-run reports on stderr what a pass would remove. It takes no lock and
+#     writes nothing: no state directory, lock, log or temporary file.
 #   Every removal, and the bytes freed, go to stderr and to logs/gc.log. Nothing outside
 #     the state directory and no other repository's image is touched.
-#   Bounds with the defaults: at most the keys used in the last 7 days, each with its
-#     heads and at most about 12 images. A key is checked at most every 6 hours, which is
-#     4 images a day, and images are kept 3 days. In practice there are fewer, because an
-#     unchanged upstream rebuilds the same image. Router copies are shared by content:
-#     one per router state used in the last 3 days.
+#   Bounds: this is an age policy, not a count. With the defaults, an image stays while
+#     it is a head of a key used in the last 7 days, while a container, a --hold or a run
+#     uses it, and for 3 days after it was created or last used. With this version as the
+#     only producer, an active key gains at most 4 images a day (one upstream check per
+#     6 hours, fewer when upstream did not change), about 12 in 3 days. image_for and
+#     d988c8d build on every invocation and can add more, and containers, holds and
+#     repeated use keep images longer. Router copies: one for each distinct tree used in
+#     the last 3 days, plus those mounted or held.
 #
 # Container, as in the gate's strict-suite step:
 #   --network none, seccomp/systempaths/AppArmor unconfined (owner, 2026-10-23: no
@@ -139,8 +167,8 @@
 # AGENT_EE_SKIP_VISUALS is passed through when set.
 #
 # State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies, locks,
-# build and gc logs, build records in builds/, use markers in used/, router keys in
-# route-key/, scratch). No sudo. On an AppArmor host, bwrap in the container
+# build and gc logs, build records in builds/, use markers in used/, tree identities in
+# tree-id/, scratch). No sudo. On an AppArmor host, bwrap in the container
 # needs kernel.apparmor_restrict_unprivileged_userns=0 (set in /etc/sysctl.d).
 # Exit status: COMMAND's. 125 when docker run cannot start it. 2 for usage errors and
 # the checks that call die. A failing setup command's own status, as listed above.
@@ -151,13 +179,24 @@ set -euo pipefail
 prog=ae-ci-exec
 die() { echo "$prog: $*" >&2; exit 2; }
 usage() {
-  echo "usage: $prog WORKTREE -- COMMAND [ARG...] | $prog --router-copy IMAGE | $prog --gc [--dry-run]" >&2
+  echo "usage: $prog WORKTREE -- COMMAND [ARG...] | $prog --hold IMAGE [--router] -- COMMAND [ARG...] |" \
+       "$prog --router-copy IMAGE | $prog --gc [--dry-run]" >&2
   exit 2
 }
 self=$(realpath -e -- "$0")
-dry=0
+# This script's own bytes (bash keeps the script it runs open on fd 255): eviction runs
+# only while no other version is running.
+self_hash=$(sha256sum < "/proc/$$/fd/255" 2>/dev/null | cut -c1-64) || self_hash=''
+[ -n "$self_hash" ] || self_hash=$(sha256sum < "$self" | cut -c1-64)
+dry=0 want_router=0
 case ${1:-} in
   --router-copy) [ $# = 2 ] || usage; mode=router-copy image_arg=$2 ;;
+  --hold)
+    mode=hold; shift; [ $# -ge 3 ] || usage
+    image_arg=$1; shift
+    if [ "$1" = --router ]; then want_router=1; shift; fi
+    [ "${1:-}" = -- ] || usage; shift
+    [ $# -ge 1 ] || usage ;;
   --gc)
     mode=gc
     if [ $# = 2 ] && [ "$2" = --dry-run ]; then dry=1; elif [ $# != 1 ]; then usage; fi ;;
@@ -177,8 +216,8 @@ command -v flock >/dev/null || die "flock not found"
 # strict_suite --jobs N weighs N (refused above max_weight), anything else 1. AE_CI_WEIGHT overrides
 # the weight; AE_CI_MAX_WAIT (seconds) gives up with exit 75 instead of queueing
 # indefinitely. Fails closed when native-admit is missing. --router-copy is admitted the
-# same way (inside an admitted job it reuses that lease); --gc needs no lease.
-if [ "$mode" != gc ]; then
+# same way (inside an admitted job it reuses that lease); --hold and --gc take no lease.
+if [ "$mode" = run ] || [ "$mode" = router-copy ]; then
   na=$(dirname "$self")/native-admit  # installed side by side
   [ -x "$na" ] || na=$(command -v native-admit) || die "native-admit not installed (infra shared/agent-ee)"
   if [ "${AE_CI_EXEC_ADMITTED:-}" = 1 ]; then
@@ -200,7 +239,8 @@ fi
 STATE=${AE_CI_EXEC_HOME:-$HOME/.cache/ae-ci-exec}
 case $STATE in /*) ;; *) die "AE_CI_EXEC_HOME must be an absolute path" ;; esac
 [ "$STATE" != / ] || die "AE_CI_EXEC_HOME must not be /"
-mkdir -p "$STATE"/{inputs,kicad-route,locks,logs,tmp,ctx,builds,used/image,used/route,route-key}
+# A dry run writes nothing, not even the state directories.
+[ "$dry" = 1 ] || mkdir -p "$STATE"/{inputs,kicad-route,locks,logs,tmp,ctx,builds,used/image,used/route,tree-id}
 REFRESH_HOURS=${AE_CI_REFRESH_HOURS:-6}
 KEEP_DAYS=${AE_CI_KEEP_DAYS:-3}
 KEEP_HEAD_DAYS=${AE_CI_KEEP_HEAD_DAYS:-7}
@@ -210,6 +250,8 @@ KEEP_HEAD_DAYS=${AE_CI_KEEP_HEAD_DAYS:-7}
 GC_KEYS=${AE_CI_GC_KEYS:-}
 GC_KEYS=${GC_KEYS//,/ }
 for k in $GC_KEYS; do [[ $k =~ ^[0-9a-f]{16}$ ]] || die "AE_CI_GC_KEYS: $k is not a 16-hex key"; done
+# Labels of every container this script starts: native-admit counts them by ae-ci-exec=1.
+CONTAINER_LABELS=(--label ae-ci-exec=1 --label "native-admission.lease=${NATIVE_ADMISSION_LEASE:-}")
 
 locked() {  # locked NAME COMMAND...: run COMMAND holding $STATE/locks/NAME.lock
   local name=$1; shift
@@ -224,97 +266,153 @@ locked() {  # locked NAME COMMAND...: run COMMAND holding $STATE/locks/NAME.lock
     "$@"
   )
 }
+take_gc_shared() {  # gc.lock shared on fd 7: no eviction pass runs while this process claims
+  exec 7>"$STATE/locks/gc.lock"
+  if ! flock -s -n 7; then
+    echo "$prog: waiting for lock gc (an eviction pass is running)" >&2
+    flock -s 7
+  fi
+}
 
 # Image lookups. An answer of "absent" allows tag writes (create a missing tag, seed a
 # missing exec-KEY-current), so absence must be positive. Only Docker's exact reply for
-# exactly this REF counts: the whole stderr, trailing newline aside, must equal
-# "Error response from daemon: No such image: REF". Every other failed inspect aborts the
-# run with die (exit 2) before the tag write it guards: an unreachable daemon, a
+# exactly this REF counts: the output, empty lines and the trailing newline aside, must
+# equal "Error response from daemon: No such image: REF". Every other failed inspect
+# aborts with die (exit 2) before the tag write it guards: an unreachable daemon, a
 # connection reset, a timeout, a reply naming another REF (such as REF-current), or a
-# not-found line mixed with other output. The helpers set the variable "found" instead of
-# printing, because a die inside $(...) would end only that subshell, and a test such as
-# [ -z "$(...)" ] discards that status.
+# not-found line mixed with other output. stdout and stderr are captured together, so no
+# temporary file is written (a dry run writes nothing). The helpers set the variable
+# "found" instead of printing, because a die inside $(...) would end only that subshell,
+# and a test such as [ -z "$(...)" ] discards that status.
 # inspect_image FORMAT REF: found = docker image inspect -f FORMAT REF, or '' when REF is absent.
 inspect_image() {
-  local err=$STATE/tmp/inspect-$$.err msg
-  if found=$(docker image inspect -f "$1" "$2" 2>"$err"); then rm -f "$err"; return 0; fi
+  local out
+  if out=$(docker image inspect -f "$1" "$2" 2>&1); then found=$out; return 0; fi
   found=''
-  msg=$(<"$err"); rm -f "$err"  # $(<...) drops the trailing newline
-  if [ "$msg" = "Error response from daemon: No such image: $2" ]; then return 0; fi
-  msg=${msg//$'\n'/ | }
-  die "docker could not inspect $2: ${msg:-no error message}. Aborting: a failed lookup is not taken for \"absent\", so no tag is created or moved on it; rerun when docker answers"
+  out=$(printf '%s\n' "$out" | sed '/^$/d')
+  if [ "$out" = "Error response from daemon: No such image: $2" ]; then return 0; fi
+  die "docker could not inspect $2: ${out//$'\n'/ | }. Aborting: a failed lookup is not taken for \"absent\", so no tag is created or moved on it; rerun when docker answers"
 }
-lookup() { inspect_image '{{.Id}}' "$1"; }  # lookup REF: found = the image ID REF names, or ''
+lookup() {  # lookup REF: found = the full image ID REF names, or ''
+  inspect_image '{{.Id}}' "$1"
+  [ -z "$found" ] || [[ $found =~ ^sha256:[0-9a-f]{64}$ ]] ||
+    die "docker image inspect $1 answered '${found//$'\n'/ | }', not an image ID"
+}
 
 mark_used() { touch "$STATE/used/$1/$2"; }  # mark_used image|route NAME: a use, now
 
 # --- kicad-route copies ---------------------------------------------------------
-# read_image_file IMAGE PATH DEST: copy one file out of IMAGE through a created (never
-# started) container; returns 1 when the image has no such file. Other errors call die.
-read_image_file() {
-  local cid err=$STATE/tmp/read-$$.err rc=0 msg
-  cid=$(docker create --network none "$1" true)
-  docker cp "$cid:$2" - 2>"$err" | tar -xO > "$3" 2>/dev/null || rc=1
-  docker rm "$cid" >/dev/null
-  if [ "$rc" = 0 ]; then rm -f "$err"; return 0; fi
-  msg=$(<"$err"); rm -f "$err" "$3"
-  case $msg in *"Could not find the file $2 in container"*) return 1 ;; esac
-  die "cannot read $2 from $1: ${msg:-no error message}"
-}
-# route_key IMAGE_ID REF: rkey = the router state key of the image: the SHA-256 over the
-# hashes of /opt/kicad-route/manifest.json and /opt/kicad-route.install.json (or
-# "absent"). Image content never changes under an ID, so the key is cached per ID.
-route_key() {
-  local cache=$STATE/route-key/${1#sha256:} tmp m i
-  rkey=''
-  if [ -s "$cache" ]; then rkey=$(<"$cache"); [[ $rkey =~ ^[0-9a-f]{64}$ ]] && return 0; fi
-  tmp=$(mktemp -d "$STATE/tmp/route-key-XXXXXXXX")
-  read_image_file "$2" /opt/kicad-route/manifest.json "$tmp/manifest" ||
-    { rm -rf "$tmp"; die "$1 has no /opt/kicad-route/manifest.json"; }
-  m=$(sha256sum < "$tmp/manifest" | cut -c1-64)
-  if read_image_file "$2" /opt/kicad-route.install.json "$tmp/install"; then
-    i=$(sha256sum < "$tmp/install" | cut -c1-64)
-  else
-    i=absent
+# TREE_WALKER (python3 -I -c "$TREE_WALKER" ROOT): one line per entry of ROOT, sorted by
+# path: type (f d l o), permission bits (octal), size (0 for d, l, o), content SHA-256
+# (f) or symlink target in hex (l) or "-", and the path relative to ROOT in hex. mtimes
+# and owners are excluded. An unreadable directory is an error, never a silent skip.
+read -r -d '' TREE_WALKER <<'PY' || true
+import hashlib, os, stat, sys
+root = os.fsencode(sys.argv[1])
+out = sys.stdout.buffer
+def fail(err):
+    raise err
+def entry(rel, full):
+    st = os.lstat(full)
+    m = st.st_mode
+    if stat.S_ISREG(m):
+        h = hashlib.sha256()
+        with open(full, 'rb') as f:
+            for chunk in iter(lambda: f.read(1 << 20), b''):
+                h.update(chunk)
+        kind, size, data = b'f', st.st_size, h.hexdigest().encode()
+    elif stat.S_ISLNK(m):
+        kind, size, data = b'l', 0, os.readlink(full).hex().encode()
+    elif stat.S_ISDIR(m):
+        kind, size, data = b'd', 0, b'-'
+    else:
+        kind, size, data = b'o', 0, b'-'
+    out.write(b'%s %o %d %s %s\n' % (kind, stat.S_IMODE(m), size, data, rel.hex().encode()))
+paths = []
+for top, dirs, files in os.walk(root, onerror=fail):
+    for name in dirs + files:
+        paths.append(os.path.relpath(os.path.join(top, name), root))
+paths.sort()
+entry(b'.', root)
+for rel in paths:
+    entry(rel, os.path.join(root, rel))
+PY
+# tree_identity IMAGE_ID: tid = the tree identity of /opt/kicad-route in the image, and
+# tentries its entry count, computed in one container started from the ID (inside the
+# caller's lease) and cached per image ID: an image's content never changes.
+tree_identity() {
+  local cache=$STATE/tree-id/${1#sha256:} tmp
+  tid='' tentries=''
+  if [ -s "$cache" ]; then
+    read -r tid tentries < "$cache" || true
+    [[ $tid =~ ^[0-9a-f]{64}$ ]] && return 0
   fi
-  rm -rf "$tmp"
-  rkey=$(printf 'kicad-route state manifest %s\nkicad-route install record %s\n' "$m" "$i" | sha256sum | cut -c1-64)
-  printf '%s\n' "$rkey" > "$cache.$$"; mv -f "$cache.$$" "$cache"
+  tmp=$(mktemp "$STATE/tmp/tree-XXXXXXXX")
+  docker run --rm --network none --user 0:0 "${CONTAINER_LABELS[@]}" \
+      "$1" python3 -I -c "$TREE_WALKER" /opt/kicad-route > "$tmp" ||
+    { rm -f "$tmp"; die "cannot list /opt/kicad-route in $1"; }
+  tid=$(sha256sum < "$tmp" | cut -c1-64); tentries=$(wc -l < "$tmp"); rm -f "$tmp"
+  printf '%s %s\n' "$tid" "$tentries" > "$cache.$$"; mv -f "$cache.$$" "$cache"
 }
-# ensure_copy REF (under locks/route-RKEY.lock): when the copy $KR is not ready, extract
-# /opt/kicad-route from the image REF names, owned by the caller (the gate's runtime user
-# owns it), and verify it offline with that image's own installer check.
+# ensure_copy IMAGE_ID (under locks/tree-TID.lock): when the copy $KR is not ready,
+# extract /opt/kicad-route from the image, owned by the caller (the gate's runtime user
+# owns it). The extracted tree must have the image's identity before it is published.
+# Then refresh its index and verify it offline with that image's own installer check.
 ensure_copy() {
   [ -f "$KR.ready" ] && return 0
   rm -rf "$KR" "$KR.partial"; mkdir -p "$KR.partial"
-  local cid
-  cid=$(docker create --network none "$1" true)
+  local cid got
+  cid=$(docker create --network none "${CONTAINER_LABELS[@]}" "$1" true)
   docker cp "$cid:/opt/kicad-route" - | tar -x -p -C "$KR.partial" || { docker rm "$cid" >/dev/null; die "cannot extract /opt/kicad-route"; }
   docker rm "$cid" >/dev/null
+  got=$(python3 -I -c "$TREE_WALKER" "$KR.partial/kicad-route" | sha256sum | cut -c1-64) ||
+    { rm -rf "$KR.partial"; die "cannot compute the identity of the extracted kicad-route tree"; }
+  [ "$got" = "$tid" ] ||
+    { rm -rf "$KR.partial"; die "the extracted kicad-route tree has identity $got, not the image's $tid"; }
   mv "$KR.partial/kicad-route" "$KR"; rmdir "$KR.partial"
   # Refresh the index stat data for the caller-owned copy, then verify it offline
   # with the image's own installer check, read-only as it is mounted later.
-  docker run --rm --network none --user "$(id -u):$(id -g)" -e HOME=/tmp -w / -v "$KR:/opt/kicad-route" \
-    "$1" git -C /opt/kicad-route update-index -q --refresh >/dev/null 2>&1 || true
-  docker run --rm --network none --user "$(id -u):$(id -g)" -e HOME=/tmp -w / -v "$KR:/opt/kicad-route:ro" \
-    "$1" /usr/local/share/agent-ee/kicad-route/install.sh verify >&2 ||
+  docker run --rm --network none "${CONTAINER_LABELS[@]}" --user "$(id -u):$(id -g)" -e HOME=/tmp -w / \
+    -v "$KR:/opt/kicad-route" "$1" git -C /opt/kicad-route update-index -q --refresh >/dev/null 2>&1 || true
+  docker run --rm --network none "${CONTAINER_LABELS[@]}" --user "$(id -u):$(id -g)" -e HOME=/tmp -w / \
+    -v "$KR:/opt/kicad-route:ro" "$1" /usr/local/share/agent-ee/kicad-route/install.sh verify >&2 ||
     { rm -rf "$KR"; die "kicad-route copy failed install.sh verify"; }
-  touch "$KR.ready"
-  echo "$prog: new kicad-route copy ${KR##*/} from $1, verified offline" >&2
+  printf 'identity %s\nentries %s\nimage %s\nverified %s\n' "$tid" "$tentries" "$1" "$(date -u +%FT%TZ)" > "$KR.ready"
+  echo "$prog: new kicad-route copy ${KR##*/} ($tentries entries) from $1, identity checked, verified offline" >&2
 }
-# claim_copy IMAGE_ID REF: under gc.lock shared (the caller holds it), find or make the
-# verified copy for the image and mark it used. Sets rkey and KR.
+# claim_copy IMAGE_ID: under gc.lock shared (the caller holds it), find or make the
+# verified copy for the image, hold its use lock shared on fd 6 and mark it used. Sets
+# tid, tentries and KR.
 claim_copy() {
-  route_key "$1" "$2"
-  KR=$STATE/kicad-route/state-$rkey
-  locked "route-$rkey" ensure_copy "$2"
-  mark_used route "state-$rkey"
+  tree_identity "$1"
+  KR=$STATE/kicad-route/tree-$tid
+  locked "tree-$tid" ensure_copy "$1"
+  exec 6>"$STATE/locks/use-tree-$tid.lock"; flock -s 6
+  mark_used route "tree-$tid"
+}
+# claim_image REF (for --hold and --router-copy): gc.lock shared on fd 7 before the first
+# lookup, then, under the image's key lock, resolve REF to its full ID (IMAGE_ID), take the
+# image's use lock shared on fd 8 and mark it used. The caller releases fd 7.
+claim_image() {
+  local key
+  take_gc_shared
+  lookup "$1"; [ -n "$found" ] || die "no such image: $1"
+  IMAGE_ID=$found
+  inspect_image '{{index .Config.Labels "ae-ci-exec.inputs"}}' "$IMAGE_ID"
+  [[ $found =~ ^[0-9a-f]{64}$ ]] || die "$1 has no ae-ci-exec.inputs label: not an agent-ee build image"
+  key=${found:0:16}
+  exec 5>"$STATE/locks/image-$key.lock"
+  if ! flock -n 5; then echo "$prog: waiting for lock image-$key" >&2; flock 5; fi
+  lookup "$IMAGE_ID"; [ "$found" = "$IMAGE_ID" ] || die "image $IMAGE_ID disappeared"
+  exec 8>"$STATE/locks/use-image-${IMAGE_ID#sha256:}.lock"; flock -s 8
+  exec 5>&-
+  mark_used image "${IMAGE_ID#sha256:}"
 }
 
 # --- retention ------------------------------------------------------------------
-gclog() {  # gclog MESSAGE: to stderr and logs/gc.log
+gclog() {  # gclog MESSAGE: to stderr, and (except in a dry run) to logs/gc.log
   echo "$prog: gc: $*" >&2
-  printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >> "$STATE/logs/gc.log" || true
+  [ "$dry" = 1 ] || printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >> "$STATE/logs/gc.log" || true
 }
 when() { date -u -d "@$1" +%FT%TZ; }
 bytes() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "$1 B"; }
@@ -327,6 +425,64 @@ layers_bytes() {  # the daemon's total image layer bytes (Engine API), or nothin
 # try_lock FD NAME: take locks/NAME.lock exclusively on FD without waiting; 1 when busy.
 try_lock() { eval "exec $1>\"\$STATE/locks/\$2.lock\""; flock -x -n "$1"; }
 
+# other_version: ov = up to three processes that run, or are about to run, an ae-ci-exec
+# script whose SHA-256 differs from this one; '' if there are none. Running scripts are
+# found by bash's open script descriptor (fd 255), waiting ones by the script path in a
+# native-admit command line.
+other_version() {
+  local p pid t h a n=0
+  local -a argv
+  ov=''
+  for p in /proc/[0-9]*; do
+    [ "$n" -lt 3 ] || break
+    pid=${p#/proc/}
+    [ "$pid" != "$$" ] || continue
+    if t=$(readlink "$p/fd/255" 2>/dev/null); then
+      t=${t% (deleted)}
+      if [ "${t##*/}" = ae-ci-exec ]; then
+        h=$(sha256sum 2>/dev/null < "$p/fd/255" | cut -c1-64) || h=''
+        if [ -n "$h" ] && [ "$h" != "$self_hash" ]; then
+          ov+="${ov:+; }pid $pid runs $t (sha256 ${h:0:16})"; n=$(( n + 1 )); continue
+        fi
+      fi
+    fi
+    argv=()
+    mapfile -d '' -t argv 2>/dev/null < "$p/cmdline" || continue
+    [[ " ${argv[*]:0:3} " == *native-admit* ]] || continue
+    for a in "${argv[@]}"; do
+      [ "${a##*/}" = ae-ci-exec ] && [ -f "$a" ] || continue
+      h=$(sha256sum 2>/dev/null < "$a" | cut -c1-64) || h=''
+      if [ -n "$h" ] && [ "$h" != "$self_hash" ]; then
+        ov+="${ov:+; }pid $pid (native-admit) will start $a (sha256 ${h:0:16})"; n=$(( n + 1 )); break
+      fi
+    done
+  done
+}
+# containers_now: boxed[ID]=1 for every image a container (running or stopped) uses, and
+# mounts = the host paths they mount. A container removed after "docker ps" uses nothing;
+# any other inspect error aborts. No temporary file: data and errors are told apart by
+# their prefix.
+containers_now() {
+  local ids out line
+  local -a parts
+  boxed=() mounts=()
+  ids=$(docker ps -a -q --no-trunc) || die "gc: docker ps failed"
+  [ -n "$ids" ] || return 0
+  # shellcheck disable=SC2086
+  out=$(docker container inspect -f 'C {{.Image}}{{range .Mounts}}{{"\t"}}{{.Source}}{{end}}' $ids 2>&1) || true
+  while IFS= read -r line; do
+    case $line in
+      'C '*) IFS=$'\t' read -r -a parts <<< "${line#C }"; boxed[${parts[0]}]=1; mounts+=("${parts[@]:1}") ;;
+      ''|'Error response from daemon: No such container: '*) ;;
+      *) die "gc: docker container inspect failed: $line" ;;
+    esac
+  done <<< "$out"
+}
+mounted() {  # mounted DIR: 0 when a container mounts DIR or a path inside it
+  local src
+  for src in "${mounts[@]}"; do case $src in "$1"|"$1"/*) return 0 ;; esac; done
+  return 1
+}
 # gc_inventory: the agent-ee images and their exec-*/run-* tags. Sets tags[ID] (in-scope
 # tags of the image), headkeys[ID] (every key, in scope or not, for which ID is a head),
 # key_images[KEY] and key_heads[KEY] (in-scope keys only).
@@ -347,10 +503,22 @@ gc_inventory() {
     [ "$ishead" = 0 ] || key_heads[$key]="${key_heads[$key]:-}$tag "
   done <<< "$out"
 }
+# key_rescan KEY: list KEY's tags again (under its lock): key_images[KEY], key_heads[KEY]
+# and head_id[TAG], the image each head tag names now.
+key_rescan() {
+  local out tag id
+  key_images[$1]='' key_heads[$1]=''
+  out=$(docker images agent-ee --no-trunc --format '{{.Tag}} {{.ID}}') || die "gc: docker images failed"
+  while read -r tag id; do
+    [[ $tag =~ ^(exec|run)-$1(-.*)?$ ]] || continue
+    [[ " ${key_images[$1]} " == *" $id "* ]] || key_images[$1]+="$id "
+    if [[ $tag =~ ^exec-$1(-current)?$ || $tag =~ ^run-$1$ ]]; then key_heads[$1]+="$tag "; head_id[$tag]=$id; fi
+  done <<< "$out"
+}
 # key_last_use KEY: key_used = the newest sign of use of KEY in the state directory, or 0:
-# a use marker of one of its images (runs, --router-copy), its build record (ae-ci-exec
-# builds), or a build log (logs/build-KEY-* of ae-ci-exec, logs/image-for-KEY-* of
-# image_for). A build counts as a use, so tools that write no use markers (image_for,
+# a use marker of one of its images (runs, --hold, --router-copy), its build record
+# (ae-ci-exec builds), or a build log (logs/build-KEY-* of ae-ci-exec, logs/image-for-KEY-*
+# of image_for). A build counts as a use, so tools that write no use markers (image_for,
 # ae-ci-exec d988c8d) do not lose the heads of keys they build.
 key_last_use() {
   local id f t
@@ -364,87 +532,106 @@ key_last_use() {
     t=$(stat -c %Y "$f"); [ "$t" -le "$key_used" ] || key_used=$t
   done
 }
+# strip_key KEY: from here on KEY's images are no heads of KEY (in a dry run: as if).
+strip_key() {
+  local id tag k rest
+  for id in ${key_images[$1]:-}; do
+    [ -n "${tags[$id]+x}" ] || continue
+    rest=''; for tag in ${tags[$id]}; do [[ " ${key_heads[$1]} " == *" $tag "* ]] || rest+="$tag "; done
+    tags[$id]=$rest
+    rest=''; for k in ${headkeys[$id]:-}; do [ "$k" = "$1" ] || rest+="$k "; done
+    headkeys[$id]=$rest
+  done
+}
 
 gc_main() {
-  local now horizon head_horizon wait=${AE_CI_GC_WAIT:-60} out err=$STATE/tmp/gc-$$.err line
-  local tag id key k rest created used last dir name src m b before after key_used
+  local now horizon head_horizon wait=${AE_CI_GC_WAIT:-60} err=$STATE/tmp/gc-$$.err ov
+  local tag id key created used last dir name b f out before after key_used reason
   local freed=0 n_img=0 n_copy=0 n_keys=0
-  local -A tags=() headkeys=() key_images=() key_heads=() boxed=() created_at=()
-  local -a mounts=() parts=() locknames=() cands=()
+  local -A tags=() headkeys=() key_images=() key_heads=() boxed=() created_at=() head_id=()
+  local -a mounts=() locknames=() cands=() fresh=()
+  other_version
+  if [ -n "$ov" ] && [ "${AE_CI_GC_IGNORE_OLD_VERSIONS:-0}" = 1 ]; then
+    # Only for tests on private keys (AE_CI_GC_KEYS) and a private state directory.
+    gclog "AE_CI_GC_IGNORE_OLD_VERSIONS=1: running although other versions run ($ov)"
+    ov=''
+  fi
+  if [ -n "$ov" ]; then
+    if [ "$dry" = 0 ]; then
+      gclog "skipped: another ae-ci-exec version is running ($ov); eviction waits until it has drained"
+      return 0
+    fi
+    gclog "a real pass would be skipped now: another ae-ci-exec version is running ($ov)"
+  fi
   if [ "$dry" = 0 ]; then
     exec 7>"$STATE/locks/gc.lock"
     if ! flock -x -w "$wait" 7; then
       gclog "skipped: runs are claiming images (gc.lock busy for ${wait}s)"
       return 0
     fi
+    before=$(layers_bytes)
   fi
   now=$(date +%s); horizon=$(( now - KEEP_DAYS * 86400 )); head_horizon=$(( now - KEEP_HEAD_DAYS * 86400 ))
-  # Containers, running or stopped: the images they use and the host paths they mount.
-  out=$(docker ps -a -q --no-trunc) || die "gc: docker ps failed"
-  if [ -n "$out" ]; then
-    # shellcheck disable=SC2086
-    if ! out=$(docker container inspect -f '{{.Image}}{{range .Mounts}}{{"\t"}}{{.Source}}{{end}}' $out 2>"$err"); then
-      # A container removed after "docker ps" uses nothing any more; any other error aborts.
-      if grep -qv '^Error response from daemon: No such container: ' "$err"; then
-        line=$(tr '\n' ' ' < "$err"); rm -f "$err"; die "gc: docker container inspect failed: $line"
-      fi
-    fi
-    rm -f "$err"
-    while IFS= read -r line; do
-      [ -n "$line" ] || continue
-      IFS=$'\t' read -r -a parts <<< "$line"
-      boxed[${parts[0]}]=1
-      mounts+=("${parts[@]:1}")
-    done <<< "$out"
-  fi
+  containers_now
   gc_inventory
-  before=$(layers_bytes)
-  # Heads of stale keys: a key with no sign of use within AE_CI_KEEP_HEAD_DAYS loses its
-  # heads (exec-KEY, exec-KEY-current, run-KEY), unless a container uses one of its images,
-  # or a build or run holds its image lock or one of its images' use locks.
+  # Heads of stale keys. The snapshot only preselects; a real pass takes the key's lock and
+  # reads its tags, freshness, containers and use locks again before it removes anything.
   for key in "${!key_heads[@]}"; do
     key_last_use "$key"
     [ "$key_used" -lt "$head_horizon" ] || continue
-    used=$( [ "$key_used" = 0 ] && echo never || when "$key_used")
-    m=''
-    for id in ${key_images[$key]}; do [ -z "${boxed[$id]:-}" ] || m='a container uses one of its images'; done
-    if [ -z "$m" ] && ! try_lock 5 "image-$key"; then m='a build or run holds its lock'; fi
-    if [ -z "$m" ]; then
-      for id in ${key_images[$key]}; do
-        try_lock 4 "use-image-${id#sha256:}" || m='a run is using one of its images'
-        exec 4>&-
-        [ -z "$m" ] || break
-      done
-    fi
-    if [ -n "$m" ]; then
-      exec 5>&-; gclog "kept the heads of key $key (last used $used): $m"; continue
-    fi
     if [ "$dry" = 1 ]; then
-      gclog "would remove the heads of key $key (${key_heads[$key]% }; last used $used)"
-    else
-      for tag in ${key_heads[$key]}; do
-        docker rmi "agent-ee:$tag" > /dev/null 2>"$err" || gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"
-      done
-      rm -f "$err"
-      n_keys=$(( n_keys + 1 ))
-      gclog "removed the heads of key $key (${key_heads[$key]% }; last used $used)"
+      reason=''
+      for id in ${key_images[$key]}; do [ -z "${boxed[$id]:-}" ] || reason='a container uses one of its images'; done
+      used=$( [ "$key_used" = 0 ] && echo never || when "$key_used")
+      if [ -n "$reason" ]; then
+        gclog "kept the heads of key $key (last used $used): $reason"
+      else
+        gclog "would remove the heads of key $key (${key_heads[$key]% }; last used $used), unless a run holds them"
+        strip_key "$key"
+      fi
+      continue
     fi
-    exec 5>&-
-    # From here on these images are no heads of this key (in a dry run: as if removed).
+    if ! try_lock 5 "image-$key"; then
+      exec 5>&-; gclog "kept the heads of key $key: a build or run holds its lock"; continue
+    fi
+    key_rescan "$key"
+    key_last_use "$key"
+    used=$( [ "$key_used" = 0 ] && echo never || when "$key_used")
+    reason=''
+    [ -n "${key_heads[$key]}" ] || reason='it has no heads any more'
+    [ -n "$reason" ] || [ "$key_used" -lt "$head_horizon" ] || reason="it was used at $used"
+    if [ -z "$reason" ]; then
+      containers_now
+      for id in ${key_images[$key]}; do [ -z "${boxed[$id]:-}" ] || reason='a container uses one of its images'; done
+    fi
+    if [ -z "$reason" ]; then
+      for id in ${key_images[$key]}; do
+        try_lock 4 "use-image-${id#sha256:}" || reason='a run or --hold is using one of its images'
+        exec 4>&-
+        [ -z "$reason" ] || break
+      done
+    fi
+    if [ -n "$reason" ]; then
+      exec 5>&-; gclog "kept the heads of key $key (last used $used): $reason"; continue
+    fi
+    for tag in ${key_heads[$key]}; do
+      lookup "agent-ee:$tag"
+      if [ "$found" != "${head_id[$tag]}" ]; then gclog "kept agent-ee:$tag: it changed during the pass"; continue; fi
+      docker rmi "agent-ee:$tag" > /dev/null 2>"$err" || gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"
+    done
+    rm -f "$err"
+    n_keys=$(( n_keys + 1 ))
+    gclog "removed the heads of key $key (${key_heads[$key]% }; last used $used)"
+    strip_key "$key"
     for id in ${key_images[$key]}; do
-      rest=''; for tag in ${tags[$id]:-}; do [[ " ${key_heads[$key]} " == *" $tag "* ]] || rest+="$tag "; done
-      tags[$id]=$rest
-      rest=''; for k in ${headkeys[$id]:-}; do [ "$k" = "$key" ] || rest+="$k "; done
-      headkeys[$id]=$rest
-      if [ "$dry" = 0 ]; then
-        inspect_image '{{.Id}}' "$id"
-        if [ -z "$found" ]; then  # its last tags were these heads
-          rm -f "$STATE/used/image/${id#sha256:}" "$STATE/route-key/${id#sha256:}" "$STATE/locks/use-image-${id#sha256:}.lock"
-          tags[$id]=''; n_img=$(( n_img + 1 ))
-          gclog "removed image $id with the heads of key $key"
-        fi
+      lookup "$id"
+      if [ -z "$found" ]; then  # its last tags were these heads
+        rm -f "$STATE/used/image/${id#sha256:}" "$STATE/tree-id/${id#sha256:}" "$STATE/locks/use-image-${id#sha256:}.lock"
+        tags[$id]=''; n_img=$(( n_img + 1 ))
+        gclog "removed image $id with the heads of key $key"
       fi
     done
+    exec 5>&-
   done
   # Images: candidates have in-scope tags, are no head of any key and no container uses them.
   for id in "${!tags[@]}"; do
@@ -460,95 +647,130 @@ gc_main() {
     created=${created_at[$id]:-0}
     last=$(( created > used ? created : used ))
     [ "$last" -lt "$horizon" ] || continue
-    if ! try_lock 5 "use-image-${id#sha256:}"; then
-      gclog "kept $id: a run is using it"; exec 5>&-; continue
-    fi
+    used=$( [ "$used" = 0 ] && echo never || when "$used")
     if [ "$dry" = 1 ]; then
-      gclog "would remove image $id (tags ${tags[$id]% }; created $(when "$created"); last used $( [ "$used" = 0 ] && echo never || when "$used"))"
-      exec 5>&-; continue
+      gclog "would remove image $id (tags ${tags[$id]% }; created $(when "$created"); last used $used), unless a run holds it"
+      continue
     fi
-    m=0
+    if ! try_lock 5 "use-image-${id#sha256:}"; then
+      exec 5>&-; gclog "kept $id: a run or --hold is using it"; continue
+    fi
+    # Just before removal: the containers, and the image's tags, read again.
+    containers_now
+    if [ -n "${boxed[$id]:-}" ]; then exec 5>&-; gclog "kept $id: a container started using it"; continue; fi
+    lookup "$id"
+    if [ -z "$found" ]; then exec 5>&-; continue; fi  # already gone
+    inspect_image '{{range .RepoTags}}{{println .}}{{end}}' "$id"
+    mapfile -t fresh <<< "$found"
+    reason=''
+    for tag in "${fresh[@]}"; do
+      tag=${tag#agent-ee:}
+      if [[ $tag =~ ^exec-[0-9a-f]{16}(-current)?$ || $tag =~ ^run-[0-9a-f]{16}$ ]]; then reason="it became a head ($tag)"; fi
+    done
+    if [ -n "$reason" ]; then exec 5>&-; gclog "kept $id: $reason"; continue; fi
+    b=0
     for tag in ${tags[$id]}; do
+      lookup "agent-ee:$tag"
+      [ "$found" = "$id" ] || { gclog "kept agent-ee:$tag: it no longer names $id"; b=1; continue; }
       if ! docker rmi "agent-ee:$tag" >/dev/null 2>"$err"; then
-        gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"; m=1
+        gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"; b=1
       fi
     done
     rm -f "$err"
-    if [ "$m" = 0 ]; then
-      inspect_image '{{.Id}}' "$id"
+    if [ "$b" = 0 ]; then
+      lookup "$id"
       if [ -n "$found" ]; then
         gclog "removed tags ${tags[$id]% } of $id; the image stays under its other tags"
       else
-        rm -f "$STATE/used/image/${id#sha256:}" "$STATE/route-key/${id#sha256:}" "$STATE/locks/use-image-${id#sha256:}.lock"
+        rm -f "$STATE/used/image/${id#sha256:}" "$STATE/tree-id/${id#sha256:}" "$STATE/locks/use-image-${id#sha256:}.lock"
         n_img=$(( n_img + 1 ))
-        gclog "removed image $id (tags ${tags[$id]% }; created $(when "$created"); last used $( [ "$used" = 0 ] && echo never || when "$used"))"
+        gclog "removed image $id (tags ${tags[$id]% }; created $(when "$created"); last used $used)"
       fi
     fi
     exec 5>&-
   done
-  if [ "$n_img" -gt 0 ] && [ -n "$before" ]; then
+  if [ "$n_img" -gt 0 ] && [ -n "${before:-}" ]; then
     after=$(layers_bytes)
     [ -z "$after" ] || gclog "image layers freed: $(bytes $(( before - after )))"
   fi
-  # Router copies, all layouts.
+  # Router copies, all known layouts; other names are left alone.
   for dir in "$STATE"/kicad-route/*; do
     [ -d "$dir" ] || continue
     name=${dir##*/}
     case $name in
-      state-*) [[ ${name#state-} =~ ^[0-9a-f]{64}$ ]] || continue
-               locknames=("route-${name#state-}" "use-route-${name#state-}") ;;
+      tree-*) [[ ${name#tree-} =~ ^[0-9a-f]{64}$ ]] || continue
+              locknames=("tree-${name#tree-}" "use-tree-${name#tree-}") ;;
       sha256-*) [[ ${name#sha256-} =~ ^[0-9a-f]{64}$ ]] || continue
-                locknames=("kicad-route-${name#sha256-}") ;;  # ae-ci-exec 2c1755b..d988c8d: keyed by image ID
-      *) [[ $name =~ ^[0-9a-f]{16}$ ]] || continue          # unknown names are left alone
-         locknames=("image-$name") ;;                         # earlier versions: keyed by input KEY
+                locknames=("kicad-route-${name#sha256-}") ;;  # d988c8d: keyed by image ID
+      *) [[ $name =~ ^[0-9a-f]{16}$ ]] || continue          # before d988c8d: keyed by input KEY
+         locknames=("image-$name") ;;
     esac
-    m=0
-    for src in "${mounts[@]}"; do case $src in "$dir"|"$dir"/*) m=1; break ;; esac; done
-    [ "$m" = 0 ] || continue
+    ! mounted "$dir" || continue
     last=0
-    for src in "$STATE/used/route/$name" "$dir.ready"; do
-      [ ! -e "$src" ] || { b=$(stat -c %Y "$src"); [ "$b" -le "$last" ] || last=$b; }
+    for f in "$STATE/used/route/$name" "$dir.ready"; do
+      [ ! -e "$f" ] || { b=$(stat -c %Y "$f"); [ "$b" -le "$last" ] || last=$b; }
     done
     [ "$last" -gt 0 ] || continue  # neither used nor ready: an extraction, or a broken copy, left alone
     [ "$last" -lt "$horizon" ] || continue
-    if ! try_lock 4 "${locknames[0]}"; then exec 4>&-; gclog "kept copy $name: it is being extracted"; continue; fi
-    if [ "${#locknames[@]}" -gt 1 ] && ! try_lock 3 "${locknames[1]}"; then
-      exec 3>&- 4>&-; gclog "kept copy $name: a run is using it"; continue
-    fi
     b=$(du -sb "$dir" | cut -f1)
     if [ "$dry" = 1 ]; then
-      gclog "would remove router copy $name ($(bytes "$b"); last used $(when "$last"))"
-    else
-      rm -rf "$dir" "$dir.ready" "$STATE/used/route/$name"
-      [ "${#locknames[@]}" = 1 ] || rm -f "$STATE/locks/${locknames[1]}.lock"
-      freed=$(( freed + b )); n_copy=$(( n_copy + 1 ))
-      gclog "removed router copy $name ($(bytes "$b"); last used $(when "$last"))"
+      gclog "would remove router copy $name ($(bytes "$b"); last used $(when "$last")), unless a run holds it"
+      continue
     fi
+    if ! try_lock 4 "${locknames[0]}"; then exec 4>&-; gclog "kept copy $name: it is being extracted"; continue; fi
+    if [ "${#locknames[@]}" -gt 1 ] && ! try_lock 3 "${locknames[1]}"; then
+      exec 3>&- 4>&-; gclog "kept copy $name: a run or --hold is using it"; continue
+    fi
+    containers_now
+    if mounted "$dir"; then exec 3>&- 4>&-; gclog "kept copy $name: a container started mounting it"; continue; fi
+    rm -rf "$dir" "$dir.ready" "$STATE/used/route/$name"
+    [ "${#locknames[@]}" = 1 ] || rm -f "$STATE/locks/${locknames[1]}.lock"
+    freed=$(( freed + b )); n_copy=$(( n_copy + 1 ))
+    gclog "removed router copy $name ($(bytes "$b"); last used $(when "$last"))"
     exec 3>&- 4>&-
   done
-  [ "$dry" = 1 ] || gclog "done: heads of $n_keys keys, $n_img images and $n_copy router copies removed ($(bytes "$freed") of copies); keep ${KEEP_DAYS} d, heads ${KEEP_HEAD_DAYS} d"
-  [ "$dry" = 0 ] || gclog "dry run: nothing removed"
+  if [ "$dry" = 1 ]; then
+    gclog "dry run: nothing removed, nothing written"
+  else
+    gclog "done: heads of $n_keys keys, $n_img images and $n_copy router copies removed ($(bytes "$freed") of copies); keep ${KEEP_DAYS} d, heads ${KEEP_HEAD_DAYS} d"
+  fi
 }
 
-# --router-copy IMAGE: ensure the verified copy for IMAGE, mark both used, print its path.
+# --router-copy IMAGE: claim IMAGE, ensure its verified copy, mark both used, print its path.
 router_copy_main() {
-  local id ref
-  lookup "$image_arg"; id=$found
-  [ -n "$id" ] || die "no such image: $image_arg"
-  # An agent-ee: name for the verify container (native-admit counts containers by name).
-  inspect_image '{{range .RepoTags}}{{println .}}{{end}}' "$id"
-  ref=$(grep -m1 '^agent-ee:' <<< "$found" || true)
-  exec 7>"$STATE/locks/gc.lock"; flock -s 7
-  exec 8>"$STATE/locks/use-image-${id#sha256:}.lock"; flock -s 8
-  mark_used image "${id#sha256:}"
-  claim_copy "$id" "${ref:-$id}"
+  claim_image "$image_arg"
+  claim_copy "$IMAGE_ID"
   flock -u 7; exec 7>&-
   printf '%s\n' "$KR"
+}
+
+# --hold IMAGE [--router] -- COMMAND: run COMMAND while IMAGE (and its copy) is held.
+hold_main() {
+  local child status=0
+  claim_image "$image_arg"
+  export AE_CI_IMAGE_ID=$IMAGE_ID
+  if [ "$want_router" = 1 ]; then
+    claim_copy "$IMAGE_ID"
+    export AE_CI_ROUTER_COPY=$KR
+  fi
+  flock -u 7; exec 7>&-
+  echo "$prog: holding $IMAGE_ID${KR:+ and ${KR##*/}} while: $*" >&2
+  # COMMAND inherits the use locks on fds 8 and 6, so they last as long as it does.
+  "$@" <&0 &
+  child=$!
+  trap 'kill -TERM "$child" 2>/dev/null' TERM HUP
+  trap 'kill -INT "$child" 2>/dev/null' INT
+  wait "$child" || status=$?
+  while kill -0 "$child" 2>/dev/null; do status=0; wait "$child" || status=$?; done
+  mark_used image "${IMAGE_ID#sha256:}"
+  [ -z "${KR:-}" ] || mark_used route "${KR##*/}"
+  exit "$status"
 }
 
 case $mode in
   gc) gc_main; exit 0 ;;
   router-copy) router_copy_main; exit 0 ;;
+  hold) hold_main "$@" ;;
 esac
 
 # --- CI pins, read from this worktree's workflow (same sed as ci-run.sh) -------
@@ -721,8 +943,8 @@ fallback() {
 #     without building.
 #   - image_for builds under the same lock but writes no record. A run that waited for it
 #     builds again, from the cache.
-#   - The chosen image is pinned (pin) before the lock is released. After that, the run
-#     uses only that pinned tag.
+#   - The chosen image gets its never-moved tag (pin) before the lock is released, so it
+#     stays tagged for retention. After that, the run uses only its full image ID.
 resolve_image() {
   local asked=$1 result=$2 id='' how='' prev seed had now age
   read_build
@@ -812,7 +1034,7 @@ fetch_inputs() {
 # --- claim this run's image and router copy (see Retention in the header) -------
 # gc.lock is held shared from before the image is resolved until both use locks are held,
 # so an eviction never runs between the choice of an image or copy and its protection.
-exec 7>"$STATE/locks/gc.lock"; flock -s 7
+take_gc_shared
 read_build
 asked_gen=$rec_gen  # before any lock wait: see resolve_image
 locked "inputs" fetch_inputs
@@ -824,12 +1046,10 @@ IMAGE_ID='' image_how=''
 read -r IMAGE_ID image_how < "$resolved" || true
 rm -f "$resolved"; trap - EXIT
 [[ $IMAGE_ID =~ ^sha256:[0-9a-f]{64}$ ]] || die "no image resolved"
-PINNED=agent-ee:exec-$KEY-${IMAGE_ID:7:12}
 exec 8>"$STATE/locks/use-image-${IMAGE_ID#sha256:}.lock"; flock -s 8
 mark_used image "${IMAGE_ID#sha256:}"
-echo "$prog: image $IMAGE_ID ($PINNED, $image_how, resolved in $(( SECONDS - resolve_start ))s)" >&2
-claim_copy "$IMAGE_ID" "$PINNED"
-exec 6>"$STATE/locks/use-route-$rkey.lock"; flock -s 6
+echo "$prog: image $IMAGE_ID (agent-ee:exec-$KEY-${IMAGE_ID:7:12}, $image_how, resolved in $(( SECONDS - resolve_start ))s)" >&2
+claim_copy "$IMAGE_ID"
 flock -u 7; exec 7>&-
 echo "$prog: kicad-route copy $KR" >&2
 
@@ -842,7 +1062,7 @@ SANDBOX_OPTS=(--network none --security-opt seccomp=unconfined --security-opt ap
 # Admission bounds: CPU quota scaled to the lease weight, a PID cap, and an init that
 # reaps orphaned bwrap children. Images from agent-ee 7e5bdc46 on (AGENTEE-459) run
 # tini as their ENTRYPOINT; older images get docker's own init (--init).
-LIMIT_OPTS=(--label "native-admission.lease=${NATIVE_ADMISSION_LEASE:-}")
+LIMIT_OPTS=()
 [ -z "${NATIVE_ADMISSION_CPUS:-}" ] || LIMIT_OPTS+=(--cpus "$NATIVE_ADMISSION_CPUS")
 [ -z "${NATIVE_ADMISSION_PIDS:-}" ] || LIMIT_OPTS+=(--pids-limit "$NATIVE_ADMISSION_PIDS")
 inspect_image '{{json .Config.Entrypoint}}' "$IMAGE_ID"
@@ -900,17 +1120,14 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
-# The pinned tag must still name the image resolved at the start of this run.
-lookup "$PINNED"
-[ "$found" = "$IMAGE_ID" ] || die "$PINNED no longer names $IMAGE_ID"
 status=0
-docker run --rm --name "$name" --label ae-ci-exec=1 "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
+docker run --rm --name "$name" "${CONTAINER_LABELS[@]}" "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
   --user "$(id -u):$(id -g)" "${env_opts[@]}" \
   -v "$wt:/opt/agent-ee" "${git_mounts[@]}" "${scratch_mount[@]}" \
   -v "$STATE/inputs/fome-mc-$FOME_MC_COMMIT:/opt/fome-mc:ro" \
   -v "$STATE/inputs/te-776228-1.pdf:/opt/j1/te-776228-1.pdf:ro" \
   -v "$KR:/opt/kicad-route:ro" \
-  -w /opt/agent-ee "$PINNED" "$@" <&0 &
+  -w /opt/agent-ee "$IMAGE_ID" "$@" <&0 &
 wait $! || status=$?
 # Eviction (see Retention): a separate process, so its errors never change the status.
 # This run still holds its use locks, so its own image and copy are kept.

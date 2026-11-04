@@ -16,19 +16,29 @@
     without building and prints when upstream was last checked. `0` checks on every
     run, and a missing `-current` or new local inputs always build. Line 2 of
     `builds/<key>` records the last successful check;
-  - router copies are keyed by router state: the SHA-256 over
-    `/opt/kicad-route/manifest.json` and `/opt/kicad-route.install.json`, read from
-    the image without extracting it. Images with the same router state share one copy.
-    Each new copy is still verified offline with the requesting image's
-    `install.sh verify`;
-  - `ae-ci-exec --router-copy IMAGE` lets image_for and the benchmark harness use
-    those copies instead of making their own;
+  - router copies are keyed by the tree identity of `/opt/kicad-route` in the image.
+    That is the SHA-256 of a listing of every entry's path, type, mode, size, and
+    content hash or symlink target, without mtimes. It is computed in one container
+    started from the image ID. Equal identities mean byte-identical trees, so those
+    images share one copy. A new copy must show the same identity on the host, is
+    verified offline with the requesting image's `install.sh verify`, and its `.ready`
+    record holds the identity;
+  - `ae-ci-exec --hold IMAGE [--router] -- CMD` lets other tools hold an image and
+    its copy for a command's whole life: use locks, `AE_CI_ROUTER_COPY`, use marked at
+    start and end, and CMD's exit status. `ae-ci-exec --router-copy IMAGE` prints a
+    verified copy's path;
+  - every read, extraction, verification and container uses the full image ID, never
+    a tag. Containers carry `ae-ci-exec=1`, and native-admit counts unleased containers
+    by that label as well as by an `agent-ee:` name;
   - eviction runs at the end of every run and on `ae-ci-exec --gc [--dry-run]`. It
     covers images (repository `agent-ee`, tags `exec-*`/`run-*`) and router copies
     not used by a container, not the target of an `exec-<key>`, `exec-<key>-current`
     or `run-<key>` head, not held by a run, and not created or used within
     `AE_CI_KEEP_DAYS` (default 3). A gc lock and per-image and per-copy use locks keep
-    a pass away from what a run is claiming. Removals and bytes freed go to stderr and
+    a pass away from what a run or `--hold` is claiming, and the pass lists containers
+    again right before each removal. No pass runs while a process runs an ae-ci-exec
+    script with another SHA-256, so the d988c8d callers drain first. `--gc --dry-run`
+    takes no lock and writes nothing. Removals and bytes freed go to stderr and
     `logs/gc.log`;
   - stale keys: a key with no sign of use within `AE_CI_KEEP_HEAD_DAYS` (default 7)
     loses its heads `exec-<key>`, `exec-<key>-current` and `run-<key>`, unless a
@@ -37,11 +47,13 @@
     and its ae-ci-exec or image_for build logs. A build counts as a use because
     image_for and d988c8d write no use markers yet. Keeping `exec-<key>` fixed was for
     the transition from versions before d988c8d, which is over: d988c8d is installed
-    and no older copy runs. With the defaults the steady state is at most the keys used
-    in the last 7 days, each with at most about 12 images, sharing router copies by
-    content.
+    and no older copy runs. After taking a key's lock, the pass rereads its
+    freshness and head tags, and it rechecks each tag before removing it;
+  - bound: an age policy, not a count. With this version as the only producer, an
+    active key gains at most about 12 images in 3 days. image_for and d988c8d, which
+    build on every invocation, and containers, holds and repeated use can keep more.
 - Verified on proximal with the worktree copy (sha256 `b69d110e…`). The window and
-  retention tests below ran again on the final copy (`fd3b2cfe…`) with the same results.
+  retention tests below ran again on copy `fd3b2cfe…` with the same results.
   They used a `git archive` export of agent-ee main ece75c1a (key `fa17728480fe069a`)
   and the real state directory, with end-of-run eviction off for these runs:
   - Window. `wa` (`AE_CI_REFRESH_HOURS=0`) checked: it built image A in 1 s, and the
@@ -84,11 +96,39 @@
   - On the real host with the defaults, the dry run removes no heads: every key has a
     build log or record from the last day. A 0-day dry run would keep only `fa17…`,
     whose image a container uses.
+- Second Sol review of `25a5562` (FIX REQUIRED: 3 P1, 4 P2) and the integrator's
+  decisions, verified with the worktree copy `3c2c26e5…` on synthetic images of a
+  private key, a private state directory and a lease shared by the steps:
+  - tree identity: an image with an extra `site-packages/sitecustomize.py` had the same
+    state manifest and install record as its twin (the old key's inputs), but another
+    identity (15,919 entries, not 15,918). Two images with the same tree shared one copy,
+    extracted and identity-checked once;
+  - lock order: `--router-copy` waited for a held `gc.lock`. The image was removed
+    meanwhile, and the call failed cleanly ("no such image", exit 2);
+  - `--hold IMAGE --router`: its command saw `AE_CI_IMAGE_ID` and `AE_CI_ROUTER_COPY`.
+    A `KEEP_DAYS=0` pass during the hold kept the image and the copy ("a run or --hold
+    is using it") and removed the unheld ones. `--hold` returned the command's 7, and
+    the use marker was renewed after the command ended;
+  - versions: a fake `ae-ci-exec` with another SHA-256 made `--gc` skip, and the log
+    named its pid and hash. Installed d988c8d runs make real passes on proximal skip
+    today, as intended;
+  - dry run: the private state tree's listing with hashes was identical before and
+    after (15,941 entries), and a dry run on a missing state directory created nothing;
+  - full IDs: every container the tool created (docker events, label `ae-ci-exec=1`)
+    named a `sha256:` image, the run container on the real state included. The
+    worktree native-admit listed an ID-started labelled container as unleased; the
+    installed one did not see it;
+  - stale-key heads (lock taken first, then reread) passed again, as did the held-lock
+    case. A real-state run reused image A within the window, made its content-keyed
+    copy `tree-ae756552…` and ran its container by ID;
+  - removed my round-5 leftover `kicad-route/state-43a10d3b…` (636 MB) and `route-key/`
+    from the real state; no installed version used that layout.
 - Dry run on the real state with the defaults: it would remove the three router copies
   of pre-2026-11-03 versions (`2657c88d…`, `4ff2f011…`, `5823d899…`). They hold 1.0 GB,
   were last made ready on 2026-10-22, and their images no longer exist. It would remove
   no image, because all 11 agent-ee images are heads. Real-state eviction is left to
-  the first run after installation.
+  the first run after installation. With copy `3c2c26e5…` the dry run also reports that
+  a real pass would be skipped now, because installed d988c8d processes are running.
 - Not installed: proximal still runs `2e1a6567…` (d988c8d). The integrator installs this
   version and switches image_for.py and the benchmark harness to `--router-copy` and
   `--gc`.

@@ -26,6 +26,7 @@ ae-ci-exec . -- python3 -m unittest tests.test_x
 ae-ci-exec . -- python3 scripts/strict_suite.py --jobs 3 test_x test_y
 AGENT_EE_SKIP_VISUALS=1 ae-ci-exec . -- python3 -m unittest tests.test_x
 AE_CI_REFRESH_HOURS=0 ae-ci-exec . -- python3 -m unittest tests.test_x  # recheck upstream now
+ae-ci-exec --hold IMAGE --router -- CMD...  # run CMD while IMAGE and its copy are held (other tools)
 ae-ci-exec --router-copy IMAGE   # path of IMAGE's verified kicad-route copy, for other tools
 ae-ci-exec --gc [--dry-run]      # evict unused images and copies now (runs do it when they end)
 ```
@@ -43,7 +44,7 @@ mode, no skips").
 | `AGENT_EE_REQUIRE_TOOLCHAIN=1 PYTHONPATH=src`, `-w /opt/agent-ee` | Same |
 | fome-mc: anonymous clone at ci.yml `FOME_MC_COMMIT`, owned by the runtime user, `:ro` at `/opt/fome-mc` | Same clone recipe, in `~/.cache/ae-ci-exec/inputs/fome-mc-<commit>`, owned by the caller (the runtime user here) |
 | J1 drawing, ci.yml `J1_DRAWING_SHA256`, `:ro` at `/opt/j1/te-776228-1.pdf` | Same; fetched with the CI curl line if missing, hash-checked on every run |
-| kicad-route pin `5f1c072` in the image at `/opt/kicad-route`, owned by the image user 10001 | The image's own tree, extracted once per router state (the image's state manifest and install record) to a caller-owned copy, verified with the `install.sh verify` of the image that asked for it, mounted `:ro` over `/opt/kicad-route` |
+| kicad-route pin `5f1c072` in the image at `/opt/kicad-route`, owned by the image user 10001 | The image's own tree, extracted once per tree identity (every entry's path, type, mode, size and content hash) to a caller-owned copy, verified with the `install.sh verify` of the image that asked for it, mounted `:ro` over `/opt/kicad-route` |
 | kicad-happy's newest release when the image is built, at `/opt/kicad-happy`, recorded in `/opt/kicad-happy.install.json` | Same (no mount; root-owned, no `.git`). A new release arrives with the first run after the refresh window (6 h by default; `AE_CI_REFRESH_HOURS=0` checks now) |
 | Runs as image user 10001 on the image's source copy | Runs as `--user $(id -u):$(id -g)` (uid 1000 = image user `ubuntu`) on the **live worktree**, mounted read-write at `/opt/agent-ee` |
 | strict_suite gives each module a private TMPDIR | Per-run scratch dir mounted at `/tmp`, `TMPDIR=/tmp`, `HOME=/tmp` (as in the CI fixture step); removed after the run (`AE_CI_KEEP_TMP=1` keeps it) |
@@ -118,10 +119,11 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   `exec-<key>` after a successful build.
 - One image per run: a run resolves its image once and prints
   `ae-ci-exec: image sha256:<64 hex> (agent-ee:exec-<key>-<12 hex>, built|window|reused|fallback, resolved in N s)`
-  on stderr. After that, the kicad-route extraction and `docker run` use only the
-  never-moved tag, so a later build cannot change the image of a run in progress.
-  This is a tag and not a bare ID because native-admit counts unleased containers by
-  their `agent-ee:` image name.
+  on stderr. Tags only find an image. Every later read, extraction, verification and
+  container uses the full image ID (`sha256:…`), so a moving tag cannot change what a
+  run reads or runs. The never-moved tag keeps the image tagged for retention. Those
+  containers show no `agent-ee:` name, so they carry the label `ae-ci-exec=1`, and
+  native-admit (from the same change) counts unleased containers by that label too.
 - Records: each build log ends with
   `=== built agent-ee:exec-<key>-current = sha256:... in N s (attempt n of N)` or with
   the failure and fallback lines. Line 1 of `~/.cache/ae-ci-exec/builds/<key>` holds
@@ -138,7 +140,7 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   failure, and does not build again. Runs that start together therefore share one
   build. A run that starts after a build has finished builds again, unless the refresh
   window applies. Input fetching has its own lock, and each kicad-route extraction has
-  a lock for its router state. Retention adds `gc.lock` and use locks (below).
+  a lock for its tree identity. Retention adds `gc.lock` and use locks (below).
 - Build failures: each nonzero `docker buildx build` result is retried; there is no
   error classifier. The default is 2 attempts, with one 30 s backoff, when `-current`
   names an image labelled `ae-ci-exec.inputs=<the same hash>`. `-current` may have
@@ -154,50 +156,73 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
 - No fallback, exit 2 (die): no image for the inputs; the inputs changed during the
   copy; the build gave no image ID, or `-current` does not name it; an image lookup
   failed other than with `No such image`; copying `/opt/kicad-route` out of the image
-  failed, or its `install.sh verify` failed.
+  failed, the copy's tree identity differs from the image's, or its `install.sh verify`
+  failed.
 - No fallback, the failing command's own status (`set -e`, usually 1): other docker
   commands outside the build (tag, create), writes to
   `~/.cache/ae-ci-exec` (on a full disk even the failure record cannot be written),
   git and curl. When `docker run` cannot start the container, the exit is 125.
   native-admit returns 1 for a refused weight and 75 when `AE_CI_MAX_WAIT` runs out.
-- kicad-route copies are keyed by the image's router state, at
-  `~/.cache/ae-ci-exec/kicad-route/state-<64 hex>` (about 640 MB each). The key is the
-  SHA-256 over the hashes of `/opt/kicad-route/manifest.json` (the state manifest that
-  `install.sh verify` checks the tree against) and `/opt/kicad-route.install.json`. The
-  two small files are read from the image through a created container, without
-  extracting the tree, and the key is cached per image ID in `route-key/`. Images with
-  the same router state share one copy. A rebuild that changes only later layers, such
-  as a new kicad-happy, keeps the router stage's bytes and therefore its copy. Each new
-  copy is verified offline with the `install.sh verify` of the image that asked for it.
-- `ae-ci-exec --router-copy IMAGE` gives other tools (image_for, the benchmark harness)
-  the same copy instead of their own. It ensures the verified copy for IMAGE under the
-  same locks, marks the image and the copy used, and prints the copy's path on stdout.
-  It takes a native-admit lease like a run, or reuses the caller's lease. The copy is
-  then kept for `AE_CI_KEEP_DAYS` after that use and while a container mounts it.
+- kicad-route copies are keyed by the tree identity of `/opt/kicad-route` in the
+  image, at `~/.cache/ae-ci-exec/kicad-route/tree-<64 hex>` (about 640 MB each). The
+  identity is the SHA-256 of a listing of every entry: its path, type, permission bits,
+  size, and content SHA-256 or symlink target. mtimes and owners are excluded. One
+  container started from the image ID computes it (inside the caller's lease, about
+  15,900 entries for today's images), and it is cached per image ID in `tree-id/`.
+  Equal identities mean byte-identical trees, so images with the same tree share one
+  copy. A rebuild that changes only later layers, such as a new kicad-happy, keeps the
+  router stage's bytes and therefore its copy. The second Sol review (finding 4) showed
+  why the earlier key, the hashes of the state manifest and the install record, was not
+  enough: a file that neither receipt covers (`site-packages/sitecustomize.py`, say)
+  changes what runs without changing the key. A new copy must show the image's identity
+  on the host before it is published. Then it is verified offline with the
+  `install.sh verify` of the image that asked for it. Its `.ready` record holds the
+  identity, the entry count, that image and the verify time.
+- `ae-ci-exec --hold IMAGE [--router] -- CMD [ARG...]` is the lifetime protocol for
+  other tools: image_for.py and the benchmark, review and run_in_image harnesses are
+  to run their docker commands under it. It claims IMAGE as a run does: `gc.lock`
+  shared before the first lookup, then the image's key lock (from its
+  `ae-ci-exec.inputs` label). It holds the image's use lock for CMD's whole life. With
+  `--router` it also holds the use lock of the image's verified copy and exports
+  `AE_CI_ROUTER_COPY` with its path. It exports `AE_CI_IMAGE_ID`, marks use when it
+  starts and when CMD ends, and returns CMD's exit status. CMD inherits the use locks,
+  so they last as long as CMD does. `--hold` takes no native-admit lease: run it inside
+  the caller's admitted job, which also pays for a copy it may extract.
+- `ae-ci-exec --router-copy IMAGE` claims the same way, ensures the verified copy, marks
+  it used and prints its path on stdout. It holds nothing once it exits, so a caller
+  that keeps using the copy should use `--hold --router` instead. It takes a
+  native-admit lease like a run, or reuses the caller's lease.
 - Retention: every run ends with an eviction pass (`AE_CI_AUTO_GC=0` skips it), and
-  `ae-ci-exec --gc` runs one now. image_for.py is to call it after its build, and the
-  integrator is switching it and the benchmark harness over. `--gc --dry-run` only
-  reports.
+  `ae-ci-exec --gc` runs one now. image_for.py is to call it after its build. The
+  integrator is switching image_for.py and the harnesses to `--hold`.
   - Images: only repository `agent-ee`, only tags `exec-*` and `run-*`. An image is
     kept while any container uses it (running or stopped), while it is the target of
-    `exec-<key>`, `exec-<key>-current` or `run-<key>` for any key, while a run holds it,
-    and for `AE_CI_KEEP_DAYS` (default 3) after it was created or last used. Otherwise
+    `exec-<key>`, `exec-<key>-current` or `run-<key>` for a key in use, while a run or a
+    `--hold` holds it, and for `AE_CI_KEEP_DAYS` (default 3) after it was created or
+    last used. Just before a removal the pass lists the containers again, rereads the
+    image's tags (a tag that became a head keeps it), and checks that each tag still
+    names the image. Otherwise
     its `exec-*` and `run-*` tags are removed, and Docker deletes the image when no tag
     is left. Other agent-ee tags (`ci-*` and the like) and other repositories are never
     touched. `AE_CI_GC_KEYS` (16-hex keys) limits image and head eviction to those keys.
   - Heads: a key with no sign of use within `AE_CI_KEEP_HEAD_DAYS` (default 7) loses
     its heads (`exec-<key>`, `exec-<key>-current`, `run-<key>`). A container (running
-    or stopped) that uses one of its images prevents this. So does a build or run that
-    holds the key's image lock or the use lock of one of its images. The signs of use
+    or stopped) that uses one of its images prevents this. So does a build, run or
+    `--hold` that holds the key's image lock or the use lock of one of its images. The
+    snapshot only preselects a key. The pass then takes the key's lock and reads its
+    tags, signs of use, containers and use locks again. Before it removes a head tag, it
+    checks that the tag still names the image it named after the lock. The signs of use
     are the newest use marker of the key's images, its build record `builds/<key>`, and
     its newest build log, `logs/build-<key>-*` of ae-ci-exec or
     `logs/image-for-<key>-*` of image_for. A build counts as a use, because image_for
     and d988c8d write no use markers yet, and without it their keys would lose their
     heads at once. Once the heads are gone, the key's images fall under the image rule
     in the same pass.
-  - Router copies, of every layout: kept while a container mounts the copy, while a
-    run holds it, and for `AE_CI_KEEP_DAYS` after its last use; otherwise removed.
-  - Use markers: each run, and each `--router-copy`, touches
+  - Router copies (`tree-*`, and the earlier layouts below): kept while a container
+    mounts the copy, while a run or `--hold` holds it, and for `AE_CI_KEEP_DAYS` after
+    its last use; otherwise removed. The containers are listed again just before each
+    removal. Other names in `kicad-route/` are left alone.
+  - Use markers: each run, `--hold` and `--router-copy` touches
     `used/image/<image id>` and `used/route/<copy>`. Copies made by earlier versions
     (`sha256-<image id>` from 2026-11-03, `<16 hex key>` from before) record no use, so
     their age counts from `.ready`. All `sha256-*` copies date from 2026-11-03, and
@@ -205,25 +230,45 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
     long before those copies reach the 3-day age. A container that mounts a copy
     protects it. The second or so between an older caller's `.ready` check and its
     container start is not protected; the age rule covers that gap in practice.
-  - Locks: a run holds `locks/gc.lock` shared from before it resolves its image until
-    it holds that image's and its copy's use locks (`use-image-<id>`, `use-route-<key>`).
-    It holds the use locks shared until it exits. An eviction pass holds `gc.lock`
+  - Locks: a run or `--hold` holds `locks/gc.lock` shared from before it resolves its
+    image until it holds that image's and its copy's use locks (`use-image-<id>`,
+    `use-tree-<identity>`). It holds the use locks shared until it exits. An eviction
+    pass holds `gc.lock`
     exclusively, and it skips any image or copy whose use or extraction lock it cannot
     take at once. So no pass can remove an image or copy between a run's choice and
     its protection. The pass at the end of a run does not wait for `gc.lock`: it is
     skipped while another run is claiming. `--gc` waits up to `AE_CI_GC_WAIT` seconds
-    (default 60). Older versions take no use locks; their containers, the head tags and
-    the age rule protect what they use.
+    (default 60).
+  - Versions: no pass runs while a process runs an ae-ci-exec script whose SHA-256
+    differs from the running one. The pass finds them by bash's open script
+    descriptor, or by the script path in a waiting native-admit's command line. It
+    logs that it skipped and names up to three such processes. Older versions take no
+    use locks and have no `--hold`, so eviction waits until they have drained, for
+    example the d988c8d callers after installation. `AE_CI_GC_IGNORE_OLD_VERSIONS=1`
+    runs a pass anyway; it is only for tests on private keys (`AE_CI_GC_KEYS`) and a
+    private state directory.
+  - `--gc --dry-run` reports on stderr what a pass would remove, and whether a pass
+    would be skipped now. It takes no lock and writes nothing: no state directory,
+    lock file, log or temporary file.
   - Each removal, and the bytes freed (copies by `du`, image layers from the Engine
     API's `LayersSize`), go to stderr and to `~/.cache/ae-ci-exec/logs/gc.log`. Nothing
     outside `~/.cache/ae-ci-exec` and no image outside repository `agent-ee` is touched.
-  - Steady-state bound with the defaults: at most the keys used in the last 7 days.
-    Each has at most about 12 images: a check at most every 6 hours gives 4 a day, kept
-    3 days, plus its heads. In practice there are far fewer, because an unchanged
-    upstream rebuilds the same image ID. Router copies are shared by content: one for
-    each router state used in the last 3 days (about 640 MB each), plus those mounted
-    by containers. A key unused for 7 days loses its heads, and its images go once they
-    are 3 days unused. So nothing grows with the number of input versions ever built.
+  - Bounds: this is an age policy, not an image-count or disk-size bound. With the
+    defaults an image stays while it is a head of a key used in the last 7 days, while
+    a container (running or stopped), a `--hold` or a run uses it, and for 3 days after
+    it was created or last used. A copy stays while a container mounts it, a run or
+    `--hold` holds it, and for 3 days after its last use.
+    - Estimate for one producer: with this version as the only builder of a key, it
+      checks upstream at most every 6 hours. That gives at most 4 new images a day and
+      about 12 in 3 days, and far fewer when upstream did not change, because an
+      unchanged upstream rebuilds the same image ID.
+    - Not covered by the estimate: image_for and the installed d988c8d build on every
+      invocation and can add more images within 3 days. Containers, holds and repeated
+      use keep images and copies longer, and a container keeps a key's heads past 7
+      days.
+    - What it does bound: a key that nothing uses for 7 days loses its heads, and its
+      images go once they are 3 days unused. So images no longer accumulate with the
+      number of input versions ever built.
 - Logs: `~/.cache/ae-ci-exec/logs/build-<key>-<stamp>.log` and `logs/gc.log`.
 - Signals: INT, TERM and HUP kill the container (`docker kill`) and remove the
   scratch dir. A signal during a build ends the run.
