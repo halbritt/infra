@@ -2,6 +2,8 @@
 
 ## 2026-11-03 — ae-ci-exec: refresh window, router copies by content, automatic eviction
 
+- Installed on proximal 2026-11-04T04:25:51Z with `./install-native-admission.sh proximal` from master 0508cec: ae-ci-exec sha256 539ede13f438993c..., native-admit sha256 8778fa748a7508d2...; native-admission config unchanged. Old-version callers drain before eviction runs (the pass skips while any differently hashed ae-ci-exec runs). peecee-wsl not updated. Reviews: agent-ee goal-20261103/ae-ci-exec-retention-review/REPORT*.md (Sol, final LAND).
+
 - Owner, on the unbounded growth of agent-ee images and router copies: "this is stupid,
   fix it". Before, ae-ci-exec d988c8d had four problems:
   - it rebuilt on every run, and the kicad-happy ADD of the whole git `info/refs`
