@@ -36,8 +36,10 @@
     or `run-<key>` head, not held by a run, and not created or used within
     `AE_CI_KEEP_DAYS` (default 3). A gc lock and per-image and per-copy use locks keep
     a pass away from what a run or `--hold` is claiming, and the pass lists containers
-    again right before each removal. No pass runs while a process runs an ae-ci-exec
-    script with another SHA-256, so the d988c8d callers drain first. `--gc --dry-run`
+    again right before each tag or copy removal. No pass runs while a process runs an
+    ae-ci-exec script with another SHA-256, so the d988c8d callers drain first. The pass
+    scans for them again after it takes the gc lock and before each removal, and it
+    abandons the rest of the pass when one has appeared. `--gc --dry-run`
     takes no lock and writes nothing. Removals and bytes freed go to stderr and
     `logs/gc.log`;
   - stale keys: a key with no sign of use within `AE_CI_KEEP_HEAD_DAYS` (default 7)
@@ -123,6 +125,25 @@
     copy `tree-ae756552…` and ran its container by ID;
   - removed my round-5 leftover `kicad-route/state-43a10d3b…` (636 MB) and `route-key/`
     from the real state; no installed version used that layout.
+- Sol delta review of `72119f7` (FIX REQUIRED: 1 P1, 1 P2), fixed in copy `539ede13…`:
+  - P1: the version scan was stale after the wait for `gc.lock`. Replay: hold the lock,
+    let `--gc` finish its first scan, start a fake `ae-ci-exec` with another SHA-256,
+    release the lock. `72119f7` removed the image. Now the pass scans again after it
+    takes the lock and right before every tag or copy removal, and abandons the rest
+    when another version appears;
+  - P2: the multi-tag loops reused one container listing. Now the containers are listed
+    again before every tag removal; a container that appears keeps the image, or the
+    key's remaining heads. Every removed tag is now logged, also when a later one is
+    kept or the pass is abandoned;
+  - tests on a fake docker and a private state, with the version scan on (a
+    `sha256sum` shim gives every script but the stand-in the tested copy's hash, so
+    host processes do not interfere): a lock-wait replay skips; a fake other version
+    started after the first removal leaves one image of two, one head of three and the
+    router copy; a container started after the first removal keeps two heads of three
+    and one tag of two. The controls without the stand-in or the container remove
+    everything. All 20 checks pass; `72119f7` fails the 15 scenario checks and passes
+    the 5 control checks. The real-docker stale-key heads test passed again with the
+    version scan on (installed d988c8d mapped to this copy).
 - Dry run on the real state with the defaults: it would remove the three router copies
   of pre-2026-11-03 versions (`2657c88d…`, `4ff2f011…`, `5823d899…`). They hold 1.0 GB,
   were last made ready on 2026-10-22, and their images no longer exist. It would remove

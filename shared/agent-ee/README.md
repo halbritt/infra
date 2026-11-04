@@ -199,9 +199,10 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
     kept while any container uses it (running or stopped), while it is the target of
     `exec-<key>`, `exec-<key>-current` or `run-<key>` for a key in use, while a run or a
     `--hold` holds it, and for `AE_CI_KEEP_DAYS` (default 3) after it was created or
-    last used. Just before a removal the pass lists the containers again, rereads the
-    image's tags (a tag that became a head keeps it), and checks that each tag still
-    names the image. Otherwise
+    last used. Just before a removal the pass rereads the image's tags (a tag that
+    became a head keeps it). Before each tag it removes, it lists the containers again
+    (a container that started using the image keeps it with its remaining tags) and
+    checks that the tag still names the image. Otherwise
     its `exec-*` and `run-*` tags are removed, and Docker deletes the image when no tag
     is left. Other agent-ee tags (`ci-*` and the like) and other repositories are never
     touched. `AE_CI_GC_KEYS` (16-hex keys) limits image and head eviction to those keys.
@@ -211,7 +212,10 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
     `--hold` that holds the key's image lock or the use lock of one of its images. The
     snapshot only preselects a key. The pass then takes the key's lock and reads its
     tags, signs of use, containers and use locks again. Before it removes a head tag, it
-    checks that the tag still names the image it named after the lock. The signs of use
+    lists the containers again (a container that started using one of the key's images
+    keeps the remaining heads) and checks that the tag still names the image it named
+    after the lock. Only a key that lost all its heads frees its images for the image
+    rule in the same pass. The signs of use
     are the newest use marker of the key's images, its build record `builds/<key>`, and
     its newest build log, `logs/build-<key>-*` of ae-ci-exec or
     `logs/image-for-<key>-*` of image_for. A build counts as a use, because image_for
@@ -244,8 +248,14 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
     descriptor, or by the script path in a waiting native-admit's command line. It
     logs that it skipped and names up to three such processes. Older versions take no
     use locks and have no `--hold`, so eviction waits until they have drained, for
-    example the d988c8d callers after installation. `AE_CI_GC_IGNORE_OLD_VERSIONS=1`
-    runs a pass anyway; it is only for tests on private keys (`AE_CI_GC_KEYS`) and a
+    example the d988c8d callers after installation. The scan runs again after the pass
+    takes `gc.lock` (an older caller may start while `--gc` waits for it) and right
+    before every tag or copy removal. If another version has appeared, the pass logs
+    what it removed so far and abandons the rest. Only a version that starts between
+    that last scan and the removal itself is missed. A scan forks only for processes
+    with an open script descriptor (0.1 s for 740 processes on proximal; 2.2 s with a
+    `readlink` for each). `AE_CI_GC_IGNORE_OLD_VERSIONS=1` runs a pass anyway (it logs the versions it
+    found at the start); it is only for tests on private keys (`AE_CI_GC_KEYS`) and a
     private state directory.
   - `--gc --dry-run` reports on stderr what a pass would remove, and whether a pass
     would be skipped now. It takes no lock and writes nothing: no state directory,

@@ -133,8 +133,12 @@
 #   Versions: no pass runs while a process runs an ae-ci-exec script whose SHA-256
 #     differs from this one (bash's open script, or the script a waiting native-admit
 #     will start). Older versions take no use locks, so eviction waits until they have
-#     drained, and logs that it skipped. AE_CI_GC_IGNORE_OLD_VERSIONS=1 runs a pass
-#     anyway; it is only for tests on private keys (AE_CI_GC_KEYS) and a private state.
+#     drained, and logs that it skipped. The scan runs again after gc.lock is taken and
+#     right before every removal of a tag or copy, each time with a fresh container
+#     listing; if another version has appeared, the rest of the pass is abandoned. Only a
+#     version that starts between that last scan and the removal itself is missed.
+#     AE_CI_GC_IGNORE_OLD_VERSIONS=1 runs a pass anyway (it logs the versions it found at
+#     the start); it is only for tests on private keys (AE_CI_GC_KEYS) and a private state.
 #   --gc --dry-run reports on stderr what a pass would remove. It takes no lock and
 #     writes nothing: no state directory, lock, log or temporary file.
 #   Every removal, and the bytes freed, go to stderr and to logs/gc.log. Nothing outside
@@ -437,7 +441,9 @@ other_version() {
     [ "$n" -lt 3 ] || break
     pid=${p#/proc/}
     [ "$pid" != "$$" ] || continue
-    if t=$(readlink "$p/fd/255" 2>/dev/null); then
+    # The -L test (no fork) skips the processes readlink could not read anyway: the scan
+    # runs before every removal, and a readlink per process costs seconds on a busy host.
+    if [ -L "$p/fd/255" ] && t=$(readlink "$p/fd/255" 2>/dev/null); then
       t=${t% (deleted)}
       if [ "${t##*/}" = ae-ci-exec ]; then
         h=$(sha256sum 2>/dev/null < "$p/fd/255" | cut -c1-64) || h=''
@@ -477,6 +483,22 @@ containers_now() {
       *) die "gc: docker container inspect failed: $line" ;;
     esac
   done <<< "$out"
+}
+# before_removal: right before every destructive step of a pass (each tag removal, each
+# copy removal). No other ae-ci-exec version may have started since the last scan, or
+# the rest of the pass is abandoned (older versions take no use locks). Then the
+# container inventory is read again, so a container that appeared meanwhile is seen.
+# gc_main's removed_now holds the tags already removed from the current key or image.
+before_removal() {
+  if [ "${AE_CI_GC_IGNORE_OLD_VERSIONS:-0}" != 1 ]; then
+    other_version
+    if [ -n "$ov" ]; then
+      gclog "aborted the rest of the pass: another ae-ci-exec version started ($ov); removed so far: heads of $n_keys keys, $n_img images, $n_copy router copies${removed_now:+, and the tags ${removed_now% }}"
+      rm -f "$err"
+      exit 0
+    fi
+  fi
+  containers_now
 }
 mounted() {  # mounted DIR: 0 when a container mounts DIR or a path inside it
   local src
@@ -546,8 +568,8 @@ strip_key() {
 
 gc_main() {
   local now horizon head_horizon wait=${AE_CI_GC_WAIT:-60} err=$STATE/tmp/gc-$$.err ov
-  local tag id key created used last dir name b f out before after key_used reason
-  local freed=0 n_img=0 n_copy=0 n_keys=0
+  local tag id key created used last dir name b f out before after key_used reason late
+  local freed=0 n_img=0 n_copy=0 n_keys=0 removed_now=''
   local -A tags=() headkeys=() key_images=() key_heads=() boxed=() created_at=() head_id=()
   local -a mounts=() locknames=() cands=() fresh=()
   other_version
@@ -568,6 +590,14 @@ gc_main() {
     if ! flock -x -w "$wait" 7; then
       gclog "skipped: runs are claiming images (gc.lock busy for ${wait}s)"
       return 0
+    fi
+    # The scan above may be stale after waiting for the lock: scan again.
+    if [ "${AE_CI_GC_IGNORE_OLD_VERSIONS:-0}" != 1 ]; then
+      other_version
+      if [ -n "$ov" ]; then
+        gclog "skipped: another ae-ci-exec version started while this pass waited for gc.lock ($ov)"
+        return 0
+      fi
     fi
     before=$(layers_bytes)
   fi
@@ -614,15 +644,24 @@ gc_main() {
     if [ -n "$reason" ]; then
       exec 5>&-; gclog "kept the heads of key $key (last used $used): $reason"; continue
     fi
+    removed_now=''
     for tag in ${key_heads[$key]}; do
+      before_removal
+      late=''
+      for id in ${key_images[$key]}; do [ -z "${boxed[$id]:-}" ] || late='a container started using one of its images'; done
+      if [ -n "$late" ]; then gclog "kept the remaining heads of key $key: $late"; reason=$late; break; fi
       lookup "agent-ee:$tag"
-      if [ "$found" != "${head_id[$tag]}" ]; then gclog "kept agent-ee:$tag: it changed during the pass"; continue; fi
-      docker rmi "agent-ee:$tag" > /dev/null 2>"$err" || gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"
+      if [ "$found" != "${head_id[$tag]}" ]; then gclog "kept agent-ee:$tag: it changed during the pass"; reason=changed; continue; fi
+      if docker rmi "agent-ee:$tag" > /dev/null 2>"$err"; then removed_now+="$tag "; else gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"; reason=kept; fi
     done
     rm -f "$err"
-    n_keys=$(( n_keys + 1 ))
-    gclog "removed the heads of key $key (${key_heads[$key]% }; last used $used)"
-    strip_key "$key"
+    if [ -n "$removed_now" ]; then
+      n_keys=$(( n_keys + 1 ))
+      gclog "removed the heads of key $key (${removed_now% }; last used $used)"
+    fi
+    removed_now=''
+    # Only a key that lost all its heads stops being a head for its images.
+    [ -n "$reason" ] || strip_key "$key"
     for id in ${key_images[$key]}; do
       lookup "$id"
       if [ -z "$found" ]; then  # its last tags were these heads
@@ -668,25 +707,29 @@ gc_main() {
       if [[ $tag =~ ^exec-[0-9a-f]{16}(-current)?$ || $tag =~ ^run-[0-9a-f]{16}$ ]]; then reason="it became a head ($tag)"; fi
     done
     if [ -n "$reason" ]; then exec 5>&-; gclog "kept $id: $reason"; continue; fi
-    b=0
+    removed_now=''
     for tag in ${tags[$id]}; do
+      before_removal
+      if [ -n "${boxed[$id]:-}" ]; then gclog "kept $id and its remaining tags: a container started using it"; break; fi
       lookup "agent-ee:$tag"
-      [ "$found" = "$id" ] || { gclog "kept agent-ee:$tag: it no longer names $id"; b=1; continue; }
-      if ! docker rmi "agent-ee:$tag" >/dev/null 2>"$err"; then
-        gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"; b=1
+      [ "$found" = "$id" ] || { gclog "kept agent-ee:$tag: it no longer names $id"; continue; }
+      if docker rmi "agent-ee:$tag" >/dev/null 2>"$err"; then removed_now+="$tag "; else
+        gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"
       fi
     done
     rm -f "$err"
-    if [ "$b" = 0 ]; then
+    # Every removed tag is logged, also when a later one was kept.
+    if [ -n "$removed_now" ]; then
       lookup "$id"
       if [ -n "$found" ]; then
-        gclog "removed tags ${tags[$id]% } of $id; the image stays under its other tags"
+        gclog "removed tags ${removed_now% } of $id; the image stays under its other tags"
       else
         rm -f "$STATE/used/image/${id#sha256:}" "$STATE/tree-id/${id#sha256:}" "$STATE/locks/use-image-${id#sha256:}.lock"
         n_img=$(( n_img + 1 ))
-        gclog "removed image $id (tags ${tags[$id]% }; created $(when "$created"); last used $used)"
+        gclog "removed image $id (tags ${removed_now% }; created $(when "$created"); last used $used)"
       fi
     fi
+    removed_now=''
     exec 5>&-
   done
   if [ "$n_img" -gt 0 ] && [ -n "${before:-}" ]; then
@@ -721,7 +764,7 @@ gc_main() {
     if [ "${#locknames[@]}" -gt 1 ] && ! try_lock 3 "${locknames[1]}"; then
       exec 3>&- 4>&-; gclog "kept copy $name: a run or --hold is using it"; continue
     fi
-    containers_now
+    before_removal
     if mounted "$dir"; then exec 3>&- 4>&-; gclog "kept copy $name: a container started mounting it"; continue; fi
     rm -rf "$dir" "$dir.ready" "$STATE/used/route/$name"
     [ "${#locknames[@]}" = 1 ] || rm -f "$STATE/locks/${locknames[1]}.lock"
