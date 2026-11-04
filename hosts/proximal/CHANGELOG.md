@@ -1,5 +1,19 @@
 # Changelog — proximal (system)
 
+## 2026-11-04 — archive the Agent EE qualification cache
+
+- Owner decision: moved `~/.cache/agent-ee-qualification` (207,215 files, 593
+  symlinks, 74,396 directories, 17.6 GB) to
+  `/nvr/archive/agent-ee/agent-ee-qualification`. A symlink replaces the
+  original, so the evidence paths cited by 26 agent-ee documents and one
+  kicad-route document still resolve.
+- restic excludes `~/.cache`, so the evidence had no off-site copy. The daily
+  backup now covers it through `/nvr/archive`, starting with the 2026-11-05 run.
+- A sha256 manifest, full metadata listings and all 43 in-tree `SHA256SUMS`
+  lists verified the copy. No process held the tree. Root gained 17.16 GiB
+  (62% to 61% used).
+- [Paths, verification and pre-existing gaps](config/archive/README.md#agent-ee-qualification-cache--2026-11-04).
+
 ## 2026-11-04 — CalculiX CLI installation
 
 - Owner requested installation if the complete workflow can be driven by CLI.
