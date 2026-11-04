@@ -1,8 +1,9 @@
 # agent-ee CI-image test runner (`ae-ci-exec`)
 
 `ae-ci-exec` runs a command inside the agent-ee CI image, built from the given
-worktree's own Dockerfile on every run, with the release gate's sandbox options,
-inputs and environment. It exists because proximal (Ubuntu 24.04), peecee-wsl (Ubuntu
+worktree's own Dockerfile and rechecked against upstream at most every 6 hours
+(`AE_CI_REFRESH_HOURS`), with the release gate's sandbox options, inputs and
+environment. It exists because proximal (Ubuntu 24.04), peecee-wsl (Ubuntu
 26.04) and archon (Arch) cannot hold identical distro toolchains. Their native
 Python (3.12.3 / 3.14.4 / 3.14.8), poppler (24.02 / 26.01 / 26.08) and ngspice
 (42 / 45.2 / 47) differ. On unmodified main that made 7 modules fail on
@@ -11,8 +12,10 @@ agent-ee tests run inside it on every host.
 
 Installed at `~/.local/bin/ae-ci-exec` (canonical copy: this directory). proximal runs
 the 2026-11-03 version (a build on every run), sha256 `2e1a6567…`, installed
-2026-11-03T23:54:08Z by atomic rename. peecee-wsl was not updated and its copy was not
-checked; it is not used by the current single-agent campaign. talos, archon and agent-ee-gate-c4 were retired from agent-ee on 2026-10-24; the owner replaced the campaign with a single agent. Since
+2026-11-03T23:54:08Z by atomic rename. The retention version described below (refresh
+window, router copies keyed by content, eviction) is not installed yet. peecee-wsl was
+not updated and its copy was not checked; it is not used by the current single-agent
+campaign. talos, archon and agent-ee-gate-c4 were retired from agent-ee on 2026-10-24; the owner replaced the campaign with a single agent. Since
 2026-10-22 every run is admitted by `native-admit` (host-wide budget, leases,
 queue, CPU/PID bounds, init for old images); see
 [native-admission.md](native-admission.md).
@@ -22,6 +25,9 @@ ae-ci-exec WORKTREE -- COMMAND [ARG...]
 ae-ci-exec . -- python3 -m unittest tests.test_x
 ae-ci-exec . -- python3 scripts/strict_suite.py --jobs 3 test_x test_y
 AGENT_EE_SKIP_VISUALS=1 ae-ci-exec . -- python3 -m unittest tests.test_x
+AE_CI_REFRESH_HOURS=0 ae-ci-exec . -- python3 -m unittest tests.test_x  # recheck upstream now
+ae-ci-exec --router-copy IMAGE   # path of IMAGE's verified kicad-route copy, for other tools
+ae-ci-exec --gc [--dry-run]      # evict unused images and copies now (runs do it when they end)
 ```
 
 ## What it reproduces
@@ -32,13 +38,13 @@ mode, no skips").
 
 | Gate | ae-ci-exec |
 |---|---|
-| `docker buildx build --load` of the commit's Dockerfile, tag `agent-ee:ci-SHA` | Same Dockerfile, `--builder default`, built on every run. Tags `agent-ee:exec-<16 hex>-current` (moved to each new build), `agent-ee:exec-<16 hex>-<12 hex>` (one image, never moved) and the older `agent-ee:exec-<16 hex>` (created once, never moved). Never touches `agent-ee:ci-*` |
+| `docker buildx build --load` of the commit's Dockerfile, tag `agent-ee:ci-SHA` | Same Dockerfile, `--builder default`, rebuilt at most every `AE_CI_REFRESH_HOURS` (default 6). Tags `agent-ee:exec-<16 hex>-current` (moved to each new build), `agent-ee:exec-<16 hex>-<12 hex>` (one image, never moved) and the older `agent-ee:exec-<16 hex>` (created once, never moved). Never touches `agent-ee:ci-*` |
 | `--network none --security-opt seccomp=unconfined --security-opt apparmor=<profile> --security-opt systempaths=unconfined` | `apparmor=unconfined` on every host. No AppArmor profile, ever (owner, 2026-10-23). |
 | `AGENT_EE_REQUIRE_TOOLCHAIN=1 PYTHONPATH=src`, `-w /opt/agent-ee` | Same |
 | fome-mc: anonymous clone at ci.yml `FOME_MC_COMMIT`, owned by the runtime user, `:ro` at `/opt/fome-mc` | Same clone recipe, in `~/.cache/ae-ci-exec/inputs/fome-mc-<commit>`, owned by the caller (the runtime user here) |
 | J1 drawing, ci.yml `J1_DRAWING_SHA256`, `:ro` at `/opt/j1/te-776228-1.pdf` | Same; fetched with the CI curl line if missing, hash-checked on every run |
-| kicad-route pin `5f1c072` in the image at `/opt/kicad-route`, owned by the image user 10001 | The image's own tree, extracted once per image ID to a caller-owned copy, verified with the image's `install.sh verify`, mounted `:ro` over `/opt/kicad-route` |
-| kicad-happy's newest release when the image is built, at `/opt/kicad-happy`, recorded in `/opt/kicad-happy.install.json` | Same (no mount; root-owned, no `.git`). The build runs on every run, so a new release arrives with the next run |
+| kicad-route pin `5f1c072` in the image at `/opt/kicad-route`, owned by the image user 10001 | The image's own tree, extracted once per router state (the image's state manifest and install record) to a caller-owned copy, verified with the `install.sh verify` of the image that asked for it, mounted `:ro` over `/opt/kicad-route` |
+| kicad-happy's newest release when the image is built, at `/opt/kicad-happy`, recorded in `/opt/kicad-happy.install.json` | Same (no mount; root-owned, no `.git`). A new release arrives with the first run after the refresh window (6 h by default; `AE_CI_REFRESH_HOURS=0` checks now) |
 | Runs as image user 10001 on the image's source copy | Runs as `--user $(id -u):$(id -g)` (uid 1000 = image user `ubuntu`) on the **live worktree**, mounted read-write at `/opt/agent-ee` |
 | strict_suite gives each module a private TMPDIR | Per-run scratch dir mounted at `/tmp`, `TMPDIR=/tmp`, `HOME=/tmp` (as in the CI fixture step); removed after the run (`AE_CI_KEEP_TMP=1` keeps it) |
 | `/opt/agent-ee` has no `.git` (`.dockerignore`), so agent-ee falls back to a file walk | git works on the live tree. For a linked worktree (`.git` is a file), the common gitdir is mounted read-only and the worktree's own gitdir (index, HEAD) read-write, both at their host paths. A generated gitfile names that gitdir absolutely at `/opt/agent-ee/.git`. Object alternates are mounted read-only. A plain checkout's `.git` is inside the mount already. |
@@ -73,9 +79,16 @@ follow upstream releases: the KiCad 10.0 PPA `InRelease` and kicad-happy's git r
 listing. BuildKit fetches them again only when a build runs, and a changed file
 rebuilds the layers after it. Until 2026-11-03, ae-ci-exec skipped the build when
 `agent-ee:exec-<key>` existed. A new KiCad or kicad-happy release therefore never
-reached local test runs while the local inputs stayed the same. Now every run
-builds, as image_for already did, or shares the build of a run it waited for. The owner's direction (2026-11-03) was: "nothing
-should be "pinned". Versions should be fixed and recorded ... kept up to date." When
+reached local test runs while the local inputs stayed the same. The owner's direction
+(2026-11-03) was: "nothing should be "pinned". Versions should be fixed and recorded
+... kept up to date." So a run builds, which rechecks upstream, when the last
+successful check for its inputs is older than `AE_CI_REFRESH_HOURS` (default 6; `0`
+checks on every run). It also builds when `-current` is missing or the local inputs
+changed (a new key). Otherwise it reuses `-current` without building and prints when
+upstream was last checked and when it will be checked next. A run also shares the
+build of a run it waited for. The window came after the owner called the unbounded
+growth of images and copies "stupid" (2026-11-03): a build on every run made a new
+image whenever any branch of kicad-happy moved. When
 nothing changed, every Dockerfile step comes from the cache, and BuildKit only fetches
 the two remote files again. On proximal (2026-11-03) that build took about 1 s: 45
 steps were CACHED, and each remote check took 0.2 to 0.7 s.
@@ -103,24 +116,28 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   the previous code read every inspect error as "missing". It could then retag
   `exec-<key>` after a successful build.
 - One image per run: a run resolves its image once and prints
-  `ae-ci-exec: image sha256:<64 hex> (agent-ee:exec-<key>-<12 hex>, built|reused|fallback, resolved in N s)`
+  `ae-ci-exec: image sha256:<64 hex> (agent-ee:exec-<key>-<12 hex>, built|window|reused|fallback, resolved in N s)`
   on stderr. After that, the kicad-route extraction and `docker run` use only the
   never-moved tag, so a later build cannot change the image of a run in progress.
   This is a tag and not a bare ID because native-admit counts unleased containers by
   their `agent-ee:` image name.
 - Records: each build log ends with
   `=== built agent-ee:exec-<key>-current = sha256:... in N s (attempt n of N)` or with
-  the failure and fallback lines. `~/.cache/ae-ci-exec/builds/<key>` holds the latest
-  build's generation, status, input hash, image ID, finish time and log. Concurrent
-  runs share it. ae-ci-exec writes no other per-run record; the image ID goes to
-  stderr.
+  the failure and fallback lines. Line 1 of `~/.cache/ae-ci-exec/builds/<key>` holds
+  the latest build's generation, status, input hash, image ID, finish time and log;
+  concurrent runs share it. Line 2, `checked <input hash> <image ID> <epoch>`, holds the
+  last successful upstream check, which the refresh window uses. A failed build keeps
+  line 2. Older versions read line 1 only and drop line 2 when they write, so the next
+  run of this version checks again. ae-ci-exec writes no other per-run record; the
+  image ID goes to stderr.
 - Concurrency: builds, every read or move of `-current`, and every tag write run under
   `flock ~/.cache/ae-ci-exec/locks/image-<key>.lock`. image_for takes the same lock.
   A run reads the build generation before it waits for any lock. If a build for the
   key finished while it waited, the run uses that build's image, or shares its
   failure, and does not build again. Runs that start together therefore share one
-  build. A run that starts after a build has finished builds again. Input fetching
-  has its own lock, and each kicad-route extraction has a lock for its image ID.
+  build. A run that starts after a build has finished builds again, unless the refresh
+  window applies. Input fetching has its own lock, and each kicad-route extraction has
+  a lock for its router state. Retention adds `gc.lock` and use locks (below).
 - Build failures: each nonzero `docker buildx build` result is retried; there is no
   error classifier. The default is 2 attempts, with one 30 s backoff, when `-current`
   names an image labelled `ae-ci-exec.inputs=<the same hash>`. `-current` may have
@@ -142,27 +159,63 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   `~/.cache/ae-ci-exec` (on a full disk even the failure record cannot be written),
   git and curl. When `docker run` cannot start the container, the exit is 125.
   native-admit returns 1 for a refused weight and 75 when `AE_CI_MAX_WAIT` runs out.
-- kicad-route copies are keyed by image ID, at
-  `~/.cache/ae-ci-exec/kicad-route/sha256-<64 hex>` (about 640 MB each).
-- Copies named `<16 hex key>` belong to ae-ci-exec versions before 2026-11-03. Those
-  versions keep using them, through `.ready` and bind mounts, until every caller of an
-  old version has finished. Delete them, with their `.ready` markers, only after old
-  callers have drained on that host: the new version is installed, no old ae-ci-exec
-  process or native-admit lease is left, and no running container mounts the
-  directory. Installing the new version is not enough.
-- Logs: `~/.cache/ae-ci-exec/logs/build-<key>-<stamp>.log`.
+- kicad-route copies are keyed by the image's router state, at
+  `~/.cache/ae-ci-exec/kicad-route/state-<64 hex>` (about 640 MB each). The key is the
+  SHA-256 over the hashes of `/opt/kicad-route/manifest.json` (the state manifest that
+  `install.sh verify` checks the tree against) and `/opt/kicad-route.install.json`. The
+  two small files are read from the image through a created container, without
+  extracting the tree, and the key is cached per image ID in `route-key/`. Images with
+  the same router state share one copy. A rebuild that changes only later layers, such
+  as a new kicad-happy, keeps the router stage's bytes and therefore its copy. Each new
+  copy is verified offline with the `install.sh verify` of the image that asked for it.
+- `ae-ci-exec --router-copy IMAGE` gives other tools (image_for, the benchmark harness)
+  the same copy instead of their own. It ensures the verified copy for IMAGE under the
+  same locks, marks the image and the copy used, and prints the copy's path on stdout.
+  It takes a native-admit lease like a run, or reuses the caller's lease. The copy is
+  then kept for `AE_CI_KEEP_DAYS` after that use and while a container mounts it.
+- Retention: every run ends with an eviction pass (`AE_CI_AUTO_GC=0` skips it), and
+  `ae-ci-exec --gc` runs one now. image_for.py is to call it after its build, and the
+  integrator is switching it and the benchmark harness over. `--gc --dry-run` only
+  reports.
+  - Images: only repository `agent-ee`, only tags `exec-*` and `run-*`. An image is
+    kept while any container uses it (running or stopped), while it is the target of
+    `exec-<key>`, `exec-<key>-current` or `run-<key>` for any key, while a run holds it,
+    and for `AE_CI_KEEP_DAYS` (default 3) after it was created or last used. Otherwise
+    its `exec-*` and `run-*` tags are removed, and Docker deletes the image when no tag
+    is left. Other agent-ee tags (`ci-*` and the like) and other repositories are never
+    touched. `AE_CI_GC_KEYS` (16-hex keys) limits image eviction to those keys.
+  - Router copies, of every layout: kept while a container mounts the copy, while a
+    run holds it, and for `AE_CI_KEEP_DAYS` after its last use; otherwise removed.
+  - Use markers: each run, and each `--router-copy`, touches
+    `used/image/<image id>` and `used/route/<copy>`. Copies made by earlier versions
+    (`sha256-<image id>` from 2026-11-03, `<16 hex key>` from before) record no use, so
+    their age counts from `.ready`. All `sha256-*` copies date from 2026-11-03, and
+    once this version is installed, callers of older versions drain within hours,
+    long before those copies reach the 3-day age. A container that mounts a copy
+    protects it. The second or so between an older caller's `.ready` check and its
+    container start is not protected; the age rule covers that gap in practice.
+  - Locks: a run holds `locks/gc.lock` shared from before it resolves its image until
+    it holds that image's and its copy's use locks (`use-image-<id>`, `use-route-<key>`).
+    It holds the use locks shared until it exits. An eviction pass holds `gc.lock`
+    exclusively, and it skips any image or copy whose use or extraction lock it cannot
+    take at once. So no pass can remove an image or copy between a run's choice and
+    its protection. The pass at the end of a run does not wait for `gc.lock`: it is
+    skipped while another run is claiming. `--gc` waits up to `AE_CI_GC_WAIT` seconds
+    (default 60). Older versions take no use locks; their containers, the head tags and
+    the age rule protect what they use.
+  - Each removal, and the bytes freed (copies by `du`, image layers from the Engine
+    API's `LayersSize`), go to stderr and to `~/.cache/ae-ci-exec/logs/gc.log`. Nothing
+    outside `~/.cache/ae-ci-exec` and no image outside repository `agent-ee` is touched.
+  - Bounds with the defaults: per key, the heads plus the images built or used in the
+    last 3 days. A key is rechecked at most every 6 hours, so it gains at most 4 images
+    a day, about 12 in 3 days. In practice it gains far fewer, because an unchanged
+    upstream rebuilds the same image ID. Router copies: one for each router state used
+    in the last 3 days, plus those mounted by containers. Heads are not evicted: the
+    `exec-<key>` (and `run-<key>`) image of every key ever built stays until someone
+    removes those tags.
+- Logs: `~/.cache/ae-ci-exec/logs/build-<key>-<stamp>.log` and `logs/gc.log`.
 - Signals: INT, TERM and HUP kill the container (`docker kill`) and remove the
   scratch dir. A signal during a build ends the run.
-- Storage is unbounded. ae-ci-exec never removes an image or a kicad-route copy, and it
-  has no count or size limit. Each upstream change that alters the image adds an
-  image for each key in use, with its own tag, and a kicad-route copy of about 640 MB
-  for each image ID that runs. One hundred images would add about 62 GiB of copies,
-  plus their Docker layers. A full disk then breaks context, log, record and
-  extraction writes. GC is manual. List the images with
-  `docker images agent-ee --filter label=ae-ci-exec.inputs`. Remove an image's tags
-  together with `~/.cache/ae-ci-exec/kicad-route/sha256-<id>{,.ready}`, but only after
-  checking that no running or queued caller or container still uses the image. The
-  extraction lock does not cover a run's lifetime.
 
 No sudo, and no AppArmor profile (owner, 2026-10-23). On an AppArmor host, bwrap
 inside the unconfined container needs `kernel.apparmor_restrict_unprivileged_userns=0`:

@@ -1,5 +1,74 @@
 # Changelog — proximal (system)
 
+## 2026-11-03 — ae-ci-exec: refresh window, router copies by content, automatic eviction
+
+- Owner, on the unbounded growth of agent-ee images and router copies: "this is stupid,
+  fix it". Before, ae-ci-exec d988c8d had four problems:
+  - it rebuilt on every run, and the kicad-happy ADD of the whole git `info/refs`
+    changes on any push to any branch;
+  - it kept every rebuilt image under its own tag;
+  - it gave every image ID its own router copy of about 640 MB;
+  - it evicted nothing.
+  image_for (campaign tooling, not versioned) does the same with `run-<key>` tags.
+- Change ([`shared/agent-ee/`](../../shared/agent-ee/README.md#image-tag-and-build)):
+  - refresh window: upstream is rechecked (a build) at most once per
+    `AE_CI_REFRESH_HOURS` (default 6) per key. In between, a run reuses `-current`
+    without building and prints when upstream was last checked. `0` checks on every
+    run, and a missing `-current` or new local inputs always build. Line 2 of
+    `builds/<key>` records the last successful check;
+  - router copies are keyed by router state: the SHA-256 over
+    `/opt/kicad-route/manifest.json` and `/opt/kicad-route.install.json`, read from
+    the image without extracting it. Images with the same router state share one copy.
+    Each new copy is still verified offline with the requesting image's
+    `install.sh verify`;
+  - `ae-ci-exec --router-copy IMAGE` lets image_for and the benchmark harness use
+    those copies instead of making their own;
+  - eviction runs at the end of every run and on `ae-ci-exec --gc [--dry-run]`. It
+    covers images (repository `agent-ee`, tags `exec-*`/`run-*`) and router copies
+    not used by a container, not the target of an `exec-<key>`, `exec-<key>-current`
+    or `run-<key>` head, not held by a run, and not created or used within
+    `AE_CI_KEEP_DAYS` (default 3). A gc lock and per-image and per-copy use locks keep
+    a pass away from what a run is claiming. Removals and bytes freed go to stderr and
+    `logs/gc.log`.
+- Verified on proximal with the worktree copy (sha256 `b69d110e…`), on a `git archive`
+  export of agent-ee main ece75c1a (key `fa17728480fe069a`), using the real state
+  directory with end-of-run eviction off for these runs:
+  - Window. `wa` (`AE_CI_REFRESH_HOURS=0`) checked: it built image A in 1 s, and the
+    record went from generation 53 to 54 with a new line 2. `wb` and `wc` ran right
+    after and reused `-current` without a build ("upstream last checked
+    2026-11-04T03:03:03Z, 0h 0m ago; the next run after 2026-11-04T09:03:03Z checks
+    again"). They took 0.7 s and 0.6 s and wrote no build log. An earlier pair was
+    broken by an installed d988c8d run on the same key, which rewrote the record
+    without line 2, so `w2` checked again. That is the documented transition behaviour.
+  - Copies. The first run of this version made the content-keyed copy
+    `state-43a10d3b…` (636 MB) and verified it offline. The later runs used it, and so
+    did `--router-copy` of image A (0.2 s).
+- Retention test on a private key (`e08b029cc0df5da9`) and state directory, with
+  image eviction limited to that key. The images were `docker commit` derivatives of
+  A, so no builds ran:
+  - two images with A's router state shared one copy, extracted once. A third image,
+    with another state-manifest timestamp, got its own copy, which `--router-copy`
+    extracted and verified;
+  - `--gc` with `AE_CI_KEEP_DAYS=0` kept the third image and its copy while a
+    stand-in run held their use locks. After the locks were released it removed both:
+    4.5 KB of image layers and a 592 MB copy (test state 1.3 GB to 636 MB). It kept
+    the key's current and legacy head, an older image used by a stopped container,
+    the copy that container mounts, and a non-agent-ee tag
+    `aecitest-other:exec-<key>-0123456789ab`;
+  - end-of-run eviction: a run that reused the head within the window removed the
+    older image once its container was gone;
+  - afterwards all test images, tags and the test state were removed. proximal's
+    agent-ee images (11 IDs, 27 tags) and the image layer total (56,703,913,872 bytes)
+    are as before.
+- Dry run on the real state with the defaults: it would remove the three router copies
+  of pre-2026-11-03 versions (`2657c88d…`, `4ff2f011…`, `5823d899…`). They hold 1.0 GB,
+  were last made ready on 2026-10-22, and their images no longer exist. It would remove
+  no image, because all 11 agent-ee images are heads. Real-state eviction is left to
+  the first run after installation.
+- Not installed: proximal still runs `2e1a6567…` (d988c8d). The integrator installs this
+  version and switches image_for.py and the benchmark harness to `--router-copy` and
+  `--gc`.
+
 ## 2026-11-03 — deploy Online3DViewer and publishing CLI
 
 - Added owner-requested `3dviewer.harm.org` through the existing Cloudflare tunnel
