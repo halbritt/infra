@@ -102,12 +102,13 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   `-current` is missing, a run seeds it once from `exec-<key>`, under the lock. It does
   this only if that image is labelled with the same full input hash, so the first run
   of this version has an image to fall back to. Runs never use `exec-<key>` directly.
-  The 2026-11-03 cross-review found why the tag must not move: an earlier version
-  reads this tag again after releasing its lock, and it mounts a kicad-route copy
-  keyed by input hash, extracted from the image the tag named earlier. Moving the tag
-  would put those callers on a new image with an old router copy. So older callers (an
-  installed copy that has not been replaced, or a run admitted before the replacement)
-  keep a consistent image and copy.
+  The 2026-11-03 cross-review found why the tag must not move: a version before
+  d988c8d reads this tag again after releasing its lock, and it mounts a kicad-route
+  copy keyed by input hash, extracted from the image the tag named earlier. Moving the
+  tag would have put those callers on a new image with an old router copy. That
+  transition is over: d988c8d is installed and no older copy runs. The tag is still
+  never moved, because image_for and d988c8d read it. Retention removes it only with
+  the other heads of a stale key.
 - Lookups: "missing" means that Docker answered `No such image: <tag>` for exactly that
   tag. Any other failure of `docker image inspect` aborts the run with exit 2, before
   the tag write the lookup guards, and names the Docker error. Examples are an
@@ -183,7 +184,17 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
     and for `AE_CI_KEEP_DAYS` (default 3) after it was created or last used. Otherwise
     its `exec-*` and `run-*` tags are removed, and Docker deletes the image when no tag
     is left. Other agent-ee tags (`ci-*` and the like) and other repositories are never
-    touched. `AE_CI_GC_KEYS` (16-hex keys) limits image eviction to those keys.
+    touched. `AE_CI_GC_KEYS` (16-hex keys) limits image and head eviction to those keys.
+  - Heads: a key with no sign of use within `AE_CI_KEEP_HEAD_DAYS` (default 7) loses
+    its heads (`exec-<key>`, `exec-<key>-current`, `run-<key>`). A container (running
+    or stopped) that uses one of its images prevents this. So does a build or run that
+    holds the key's image lock or the use lock of one of its images. The signs of use
+    are the newest use marker of the key's images, its build record `builds/<key>`, and
+    its newest build log, `logs/build-<key>-*` of ae-ci-exec or
+    `logs/image-for-<key>-*` of image_for. A build counts as a use, because image_for
+    and d988c8d write no use markers yet, and without it their keys would lose their
+    heads at once. Once the heads are gone, the key's images fall under the image rule
+    in the same pass.
   - Router copies, of every layout: kept while a container mounts the copy, while a
     run holds it, and for `AE_CI_KEEP_DAYS` after its last use; otherwise removed.
   - Use markers: each run, and each `--router-copy`, touches
@@ -206,13 +217,13 @@ steps were CACHED, and each remote check took 0.2 to 0.7 s.
   - Each removal, and the bytes freed (copies by `du`, image layers from the Engine
     API's `LayersSize`), go to stderr and to `~/.cache/ae-ci-exec/logs/gc.log`. Nothing
     outside `~/.cache/ae-ci-exec` and no image outside repository `agent-ee` is touched.
-  - Bounds with the defaults: per key, the heads plus the images built or used in the
-    last 3 days. A key is rechecked at most every 6 hours, so it gains at most 4 images
-    a day, about 12 in 3 days. In practice it gains far fewer, because an unchanged
-    upstream rebuilds the same image ID. Router copies: one for each router state used
-    in the last 3 days, plus those mounted by containers. Heads are not evicted: the
-    `exec-<key>` (and `run-<key>`) image of every key ever built stays until someone
-    removes those tags.
+  - Steady-state bound with the defaults: at most the keys used in the last 7 days.
+    Each has at most about 12 images: a check at most every 6 hours gives 4 a day, kept
+    3 days, plus its heads. In practice there are far fewer, because an unchanged
+    upstream rebuilds the same image ID. Router copies are shared by content: one for
+    each router state used in the last 3 days (about 640 MB each), plus those mounted
+    by containers. A key unused for 7 days loses its heads, and its images go once they
+    are 3 days unused. So nothing grows with the number of input versions ever built.
 - Logs: `~/.cache/ae-ci-exec/logs/build-<key>-<stamp>.log` and `logs/gc.log`.
 - Signals: INT, TERM and HUP kill the container (`docker kill`) and remove the
   scratch dir. A signal during a build ends the run.

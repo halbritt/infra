@@ -32,9 +32,11 @@
 #                              moves it. When exec-KEY-current is missing, this version
 #                              seeds it once from exec-KEY, if that image is labelled with
 #                              these exact inputs, so its first run has a fallback image.
-#                              Runs never use exec-KEY directly. Callers of older versions
-#                              therefore keep a matching image and input-keyed
-#                              kicad-route copy while this version rebuilds.
+#                              Runs never use exec-KEY directly. Keeping it fixed protected
+#                              callers of versions before d988c8d, which reread it after
+#                              releasing the lock. That transition is over: d988c8d is
+#                              installed and no older copy runs. A stale key loses this
+#                              tag with its other heads (Retention).
 # "Missing" above means that Docker answered "No such image" for exactly that tag. Any
 # other failure of an image lookup (docker image inspect) aborts the run with exit 2
 # before the tag write it guards, so an unknown answer never creates or moves a tag.
@@ -91,7 +93,15 @@
 #     exec-KEY-current or run-KEY for any KEY, while a run holds it (its use lock), and
 #     for AE_CI_KEEP_DAYS (default 3) after it was created or last used. Otherwise its
 #     exec-* and run-* tags are removed, and Docker deletes the image when no tag is left.
-#     AE_CI_GC_KEYS (16-hex keys, space or comma separated) limits this to those keys.
+#     AE_CI_GC_KEYS (16-hex keys, space or comma separated) limits this, and the heads
+#     rule below, to those keys.
+#   Heads: a key with no sign of use within AE_CI_KEEP_HEAD_DAYS (default 7) loses its
+#     heads exec-KEY, exec-KEY-current and run-KEY. A container that uses one of its images
+#     prevents this, and so does a build or run that holds its image lock or the use lock
+#     of one of its images. The signs of use are a use marker of one of its images, its
+#     build record, and an ae-ci-exec or image_for build log for the key. A build counts as
+#     a use, because image_for and d988c8d write no use markers. Its images then fall
+#     under the image rule, in the same pass.
 #   Router copies: kept while a container mounts the copy, while a run holds it, and for
 #     AE_CI_KEEP_DAYS after its last use; otherwise removed. Copies of earlier versions
 #     (kicad-route/sha256-ID and kicad-route/KEY), which record no use, count from their
@@ -104,9 +114,10 @@
 #     when a run is claiming); --gc waits up to AE_CI_GC_WAIT seconds (default 60).
 #   Every removal, and the bytes freed, go to stderr and to logs/gc.log. Nothing outside
 #     the state directory and no other repository's image is touched.
-#   Bounds with the defaults: per KEY, the heads plus the images built or used in the last
-#     3 days. A key is checked at most every 6 hours, so it gains at most 4 images a day,
-#     fewer in practice because an unchanged build yields the same image. Router copies:
+#   Bounds with the defaults: at most the keys used in the last 7 days, each with its
+#     heads and at most about 12 images. A key is checked at most every 6 hours, which is
+#     4 images a day, and images are kept 3 days. In practice there are fewer, because an
+#     unchanged upstream rebuilds the same image. Router copies are shared by content:
 #     one per router state used in the last 3 days.
 #
 # Container, as in the gate's strict-suite step:
@@ -192,8 +203,10 @@ case $STATE in /*) ;; *) die "AE_CI_EXEC_HOME must be an absolute path" ;; esac
 mkdir -p "$STATE"/{inputs,kicad-route,locks,logs,tmp,ctx,builds,used/image,used/route,route-key}
 REFRESH_HOURS=${AE_CI_REFRESH_HOURS:-6}
 KEEP_DAYS=${AE_CI_KEEP_DAYS:-3}
+KEEP_HEAD_DAYS=${AE_CI_KEEP_HEAD_DAYS:-7}
 [[ $REFRESH_HOURS =~ ^[0-9]+$ ]] || die "AE_CI_REFRESH_HOURS must be a whole number of hours"
 [[ $KEEP_DAYS =~ ^[0-9]+$ ]] || die "AE_CI_KEEP_DAYS must be a whole number of days"
+[[ $KEEP_HEAD_DAYS =~ ^[0-9]+$ ]] || die "AE_CI_KEEP_HEAD_DAYS must be a whole number of days"
 GC_KEYS=${AE_CI_GC_KEYS:-}
 GC_KEYS=${GC_KEYS//,/ }
 for k in $GC_KEYS; do [[ $k =~ ^[0-9a-f]{16}$ ]] || die "AE_CI_GC_KEYS: $k is not a 16-hex key"; done
@@ -314,11 +327,50 @@ layers_bytes() {  # the daemon's total image layer bytes (Engine API), or nothin
 # try_lock FD NAME: take locks/NAME.lock exclusively on FD without waiting; 1 when busy.
 try_lock() { eval "exec $1>\"\$STATE/locks/\$2.lock\""; flock -x -n "$1"; }
 
+# gc_inventory: the agent-ee images and their exec-*/run-* tags. Sets tags[ID] (in-scope
+# tags of the image), headkeys[ID] (every key, in scope or not, for which ID is a head),
+# key_images[KEY] and key_heads[KEY] (in-scope keys only).
+gc_inventory() {
+  local out tag id key ishead
+  tags=() headkeys=() key_images=() key_heads=()
+  out=$(docker images agent-ee --no-trunc --format '{{.Tag}} {{.ID}}') || die "gc: docker images failed"
+  while read -r tag id; do
+    # Only exec-KEY... and run-KEY... are ours; other agent-ee tags (ci-*, ...) are not touched.
+    [[ $tag =~ ^(exec|run)-([0-9a-f]{16})(-.*)?$ ]] || continue
+    key=${BASH_REMATCH[2]} ishead=0
+    if [[ $tag =~ ^exec-[0-9a-f]{16}(-current)?$ || $tag =~ ^run-[0-9a-f]{16}$ ]]; then
+      ishead=1; headkeys[$id]="${headkeys[$id]:-}$key "
+    fi
+    if [ -n "$GC_KEYS" ] && [[ " $GC_KEYS " != *" $key "* ]]; then continue; fi
+    tags[$id]="${tags[$id]:-}$tag "
+    [[ " ${key_images[$key]:-} " == *" $id "* ]] || key_images[$key]="${key_images[$key]:-}$id "
+    [ "$ishead" = 0 ] || key_heads[$key]="${key_heads[$key]:-}$tag "
+  done <<< "$out"
+}
+# key_last_use KEY: key_used = the newest sign of use of KEY in the state directory, or 0:
+# a use marker of one of its images (runs, --router-copy), its build record (ae-ci-exec
+# builds), or a build log (logs/build-KEY-* of ae-ci-exec, logs/image-for-KEY-* of
+# image_for). A build counts as a use, so tools that write no use markers (image_for,
+# ae-ci-exec d988c8d) do not lose the heads of keys they build.
+key_last_use() {
+  local id f t
+  key_used=0
+  for id in ${key_images[$1]:-}; do
+    f=$STATE/used/image/${id#sha256:}
+    [ ! -e "$f" ] || { t=$(stat -c %Y "$f"); [ "$t" -le "$key_used" ] || key_used=$t; }
+  done
+  for f in "$STATE/builds/$1" "$STATE/logs/build-$1-"*.log "$STATE/logs/image-for-$1-"*.log; do
+    [ -e "$f" ] || continue
+    t=$(stat -c %Y "$f"); [ "$t" -le "$key_used" ] || key_used=$t
+  done
+}
+
 gc_main() {
-  local now horizon wait=${AE_CI_GC_WAIT:-60} out err=$STATE/tmp/gc-$$.err line img rest
-  local tag id key created used last dir name src m b before after freed=0 n_img=0 n_copy=0
-  local -A tags=() heads=() boxed=() created_at=()
-  local -a mounts=() parts=() locknames=()
+  local now horizon head_horizon wait=${AE_CI_GC_WAIT:-60} out err=$STATE/tmp/gc-$$.err line
+  local tag id key k rest created used last dir name src m b before after key_used
+  local freed=0 n_img=0 n_copy=0 n_keys=0
+  local -A tags=() headkeys=() key_images=() key_heads=() boxed=() created_at=()
+  local -a mounts=() parts=() locknames=() cands=()
   if [ "$dry" = 0 ]; then
     exec 7>"$STATE/locks/gc.lock"
     if ! flock -x -w "$wait" 7; then
@@ -326,7 +378,7 @@ gc_main() {
       return 0
     fi
   fi
-  now=$(date +%s); horizon=$(( now - KEEP_DAYS * 86400 ))
+  now=$(date +%s); horizon=$(( now - KEEP_DAYS * 86400 )); head_horizon=$(( now - KEEP_HEAD_DAYS * 86400 ))
   # Containers, running or stopped: the images they use and the host paths they mount.
   out=$(docker ps -a -q --no-trunc) || die "gc: docker ps failed"
   if [ -n "$out" ]; then
@@ -345,27 +397,62 @@ gc_main() {
       mounts+=("${parts[@]:1}")
     done <<< "$out"
   fi
-  # agent-ee images and their exec-*/run-* tags; heads are kept whatever the scope.
-  out=$(docker images agent-ee --no-trunc --format '{{.Tag}} {{.ID}}') || die "gc: docker images failed"
-  while read -r tag id; do
-    case $tag in exec-*|run-*) ;; *) continue ;; esac  # other agent-ee tags (ci-*, ...) are not ours
-    if [[ $tag =~ ^exec-[0-9a-f]{16}(-current)?$ || $tag =~ ^run-[0-9a-f]{16}$ ]]; then heads[$id]=1; fi
-    if [ -n "$GC_KEYS" ]; then
-      [[ $tag =~ ^(exec|run)-([0-9a-f]{16}) ]] || continue
-      key=${BASH_REMATCH[2]}
-      [[ " $GC_KEYS " == *" $key "* ]] || continue
+  gc_inventory
+  before=$(layers_bytes)
+  # Heads of stale keys: a key with no sign of use within AE_CI_KEEP_HEAD_DAYS loses its
+  # heads (exec-KEY, exec-KEY-current, run-KEY), unless a container uses one of its images,
+  # or a build or run holds its image lock or one of its images' use locks.
+  for key in "${!key_heads[@]}"; do
+    key_last_use "$key"
+    [ "$key_used" -lt "$head_horizon" ] || continue
+    used=$( [ "$key_used" = 0 ] && echo never || when "$key_used")
+    m=''
+    for id in ${key_images[$key]}; do [ -z "${boxed[$id]:-}" ] || m='a container uses one of its images'; done
+    if [ -z "$m" ] && ! try_lock 5 "image-$key"; then m='a build or run holds its lock'; fi
+    if [ -z "$m" ]; then
+      for id in ${key_images[$key]}; do
+        try_lock 4 "use-image-${id#sha256:}" || m='a run is using one of its images'
+        exec 4>&-
+        [ -z "$m" ] || break
+      done
     fi
-    tags[$id]="${tags[$id]:-}$tag "
-  done <<< "$out"
-  local -a cands=()
-  for id in "${!tags[@]}"; do
-    [ -z "${heads[$id]:-}" ] && [ -z "${boxed[$id]:-}" ] && cands+=("$id")
+    if [ -n "$m" ]; then
+      exec 5>&-; gclog "kept the heads of key $key (last used $used): $m"; continue
+    fi
+    if [ "$dry" = 1 ]; then
+      gclog "would remove the heads of key $key (${key_heads[$key]% }; last used $used)"
+    else
+      for tag in ${key_heads[$key]}; do
+        docker rmi "agent-ee:$tag" > /dev/null 2>"$err" || gclog "kept agent-ee:$tag: $(tr '\n' ' ' < "$err")"
+      done
+      rm -f "$err"
+      n_keys=$(( n_keys + 1 ))
+      gclog "removed the heads of key $key (${key_heads[$key]% }; last used $used)"
+    fi
+    exec 5>&-
+    # From here on these images are no heads of this key (in a dry run: as if removed).
+    for id in ${key_images[$key]}; do
+      rest=''; for tag in ${tags[$id]:-}; do [[ " ${key_heads[$key]} " == *" $tag "* ]] || rest+="$tag "; done
+      tags[$id]=$rest
+      rest=''; for k in ${headkeys[$id]:-}; do [ "$k" = "$key" ] || rest+="$k "; done
+      headkeys[$id]=$rest
+      if [ "$dry" = 0 ]; then
+        inspect_image '{{.Id}}' "$id"
+        if [ -z "$found" ]; then  # its last tags were these heads
+          rm -f "$STATE/used/image/${id#sha256:}" "$STATE/route-key/${id#sha256:}" "$STATE/locks/use-image-${id#sha256:}.lock"
+          tags[$id]=''; n_img=$(( n_img + 1 ))
+          gclog "removed image $id with the heads of key $key"
+        fi
+      fi
+    done
   done
-  before=''
+  # Images: candidates have in-scope tags, are no head of any key and no container uses them.
+  for id in "${!tags[@]}"; do
+    [ -n "${tags[$id]}" ] && [ -z "${headkeys[$id]:-}" ] && [ -z "${boxed[$id]:-}" ] && cands+=("$id")
+  done
   if [ "${#cands[@]}" -gt 0 ]; then
     out=$(docker image inspect -f '{{.Id}} {{.Created}}' "${cands[@]}") || die "gc: docker image inspect failed"
     while read -r id created; do created_at[$id]=$(date -d "$created" +%s); done <<< "$out"
-    before=$(layers_bytes)
   fi
   for id in "${cands[@]}"; do
     used=0
@@ -439,7 +526,7 @@ gc_main() {
     fi
     exec 3>&- 4>&-
   done
-  [ "$dry" = 1 ] || gclog "done: $n_img images and $n_copy router copies removed ($(bytes "$freed") of copies); keep ${KEEP_DAYS} d"
+  [ "$dry" = 1 ] || gclog "done: heads of $n_keys keys, $n_img images and $n_copy router copies removed ($(bytes "$freed") of copies); keep ${KEEP_DAYS} d, heads ${KEEP_HEAD_DAYS} d"
   [ "$dry" = 0 ] || gclog "dry run: nothing removed"
 }
 
@@ -617,10 +704,11 @@ fallback() {
 #   - Only holders of locks/image-KEY.lock build, read exec-KEY-current or move it, so a
 #     run never sees it half-moved. The build moves it when it loads its image. Before
 #     that, the image it named is pinned under its own tag, so it stays reachable.
-#   - exec-KEY, the tag older versions use, is never moved. It is created when missing,
-#     after a successful build, and it is read once to seed a missing exec-KEY-current
-#     (label-checked). A caller of an older version therefore keeps the image it
-#     resolved and the kicad-route copy it extracted from that image.
+#   - exec-KEY, the tag older versions and image_for use, is never moved. It is created
+#     when missing, after a successful build, and it is read once to seed a missing
+#     exec-KEY-current (label-checked). That kept callers of versions before d988c8d on
+#     the image they resolved; that transition is over. Eviction removes it only with
+#     the other heads of a stale key.
 #   - A run reads the record's GEN (ASKED_GEN) before it asks for any lock. If GEN has
 #     grown when the run gets the image lock, a build for KEY finished while the run
 #     waited, and the run takes that build's outcome instead of building again. Callers

@@ -29,10 +29,21 @@
     or `run-<key>` head, not held by a run, and not created or used within
     `AE_CI_KEEP_DAYS` (default 3). A gc lock and per-image and per-copy use locks keep
     a pass away from what a run is claiming. Removals and bytes freed go to stderr and
-    `logs/gc.log`.
-- Verified on proximal with the worktree copy (sha256 `b69d110e…`), on a `git archive`
-  export of agent-ee main ece75c1a (key `fa17728480fe069a`), using the real state
-  directory with end-of-run eviction off for these runs:
+    `logs/gc.log`;
+  - stale keys: a key with no sign of use within `AE_CI_KEEP_HEAD_DAYS` (default 7)
+    loses its heads `exec-<key>`, `exec-<key>-current` and `run-<key>`, unless a
+    container uses one of its images or a build or run holds its lock. Its images then
+    fall under the image rule. The signs of use are use markers, the key's build record
+    and its ae-ci-exec or image_for build logs. A build counts as a use because
+    image_for and d988c8d write no use markers yet. Keeping `exec-<key>` fixed was for
+    the transition from versions before d988c8d, which is over: d988c8d is installed
+    and no older copy runs. With the defaults the steady state is at most the keys used
+    in the last 7 days, each with at most about 12 images, sharing router copies by
+    content.
+- Verified on proximal with the worktree copy (sha256 `b69d110e…`). The window and
+  retention tests below ran again on the final copy (`fd3b2cfe…`) with the same results.
+  They used a `git archive` export of agent-ee main ece75c1a (key `fa17728480fe069a`)
+  and the real state directory, with end-of-run eviction off for these runs:
   - Window. `wa` (`AE_CI_REFRESH_HOURS=0`) checked: it built image A in 1 s, and the
     record went from generation 53 to 54 with a new line 2. `wb` and `wc` ran right
     after and reused `-current` without a build ("upstream last checked
@@ -60,6 +71,19 @@
   - afterwards all test images, tags and the test state were removed. proximal's
     agent-ee images (11 IDs, 27 tags) and the image layer total (56,703,913,872 bytes)
     are as before.
+- Stale-key heads (copy `fd3b2cfe…`, private state, synthetic keys on `docker commit`
+  derivatives of A, eviction limited to those keys, no builds or runs):
+  - with `AE_CI_KEEP_HEAD_DAYS=0`, an unused key lost its three heads, and its image
+    went in the same pass. A key whose image a stopped container uses kept its heads
+    ("a container uses one of its images");
+  - with the default 7 days, a key with a fresh use marker kept its heads. With the key's
+    image lock held, a 0-day pass kept its heads ("a build or run holds its lock"); after
+    release it removed them and the image;
+  - a non-agent-ee tag `aecitest-other:exec-<key>-…` was untouched. After cleanup the
+    host is back to 11 agent-ee images, 27 tags and the same layer bytes.
+  - On the real host with the defaults, the dry run removes no heads: every key has a
+    build log or record from the last day. A 0-day dry run would keep only `fa17…`,
+    whose image a container uses.
 - Dry run on the real state with the defaults: it would remove the three router copies
   of pre-2026-11-03 versions (`2657c88d…`, `4ff2f011…`, `5823d899…`). They hold 1.0 GB,
   were last made ready on 2026-10-22, and their images no longer exist. It would remove
