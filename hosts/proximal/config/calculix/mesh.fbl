@@ -1,0 +1,11 @@
+pnt P1 0 0 0
+seta seed p P1
+swep seed endx tra 10 0 0 2
+seta edge l all
+swep edge endy tra 0 10 0 2
+seta face s all
+swep face endz tra 0 0 10 2
+elty all he8
+mesh all
+send all abq
+quit

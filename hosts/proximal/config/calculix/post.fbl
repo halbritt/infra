@@ -1,0 +1,9 @@
+read tension.frd
+rot u 25
+rot r 30
+ds 2 e 1
+plot fv all
+frame
+zoom 0.7
+hcpy png stress
+quit

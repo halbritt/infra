@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-11-04 — CalculiX CLI installation
+
+- Owner requested installation if the complete workflow can be driven by CLI.
+  Installed Ubuntu CalculiX CCX/CGX 2.21 and examples; added ImageMagick for
+  CGX hardcopy export and used existing Xvfb for unattended graphics.
+- Verified scripted cube meshing, a headless tensile solve against analytical
+  displacement/stress, and scripted PNG result export. No package holds,
+  upgrades, removals, or new services.
+- Commands, package versions, provenance, and reproducible fixtures:
+  [`config/calculix/`](config/calculix/README.md).
+
 ## 2026-11-03 — ae-ci-exec: refresh window, router copies by content, automatic eviction
 
 - Installed on proximal 2026-11-04T04:25:51Z with `./install-native-admission.sh proximal` from master 0508cec: ae-ci-exec sha256 539ede13f438993c..., native-admit sha256 8778fa748a7508d2...; native-admission config unchanged. Old-version callers drain before eviction runs (the pass skips while any differently hashed ae-ci-exec runs). peecee-wsl not updated. Reviews: agent-ee goal-20261103/ae-ci-exec-retention-review/REPORT*.md (Sol, final LAND).
