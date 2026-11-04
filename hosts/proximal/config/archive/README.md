@@ -152,5 +152,5 @@ Three problems predate the move and were left as they were:
   `docs/audit/2026-10-25-independent-audit-agent-557.md`; the file is under
   `board-run-portfolio/candidates/`.
 
-Commands, counts and checksum results:
-`~/.local/share/agent-ee/zeroasic-20261029-agent707/goal-20261103/qualification-cache-move/REPORT.md`.
+The evidence directory holds the commands, counts, checksum manifest and logs:
+`~/.local/share/agent-ee/zeroasic-20261029-agent707/goal-20261103/qualification-cache-move/`.
