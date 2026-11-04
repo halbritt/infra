@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-03 — owner-authorized vendor maintenance repair
+
+The owner authorized remediation after the read-only investigation of 18 deferred
+packages. This was direct owner-directed maintenance, separate from the scheduled
+model's operation envelope. Native evidence is under
+`~/.local/state/infra-maintenance/20261103-agent1012/`; root-only backups, Grafana
+SQLite/config/plugin snapshots and previous executable packages are under
+`/var/backups/infra-maintenance-20261103-agent1012/`.
+
+Updated the 18 reviewed packages with one new GEOS dependency and no removals.
+Grafana 13.3.0 and Tailscale 1.104.5 were activated and passed health checks.
+HypoPG 1.4.5 was activated in engram, hippo and postgres; PostgreSQL stayed at
+18/main with its original server process. Docker's engine process was preserved.
+Node 24.22.2, KiCad 10.0.8, Compose 5.7.0 and Google Cloud CLI 592.0.0 version
+checks passed; GEOS geometry, PROJ transforms and CGAL compilation passed.
+
+The installed helper now permits the reviewed vendor/source pairs and checks
+new dependencies against the same scope. Tests reject PostgreSQL 19, unversioned
+server metapackages, unapproved origins and Docker engine/CUDA expansion. Service
+activation remains explicit in the helper receipt. The first native run after
+installation applied eight fresh ordinary Ubuntu updates and deferred three
+newly published Docker engine packages; receipt
+`/var/lib/update-bot-os/1793752145662355499/status.json`. No reboot was required.
+
 ## 2026-11-03 14:38 UTC — c41fd9ec-448f-4de8-a17b-67d16efd2248
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.

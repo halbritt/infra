@@ -10,8 +10,8 @@ Type=oneshot
 # absent there and every run died at configure with "No CMAKE_CUDA_COMPILER could be
 # found" (20/20 runs, 2026-07-31 → 2026-09-26). Set both explicitly — same PATH
 # pattern the llama-27b.service unit already uses.
-Environment=PATH=/usr/local/cuda/bin:/home/halbritt/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-Environment=CUDACXX=/usr/local/cuda/bin/nvcc
+Environment=PATH=/usr/local/cuda-13.4/bin:/home/halbritt/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=CUDACXX=/usr/local/cuda-13.4/bin/nvcc
 ExecStart=/home/halbritt/.local/bin/llama-cpp-update
 Nice=10
 IOSchedulingClass=idle

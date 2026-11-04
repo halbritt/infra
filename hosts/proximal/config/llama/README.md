@@ -15,8 +15,8 @@ whisper.cpp and Ollama GPU residents first; see "Strict GPU residency" below.
 
 | | |
 |---|---|
-| build | mainline llama.cpp `11222 (a97cce86a)` on disk — `~/git/llama.cpp/build/bin/llama-server`. **Running process is still `10210 (000547513)`** (started 2026-09-22; the updater never restarts live processes). Next `llama-27b` restart picks up the new binary. |
-| auto-update | `llama-cpp-update.timer` (daily 04:50 UTC ±20m) → `llama-cpp-update.service` (user) — build-in-a-worktree, fast-forward `master`, install binaries. Fixed 2026-09-27; see "Daily llama.cpp updater" |
+| build | mainline llama.cpp from upstream master — `~/.local/state/llama-cpp-update/current/bin/llama-server`. Complete immutable bundles replaced the former executable-only deployment on 2026-11-03; see the repair record below. |
+| auto-update | `llama-cpp-update.timer` (daily 04:50 UTC ±20m) → `llama-cpp-update.service` (user) — isolated build, fast-forward `master`, publish a complete bundle. See "CUDA and complete-bundle repair" |
 | unit | `llama-27b.service` (system, `User=halbritt`, `Restart=on-failure`) + drop-in override |
 | endpoint | `http://0.0.0.0:8081/v1` (OpenAI-compatible) — reachable on LAN/tailnet, **no API key** |
 | model (live) | `~/models/qwen3.8-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf` (~16.4 GiB, unsloth UD), alias `qwen3.8-27b` |
@@ -141,7 +141,10 @@ generation drops ~10%. Depth 2 stays the balanced default (confirmed 58.8 tok/s 
 re-test). Acceptance is strongly content-dependent (0.43–0.94), so single-figure acceptance
 numbers in older entries are not comparable across workloads.
 
-## Daily llama.cpp updater (fixed 2026-09-27)
+## Daily llama.cpp updater (historical repair, 2026-09-27)
+
+This section records the September incident and implementation. The November
+complete-bundle repair below supersedes its worktree/build and installation flow.
 
 `llama-cpp-update.timer` fires `llama-cpp-update.service` daily (04:50 UTC, `RandomizedDelaySec=20m`,
 `Persistent=true`). The service runs `~/.local/bin/llama-cpp-update`, which refuses to run unless
@@ -249,3 +252,76 @@ curl -s localhost:8081/v1/chat/completions -H 'Content-Type: application/json' \
 
 **Values, never credentials** — the server runs keyless on purpose (LAN/tailnet trust boundary);
 nothing secret lives in the unit or this directory.
+
+## CUDA and complete-bundle repair — 2026-11-03
+
+The Ubuntu 26.04 transition left CUDA 12.8.93 incompatible with GCC 15.2 and
+glibc 2.43. Independent CMake probes reproduced the GCC version rejection, then
+`cospi`/`sinpi`/`rsqrt` exception-specification errors with GCC 12 and 13. A compiler
+pin alone cannot repair the latter. The owner authorized repair and clarified
+that CUDA release identity is flexible; successful builds and measured inference
+performance govern selection.
+
+Install the existing NVIDIA Ubuntu 26.04 packages `cuda-nvcc-13-4`,
+`cuda-cudart-dev-13-4`, and `libcublas-dev-13-4`. The resolved transaction added
+13 packages (976 MB archives, about 2 GB installed), without replacing the R615
+driver. CUDA 13.4 supports this GCC/glibc combination. CUDA 12.8 remains available
+for the previous serving binary's runtime dependencies and rollback.
+
+The repaired updater uses `/usr/local/cuda-13.4` explicitly. It archives the
+selected source revision into a private build directory, builds for the RTX3090
+(`86-real`, native CPU), and copies all generated executables and libraries into
+`~/.local/state/llama-cpp-update/releases/<revision>-cuda13.4`. Its relative
+`$ORIGIN` RUNPATH resolves llama/ggml libraries in that bundle; CUDA libraries
+resolve in the explicit toolkit directory. It verifies the copied executable,
+dependency resolution and checksums before publication.
+
+`llama-cpp-update --stage` prepares a bundle without advancing the source checkout
+or the `current` symlink. The ordinary invocation fast-forwards the clean source
+and atomically switches `current`, preserving an existing target as `previous`.
+It never restarts inference. The service override now executes
+`~/.local/state/llama-cpp-update/current/bin/llama-server`. A later managed restart
+loads the published bundle; existing processes retain their old library files.
+Failed builds and corrupt bundles leave the published target intact.
+
+The legacy `~/.local/state/llama-cpp-update/worktree/build/bin` must not be rebuilt
+or removed while old binaries depend on it. That old updater's executable had an
+absolute RUNPATH into this directory, so replacing only the executable never
+provided safe library isolation. The new updater neither modifies that worktree
+nor creates persistent Git worktrees. Keep old release directories until no
+process or rollback target uses them.
+
+Install the script and user unit at the existing locations, reload the user
+manager, install the canonical service override, and reload the system manager.
+For a rollback to a new-format release, atomically repoint `current` to the
+retained bundle and restart in an idle window. The initial migration also keeps
+the original override and packages under the root-only
+`/var/backups/infra-maintenance-20261103-agent1012/`; that override uses the retained
+legacy build and CUDA 12.8 libraries. Preserve the model and serving flags.
+
+### Activation and measured result
+
+Activated source `149f5641b931aaf33697d70f9abc90c3e5300247` (build 12098) with
+CUDA 13.4.92 and GCC 15.2.0 on November 3. `/proc/<pid>/exe` and mapped libraries
+confirm the release directory and CUDA 13.4 runtime; health and model APIs pass.
+The native user updater service subsequently completed successfully without
+restarting inference. The model, context, quantized KV and speculative flags
+remain unchanged.
+
+Two fixed prompts, each repeated three times with cache disabled and a 256-token
+output limit, measured these medians on the same host:
+
+| Case | Before prompt tok/s | After prompt tok/s | Before generation tok/s | After generation tok/s |
+| --- | ---: | ---: | ---: | ---: |
+| Short (31 prompt tokens) | 191.29 | 174.73 | 70.00 | 75.01 |
+| Long (5513 prompt tokens) | 1440.24 | 1414.03 | 77.23 | 77.31 |
+
+Generation improved about 7% for the short case and was effectively unchanged
+for the long case. Prompt processing fell about 9% for the tiny prompt (roughly
+16 ms) and 1.8% for the long case. These limited samples support this deployment;
+they do not establish an optimal configuration or isolate toolkit changes from
+upstream source changes. All six requests produced text without runtime errors.
+The local evidence directory
+`~/.local/state/infra-maintenance/20261103-agent1012/` contains the benchmark
+script, before/after samples, build and activation logs, and package receipts.
+CUDA 12.8 has no permanent pin: it is retained for the legacy rollback target.

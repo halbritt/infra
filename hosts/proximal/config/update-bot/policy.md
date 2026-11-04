@@ -37,10 +37,21 @@ Approved targets and channels:
   helper updates /usr/bin/herdr with its native updater and retains rollback.
   This does not authorize Archon OS updates, broad remote shell work or reboots.
 - OS: ordinary Ubuntu resolute release/security/update packages and kernel packages
-  through update-bot-os.service. That fixed root helper rejects package removals,
-  third-party/dependency scope expansion and managed database, Kubernetes,
-  container-runtime and NVIDIA/CUDA stack transitions. It suppresses package-script
-  service restarts and never reboots. Report deferred packages and activation.
+  through update-bot-os.service. Owner extension on 2026-11-03 also covers the
+  reviewed existing Grafana, NodeSource, KiCad 10, Google Cloud CLI, Tailscale,
+  Docker Compose plugin, PGDG geometry libraries, and PostgreSQL 18 package
+  channels listed in os_update.py. This corrects the blanket vendor-origin
+  deferral that left 18 updates pending, including Grafana security fixes.
+  PostgreSQL major upgrades and unversioned metapackages remain excluded; stay
+  on major 18. Kubernetes, database engines outside this scope, Docker engine,
+  containerd, and NVIDIA/CUDA stack changes still require separate review.
+  Every simulated dependency must also match the approved source/package rules;
+  reject removals. No apt holds or version pins are created by this policy.
+  Suppress package-script restarts, report activation_required services and
+  extension/session activation separately, and never reboot automatically.
+  Do not treat installed security packages as active protection until the running
+  service has loaded them. Activation needs a checked idle window and rollback.
+
 
 All consequential commands MUST go through /usr/local/lib/update-bot/operation.py
 with before-state, a recovery approach (or an honest recovery limit), native argv,

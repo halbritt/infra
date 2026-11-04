@@ -1,5 +1,28 @@
 # Changelog — proximal (system)
 
+## 2026-11-03 — repair CUDA builds and vendor update scope
+
+- Installed CUDA 13.4.92 alongside 12.8 to restore GCC 15.2/glibc 2.43 builds;
+  retained the existing NVIDIA driver and legacy runtime for rollback.
+- Repaired llama.cpp publication to install complete isolated library bundles.
+  Activated source `149f5641b` with the existing model and serving flags;
+  health, library mapping, native updater execution and six inference samples pass.
+  Generation medians changed from 70.00 to 75.01 tok/s (short) and 77.23 to 77.31
+  (long); [full measurements and recovery](config/llama/README.md).
+- Upgraded the 18 investigated vendor packages, including Grafana 13.3.0,
+  Tailscale 1.104.5 and HypoPG 1.4.5. Verified service health and activated HypoPG
+  in three databases. PostgreSQL remains major 18; its server was not restarted.
+- Corrected update-bot's Ubuntu-only selection to allow the reviewed vendor
+  channels and PostgreSQL 18 updates, while validating resolved dependencies.
+  The native helper applied eight additional Ubuntu updates successfully.
+  Three newly available Docker engine packages remain deferred: live restore
+  is disabled and an engine restart would interrupt containers.
+- Preserved root-only rollback material under
+  `/var/backups/infra-maintenance-20261103-agent1012/` and local operational evidence
+  under `~/.local/state/infra-maintenance/20261103-agent1012/`.
+  [Package scope and verification](config/update-bot/CHANGELOG.md).
+- Repository tests (46) and infrastructure validation pass.
+
 ## 2026-11-03 — ae-ci-exec builds on every run, so upstream releases reach local tests
 
 - Defect: `ae-ci-exec` skipped the image build whenever `agent-ee:exec-<key>` existed,

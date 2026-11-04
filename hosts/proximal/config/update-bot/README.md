@@ -15,13 +15,15 @@ held without stopping unrelated updates.
 | llama.cpp | Invoke the existing canonical updater under its native lock when warranted; its existing timer stays authoritative. Install binaries without restarting inference. |
 | Codex, Claude Code, OpenCode, Agy | Update existing installations on their current stable channels, with native methods. Preserve wrappers, configuration and live session resources. Gemini CLI is covered only if installed. |
 | Herdr (proximal and Archon) | Maintain stable binaries, inspect installed and running versions separately, retain live sessions. Archon uses a fixed remote helper; no broad SSH access for the agent. |
-| Ubuntu | Refresh metadata and install routine resolute/security/updates packages through the fixed root helper. Preserve config files; no removals, release upgrade or reboot. |
+| OS packages | Install routine Ubuntu and the reviewed vendor channels in `os_update.py`, preserving PostgreSQL major 18. Preserve config files; no removals, release upgrade or reboot. |
 
-The OS helper also checks simulated dependencies. Database, Kubernetes,
-container-runtime, NVIDIA/CUDA and third-party package transitions remain held for
-separate review. It temporarily installs a policy-rc.d restart hold (only when no
+The OS helper also checks simulated dependencies. On 2026-11-03 the owner
+authorized clearing the 18-package vendor backlog and its blanket origin
+restriction. Reviewed vendor rules are in `os_update.py`; PostgreSQL major
+changes, other database engines, Kubernetes, Docker engine/containerd and
+NVIDIA/CUDA transitions remain separately reviewed. It temporarily installs a policy-rc.d restart hold (only when no
 policy already exists), uses needrestart list mode, checks dpkg and observed
-package versions afterward, and reports deferred packages and reboot requirements.
+package versions afterward, and reports deferred packages, service activation requirements and reboot requirements.
 Existing apt timers/native locks remain in force. It never changes apt sources.
 
 A busy process is not automatically a blocker for a supported versioned/atomic
@@ -174,3 +176,22 @@ inspect Archon's root-owned receipt and processes before explicitly reconciling.
 The remote service participates in operation draining even if its initiating
 client exits. A normal no-change receipt must not produce a maintenance commit.
 Native self-update is binary installation, not permission to restart sessions.
+
+## Vendor update scope correction — 2026-11-03
+
+The 18 packages were not apt-held or phased. Every candidate failed the old
+Ubuntu-only origin predicate; Compose and HypoPG additionally matched protected
+prefixes. GEOS also required adding `libgeos3.15.0`, which plain `apt-get upgrade`
+would not do. The helper now accepts the reviewed source/package pairs for all
+18 and their scoped dependencies. PostgreSQL stays at major 18, including
+HypoPG; unversioned PostgreSQL metapackages cannot introduce a later server.
+Vendor permissions do not enable arbitrary packages from every configured source.
+
+Install canonical `os_update.py` to `/usr/local/lib/update-bot/os_update.py`
+(root:root, 0755) and `policy.md`/`role.md` to `/etc/update-bot/` (0644) while
+the maintenance runner and root helper are idle and holding the host lock.
+The fixed service reads these on its next invocation; no daemon reload is needed.
+The helper still suppresses automatic restarts, records `activation_required`,
+and refuses dependency expansion beyond the reviewed channels. PostgreSQL
+extensions can also require catalog updates and new database sessions; a package
+version alone does not prove activation.

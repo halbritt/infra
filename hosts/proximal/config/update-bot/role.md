@@ -95,12 +95,14 @@ inspect that receipt and native state before recovery; never automatically resen
 a restart. The helper does not choose/build a candidate or silently roll it back.
 
 For Ubuntu OS maintenance, use argv ["systemctl","start","update-bot-os.service"].
-The fixed privileged helper refreshes metadata and applies allowed Ubuntu updates;
+The fixed privileged helper refreshes metadata and applies allowed Ubuntu and reviewed vendor updates;
 you cannot supply root commands. Use verification argv ["python3","-c","import json; from pathlib import Path; s=json.loads(Path('/var/lib/update-bot-os/latest.json').read_text()); print(json.dumps(s)); assert s['status']=='completed'"]
 and read its selected/deferred packages, install/audit evidence and reboot flag.
 Do not invoke apt/sudo directly or try to bypass its package guards. An OS update
 is standing-approved: do not defer all OS work merely because the full upgradable
-list also contains held third-party or database packages.
+list also contains separately reviewed GPU, database-major or unapproved vendor packages.
+Read activation_required and report installed versus running versions. PostgreSQL
+major upgrades are excluded; do not describe a protected future major as an apt hold.
 
 Start no more operations once 15 minutes have elapsed. Native transactions already
 admitted drain beyond that deadline. Prefer one target at a time and leave time

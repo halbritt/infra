@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixed privileged Ubuntu update entrypoint; no caller-supplied commands."""
+"""Fixed privileged OS update entrypoint; no caller-supplied commands."""
 import fcntl
 import json
 import os
@@ -10,11 +10,31 @@ import time
 
 STATE = Path('/var/lib/update-bot-os')
 PROTECTED = re.compile(r'^(postgresql|mysql|mariadb|redis|pgbackrest|kube|docker|containerd|nvidia|libnvidia|cuda)')
+# Owner-approved vendor channels, 2026-11-03. PostgreSQL remains on major 18.
+# These are source boundaries, not version pins; APT still resolves dependencies.
+VENDORS = [
+    (r'grafana', 'apt.grafana.com', 'stable'),
+    (r'nodejs', 'deb.nodesource.com', 'nodistro'),
+    (r'kicad(?:-footprints|-packages3d|-symbols|-templates)?', 'ppa.launchpadcontent.net', 'resolute'),
+    (r'google-cloud-cli(?:-anthoscli)?', 'packages.cloud.google.com', 'cloud-sdk'),
+    (r'tailscale', 'pkgs.tailscale.com', ''),
+    (r'docker-compose-plugin', 'download.docker.com', 'resolute'),
+    (r'(?:libcgal-dev|libgeos.*|libproj.*|proj-data|libpq5|libpq-dev|postgresql-18(?:-.*)?|postgresql-client-18|postgresql-(?:client-)?common)',
+     'apt.postgresql.org', 'resolute-pgdg'),
+]
 
 
 def approved_origin(version):
     return any(o.origin == 'Ubuntu' and o.archive in ('resolute', 'resolute-security', 'resolute-updates')
                for o in version.origins)
+
+
+def approved_package(name, version):
+    for pattern, site, archive in VENDORS:
+        if re.fullmatch(pattern, name) and any(
+                o.site == site and o.archive == archive for o in version.origins):
+            return True
+    return not PROTECTED.match(name) and approved_origin(version)
 
 
 def main():
@@ -42,7 +62,7 @@ def main():
             execute(['apt-get', *options, 'update'], 'refresh.log')
             cache = apt.Cache()
             candidates = [p for p in cache if p.is_installed and p.is_upgradable]
-            selected = [p for p in candidates if not PROTECTED.match(p.name) and approved_origin(p.candidate)]
+            selected = [p for p in candidates if approved_package(p.name, p.candidate)]
             state['selected'] = [{'package': p.name, 'before': p.installed.version, 'after': p.candidate.version} for p in selected]
             state['deferred'] = [p.name for p in candidates if p not in selected]
             save()
@@ -55,7 +75,7 @@ def main():
                     raise RuntimeError('APT proposed a removal')
                 # Also validate dependencies, not just the requested top-level packages.
                 for name, version in re.findall(r'^Inst (\S+)(?: \[[^\]]+\])? \((\S+)', plan, re.M):
-                    if PROTECTED.match(name) or name not in cache or version not in cache[name].versions or not approved_origin(cache[name].versions[version]):
+                    if name not in cache or version not in cache[name].versions or not approved_package(name, cache[name].versions[version]):
                         raise RuntimeError('APT dependency crosses the approved OS scope: ' + name)
                 policy = Path('/usr/sbin/policy-rc.d')
                 if policy.exists():
@@ -76,6 +96,9 @@ def main():
                     item['observed'] = observed[item['package']].installed.version
                     if item['observed'] != item['after']:
                         raise RuntimeError('Installed version does not match the plan: ' + item['package'])
+                services = {'grafana': 'grafana-server', 'tailscale': 'tailscaled',
+                            'postgresql-18': 'postgresql@18-main'}
+                state['activation_required'] = [services[p.name] for p in selected if p.name in services]
             state.update(status='completed', finished=time.time(),
                          reboot_required=Path('/var/run/reboot-required').exists())
         except Exception as exc:

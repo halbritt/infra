@@ -334,6 +334,27 @@ class MaintenanceBoundaryTests(unittest.TestCase):
         self.assertFalse(os_update.approved_origin(version('Ubuntu', 'resolute-proposed')))
         self.assertFalse(os_update.approved_origin(version('PostgreSQL', 'resolute-pgdg')))
 
+    def test_reviewed_vendor_packages_and_new_geos_dependency_are_allowed(self):
+        def vendor(site, archive):
+            return SimpleNamespace(origins=[SimpleNamespace(site=site, archive=archive, origin='vendor')])
+        for names, site, archive in [
+            (['grafana'], 'apt.grafana.com', 'stable'),
+            (['nodejs'], 'deb.nodesource.com', 'nodistro'),
+            (['kicad', 'kicad-footprints', 'kicad-packages3d', 'kicad-symbols', 'kicad-templates'], 'ppa.launchpadcontent.net', 'resolute'),
+            (['google-cloud-cli', 'google-cloud-cli-anthoscli'], 'packages.cloud.google.com', 'cloud-sdk'),
+            (['tailscale'], 'pkgs.tailscale.com', ''),
+            (['docker-compose-plugin'], 'download.docker.com', 'resolute'),
+            (['libcgal-dev', 'libgeos-c1t64', 'libgeos-dev', 'libgeos3.15.0', 'libproj25', 'libproj-dev', 'proj-data', 'postgresql-18', 'postgresql-18-hypopg', 'libpq5'], 'apt.postgresql.org', 'resolute-pgdg'),
+        ]:
+            for name in names:
+                self.assertTrue(os_update.approved_package(name, vendor(site, archive)), name)
+                self.assertFalse(os_update.approved_package(name, vendor('unreviewed.example', archive)), name)
+        pg = vendor('apt.postgresql.org', 'resolute-pgdg')
+        for name in ['postgresql', 'postgresql-client', 'postgresql-19', 'postgresql-client-19', 'postgresql-19-hypopg']:
+            self.assertFalse(os_update.approved_package(name, pg), name)
+        for name in ['docker-ce', 'containerd.io', 'nvidia-driver-615', 'cuda-toolkit-14-0', 'kubelet']:
+            self.assertFalse(os_update.approved_package(name, vendor('download.docker.com', 'resolute')), name)
+
 
 if __name__ == '__main__':
     unittest.main()

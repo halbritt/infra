@@ -3,98 +3,93 @@ set -Eeuo pipefail
 
 repo=/home/halbritt/git/llama.cpp
 state_dir=/home/halbritt/.local/state/llama-cpp-update
-candidate=$state_dir/worktree
-lock_file=$state_dir/update.lock
+toolkit=/usr/local/cuda-13.4
 jobs=${LLAMA_CPP_UPDATE_JOBS:-8}
+mode=${1:-update}
+case "$mode" in update|--check|--stage) ;; *) echo 'usage: llama-cpp-update [--check|--stage]' >&2; exit 2 ;; esac
 
-mkdir -p "$state_dir"
-exec 9>"$lock_file"
+mkdir -p "$state_dir/releases"
+exec 9>"$state_dir/update.lock"
 if ! flock --nonblock 9; then
-    echo "llama.cpp update already running"
-    exit 0
-fi
-
-if [[ ! -d "$repo/.git" ]]; then
-    echo "llama.cpp repository not found at $repo" >&2
-    exit 1
-fi
-if [[ "$(git -C "$repo" branch --show-current)" != master ]]; then
-    echo "refusing update: $repo is not on master" >&2
-    exit 1
-fi
-if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
-    echo "refusing update: $repo has uncommitted or untracked work" >&2
+    echo 'llama.cpp update already running' >&2
     exit 1
 fi
 
+if [[ "$(git -C "$repo" branch --show-current)" != master ]] \
+    || [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
+    echo 'refusing update: source must be clean and on master' >&2
+    exit 1
+fi
 git -C "$repo" fetch --quiet origin master
 current=$(git -C "$repo" rev-parse HEAD)
 target=$(git -C "$repo" rev-parse origin/master)
+release=$state_dir/releases/$target-cuda13.4
 echo "current=$current"
 echo "target=$target"
-
-if [[ "${1:-}" == --check ]]; then
-    if [[ "$current" == "$target" ]]; then
-        echo "status=current"
-    elif git -C "$repo" merge-base --is-ancestor "$current" "$target"; then
-        echo "status=fast-forward-available"
-    else
-        echo "status=diverged"
-        exit 1
-    fi
-    exit 0
-fi
-
-if [[ "$current" == "$target" ]]; then
-    echo "llama.cpp already current"
-    exit 0
-fi
 if ! git -C "$repo" merge-base --is-ancestor "$current" "$target"; then
-    echo "refusing update: local master has diverged from origin/master" >&2
+    echo 'refusing update: source has diverged from origin/master' >&2
     exit 1
 fi
-
-if [[ -e "$candidate/.git" ]]; then
-    if [[ -n "$(git -C "$candidate" status --porcelain --untracked-files=no)" ]]; then
-        echo "refusing update: updater worktree has tracked modifications" >&2
-        exit 1
+if [[ "$mode" == --check ]]; then
+    if [[ "$(readlink "$state_dir/current" || true)" == "$release" ]]; then
+        echo 'status=current'
+    else
+        echo 'status=update-available'
     fi
-    git -C "$candidate" checkout --quiet --detach "$target"
-elif [[ -e "$candidate" ]]; then
-    echo "refusing update: unmanaged path exists at $candidate" >&2
-    exit 1
-else
-    git -C "$repo" worktree add --quiet --detach "$candidate" "$target"
+    exit 0
 fi
 
-cmake \
-    -S "$candidate" \
-    -B "$candidate/build" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DGGML_CUDA=ON \
-    -DGGML_NATIVE=ON \
-    -DCMAKE_CUDA_ARCHITECTURES=86-real \
-    -DGGML_BUILD_TESTS=OFF \
-    -DGGML_BUILD_EXAMPLES=OFF \
-    -DLLAMA_BUILD_SERVER=ON
-cmake --build "$candidate/build" \
-    --target llama-server llama-cli llama-quantize \
-    --parallel "$jobs"
-
+if [[ ! -d "$release" ]]; then
+    # Never rebuild the legacy worktree: deployed binaries still load its libraries.
+    candidate=$(mktemp -d "$state_dir/build.XXXXXX")
+    trap 'rm -rf -- "$candidate"' EXIT
+    mkdir "$candidate/source" "$candidate/release"
+    git -C "$repo" archive "$target" | tar -x -C "$candidate/source"
+    cmake -S "$candidate/source" -B "$candidate/build" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CUDA_COMPILER="$toolkit/bin/nvcc" \
+        -DCUDAToolkit_ROOT="$toolkit" \
+        -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++ \
+        -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON \
+        -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+        '-DCMAKE_INSTALL_RPATH=$ORIGIN;/usr/local/cuda-13.4/targets/x86_64-linux/lib' \
+        -DLLAMA_BUILD_NUMBER="$(git -C "$repo" rev-list --count "$target")" \
+        -DLLAMA_BUILD_COMMIT="$(git -C "$repo" rev-parse --short "$target")" \
+        -DGGML_CUDA=ON -DGGML_NATIVE=ON -DCMAKE_CUDA_ARCHITECTURES=86-real \
+        -DGGML_BUILD_TESTS=OFF -DGGML_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_TESTS=OFF \
+        -DLLAMA_BUILD_SERVER=ON
+    cmake --build "$candidate/build" --target llama-server llama-cli llama-quantize llama-bench --parallel "$jobs"
+    cp -a "$candidate/build/bin" "$candidate/release/bin"
+    # This runs from the copied bundle, so a successful build cannot hide missing libraries.
+    "$candidate/release/bin/llama-server" --version
+    for binary in llama-server llama-cli llama-quantize llama-bench; do
+        dependencies=$(ldd "$candidate/release/bin/$binary")
+        if [[ "$dependencies" == *'not found'* || "$dependencies" == *"$candidate/build"* ]]; then
+            echo "refusing incomplete bundle: $binary: $dependencies" >&2
+            exit 1
+        fi
+    done
+    printf '%s\n' "$target" > "$candidate/release/source-revision"
+    "$toolkit/bin/nvcc" --version > "$candidate/release/toolchain.txt"
+    (cd "$candidate/release"; sha256sum bin/* source-revision toolchain.txt > SHA256SUMS)
+    mv "$candidate/release" "$release"
+fi
+(cd "$release"; sha256sum --quiet -c SHA256SUMS)
+if [[ "$mode" == --stage ]]; then
+    echo "staged=$release"
+    exit 0
+fi
 if [[ "$(git -C "$repo" rev-parse HEAD)" != "$current" ]] \
     || [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
-    echo "refusing install: main worktree changed during candidate build" >&2
+    echo 'refusing publication: source changed during build' >&2
     exit 1
 fi
-
 git -C "$repo" merge --quiet --ff-only "$target"
-for binary in llama-server llama-cli llama-quantize; do
-    install -m 0755 \
-        "$candidate/build/bin/$binary" \
-        "$repo/build/bin/$binary.new"
-    mv -f "$repo/build/bin/$binary.new" "$repo/build/bin/$binary"
-done
-
-"$repo/build/bin/llama-server" --version
+if [[ -L "$state_dir/current" && "$(readlink "$state_dir/current")" != "$release" ]]; then
+    ln -s "$(readlink "$state_dir/current")" "$state_dir/previous.new"
+    mv -Tf "$state_dir/previous.new" "$state_dir/previous"
+fi
+ln -s "$release" "$state_dir/current.new"
+mv -Tf "$state_dir/current.new" "$state_dir/current"
 echo "updated=$target"
-echo "Live processes were not restarted; they will use the new binary on their next managed restart."
+echo 'Complete bundle published. Live processes retain their old bundle until a managed restart.'
