@@ -170,7 +170,7 @@ def containers(cfg, leases):
     """Running agent-ee containers that hold no live lease."""
     if not cfg["docker"]:
         return []
-    fmt = '{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Label "native-admission.lease"}}\t{{.Command}}'
+    fmt = '{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Label "native-admission.lease"}}\t{{.Command}}\t{{.Label "ae-ci-exec"}}'
     try:
         out = subprocess.run(["docker", "ps", "--no-trunc", "--format", fmt], capture_output=True,
                              text=True, timeout=30)
@@ -181,8 +181,9 @@ def containers(cfg, leases):
     held = {lease.get("id") for lease in leases}
     found = []
     for line in out.stdout.splitlines():
-        cid, name, image, lease, command = (line.split("\t") + [""] * 5)[:5]
-        if not image.startswith("agent-ee:") or (lease and lease in held):
+        cid, name, image, lease, command, ae_ci_exec = (line.split("\t") + [""] * 6)[:6]
+        # ae-ci-exec starts its containers from full image IDs and labels them ae-ci-exec=1.
+        if not (image.startswith("agent-ee:") or ae_ci_exec == "1") or (lease and lease in held):
             continue
         weight, klass = job_weight([command], cfg)
         found.append({"name": name, "image": image, "weight": weight, "class": klass})
@@ -355,7 +356,8 @@ def container_details(cfg):
         return None
     found = []
     for c in items:
-        if not c["Config"]["Image"].startswith("agent-ee:"):
+        labels = c["Config"].get("Labels") or {}
+        if not (c["Config"]["Image"].startswith("agent-ee:") or labels.get("ae-ci-exec") == "1"):
             continue
         host, pid = c["HostConfig"], c["State"]["Pid"]
         try:
