@@ -1,0 +1,31 @@
+{
+	admin off
+	auto_https off
+}
+
+http://:8881 {
+	bind 127.0.0.1
+	header X-Content-Type-Options nosniff
+	header Referrer-Policy no-referrer
+
+	route {
+		@write not method GET HEAD
+		respond @write "Method not allowed" 405
+		respond /healthz "ok" 200
+
+		# Same-origin reads of existing Artifact publications; no upload endpoint.
+		@model path_regexp model (?i)^/models/[a-z0-9]{6}/.+\.(3dm|3ds|3mf|amf|bim|brp|brep|dae|fbx|fcstd|glb|gltf|ifc|iges|igs|obj|off|ply|step|stl|stp|wrl|zip|mtl|bin|png|jpg|jpeg|webp|bmp|gif|tga|tif|tiff|dds)$
+		handle @model {
+			uri strip_prefix /models
+			reverse_proxy 127.0.0.1:8879
+		}
+		handle /models/* {
+			respond "Not found" 404
+		}
+		handle {
+			root * /home/halbritt/.local/share/3dviewer/current
+			file_server
+			encode zstd gzip
+		}
+	}
+}

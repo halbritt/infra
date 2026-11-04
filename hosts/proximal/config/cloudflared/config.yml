@@ -20,4 +20,6 @@ ingress:
     service: http://127.0.0.1:8878
   - hostname: artifact.harm.org
     service: http://127.0.0.1:8879
+  - hostname: 3dviewer.harm.org
+    service: http://127.0.0.1:8881
   - service: http_status:404

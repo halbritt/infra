@@ -1,0 +1,21 @@
+[Unit]
+Description=Online3DViewer static site and model reads
+After=network-online.target artifact.service
+Wants=network-online.target artifact.service
+
+[Service]
+Type=simple
+RuntimeDirectory=3dviewer
+Environment=XDG_CONFIG_HOME=%t/3dviewer
+ExecStart=/usr/bin/caddy run --config %h/.config/3dviewer/Caddyfile --adapter caddyfile
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+MemoryMax=256M
+TasksMax=64
+
+[Install]
+WantedBy=default.target

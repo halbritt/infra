@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+script_dir=$(cd -- "$(dirname -- "$0")" && pwd)
+recipe=$(cat "$0" "$script_dir/fflate.patch" | sha256sum | cut -c1-12)
+repo=/home/halbritt/git/Online3DViewer
+state=/home/halbritt/.local/share/3dviewer
+mkdir -p "$state/releases"
+exec 9>"$state/build.lock"
+flock --nonblock 9
+[[ -z "$(git -C "$repo" status --porcelain)" ]] || { echo 'Upstream checkout must be clean' >&2; exit 1; }
+revision=$(git -C "$repo" rev-parse HEAD)
+candidate=$(mktemp -d "$state/build.XXXXXX")
+trap 'rm -rf -- "$candidate"' EXIT
+git -C "$repo" archive "$revision" | tar -x -C "$candidate"
+cd "$candidate"
+patch -p1 < "$script_dir/fflate.patch"
+npm ci --ignore-scripts --no-audit --no-fund
+npm audit --omit=dev --json > runtime-audit.json
+npm run build_engine
+npm run build_website
+python3 tools/create_package.py
+site=$candidate/build/package/website
+cp LICENSE.md "$site/LICENSE.md"
+cp runtime-audit.json "$site/runtime-audit.json"
+printf '%s\n' "$revision" > "$site/source-revision.txt"
+# Keep upstream branding and attribution, but make navigation and shared embeds local.
+python3 - "$site" <<'PY'
+from pathlib import Path
+import sys
+root = Path(sys.argv[1])
+for name in ['index.html', 'embed.html']:
+    path = root / name
+    text = path.read_text().replace('https://3dviewer.net', 'https://3dviewer.harm.org')
+    text = text.replace('Open in 3dviewer.net', 'Open in 3dviewer.harm.org')
+    text = text.replace('<html>', '<html lang="en">')
+    text = text.replace('width=device-width, user-scalable=no', 'width=device-width, initial-scale=1')
+    text = text.replace('<a href="index.html">', '<a href="index.html" aria-label="Online 3D Viewer home">')
+    text = text.replace('</head>', '<style>:root { --ov_button_color: #146a8f; --ov_outline_button_text_color: #146a8f; --ov_button_color_dark: #6bc7eb; --ov_button_text_color_dark: #202124; }</style>\n</head>')
+    path.write_text(text)
+PY
+release=$state/releases/$revision-$recipe
+[[ ! -e "$release" ]] || { echo "Release exists: $release" >&2; exit 1; }
+mv "$site" "$release"
+if [[ -L "$state/current" ]]; then
+    ln -sfn "$(readlink "$state/current")" "$state/previous"
+fi
+ln -sfn "$release" "$state/current.new"
+mv -Tf "$state/current.new" "$state/current"
+echo "Published site revision $revision"

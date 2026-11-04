@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Publish model snapshots with Artifact and return Online3DViewer links."""
+import argparse
+import json
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+import tempfile
+from urllib.parse import quote
+from urllib.request import Request, urlopen
+
+VIEWER = 'https://3dviewer.harm.org'
+ARTIFACT = 'https://artifact.harm.org'
+HTTP_HEADERS = {'User-Agent': '3dviewer-cli/1.0'}
+MODELS = set('3dm 3ds 3mf amf bim brp brep dae fbx fcstd glb gltf ifc iges igs obj off ply step stl stp wrl zip'.split())
+SUPPORT = set('mtl bin png jpg jpeg webp bmp gif tga tif tiff dds'.split())
+
+
+def collect(inputs):
+    """Match Artifact's relative paths, rejecting ambiguous viewer filenames."""
+    files = {}
+    names = set()
+    for raw in inputs:
+        source = Path(raw)
+        if source.is_symlink():
+            raise ValueError(f'symlinks are not published: {source}')
+        if source.is_dir():
+            candidates = []
+            for root, dirs, leaves in os.walk(source):
+                for name in dirs + leaves:
+                    path = Path(root) / name
+                    if path.is_symlink():
+                        raise ValueError(f'symlinks are not published: {path}')
+                candidates.extend(Path(root) / name for name in leaves)
+        else:
+            candidates = [source]
+        for path in candidates:
+            if not path.is_file():
+                raise ValueError(f'not a regular file: {path}')
+            if source.is_dir():
+                rel = path.relative_to(source)
+                if len(inputs) > 1:
+                    rel = Path(source.name) / rel
+            else:
+                rel = Path(source.name)
+            name = rel.as_posix()
+            if any(part.startswith('.') or part == '_artifact' for part in rel.parts):
+                raise ValueError(f'hidden or reserved path: {name}; publish a dedicated model folder')
+            if any(c in name for c in ';?:@&=+$,#%\\'):
+                raise ValueError(f'filename contains an unsupported URL delimiter: {name}')
+            if path.suffix.lower()[1:] not in MODELS | SUPPORT:
+                raise ValueError(f'not a model or supported sidecar: {name}')
+            if path.name.casefold() in names:
+                raise ValueError(f'ambiguous duplicate filename: {path.name}')
+            names.add(path.name.casefold())
+            files[name] = path
+    if not files:
+        raise ValueError('no files to publish')
+    return files
+
+
+def select_entry(files, entry):
+    models = sorted(name for name in files if Path(name).suffix.lower()[1:] in MODELS)
+    if entry is not None:
+        if entry not in models:
+            raise ValueError('--entry must name a model relative to the publication root')
+        return entry
+    if len(models) != 1:
+        raise ValueError('provide one model, or use --entry to select from: ' + ', '.join(models))
+    return models[0]
+
+
+def snapshot(files, destination):
+    """Only the inspected files enter the upload, even if a source folder grows."""
+    if len(files) > 1000:
+        raise ValueError('publication exceeds 1,000 files')
+    total = 0
+    for name, source in files.items():
+        target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(source, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(fd, 'rb') as incoming, target.open('wb') as outgoing:
+            if not stat.S_ISREG(os.fstat(incoming.fileno()).st_mode):
+                raise ValueError(f'not a regular file: {source}')
+            while data := incoming.read(1024 * 1024):
+                total += len(data)
+                if total > 89 * 1024 * 1024:
+                    raise ValueError('publication exceeds 89 MiB')
+                outgoing.write(data)
+
+
+def viewer_links(receipt, entry):
+    # Include textures/materials/buffers, but not other selectable models.
+    paths = [entry] + sorted(f['path'] for f in receipt['files']
+                             if Path(f['path']).suffix.lower()[1:] in SUPPORT)
+    urls = [VIEWER + '/models/' + receipt['id'] + '/' + quote(path, safe='/') for path in paths]
+    fragment = '#model=' + ','.join(urls)
+    return dict(url=VIEWER + '/' + fragment, embed_url=VIEWER + '/embed.html' + fragment,
+                model_urls=urls, artifact=receipt)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest='command', required=True)
+    publish = commands.add_parser('publish', help='publish files or a folder as an immutable public model')
+    publish.add_argument('paths', nargs='+')
+    publish.add_argument('--entry', help='main model path relative to the publication root')
+    publish.add_argument('--title', default='', help='title for the Artifact download page')
+    publish.add_argument('--json', action='store_true', help='emit viewer links and the full Artifact receipt')
+    args = parser.parse_args()
+    try:
+        files = collect(args.paths)
+        entry = select_entry(files, args.entry)
+        # Check the viewer before creating an immutable publication.
+        with urlopen(Request(VIEWER + '/healthz', headers=HTTP_HEADERS), timeout=20) as response:
+            if response.read(100).strip() != b'ok':
+                raise ValueError('unexpected viewer health response')
+        with tempfile.TemporaryDirectory(prefix='3dviewer-') as staging:
+            snapshot(files, Path(staging))
+            cmd = ['artifact', 'publish', staging, '--server', ARTIFACT,
+                   '--entry', entry, '--json']
+            if args.title:
+                cmd += ['--title', args.title]
+            result = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, check=True)
+        receipt = json.loads(result.stdout)
+        links = viewer_links(receipt, entry)
+        # Artifact has already verified content hashes. Check the viewer's read route too.
+        try:
+            for url in links['model_urls']:
+                with urlopen(Request(url, method='HEAD', headers=HTTP_HEADERS), timeout=30):
+                    pass
+        except OSError as exc:
+            print('Publication exists; do not blindly retry: ' + receipt['manifest_url'], file=sys.stderr)
+            raise ValueError(f'viewer file verification failed: {exc}') from exc
+        if args.json:
+            print(json.dumps(links, indent=2))
+        else:
+            print(links['url'])
+            print('Files: ' + receipt['files_url'], file=sys.stderr)
+            print('ZIP: ' + receipt['download_url'], file=sys.stderr)
+        return 0
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+        print(f'3dviewer: {exc}', file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

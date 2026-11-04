@@ -1,5 +1,22 @@
 # Changelog — proximal (system)
 
+## 2026-11-03 — deploy Online3DViewer and publishing CLI
+
+- Added owner-requested `3dviewer.harm.org` through the existing Cloudflare tunnel
+  to a loopback Caddy user service. Static upstream 0.19.0 at `d025663d`;
+  complete site releases and rollback symlinks, no additional container.
+- Installed `3dviewer publish` for immutable Artifact-backed model snapshots,
+  viewer/embed links and downloads. Same-origin model reads retain textures and
+  buffers; the viewer origin rejects writes and non-model publication paths.
+- Added and deployed the shared `3dviewer` skill (skillpack `c1ee8d5`).
+- Verified public STL and nested-texture OBJ publishing, STEP browser loading,
+  orbit, six desktop/phone UIPass cases and their screenshots. Fixed upstream
+  contrast, document language, home-link label and mobile zoom in the build.
+  Patched upstream fflate 0.8.2 to 0.8.3 for its malformed-ZIP loop advisory;
+  deployed runtime audit reports zero vulnerabilities.
+  All 54 infrastructure tests and validation pass; existing Plane/Artifact routes
+  remain healthy. [Deployment, usage and recovery](config/3dviewer/README.md).
+
 ## 2026-11-03 — repair CUDA builds and vendor update scope
 
 - Installed CUDA 13.4.92 alongside 12.8 to restore GCC 15.2/glibc 2.43 builds;

@@ -41,6 +41,7 @@ no explicit DNS record of its own — onto Pages. Do not point it back at `harm.
 
 | public hostname | local service |
 |---|---|
+| `3dviewer.harm.org` | `http://127.0.0.1:8881` ([`../3dviewer`](../3dviewer/)) |
 | `artifact.harm.org` | `http://127.0.0.1:8879` ([`../artifact`](../artifact/)) |
 | `tailscale.harm.org` | `http://localhost:3912` ([`../tailscale-index`](../tailscale-index/)) |
 | `newsroom.harm.org` | `http://localhost:3913` ([`../ai-newsroom`](../ai-newsroom/)) |
@@ -164,3 +165,7 @@ Existing wildcard DNS resolved without changes. Ingress validation and parity
 (excluding comments and credential paths) passed. Anonymous public CLI upload,
 HTML/JS/CSS, individual download and ZIP download passed. Tailscale index,
 Pastebin and Plane instances endpoint each returned HTTP 200 after restart.
+
+Verified 2026-11-03: added `3dviewer.harm.org` to both ingress files, using existing
+wildcard DNS. Public viewer, model reads and health pass; Plane instances and
+Artifact health still return 200. System/user ingress validation and parity pass.
