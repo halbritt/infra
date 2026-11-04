@@ -1,5 +1,39 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-04 14:33 UTC — 734417f7-5f49-481c-ba5e-f67891304a7e
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **wigolo** — failed. Before: Installed wigolo source build 0b38aebe471952c4412a07d7a08e615824ff36e1 (global npm wigolo 0.3.1); ~/git/wigolo clean on that commit; upstream main advanced to 5e904491a7843c7d17104af46b3e3cf40e999ddc. Provider config (~/.claude-harm/.claude.json MCP env) and ~/.wigolo data/cache untouched.. After: no change to the installed package: build aborted at dependency install; ~/git/wigolo left checked out detached at 5e904491.
+  Verification: operation exit 4 (NPM_INSTALL_FAIL); onnxruntime-node postinstall rejects CUDA 13 and fallback download ECONNREFUSED; global wigolo still reports 0.3.1; ~/.wigolo untouched.
+  Activation: not installed; existing 0b38aebe build remains active.
+  Evidence: `/var/lib/update-bot/runs/734417f7-5f49-481c-ba5e-f67891304a7e/operations/33f82d1c-cac2-4dfc-bbfa-d3ba859127c1`.
+
+- **hermes** — verified. Before: Installed/activated generation candidate-c314285f (carry 0ee805b2 on upstream c314285f), selected by ~/.local/bin/hermes (launcher sha b2e524cc) and running as gateway PID 2018596 with Slack connected; upstream main advanced to 71736c9f. No apt/dpkg lock; active gateway left untouched by this install. After: Carry 688a10f3 built on upstream 71736c9f (10 files, clean per-file 3-way merge); venv built; carry-behavior tests + gateway import smoke passed; versioned launcher installed (sha 537980e2) and provenance receipt written.
+  Verification: operation exit 0/0; log PORT_OK carry=688a10f3 base=71736c9f + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK; installed launcher --version reports local 688a10f3; receipt hermes-installed.json upstream_revision matches.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/734417f7-5f49-481c-ba5e-f67891304a7e/operations/61c0ab15-3ad6-4dd8-8cfc-ad5fd8d001df`.
+
+- **os** — verified. Before: Ubuntu 26.04.1 LTS resolute, kernel 7.0.0-42-generic; apt --upgradable lists only docker-ce/docker-ce-cli/docker-ce-rootless-extras (Docker engine, separately reviewed, out of ordinary scope); no apt/dpkg lock. Prior OS receipt 2026-11-03 selected 8 ordinary packages.. After: helper installed 7 ordinary packages (base-files, motd-news-config, vim, vim-common, vim-runtime, vim-tiny, xxd); NVIDIA/CUDA driver and Docker engine stack deferred; reboot_required=false.
+  Verification: operation exit 0/0 changed=true; /var/lib/update-bot-os/latest.json status=completed with observed after-versions matching; native evidence /var/lib/update-bot-os/1793803232735830649.
+  Activation: no service restarts required (activation_required=[]); no reboot.
+  Evidence: `/var/lib/update-bot/runs/734417f7-5f49-481c-ba5e-f67891304a7e/operations/650e7fa1-22b8-4df0-bea8-91467cc6c893`.
+
+- **hermes** — verified. Before: Launcher ~/.local/bin/hermes now selects candidate-71736c9f (launcher sha 537980e2, source_revision 688a10f3 on upstream 71736c9f); running gateway still PID 2018596 on the previous generation candidate-c314285f. Gateway believed idle enough for the helper's fresh zero-work drain (activity to be re-checked by the helper).. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 485347 on candidate-71736c9f, revision 688a10f3, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 688a10f3 old_pid 2018596 pid 485347 slack connected; gateway process live on candidate-71736c9f.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/734417f7-5f49-481c-ba5e-f67891304a7e/operations/a68c7333-7721-4d63-9eb5-0d678071f708`.
+
+- **claude** — verified. Before: Claude Code native install 2.1.317, launcher ~/.local/bin/claude -> ~/.local/share/claude/versions/2.1.317; npm registry latest @anthropic-ai/claude-code = 2.1.318. No interactive session running under this launcher version that would be replaced lazily.. After: Claude Code 2.1.318 installed; ~/.local/bin/claude -> versions/2.1.318.
+  Verification: operation exit 0/0; verify.log version=2.1.318 (Claude Code); symlink target confirmed.
+  Activation: installed and active for new launches.
+  Evidence: `/var/lib/update-bot/runs/734417f7-5f49-481c-ba5e-f67891304a7e/operations/d45f21b2-17b1-44de-b2cb-affd00be6b01`.
+
+- **llama.cpp** — failed. Before: ~/git/llama.cpp clean on master at 149f5641b931aaf33697d70f9abc90c3e5300247 (build 11946); origin/master local ref stale at that commit; upstream github ggml-org/llama.cpp refs/heads/master = 5851a8e505f4d5fbb183f2847698eb6155d176b7. Toolchain now CUDA 13.4 (/usr/local/cuda-13.4, nvcc V13.4.92) which the updater pins via toolkit=/usr/local/cuda-13.4 with CMAKE_CUDA_HOST_COMPILER=/usr/bin/g++; this supersedes the prior CUDA-12.8-vs-glibc-2.43 blocker. Running llama-27b.service PID 949175 unaffected.. After: fetch updated origin/master to 5851a8e5 (local behind 18), but no build occurred and no binary/symlink changed.
+  Verification: operation exit 2; install.log shows tar 'Cannot open: Function not implemented' (ENOSYS) for every file; releases/current symlink and running service unchanged; repo still clean on master.
+  Activation: not installed; running inference server unaffected.
+  Evidence: `/var/lib/update-bot/runs/734417f7-5f49-481c-ba5e-f67891304a7e/operations/e8906fc5-13db-4f39-adf2-3f90df17affd`.
+
 ## 2026-11-03 — owner-authorized vendor maintenance repair
 
 The owner authorized remediation after the read-only investigation of 18 deferred
