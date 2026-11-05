@@ -1,5 +1,24 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-05 14:30 UTC — b843918f-258e-49da-87ab-cd6da5283452
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **os** — verified. Before: Ubuntu 26.04.1 LTS resolute, kernel 7.0.0-42-generic; apt --upgradable currently lists only cuda-toolkit config, docker-ce x3 and the nvidia driver stack (all separately reviewed, out of ordinary scope); no apt/dpkg lock. Prior OS receipt 2026-11-04 selected 7 ordinary packages.. After: helper installed 5 ordinary packages (libsnmp-base/libsnmp40t64, python3-pil, python3-pil.imagetk, python3-twisted) and deferred 23 held packages (cuda-toolkit config, docker-ce x3, nvidia driver stack); reboot_required=false.
+  Verification: operation exit 0/0 changed=true; /var/lib/update-bot-os/latest.json status=completed with observed after-versions matching; native evidence /var/lib/update-bot-os/1793889284894545991.
+  Activation: no service restarts required (activation_required=[]); no reboot.
+  Evidence: `/var/lib/update-bot/runs/b843918f-258e-49da-87ab-cd6da5283452/operations/36a09005-cd16-4677-b5a6-e0f7e19c8d2a`.
+
+- **hermes** — verified. Before: Installed/activated generation candidate-71736c9f (carry 688a10f3 on upstream 71736c9f), selected by ~/.local/bin/hermes (launcher sha 537980e2) and running as gateway PID 485347 with Slack connected; upstream main advanced to 84a03014. No apt/dpkg lock; running gateway left untouched by this install.. After: Carry 69103a9d built on upstream 84a03014 (10 files, clean per-file 3-way merge); venv built; ~235 behavior tests + gateway import smoke passed; versioned launcher installed (sha c692428e) and provenance receipt written.
+  Verification: operation exit 0/0; log PORT_OK carry=69103a9d base=84a03014 + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK; installed launcher --version reports local 69103a9d; receipt hermes-installed.json upstream_revision 84a03014 matches.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/b843918f-258e-49da-87ab-cd6da5283452/operations/6e4ffc13-45a0-46d1-aaa0-3638bfa9d76e`.
+
+- **hermes** — verified. Before: Launcher ~/.local/bin/hermes now selects candidate-84a03014 (launcher sha c692428e, source_revision 69103a9d on upstream 84a03014); running gateway still PID 485347 on the previous generation candidate-71736c9f. Gateway believed idle enough for the helper's fresh zero-work drain (activity to be re-checked by the helper).. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 1212719 on candidate-84a03014, revision 69103a9d, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 69103a9d old_pid 485347 pid 1212719 slack connected; gateway process live on candidate-84a03014 and old PID gone.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/b843918f-258e-49da-87ab-cd6da5283452/operations/e77936bd-ee2b-4374-9242-c8685456efc4`.
+
 ## 2026-11-04 14:33 UTC — 734417f7-5f49-481c-ba5e-f67891304a7e
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
