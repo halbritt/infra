@@ -15,10 +15,13 @@ import tempfile
 
 
 SCHEMA = 'agent-ee.native-inputs/1'
-RESERVED_ENV = {'AGENT_EE_REQUIRE_TOOLCHAIN', 'AGENT_EE_RUN_INPUT_RECEIPT',
-                'AGENT_EE_EVIDENCE_DIR', 'AGENT_EE_MODULE_ENV',
-                'AGENT_EE_FOME_MC_CHECKOUT', 'AGENT_EE_J1_DRAWING',
-                'AGENT_EE_KICAD_ROUTE_CHECKOUT', 'AGENT_EE_KICAD_HAPPY', 'AGENT_EE_RUST_PLANNER'}
+POLICY_FILE = Path(__file__).with_name('native-input-policy.json')
+POLICY_BYTES = POLICY_FILE.read_bytes()
+POLICY = json.loads(POLICY_BYTES)
+
+
+class UnavailableInput(ValueError):
+    """A declared module's source is missing; no substitute is selected."""
 
 
 def digest(path):
@@ -42,7 +45,9 @@ def inventory(root):
     if root.is_file():
         return {'.': digest(root)}
     if not root.is_dir():
-        raise ValueError(f'input is absent or not a regular file/directory: {root}')
+        if not root.exists():
+            raise UnavailableInput(f'input is absent: {root}')
+        raise ValueError(f'input is not a regular file/directory: {root}')
     result = {}
     pending = [root]
     while pending:
@@ -59,17 +64,25 @@ def inventory(root):
     return result
 
 
-def check_files(root, expected):
+def validate_files(expected):
     if not isinstance(expected, dict) or not expected or any(
             not isinstance(name, str) or not isinstance(sha, str)
+            or Path(name).is_absolute() or '..' in Path(name).parts
+            or Path(name).as_posix() != name
             or not re.fullmatch('[0-9a-f]{64}', sha) for name, sha in expected.items()):
-        raise ValueError(f'input needs a nonempty relative-file SHA-256 inventory: {root}')
+        raise ValueError('input needs a nonempty relative-file SHA-256 inventory')
+
+
+def check_files(root, expected):
+    validate_files(expected)
     actual = inventory(root)
     missing = sorted(expected.keys() - actual.keys())
     extra = sorted(actual.keys() - expected.keys())
     changed = sorted(name for name in actual.keys() & expected.keys() if actual[name] != expected[name])
-    if missing or extra or changed:
+    if extra or changed:
         raise ValueError(f'input inventory mismatch at {root}: missing={missing}, extra={extra}, changed={changed}')
+    if missing:
+        raise UnavailableInput(f'input inventory incomplete at {root}: missing={missing}')
     return actual
 
 
@@ -95,6 +108,8 @@ def git(root, *args):
 
 
 def checkout_identity(root):
+    if not root.exists():
+        raise UnavailableInput(f'verifier source is missing: {root}')
     if not root.is_dir() or Path(git(root, 'rev-parse', '--show-toplevel')).resolve() != root.resolve():
         raise ValueError(f'verifier source must be a Git checkout root: {root}')
     commit = git(root, 'rev-parse', '--verify', 'HEAD^{commit}')
@@ -115,9 +130,8 @@ def bind_environment(item, bindings, known_modules=None, require_scope=False):
         raise ValueError('modules must be a nonempty list of distinct test module names')
     if known_modules is not None and set(scopes) - {'*'} - known_modules:
         raise ValueError(f'unknown input modules: {sorted(set(scopes) - {"*"} - known_modules)}')
-    if (not isinstance(variable, str) or not re.fullmatch('AGENT_EE_[A-Z0-9_]+|PCBSCHEMAGEN_ROOT', variable)
-            or variable in RESERVED_ENV):
-        raise ValueError(f'invalid or reserved input environment variable: {variable!r}')
+    if not isinstance(variable, str) or variable not in POLICY['outputs' if require_scope else 'inputs']:
+        raise ValueError(f'undeclared input/output environment variable: {variable!r}')
     previous = bindings.get(variable, set())
     if previous and ('*' in previous or '*' in scopes or previous.intersection(scopes)):
         raise ValueError(f'input environment variable has overlapping module selections: {variable}')
@@ -125,7 +139,9 @@ def bind_environment(item, bindings, known_modules=None, require_scope=False):
     return scopes
 
 
-def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=None):
+def prepare(manifest, evidence_dir, args_file=None, image=None, runner=None, source=None):
+    if not evidence_dir.is_absolute():
+        raise ValueError('native input evidence directory must be absolute')
     raw = manifest.read_bytes()
     document = json.loads(raw, object_pairs_hook=unique_object)
     if (not isinstance(document, dict) or document.get('schema') != SCHEMA
@@ -135,6 +151,8 @@ def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=N
     if not isinstance(inputs, list) or not inputs:
         raise ValueError('native input manifest must list at least one input')
     source_identity = checkout_identity(source) if source else None
+    if source and (source / 'scripts/native-input-policy.json').read_bytes() != POLICY_BYTES:
+        raise ValueError('runner and agent-ee native input policy differ; select a reviewed source pair')
     if source and evidence_dir.resolve().is_relative_to(source.resolve()):
         raise ValueError('native input evidence must stay outside the agent-ee checkout')
     names, bindings, checked = set(), {}, []
@@ -151,17 +169,22 @@ def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=N
         if not isinstance(item['path'], str) or not Path(item['path']).is_absolute():
             raise ValueError(f'native input path must be absolute: {name}')
         root = Path(item['path'])
+        mount_path(root)
+        if evidence_dir.resolve().is_relative_to(root.resolve()):
+            raise ValueError(f'evidence directory must be outside input source: {root}')
         if 'git' in item:
             if item['git'] is not True:
                 raise ValueError(f'Git input selector must be true: {name}')
-            identity = checkout_identity(root)
         else:
-            identity = check_files(root, item['files'])
-        root = root.resolve(strict=True)
-        mount_path(root)
-        if evidence_dir.resolve().is_relative_to(root):
-            raise ValueError(f'evidence directory must be outside input source: {root}')
-        checked.append((item, root, identity, scopes))
+            validate_files(item['files'])
+        unavailable = None
+        try:
+            identity = checkout_identity(root) if 'git' in item else check_files(root, item['files'])
+        except UnavailableInput as exc:
+            if scopes == ['*']:
+                raise
+            identity, unavailable = None, str(exc)
+        checked.append((item, root.resolve(), identity, scopes, unavailable))
     outputs = document.get('outputs', [])
     if not isinstance(outputs, list):
         raise ValueError('native outputs must be a list of module-specific output selectors')
@@ -192,7 +215,11 @@ def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=N
         record['runner'] = {'path': str(runner.resolve()), 'sha256': digest(runner)}
     if source:
         record['agent_ee'] = {'path': str(source.resolve()), **source_identity}
-    receipt = output / 'native-inputs.json'
+    receipt = run / 'native-inputs.json'
+    record['output_directory'] = str(output)
+    args_file = args_file or (run / 'docker-args')
+    record['args_file'] = str(args_file)
+    record['policy_sha256'] = hashlib.sha256(POLICY_BYTES).hexdigest()
     argv = []
     module_env = {'schema': 'agent-ee.module-env/1', 'modules': {}}
 
@@ -200,8 +227,16 @@ def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=N
         return module_env['modules'].setdefault(name, {'inputs': {}, 'outputs': {}})
 
     try:
-        for item, root, identity, scopes in checked:
+        for item, root, identity, scopes, unavailable in checked:
             snapshot = snapshots / item['name']
+            target = '/opt/agent-ee-inputs/' + item['name']
+            if unavailable is not None:
+                for module in scopes:
+                    selected_module(module)['inputs'][item['env']] = target
+                    module_env.setdefault('unavailable', {}).setdefault(module, {})[item['env']] = unavailable
+                record['inputs'].append({'name': item['name'], 'env': item['env'], 'source': str(root),
+                                         'modules': scopes, 'status': 'unavailable', 'detail': unavailable})
+                continue
             if 'git' in item:
                 git(root, 'clone', '--quiet', '--local', '--no-hardlinks', '--no-checkout',
                     '--', str(root), str(snapshot))
@@ -214,7 +249,6 @@ def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=N
                 shutil.copyfile(root, snapshot, follow_symlinks=False)
             if 'files' in item:
                 check_files(snapshot, identity)
-            target = '/opt/agent-ee-inputs/' + item['name']
             argv += ['--mount', f'type=bind,src={mount_path(snapshot)},dst={target},readonly']
             if scopes == ['*']:
                 argv += ['-e', item['env'] + '=' + target]
@@ -236,7 +270,7 @@ def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=N
             record['module_environment'] = module_env
             argv += ['--mount', f'type=bind,src={mount_path(module_file)},dst=/opt/agent-ee-inputs/module-env.json,readonly',
                      '-e', 'AGENT_EE_MODULE_ENV=/opt/agent-ee-inputs/module-env.json']
-        record['status'] = 'prepared'
+        record['status'] = 'prepared_with_unavailable_inputs' if module_env.get('unavailable') else 'prepared'
     except (OSError, ValueError) as exc:
         record.update(status='failed', error=str(exc))
         receipt.write_text(json.dumps(record, indent=2) + '\n')
@@ -244,10 +278,35 @@ def prepare(manifest, evidence_dir, args_file, image=None, runner=None, source=N
     receipt.write_text(json.dumps(record, indent=2) + '\n')
     # Only outputs are writable in the container: input snapshots have no writable alias.
     argv += ['--mount', f'type=bind,src={mount_path(output)},dst=/artifacts',
+             '--mount', f'type=bind,src={mount_path(receipt)},dst=/opt/agent-ee-inputs/receipt.json,readonly',
              '-e', 'AGENT_EE_EVIDENCE_DIR=/artifacts',
-             '-e', 'AGENT_EE_RUN_INPUT_RECEIPT=/artifacts/native-inputs.json']
+             '-e', 'AGENT_EE_RUN_INPUT_RECEIPT=/opt/agent-ee-inputs/receipt.json']
     args_file.write_bytes(('\0'.join(argv) + '\0').encode())
     return receipt
+
+
+def retain_failure(args, error):
+    """Keep refused setup outside input/source trees; no Docker argv is emitted."""
+    root = args.evidence_dir.resolve()
+    if not args.evidence_dir.is_absolute() or (args.source and root.is_relative_to(args.source.resolve())):
+        return None
+    raw = args.manifest.read_bytes() if args.manifest.is_file() else b''
+    try:
+        document = json.loads(raw)
+    except ValueError:
+        document = {}
+    if isinstance(document, dict) and isinstance(document.get('inputs'), list):
+        for item in document['inputs']:
+            if isinstance(item, dict) and isinstance(item.get('path'), str):
+                if root.is_relative_to(Path(item['path']).resolve()):
+                    return None
+    root.mkdir(parents=True, exist_ok=True)
+    destination = Path(tempfile.mkdtemp(prefix='failed-', dir=root)) / 'native-inputs.json'
+    record = {'schema': SCHEMA, 'status': 'failed', 'error': str(error),
+              'manifest': str(args.manifest.resolve()), 'manifest_sha256': hashlib.sha256(raw).hexdigest(),
+              'image': args.image, 'prepared_at': datetime.now(timezone.utc).isoformat()}
+    destination.write_text(json.dumps(record, indent=2) + '\n')
+    return destination
 
 
 def main():
@@ -258,21 +317,41 @@ def main():
     stage = commands.add_parser('prepare', help='verify and retain input copies for one admitted run')
     stage.add_argument('manifest', type=Path)
     stage.add_argument('--evidence-dir', required=True, type=Path)
-    stage.add_argument('--args-file', required=True, type=Path)
+    stage.add_argument('--args-file', type=Path)
     stage.add_argument('--image')
     stage.add_argument('--runner', type=Path)
     stage.add_argument('--source', type=Path, help='clean agent-ee source selected by the runner')
+    bind = commands.add_parser('bind-image', help='bind a prepared receipt to this run\'s selected image')
+    bind.add_argument('receipt', type=Path)
+    bind.add_argument('image')
     args = parser.parse_args()
     try:
         if args.operation == 'inventory':
             print(json.dumps(inventory(args.path), indent=2))
+        elif args.operation == 'bind-image':
+            record = json.loads(args.receipt.read_text(), object_pairs_hook=unique_object)
+            if (record.get('schema') != SCHEMA or record.get('status') not in ('prepared', 'prepared_with_unavailable_inputs')
+                    or not re.fullmatch('sha256:[0-9a-f]{64}', args.image)
+                    or record.get('image') not in (None, args.image)):
+                raise ValueError('receipt cannot be rebound to a different or invalid image')
+            record['image'] = args.image
+            temporary = args.receipt.with_suffix('.binding')
+            temporary.write_text(json.dumps(record, indent=2) + '\n')
+            temporary.replace(args.receipt)
         else:
             receipt = prepare(args.manifest, args.evidence_dir, args.args_file,
                               args.image, args.runner, args.source)
-            print(json.dumps({'receipt': str(receipt)}))
+            print(json.dumps({'receipt': str(receipt), 'args_file': json.loads(receipt.read_text())['args_file']}))
             print(f'ae-ci-exec: native input receipt {receipt}', file=sys.stderr)
     except (OSError, ValueError) as exc:
         print(f'ae-ci-exec: native inputs refused: {exc}', file=sys.stderr)
+        if args.operation == 'prepare':
+            try:
+                receipt = retain_failure(args, exc)
+                if receipt:
+                    print(f'ae-ci-exec: failed input receipt {receipt}', file=sys.stderr)
+            except OSError as save_error:
+                print(f'ae-ci-exec: failure receipt unavailable: {save_error}', file=sys.stderr)
         return 2
     return 0
 

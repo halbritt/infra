@@ -1,0 +1,13 @@
+{
+  "schema": "agent-ee.runtime-input-install/1",
+  "host": "proximal",
+  "owner": "agent-ee runtime",
+  "manifest": "/home/halbritt/.local/share/agent-ee/native-inputs/runtime/manifest.json",
+  "manifest_sha256": "4420b18c6b5a7bc763b908b6fce2940e604b32e2504a483fb28f6cda79f8a658",
+  "store": "/home/halbritt/.local/share/agent-ee/native-inputs/runtime",
+  "installed_at": "2026-11-06T20:30:06.563208+00:00",
+  "source_inventory": "/home/halbritt/.local/share/agent-ee/agentee-622-624-agent1260/20261106T192058Z/retained-input-verification.json",
+  "verifier_repository": "https://github.com/HZou9/PCBSchemaGen_v2",
+  "verifier_commit": "e07c545f4c01a8026480b1093ee503a926ce2be5",
+  "status": "provisioned; nightly configuration and native acceptance pending lead closure"
+}

@@ -41,14 +41,17 @@ class NativeInputsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         receipt_path = Path(json.loads(result.stdout)['receipt'])
         receipt = json.loads(receipt_path.read_text())
+        output = Path(receipt['output_directory'])
         source = Path(receipt['inputs'][0]['snapshot'])
         self.assertEqual((source / 'receipt.json').read_bytes(), b'historical receipt\n')
         self.assertEqual(receipt['manifest_sha256'], hashlib.sha256(self.manifest.read_bytes()).hexdigest())
         args = (self.root / 'args').read_bytes().decode().split('\0')[:-1]
         self.assertIn(f'type=bind,src={source},dst=/opt/agent-ee-inputs/k91-final,readonly', args)
         self.assertIn('AGENT_EE_K91_FINAL_RECEIPT=/opt/agent-ee-inputs/k91-final', args)
-        self.assertIn(f'type=bind,src={receipt_path.parent},dst=/artifacts', args)
-        self.assertFalse(source.is_relative_to(receipt_path.parent))
+        self.assertIn(f'type=bind,src={output},dst=/artifacts', args)
+        self.assertIn(f'type=bind,src={receipt_path},dst=/opt/agent-ee-inputs/receipt.json,readonly', args)
+        self.assertFalse(source.is_relative_to(output))
+        self.assertFalse(receipt_path.is_relative_to(output))
         self.assertEqual(receipt['inputs'][0]['files'], self.inputs[0]['files'])
         (self.source / 'receipt.json').write_text('producer changed\n')
         self.assertEqual((source / 'receipt.json').read_bytes(), b'historical receipt\n')
@@ -105,7 +108,9 @@ class NativeInputsTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertIn('native inputs refused', result.stderr)
                 self.assertFalse((self.root / 'args').exists())
-                self.assertFalse((self.root / 'evidence').exists())
+                failed = list((self.root / 'evidence').glob('failed-*/native-inputs.json'))
+                self.assertTrue(failed)
+                self.assertTrue(all(json.loads(path.read_text())['status'] == 'failed' for path in failed))
 
     def test_symlinked_input_is_refused_without_mutating_its_target(self):
         target = self.root / 'outside.json'
@@ -166,7 +171,7 @@ class NativeInputsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         receipt_path = Path(json.loads(result.stdout)['receipt'])
         record = json.loads(receipt_path.read_text())
-        module_file = receipt_path.parent.parent / 'inputs/module-env.json'
+        module_file = receipt_path.parent / 'inputs/module-env.json'
         mapping = json.loads(module_file.read_text())
         self.assertEqual(mapping['schema'], 'agent-ee.module-env/1')
         modules = mapping['modules']
@@ -180,10 +185,40 @@ class NativeInputsTests(unittest.TestCase):
         for name in modules:
             value = modules[name]['outputs']['AGENT_EE_POWER_PART_ARTIFACTS']
             self.assertEqual(value, f'/artifacts/modules/{name}/parts')
-            host = receipt_path.parent / 'modules' / name / 'parts'
+            host = Path(record['output_directory']) / 'modules' / name / 'parts'
             self.assertTrue(host.parent.is_dir())
             self.assertFalse(host.exists())
         self.assertEqual(record['module_env_sha256'], hashlib.sha256(module_file.read_bytes()).hexdigest())
+
+    def test_missing_scoped_source_is_declared_without_hiding_good_modules_or_global_schema_errors(self):
+        self.inputs[0]['modules'] = ['test_historical']
+        self.inputs.append({**self.inputs[0], 'name': 'absent', 'path': str(self.root / 'absent'),
+                            'modules': ['test_current']})
+        result = self.prepare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(Path(json.loads(result.stdout)['receipt']).read_text())
+        self.assertEqual(receipt['status'], 'prepared_with_unavailable_inputs')
+        self.assertEqual(set(receipt['module_environment']['unavailable']), {'test_current'})
+        self.assertIn('AGENT_EE_K91_FINAL_RECEIPT', receipt['module_environment']['unavailable']['test_current'])
+        self.assertEqual(receipt['inputs'][1]['status'], 'unavailable')
+        self.inputs[1]['env'] = 'AGENT_EE_SKIP_VISUALS'
+        result = self.prepare()
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('undeclared', result.stderr)
+
+    def test_selected_image_binding_cannot_be_retargeted_after_preparation(self):
+        result = self.prepare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = Path(json.loads(result.stdout)['receipt'])
+        first = 'sha256:' + '1' * 64
+        bind = subprocess.run([sys.executable, str(SCRIPT), 'bind-image', str(receipt), first],
+                              capture_output=True, text=True, timeout=15)
+        self.assertEqual(bind.returncode, 0, bind.stderr)
+        before = receipt.read_bytes()
+        other = subprocess.run([sys.executable, str(SCRIPT), 'bind-image', str(receipt), 'sha256:'+'2'*64],
+                               capture_output=True, text=True, timeout=15)
+        self.assertEqual(other.returncode, 2)
+        self.assertEqual(receipt.read_bytes(), before)
 
 
 if __name__ == '__main__':
