@@ -164,6 +164,8 @@ def prepare(manifest, evidence_dir, args_file=None, image=None, runner=None, sou
         name = item['name']
         if not isinstance(name, str) or not re.fullmatch('[a-z][a-z0-9-]{0,63}', name) or name in names:
             raise ValueError(f'invalid or duplicate native input name: {name!r}')
+        if name == 'receipt':
+            raise ValueError('reserved native input name: receipt')
         scopes = bind_environment(item, bindings, known_modules)
         names.add(name)
         if not isinstance(item['path'], str) or not Path(item['path']).is_absolute():

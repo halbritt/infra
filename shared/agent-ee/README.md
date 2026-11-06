@@ -385,7 +385,10 @@ timestamps). The pinned contents agree, as the identical doctor output
 ## Execution outcome and retained test evidence (AGENTEE-619/622/624)
 
 Set `AE_CI_OUTCOME_FILE` to a unique absolute host path outside the writable
-worktree. The supervisor creates an exclusive `agent-ee.exec-outcome/1` journal
+worktree and its Git directory, `AE_CI_EVIDENCE_DIR`, and `AE_CI_EXEC_HOME`
+(including its scratch and retained-input directories). The supervisor resolves
+path aliases before checking confinement and rejects an existing symlink selector.
+It creates an exclusive `agent-ee.exec-outcome/1` journal
 with the command hash and runner/supervisor hashes. `complete: true` with
 `state: not_started` proves that the requested COMMAND did not reach the Docker
 launch boundary. Exit codes remain the child's original codes; no-start is not
@@ -401,11 +404,17 @@ must match agent-ee `scripts/native-input-policy.json` for a selected source pai
 Missing module-scoped sources produce explicit `unavailable` declarations;
 global schema, custody and confinement errors still refuse setup. Global setup
 refusals retain a `status: failed` receipt when the requested evidence path is safe.
+The input name `receipt` is reserved for authoritative receipt metadata.
 
 With `AGENT_EE_EVIDENCE_DIR` set, the affected tests copy reports, subprocess
 diagnostics and replay trees through `tests/artifact_retention.py` before each
 workspace cleanup. Artifacts include the exact test ID, byte hashes, link metadata
 and the read-only run-input receipt. Capture does not follow linked targets.
-Artifact-retention errors fail the test and preserve the source workspace rather
-than declaring evidence complete. This is exercised with owned portable fixtures;
-real admitted execution and independent acceptance remain required.
+Direct K91 consumer tests register capture before both their native-receipt fixture
+and separate consumer fixture are cleaned up. Their selected records include actual
+returned receipts/replay decisions and raised refusal diagnostics, plus the sealed
+source, disposable and consumer trees. Capture errors remain test errors; registered
+cleanup still runs, and an earlier test error remains separately visible. Temporary
+directory context managers also clean up after a capture error and preserve exception
+chaining. Portable fixtures exercise these paths; new admitted execution and independent
+acceptance remain required after a source change.

@@ -220,9 +220,13 @@ case ${1:-} in
       die "$wt is not an agent-ee worktree root (no Dockerfile or .github/workflows/ci.yml)" ;;
 esac
 if [ "$mode" = run ] && [ -n "${AE_CI_OUTCOME_FILE:-}" ] && [ -z "${AE_CI_OUTCOME_TOKEN:-}" ]; then
-  outcome=$(realpath -m -- "$AE_CI_OUTCOME_FILE")
-  case $outcome in "$wt"|"$wt"/*) die "AE_CI_OUTCOME_FILE must stay outside the writable worktree" ;; esac
-  exec python3 "$(dirname "$self")/ae-ci-outcome.py" run --record "$outcome" --runner "$self" \
+  outcome=$AE_CI_OUTCOME_FILE
+  outcome_args=(--record "$outcome" --runner "$self" --forbid-path "$wt"
+                --forbid-path "${AE_CI_EXEC_HOME:-$HOME/.cache/ae-ci-exec}")
+  [ -z "${AE_CI_EVIDENCE_DIR:-}" ] || outcome_args+=(--forbid-path "$AE_CI_EVIDENCE_DIR")
+  outcome_gitdir=$(git -C "$wt" rev-parse --absolute-git-dir 2>/dev/null) || outcome_gitdir=
+  [ -z "$outcome_gitdir" ] || outcome_args+=(--forbid-path "$outcome_gitdir")
+  exec python3 "$(dirname "$self")/ae-ci-outcome.py" run "${outcome_args[@]}" \
     -- "$self" "$wt" -- "$@"
 fi
 command -v docker >/dev/null || die "docker not found"

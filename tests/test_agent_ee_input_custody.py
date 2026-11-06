@@ -149,6 +149,20 @@ printf '%s\\0' "${REQUIRED_INPUT_MOUNTS[@]}"
         failed = list(evidence.glob('failed-*/native-inputs.json'))
         self.assertEqual(len(failed),1)
         self.assertEqual(json.loads(failed[0].read_text())['status'],'failed')
+        alias = self.root / 'evidence-alias'
+        alias.symlink_to(evidence, target_is_directory=True)
+        for forbidden in (checkout / 'journal.json', evidence / 'journal.json',
+                          alias / 'journal.json', self.state / 'tmp/journal.json',
+                          checkout / '.git/journal.json'):
+            with self.subTest(journal=forbidden):
+                refused = subprocess.run([str(runner_dir/'ae-ci-exec'), str(checkout), '--', 'true'],
+                    env={**self.env, 'AE_CI_EXEC_HOME':str(self.state),
+                         'AE_CI_EVIDENCE_DIR':str(evidence), 'AE_CI_OUTCOME_FILE':str(forbidden)},
+                    capture_output=True, timeout=15)
+                self.assertEqual(refused.returncode, 2, refused.stderr)
+                self.assertIn(b'outside writable runtime paths', refused.stderr)
+                self.assertFalse(forbidden.exists())
+                self.assertFalse(docker_log.exists())
 
 
 if __name__ == '__main__':

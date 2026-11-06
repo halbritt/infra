@@ -43,9 +43,26 @@ def mark_started(path):
     write_record(path, record)
 
 
-def supervise(path, runner, command):
+def confined_record(path, forbidden_paths):
     if not path.is_absolute():
         raise ValueError('AE_CI_OUTCOME_FILE must be absolute')
+    if path.is_symlink():
+        raise ValueError('AE_CI_OUTCOME_FILE must not select an existing symlink')
+    try:
+        resolved = path.resolve()
+        for root in forbidden_paths:
+            if not root.is_absolute():
+                raise ValueError('writable runtime paths must be absolute')
+            root = root.resolve()
+            if resolved.is_relative_to(root) or root.is_relative_to(resolved):
+                raise ValueError(f'AE_CI_OUTCOME_FILE must stay outside writable runtime paths: {root}')
+    except RuntimeError as exc:
+        raise ValueError('AE_CI_OUTCOME_FILE cannot resolve safely') from exc
+    return resolved
+
+
+def supervise(path, runner, command, forbidden_paths=()):
+    path = confined_record(path, forbidden_paths)
     path.parent.mkdir(parents=True, exist_ok=True)
     token = str(uuid.uuid4())
     record = {'schema': SCHEMA, 'attempt_id': token, 'token': token, 'complete': False,
@@ -53,7 +70,7 @@ def supervise(path, runner, command):
               'runner_sha256': hashlib.sha256(runner.read_bytes()).hexdigest(),
               'supervisor_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'command_sha256': hashlib.sha256(json.dumps(command).encode()).hexdigest()}
-    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as stream:
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600), 'w') as stream:
         json.dump(record, stream)
         stream.flush()
         os.fsync(stream.fileno())
@@ -116,6 +133,7 @@ def main():
     run = subs.add_parser('run')
     run.add_argument('--record', type=Path, required=True)
     run.add_argument('--runner', type=Path, required=True)
+    run.add_argument('--forbid-path', type=Path, action='append', default=[])
     run.add_argument('command', nargs=argparse.REMAINDER)
     mark = subs.add_parser('mark-started')
     mark.add_argument('record', type=Path)
@@ -127,7 +145,7 @@ def main():
         command = args.command[1:] if args.command and args.command[0] == '--' else args.command
         if not command:
             raise ValueError('supervised command is empty')
-        return supervise(args.record, args.runner, command)
+        return supervise(args.record, args.runner, command, args.forbid_path)
     except (OSError, ValueError) as exc:
         print(f'ae-ci-exec: execution outcome refused: {exc}', file=sys.stderr)
         return 2

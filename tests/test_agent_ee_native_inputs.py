@@ -220,6 +220,13 @@ class NativeInputsTests(unittest.TestCase):
         self.assertEqual(other.returncode, 2)
         self.assertEqual(receipt.read_bytes(), before)
 
+    def test_authoritative_receipt_input_name_is_reserved_before_argv_is_emitted(self):
+        self.inputs[0]['name'] = 'receipt'
+        result = self.prepare()
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('reserved native input name', result.stderr)
+        self.assertFalse((self.root / 'args').exists())
+
 
 if __name__ == '__main__':
     unittest.main()

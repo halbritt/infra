@@ -1,0 +1,64 @@
+{
+  "schema": "agent-ee.runtime-nightly-input-install/1",
+  "host": "proximal",
+  "owner": "agent-ee runtime",
+  "manifest": "/home/halbritt/.local/share/agent-ee/native-inputs/runtime/nightly-manifest.json",
+  "manifest_sha256": "7bd699e6f804c03c027d1c44336898a7ba8f4a513a69360596317d58ddb3485a",
+  "focused_manifest": "/home/halbritt/.local/share/agent-ee/native-inputs/runtime/manifest.json",
+  "focused_manifest_sha256": "4420b18c6b5a7bc763b908b6fce2940e604b32e2504a483fb28f6cda79f8a658",
+  "store": "/home/halbritt/.local/share/agent-ee/native-inputs/runtime",
+  "module_bindings": {
+    "AGENT_EE_K91_FINAL_RECEIPT": [
+      "test_routing_experiment_boundary"
+    ],
+    "AGENT_EE_K91_PROTECTED_EXISTING": [
+      "test_routing_experiment_boundary"
+    ],
+    "AGENT_EE_K91_PROTECTED_HUMAN": [
+      "test_routing_experiment_boundary"
+    ],
+    "PCBSCHEMAGEN_ROOT": [
+      "test_pcbschemagen_gate1",
+      "test_pcbschemagen_benchmark"
+    ]
+  },
+  "producer": {
+    "path": "shared/agent-ee/native-inputs.py",
+    "sha256": "6dbbf07fbd1d83427c9dfcf605201ab94bbe0c9e9a431eeea8562e28e3bfad72"
+  },
+  "runner": {
+    "path": "shared/agent-ee/ae-ci-exec",
+    "sha256": "bbf33c1a348ee70585e39103a3cef0d6ce6229acc7b518693eaa8a9f5fb9c27a"
+  },
+  "policy_sha256": "4b73a905509fdbd398bdb33316d8dc0cfa13ae33eb5d687326229bc621600eff",
+  "source_identity": "Each attempt records the selected agent-ee commit/tree/clean state and runner/preparer hashes in native-inputs.json; evidence applies only to that exact source/runtime pair.",
+  "consumer_scan": {
+    "project": "agent-ee",
+    "modules": [
+      "tests/test_routing_experiment_boundary.py",
+      "tests/test_pcbschemagen_gate1.py",
+      "tests/test_pcbschemagen_benchmark.py"
+    ],
+    "helper": "tests/toolchain.py:require_pcbschemagen",
+    "additional_required_test_consumers": []
+  },
+  "nightly_history": {
+    "owner": "CI agent-1259",
+    "root": "/home/halbritt/.local/share/agent-ee-full-suite",
+    "index": "retention-index.json",
+    "refusal_signal": "retention-check.json plus nonzero service Result/ExecMainStatus; no baseline/SHA advancement",
+    "max_retained_runs": 7,
+    "max_retained_bytes": 21474836480,
+    "states": "all retained attempt states; unique attempt identities",
+    "bytes": "regular file sizes counted once per device/inode across owned outputs, retained worktrees and indexed scratch; no link traversal",
+    "scratch": "authoritative indexed runner scratch, normally /home/halbritt/.cache/ae-ci-exec/tmp/run-*",
+    "accounting_failure": "refuse with actionable lead reconciliation; never zero usage",
+    "deletion_authorized": false
+  },
+  "status": "manifest provisioned; independent review, composed consumer proof, landing and activation pending",
+  "provisioned_at": "2026-11-06T21:24:14.221111+00:00",
+  "agent_ee_source_basis": {
+    "commit": "aea4cb82e77d5cee08c21cabe3cb516b60a37ad7",
+    "tree": "10530e5ccc54fc06cc8aa0dff8e5309163e2ed0a"
+  }
+}

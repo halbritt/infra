@@ -85,6 +85,35 @@ class ExecOutcomeTests(unittest.TestCase):
                 proc.kill()
             proc.communicate(timeout=5)
 
+    def test_record_aliases_into_forbidden_runtime_roots_refuse_without_launch_or_write(self):
+        forbidden = self.root / 'writable'
+        forbidden.mkdir()
+        alias = self.root / 'alias'
+        alias.symlink_to(forbidden, target_is_directory=True)
+        side_effect = self.root / 'launched'
+        for record in (forbidden / 'journal.json', alias / 'journal.json',
+                       self.root / 'unused/../writable/journal.json'):
+            with self.subTest(record=record):
+                result = subprocess.run([sys.executable, str(HELPER), 'run', '--record', str(record),
+                    '--runner', str(HELPER), '--forbid-path', str(forbidden), '--', sys.executable,
+                    '-c', f'from pathlib import Path; Path({str(side_effect)!r}).touch()'],
+                    text=True, capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn('outside writable runtime paths', result.stderr)
+                self.assertFalse(side_effect.exists())
+                self.assertFalse((forbidden / 'journal.json').exists())
+
+    def test_existing_symlink_selector_cannot_be_retargeted_to_a_fresh_attempt(self):
+        target = self.root / 'new-attempt.json'
+        self.record.symlink_to(target)
+        side_effect = self.root / 'launched'
+        result = self.run_case(f'from pathlib import Path; Path({str(side_effect)!r}).touch()')
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('existing symlink', result.stderr)
+        self.assertFalse(side_effect.exists())
+        self.assertFalse(target.exists())
+        self.assertTrue(self.record.is_symlink())
+
 
 if __name__ == '__main__':
     unittest.main()
