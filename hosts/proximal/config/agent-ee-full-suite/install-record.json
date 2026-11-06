@@ -1,0 +1,22 @@
+{
+  "schema": "infra.agent-ee-full-suite-install/1",
+  "host": "proximal",
+  "work_item": "AGENTEE-619",
+  "status": "prepared-awaiting-review-and-lead-activation",
+  "observed_before_change": {
+    "date": "2026-11-06",
+    "unit_files_present": false
+  },
+  "activation_owner": "AGENTEE-619 remediation lead",
+  "unit_installation": {
+    "agent-ee-full-suite.service": "~/.config/systemd/user/agent-ee-full-suite.service",
+    "agent-ee-full-suite.timer": "~/.config/systemd/user/agent-ee-full-suite.timer"
+  },
+  "entrypoint": "~/git/agent-ee/scripts/nightly_full_suite.py",
+  "state_directory": "~/.local/share/agent-ee-full-suite",
+  "installed_at": null,
+  "infra_commit": null,
+  "agent_ee_commit": null,
+  "installed_unit_sha256": null,
+  "first_moved_main_evidence": null
+}

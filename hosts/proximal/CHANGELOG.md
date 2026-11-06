@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-06 — prepare agent-ee nightly strict-suite user units (AGENTEE-619)
+
+- Prepared a 04:00 America/Los_Angeles timer and a service delegating to the
+  reviewed agent-ee nightly runner through `ae-ci-exec`/`native-admit`, with
+  weight 2, two workers, finite waits and retained native scratch.
+- [Install mapping and record](config/agent-ee-full-suite/README.md) distinguish
+  prepared files from installation and first moved-main proof. The remediation
+  lead activates the timer after independent review and landing; this change
+  does not claim the units are installed or enabled.
+
 ## 2026-11-04 — archive the Agent EE qualification cache
 
 - Owner decision: moved `~/.cache/agent-ee-qualification` (207,215 files, 593
