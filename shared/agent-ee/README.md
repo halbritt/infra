@@ -33,6 +33,54 @@ ae-ci-exec --gc [--dry-run]      # evict unused images and copies now (runs do i
 
 ## What it reproduces
 
+### Explicit retained native inputs (AGENTEE-622/624)
+
+Install `native-inputs.py`, `native-input-policy.json`, `native-input-fetch.sh` and
+`ae-ci-outcome.py` beside `ae-ci-exec`; the runner invokes it with the
+host's Python 3.11 or newer. `AE_CI_INPUT_MANIFEST` explicitly selects a local
+`agent-ee.native-inputs/1` JSON file; an unset variable selects no extra inputs. With a manifest,
+`AE_CI_EVIDENCE_DIR` must name a durable absolute directory outside the checkout.
+No other host `AGENT_EE_*` variables are passed through implicitly.
+
+The manifest has `schema` and an `inputs` list. Each entry has a unique `name`,
+an explicit input `env`, and an absolute host `path`. Use either `files` (the
+complete relative-path-to-SHA-256 inventory) or `git: true` (select the current
+clean Git commit). `python3 native-inputs.py inventory PATH` describes a
+regular-file input. Review the inventory against its historical provenance
+before storing it in the durable local manifest; generating hashes alone does
+not qualify a receipt. No captures or local input manifests belong in public Git.
+
+Preparation refuses missing, additional, changed or symlinked file inputs and
+dirty Git checkouts. Each invocation retains separate input copies under the
+evidence root. Git copies have independent objects and remain at their selected
+commit. Inputs mount read-only at `/opt/agent-ee-inputs/NAME`; their named
+variables point there. The writable `/artifacts` mount covers only that run's
+output directory, so it cannot write through another alias of an input snapshot.
+The authoritative receipt stays outside the writable output directory.
+`AGENT_EE_RUN_INPUT_RECEIPT` names its read-only bind at
+`/opt/agent-ee-inputs/receipt.json`, which records
+the manifest SHA-256, file inventories or clean Git commit/tree, clean agent-ee
+source, image and runner digest. Retained snapshots and outputs survive scratch
+cleanup. Test success still requires the actual consumer checks.
+
+An input entry can add a nonempty `modules` list to scope its environment
+variable to those `test_*` modules. Disjoint module lists can use the same
+variable for different exact-byte inputs; overlapping or global aliases refuse
+setup. Optional top-level `outputs` entries have `name`, `env` and `modules`.
+The producer creates only `/artifacts/modules/MODULE` parents, leaving each
+named output leaf absent. Each run has a fresh output root. It emits and mounts
+a read-only `agent-ee.module-env/1` mapping through `AGENT_EE_MODULE_ENV`.
+The composed strict-suite consumer validates the complete map before dispatch,
+then selects the current module's inputs and outputs. The validator lives in
+agent-ee `scripts/strict_inputs.py`; its default policy confines input paths to
+`/opt/agent-ee-inputs` and outputs to `/artifacts/modules/MODULE`.
+
+The agent-ee container guide includes the four runtime input entries:
+`PCBSCHEMAGEN_ROOT`, `AGENT_EE_K91_FINAL_RECEIPT`,
+`AGENT_EE_K91_PROTECTED_EXISTING` and `AGENT_EE_K91_PROTECTED_HUMAN`. The source
+checkout must be clean before running with this manifest. The existing `ci.yml`
+fome-mc/J1 inputs, sandbox options, admission and image-selection rules still apply.
+
 Source of truth: `~/agent-ee-gate/ci-run.sh` on peecee-wsl and agent-ee's
 `.github/workflows/ci.yml` (job `image`, step "Full test suite, strict toolchain
 mode, no skips").
@@ -333,3 +381,31 @@ Image IDs differ per host (proximal `e634b4e20463`, peecee-wsl `aa11c35328c2`,
 archon `f6a1a6ac56e9`). Docker builds are not bit-reproducible (layer
 timestamps). The pinned contents agree, as the identical doctor output
 (binary hashes and versions) shows.
+
+## Execution outcome and retained test evidence (AGENTEE-619/622/624)
+
+Set `AE_CI_OUTCOME_FILE` to a unique absolute host path outside the writable
+worktree. The supervisor creates an exclusive `agent-ee.exec-outcome/1` journal
+with the command hash and runner/supervisor hashes. `complete: true` with
+`state: not_started` proves that the requested COMMAND did not reach the Docker
+launch boundary. Exit codes remain the child's original codes; no-start is not
+inferred from exit code alone. `started_or_uncertain`, `interrupted`, malformed
+or incomplete records never authorize automatic replay. The marker is written
+before Docker launch, so a failed launch remains conservatively uncertain.
+Signals are forwarded to the supervised process group. Existing records are
+refused without launching or overwriting an attempt. CI owns journal consumption
+and clearing/reconciling its active-run state.
+
+`native-input-policy.json` allowlists declared input/output variables. Its bytes
+must match agent-ee `scripts/native-input-policy.json` for a selected source pair.
+Missing module-scoped sources produce explicit `unavailable` declarations;
+global schema, custody and confinement errors still refuse setup. Global setup
+refusals retain a `status: failed` receipt when the requested evidence path is safe.
+
+With `AGENT_EE_EVIDENCE_DIR` set, the affected tests copy reports, subprocess
+diagnostics and replay trees through `tests/artifact_retention.py` before each
+workspace cleanup. Artifacts include the exact test ID, byte hashes, link metadata
+and the read-only run-input receipt. Capture does not follow linked targets.
+Artifact-retention errors fail the test and preserve the source workspace rather
+than declaring evidence complete. This is exercised with owned portable fixtures;
+real admitted execution and independent acceptance remain required.

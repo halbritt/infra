@@ -169,6 +169,13 @@
 #     host paths, and /opt/agent-ee/.git names that gitdir by absolute path.
 #     Object alternates are mounted read-only. Plain checkouts need nothing extra.
 # AGENT_EE_SKIP_VISUALS is passed through when set.
+# AE_CI_INPUT_MANIFEST selects an agent-ee.native-inputs/1 file. Explicit
+# selection is required; no ambient manifest is discovered. Its explicitly named
+# sources are verified, copied into AE_CI_EVIDENCE_DIR, and mounted read-only at
+# /opt/agent-ee-inputs/NAME. Only the manifest's named input variables are exported.
+# Each run retains its input snapshots and receipt beside an output directory
+# mounted at /artifacts; snapshots have no writable container alias. The manifest
+# requires AE_CI_EVIDENCE_DIR to select durable storage outside the checkout.
 #
 # State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies, locks,
 # build and gc logs, build records in builds/, use markers in used/, tree identities in
@@ -212,6 +219,12 @@ case ${1:-} in
     [ -f "$wt/Dockerfile" ] && [ -f "$wt/.github/workflows/ci.yml" ] ||
       die "$wt is not an agent-ee worktree root (no Dockerfile or .github/workflows/ci.yml)" ;;
 esac
+if [ "$mode" = run ] && [ -n "${AE_CI_OUTCOME_FILE:-}" ] && [ -z "${AE_CI_OUTCOME_TOKEN:-}" ]; then
+  outcome=$(realpath -m -- "$AE_CI_OUTCOME_FILE")
+  case $outcome in "$wt"|"$wt"/*) die "AE_CI_OUTCOME_FILE must stay outside the writable worktree" ;; esac
+  exec python3 "$(dirname "$self")/ae-ci-outcome.py" run --record "$outcome" --runner "$self" \
+    -- "$self" "$wt" -- "$@"
+fi
 command -v docker >/dev/null || die "docker not found"
 command -v flock >/dev/null || die "flock not found"
 
@@ -1047,32 +1060,24 @@ resolve_image() {
   printf '%s %s\n' "$id" "$how" > "$result"
 }
 
-# Required inputs, acquired as ci-run.sh does, owned by the caller (the runtime user).
-fetch_inputs() {
-  local store=$STATE/inputs/fome-mc-$FOME_MC_COMMIT
-  g() { GIT_TERMINAL_PROMPT=0 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -c safe.directory='*' "$@"; }
-  if [ ! -d "$store/.git" ]; then
-    echo "$prog: cloning fome-mc at $FOME_MC_COMMIT" >&2
-    rm -rf "$store.partial"
-    g -c credential.helper= -c http.extraheader= clone --quiet --no-checkout https://github.com/halbritt/fome-mc "$store.partial"
-    g -C "$store.partial" checkout --quiet --detach "$FOME_MC_COMMIT"
-    mv "$store.partial" "$store"
-  fi
-  [ "$(g -C "$store" rev-parse --verify 'HEAD^{commit}')" = "$FOME_MC_COMMIT" ] || die "fome-mc store $store is not at $FOME_MC_COMMIT"
-  ! g -C "$store" config --local --get-regexp '^(http\..*\.extraheader|credential\.)' >/dev/null || die "credentials persisted in $store"
-  [ "$(stat -c %u "$store")" = "$(id -u)" ] || die "fome-mc store $store is not owned by $(id -un)"
-  local j1=$STATE/inputs/te-776228-1.pdf
-  if [ ! -f "$j1" ]; then
-    echo "$prog: fetching the J1 drawing" >&2
-    curl --fail --silent --show-error --location --proto '=https' --retry 2 \
-      --max-time 90 --max-filesize 10000000 --user-agent 'Mozilla/5.0 (X11; Linux x86_64)' \
-      "$J1_DRAWING_URL" --output "$j1.partial"
-    printf '%s  %s\n' "$J1_DRAWING_SHA256" "$j1.partial" | sha256sum --check --strict --quiet ||
-      { rm -f "$j1.partial"; die "J1 drawing hash mismatch"; }
-    chmod 0444 "$j1.partial"; mv "$j1.partial" "$j1"
-  fi
-  printf '%s  %s\n' "$J1_DRAWING_SHA256" "$j1" | sha256sum --check --strict --quiet || die "J1 drawing $j1 hash mismatch"
-}
+# Required inputs share this executable custody boundary with the pure checks.
+source "$(dirname "$self")/native-input-fetch.sh"
+
+input_opts=()
+input_receipt=
+input_manifest=${AE_CI_INPUT_MANIFEST:-}
+if [ -n "${AE_CI_INPUT_MANIFEST+x}" ]; then
+  [ -f "$input_manifest" ] || die "native input manifest not found: $input_manifest"
+  [ -n "${AE_CI_EVIDENCE_DIR:-}" ] || die "AE_CI_INPUT_MANIFEST requires AE_CI_EVIDENCE_DIR for durable inputs and outputs"
+  case $AE_CI_EVIDENCE_DIR in /*) ;; *) die "AE_CI_EVIDENCE_DIR must be an absolute path" ;; esac
+  input_helper=$(dirname "$self")/native-inputs.py
+  [ -f "$input_helper" ] || die "native-inputs.py is not installed beside $self"
+  input_plan=$(python3 "$input_helper" prepare "$input_manifest" --evidence-dir "$AE_CI_EVIDENCE_DIR" \
+    --runner "$self" --source "$wt")
+  input_receipt=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["receipt"])' <<< "$input_plan")
+  input_args=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["args_file"])' <<< "$input_plan")
+  mapfile -d '' -t input_opts < "$input_args"
+fi
 
 # --- claim this run's image and router copy (see Retention in the header) -------
 # gc.lock is held shared from before the image is resolved until both use locks are held,
@@ -1081,6 +1086,7 @@ take_gc_shared
 read_build
 asked_gen=$rec_gen  # before any lock wait: see resolve_image
 locked "inputs" fetch_inputs
+required_input_mounts
 resolved=$STATE/tmp/image-$$
 trap 'rm -f "$resolved"' EXIT
 resolve_start=$SECONDS
@@ -1092,6 +1098,7 @@ rm -f "$resolved"; trap - EXIT
 exec 8>"$STATE/locks/use-image-${IMAGE_ID#sha256:}.lock"; flock -s 8
 mark_used image "${IMAGE_ID#sha256:}"
 echo "$prog: image $IMAGE_ID (agent-ee:exec-$KEY-${IMAGE_ID:7:12}, $image_how, resolved in $(( SECONDS - resolve_start ))s)" >&2
+[ -z "$input_receipt" ] || python3 "$input_helper" bind-image "$input_receipt" "$IMAGE_ID"
 claim_copy "$IMAGE_ID"
 flock -u 7; exec 7>&-
 echo "$prog: kicad-route copy $KR" >&2
@@ -1163,12 +1170,15 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
+
+if [ -n "${AE_CI_OUTCOME_FILE:-}" ]; then
+  python3 "$(dirname "$self")/ae-ci-outcome.py" mark-started "$AE_CI_OUTCOME_FILE"
+fi
 status=0
 docker run --rm --name "$name" "${CONTAINER_LABELS[@]}" "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
-  --user "$(id -u):$(id -g)" "${env_opts[@]}" \
+  --user "$(id -u):$(id -g)" "${env_opts[@]}" "${input_opts[@]}" \
   -v "$wt:/opt/agent-ee" "${git_mounts[@]}" "${scratch_mount[@]}" \
-  -v "$STATE/inputs/fome-mc-$FOME_MC_COMMIT:/opt/fome-mc:ro" \
-  -v "$STATE/inputs/te-776228-1.pdf:/opt/j1/te-776228-1.pdf:ro" \
+  "${REQUIRED_INPUT_MOUNTS[@]}" \
   -v "$KR:/opt/kicad-route:ro" \
   -w /opt/agent-ee "$IMAGE_ID" "$@" <&0 &
 wait $! || status=$?
