@@ -29,10 +29,14 @@ failure state. There is no unchanged-main rerun or fake timestamp refresh.
 Pending/error, absent, malformed and unmarked evidence does not establish
 completion; `--max-hours` is a compatibility argument only.
 
-Before initialization or activation, close the composed runtime review's stable
-owned input-manifest/evidence-store configuration. These prepared units do not
-yet select those paths. Record the reviewed manifest and per-run evidence policy
-below; their null fields are unresolved installation gates, not defaults.
+The prepared unit explicitly selects the owned runtime manifest at
+`~/.local/share/agent-ee/native-inputs/runtime/nightly-manifest.json` and landed runner
+`~/git/infra/shared/agent-ee/ae-ci-exec`. The controller hashes the runner and its
+companions for each attempt. Its private outcome journal sits beside a fresh
+`native/` evidence directory, outside writable source/output mounts. Runtime
+review approved the store in source; the separate scoped nightly manifest remains runtime-owned and pending.
+Its exact reviewed hash must be recorded before activation. The focused
+manifest and its 4420b18c hash remain frozen.
 
 Native admission remains in `ae-ci-exec`/`native-admit`: weight 2, two module
 workers, at most ten minutes waiting for capacity. The runner bounds its child
@@ -87,9 +91,34 @@ Inspect its receipt, native reservation and retained inputs before reconciling
 that marker; never remove it simply to make the next schedule run.
 Keep this directory, retained native scratch and replay inputs until the lead
 has reconciled and retained the evidence. No automatic retention cleanup is
-configured here. The runner preserves a dirty nightly worktree for inspection;
-resolve its retained files deliberately before a later moved-main run.
+configured here. The prepared service creates a fresh retained worktree per
+attempt and refuses ignored files when reusing a configured worktree. It indexes
+kept scratch and run outputs, then refuses new native work at 7 retained runs or
+20 GiB. One run may cross the byte threshold; the next is held. Unchanged-main
+skips and reporting retries still work. The lead selected these admission thresholds on 2026-11-06. Before explicitly releasing a run, retain/export its replay material,
+worktree and scratch. The controller deletes no selected evidence.
+
+Only a complete private `not_started` journal bound to the exact attempt,
+command, runtime, exit and timestamps clears a failed no-start marker. Its bytes
+and supervisor ID are sealed before clearance. Missing, stale, malformed,
+interrupted or started/uncertain evidence stays held; an exit code is insufficient.
+
+The agent-ee `qualify` entrypoint can capture the single composed full gate before
+landing. After that exact candidate lands, `import-baseline` validates the
+lead-selected hashed evidence without native work, preserving original finish
+time and publishing no status. See agent-ee `docs/nightly-full-suite.md`. No
+baseline is selected or initialized by preparing these files.
 
 The service executes from agent-ee's main checkout. Stop the timer before
 changing that installed runner during an unresolved run. No pod attempt,
 fabrication order or project upload is part of this schedule.
+
+History accounting validates retention-index.json against every retained run and
+its immutable attempt identity/execution receipt. All states count, with duplicate
+lineage references grouped by attempt UUID. Byte totals count regular-file sizes
+once per device/inode across run outputs, retained worktrees and indexed scratch;
+links are not followed. Missing/corrupt index or selected paths hold admission.
+retention-check.json records reason/count/bytes (unknown on accounting failure)
+and the lead reconciliation path; the service fails without advancing baseline
+or last-tested SHA. Existing history needs explicit reconciliation, not an empty
+index or automatic migration. No other agent runtime history is counted.

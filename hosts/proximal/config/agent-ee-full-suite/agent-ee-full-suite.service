@@ -9,7 +9,8 @@ WorkingDirectory=%h/git/agent-ee
 Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 Environment=AE_CI_KEEP_TMP=1
 Environment=AE_CI_MAX_WAIT=600
-ExecStart=/usr/bin/python3 %h/git/agent-ee/scripts/nightly_full_suite.py run --root %h/git/agent-ee --weight 2 --jobs 2
+Environment=AE_CI_INPUT_MANIFEST=%h/.local/share/agent-ee/native-inputs/runtime/nightly-manifest.json
+ExecStart=/usr/bin/python3 -B %h/git/agent-ee/scripts/nightly_full_suite.py run --root %h/git/agent-ee --weight 2 --jobs 2 --runner %h/git/infra/shared/agent-ee/ae-ci-exec --fresh-worktree --max-retained-runs 7 --max-retained-bytes 21474836480
 TimeoutStartSec=125min
 TimeoutStopSec=90s
 KillMode=control-group
