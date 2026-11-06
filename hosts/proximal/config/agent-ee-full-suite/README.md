@@ -13,6 +13,27 @@ commit does not run again. Pending Plane or GitHub reporting resumes from its
 retained comparison without another native suite. Missing/incomplete suite
 verdicts, failed fetches and dirty worktrees return failure.
 
+Normal execution refuses missing state. The lead must explicitly select a
+reviewed `run --initialize-baseline` operation; only its complete candidate-bound
+verdict records the baseline. Existing/corrupt state cannot be silently replaced.
+This records the inventory without
+filing inherited problems as new regressions. Its GitHub status still fails if
+that baseline contains problems. Later runs compare against that retained
+inventory, including changes from missing/skip problems to errors/failures.
+No baseline is fabricated from an absent state, and there is no automatic
+conversion of an unversioned old state.
+
+The completion monitor accepts an authoritative completed result for the exact
+main SHA regardless of age. It preserves the actual finish time and the suite's
+failure state. There is no unchanged-main rerun or fake timestamp refresh.
+Pending/error, absent, malformed and unmarked evidence does not establish
+completion; `--max-hours` is a compatibility argument only.
+
+Before initialization or activation, close the composed runtime review's stable
+owned input-manifest/evidence-store configuration. These prepared units do not
+yet select those paths. Record the reviewed manifest and per-run evidence policy
+below; their null fields are unresolved installation gates, not defaults.
+
 Native admission remains in `ae-ci-exec`/`native-admit`: weight 2, two module
 workers, at most ten minutes waiting for capacity. The runner bounds its child
 at two hours; systemd allows 125 minutes overall. Native scratch is retained
@@ -45,6 +66,8 @@ path. Record the first service run on a moved `origin/main`, plus a second call
 that skips native execution on the unchanged commit. Do not set its status to
 installed before those facts are observed. A focused test double is not this
 operational proof. The lead coordinates any manual native run with host capacity.
+The lead chooses baseline initialization and the authoritative full gate together
+so unchanged candidate evidence is not regenerated merely to initialize state.
 
 ## Inspect and stop
 
