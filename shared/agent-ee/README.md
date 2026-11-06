@@ -33,6 +33,52 @@ ae-ci-exec --gc [--dry-run]      # evict unused images and copies now (runs do i
 
 ## What it reproduces
 
+### Explicit retained native inputs (AGENTEE-622/624)
+
+Install `native-inputs.py` beside `ae-ci-exec`; the runner invokes it with the
+host's Python 3.11 or newer. `AE_CI_INPUT_MANIFEST` selects a local
+`agent-ee.native-inputs/1` JSON file; when unset the runner reads
+`~/.config/agent-ee/native-inputs.json` if present. With a manifest,
+`AE_CI_EVIDENCE_DIR` must name a durable absolute directory outside the checkout.
+No other host `AGENT_EE_*` variables are passed through implicitly.
+
+The manifest has `schema` and an `inputs` list. Each entry has a unique `name`,
+an explicit input `env`, and an absolute host `path`. Use either `files` (the
+complete relative-path-to-SHA-256 inventory) or `git: true` (select the current
+clean Git commit). `python3 native-inputs.py inventory PATH` describes a
+regular-file input. Review the inventory against its historical provenance
+before storing it in the durable local manifest; generating hashes alone does
+not qualify a receipt. No captures or local input manifests belong in public Git.
+
+Preparation refuses missing, additional, changed or symlinked file inputs and
+dirty Git checkouts. Each invocation retains separate input copies under the
+evidence root. Git copies have independent objects and remain at their selected
+commit. Inputs mount read-only at `/opt/agent-ee-inputs/NAME`; their named
+variables point there. The writable `/artifacts` mount covers only that run's
+output directory, so it cannot write through another alias of an input snapshot.
+`AGENT_EE_RUN_INPUT_RECEIPT` names `/artifacts/native-inputs.json`, which records
+the manifest SHA-256, file inventories or clean Git commit/tree, clean agent-ee
+source, image and runner digest. Retained snapshots and outputs survive scratch
+cleanup. Test success still requires the actual consumer checks.
+
+An input entry can add a nonempty `modules` list to scope its environment
+variable to those `test_*` modules. Disjoint module lists can use the same
+variable for different exact-byte inputs; overlapping or global aliases refuse
+setup. Optional top-level `outputs` entries have `name`, `env` and `modules`.
+The producer creates only `/artifacts/modules/MODULE` parents, leaving each
+named output leaf absent. Each run has a fresh output root. It emits and mounts
+a read-only `agent-ee.module-env/1` mapping through `AGENT_EE_MODULE_ENV`.
+The composed strict-suite consumer validates the complete map before dispatch,
+then selects the current module's inputs and outputs. The validator lives in
+agent-ee `scripts/strict_inputs.py`; its default policy confines input paths to
+`/opt/agent-ee-inputs` and outputs to `/artifacts/modules/MODULE`.
+
+The agent-ee container guide includes the four runtime input entries:
+`PCBSCHEMAGEN_ROOT`, `AGENT_EE_K91_FINAL_RECEIPT`,
+`AGENT_EE_K91_PROTECTED_EXISTING` and `AGENT_EE_K91_PROTECTED_HUMAN`. The source
+checkout must be clean before running with this manifest. The existing `ci.yml`
+fome-mc/J1 inputs, sandbox options, admission and image-selection rules still apply.
+
 Source of truth: `~/agent-ee-gate/ci-run.sh` on peecee-wsl and agent-ee's
 `.github/workflows/ci.yml` (job `image`, step "Full test suite, strict toolchain
 mode, no skips").

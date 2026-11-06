@@ -169,6 +169,13 @@
 #     host paths, and /opt/agent-ee/.git names that gitdir by absolute path.
 #     Object alternates are mounted read-only. Plain checkouts need nothing extra.
 # AGENT_EE_SKIP_VISUALS is passed through when set.
+# AE_CI_INPUT_MANIFEST selects an agent-ee.native-inputs/1 file. When unset,
+# ~/.config/agent-ee/native-inputs.json is used if present. Its explicitly named
+# sources are verified, copied into AE_CI_EVIDENCE_DIR, and mounted read-only at
+# /opt/agent-ee-inputs/NAME. Only the manifest's named input variables are exported.
+# Each run retains its input snapshots and receipt beside an output directory
+# mounted at /artifacts; snapshots have no writable container alias. The manifest
+# requires AE_CI_EVIDENCE_DIR to select durable storage outside the checkout.
 #
 # State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies, locks,
 # build and gc logs, build records in builds/, use markers in used/, tree identities in
@@ -1163,9 +1170,22 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
+input_opts=()
+input_manifest=${AE_CI_INPUT_MANIFEST-$HOME/.config/agent-ee/native-inputs.json}
+if [ -n "${AE_CI_INPUT_MANIFEST+x}" ] || [ -e "$input_manifest" ]; then
+  [ -f "$input_manifest" ] || die "native input manifest not found: $input_manifest"
+  [ -n "${AE_CI_EVIDENCE_DIR:-}" ] || die "AE_CI_INPUT_MANIFEST requires AE_CI_EVIDENCE_DIR for durable inputs and outputs"
+  case $AE_CI_EVIDENCE_DIR in /*) ;; *) die "AE_CI_EVIDENCE_DIR must be an absolute path" ;; esac
+  input_helper=$(dirname "$self")/native-inputs.py
+  [ -f "$input_helper" ] || die "native-inputs.py is not installed beside $self"
+  python3 "$input_helper" prepare "$input_manifest" --evidence-dir "$AE_CI_EVIDENCE_DIR" \
+    --args-file "$scratch/input-args" --image "$IMAGE_ID" --runner "$self" --source "$wt" > "$scratch/input-plan.json"
+  mapfile -d '' -t input_opts < "$scratch/input-args"
+fi
+
 status=0
 docker run --rm --name "$name" "${CONTAINER_LABELS[@]}" "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
-  --user "$(id -u):$(id -g)" "${env_opts[@]}" \
+  --user "$(id -u):$(id -g)" "${env_opts[@]}" "${input_opts[@]}" \
   -v "$wt:/opt/agent-ee" "${git_mounts[@]}" "${scratch_mount[@]}" \
   -v "$STATE/inputs/fome-mc-$FOME_MC_COMMIT:/opt/fome-mc:ro" \
   -v "$STATE/inputs/te-776228-1.pdf:/opt/j1/te-776228-1.pdf:ro" \
