@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-06 14:35 UTC — bf06e64e-d9c0-4d70-96f9-309fab65429e
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **hermes** — verified. Before: Gateway PID 1212719 running candidate-84a03014 (carry 69103a9d); ~/.local/bin/hermes now selects candidate-90d6b98f (carry bd0079ba on upstream 90d6b98f), launcher sha bb7e7f84. Native drain must show fresh matching-PID zero chat/cron/API work before one reload; busy/uncertain state refuses.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 1661885 on candidate-90d6b98f, revision bd0079ba, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision bd0079ba old_pid 1212719 pid 1661885 slack connected; gateway process live on candidate-90d6b98f and old PID gone.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/bf06e64e-d9c0-4d70-96f9-309fab65429e/operations/2e39b334-5950-47f0-bd98-fd4893d0971b`.
+
+- **codex** — verified. Before: installed codex-cli 0.166.0 via ~/.local/bin/codex Cairn coordination wrapper -> npm-global @openai/codex@0.166.0; npm view @openai/codex version = 0.167.0; no codex update in flight, no npm/dpkg lock held. After: npm-global @openai/codex updated to 0.167.0; codex --version reports codex-cli 0.167.0; Cairn wrapper untouched.
+  Verification: operation exit 0/0; install.log 'changed 2 packages'; verify.log and live `codex --version` = codex-cli 0.167.0; package.json version 0.167.0.
+  Activation: new launches use the new build; running sessions unaffected.
+  Evidence: `/var/lib/update-bot/runs/bf06e64e-d9c0-4d70-96f9-309fab65429e/operations/7173493e-d794-4f26-bdc6-a9b6af448ebe`.
+
+- **os** — verified. Before: Ubuntu 26.04.1 LTS resolute, kernel 7.0.0-42-generic; apt list --upgradable shows 25 entries: ordinary resolute-security (ca-certificates, ca-certificates-java) plus separately reviewed cuda-toolkit config (2), docker-ce/cli/rootless-extras (3) and the nvidia-620 open driver stack (18). No apt/dpkg lock held; helper suppresses package-script restarts and never reboots.. After: helper installed 9 packages (bpftool, ca-certificates, ca-certificates-java, linux-generic/headers/image 7.0.0-42->43, linux-libc-dev, linux-perf, linux-tools-common) and deferred 23 held packages (cuda-toolkit config, docker-ce x3, nvidia-620 open driver stack); reboot_required=true.
+  Verification: operation exit 0/0 changed=true; /var/lib/update-bot-os/latest.json status=completed with observed after-versions matching; native evidence /var/lib/update-bot-os/1793975852251123801.
+  Activation: no service restarts required (activation_required=[]); new kernel requires a reboot to become active (not performed).
+  Evidence: `/var/lib/update-bot/runs/bf06e64e-d9c0-4d70-96f9-309fab65429e/operations/8323ff3e-6c9b-4433-bcf9-1ffe6c49e822`.
+
+- **hermes** — verified. Before: Installed generation candidate-84a03014 (carry 69103a9d on upstream 84a03014) selected by ~/.local/bin/hermes (sha c692428e) and running as gateway PID 1212719; upstream NousResearch/hermes-agent main advanced to 90d6b98f. Running gateway and its venv untouched by this prep/install.. After: Carry bd0079ba built on upstream 90d6b98f (10 files, clean per-file 3-way merge); venv built; ~235 behavior tests + gateway import smoke passed; versioned launcher installed (sha bb7e7f84) and provenance receipt written.
+  Verification: operation exit 0/0; prep log PORT_OK carry=bd0079ba base=90d6b98f + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK; installed launcher --version reports local bd0079ba; receipt hermes-installed.json upstream_revision 90d6b98f matches.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/bf06e64e-d9c0-4d70-96f9-309fab65429e/operations/e6283489-702e-42e3-9c64-102f908d0707`.
+
 ## 2026-11-05 14:30 UTC — b843918f-258e-49da-87ab-cd6da5283452
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
