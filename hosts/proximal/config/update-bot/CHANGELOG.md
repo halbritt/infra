@@ -1,5 +1,29 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-07 14:39 UTC — 8ac73e5a-cd9e-41e7-b5ce-22ccfae8ef11
+
+Host: proximal. Policy: maintenance-v2. Run status: partial.
+
+- **llama.cpp** — failed. Before: ~/git/llama.cpp is on master and clean at fd27b203 (detached state cleared; matches the running service). current symlink -> releases/fd27b203-cuda13.4 (build 12182); running llama-27b.service PID 2148054 started 2026-11-06 uses that bundle. Upstream ggml-org/llama.cpp master advanced to f7591a6a. The canonical updater extracts source with `git archive | tar -x`, which the agent sandbox cannot create files for (tar ENOSYS); the autonomous unsandboxed user timer owns real builds. Native update.lock free.. After: Updater fetched target f7591a6a but aborted: `git archive | tar -x` could not create any file in the agent sandbox (tar 'Function not implemented'); cmake configure failed; no build produced.
+  Verification: operation exit 2; install.log shows current=fd27b203 target=f7591a6a then tar ENOSYS for every entry; readlink current still releases/fd27b203-cuda13.4 (unchanged).
+  Activation: none (installed/running build unchanged; unsandboxed user timer owns real builds).
+  Evidence: `/var/lib/update-bot/runs/8ac73e5a-cd9e-41e7-b5ce-22ccfae8ef11/operations/3381b9cf-044e-4b41-a28f-da62315c6640`.
+
+- **hermes** — verified. Before: Gateway PID 1661885 running candidate-90d6b98f (carry bd0079ba); ~/.local/bin/hermes now selects candidate-a9ff9799 (carry a56d5d30 on upstream a9ff9799), launcher sha 536f168a. Native drain must show fresh matching-PID zero chat/cron/API work before one reload; busy/uncertain state refuses.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 2729818 on candidate-a9ff9799, revision a56d5d30, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision a56d5d30 old_pid 1661885 pid 2729818 slack connected; gateway process live on candidate-a9ff9799.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/8ac73e5a-cd9e-41e7-b5ce-22ccfae8ef11/operations/48b5d0db-e355-4744-8db3-a9f9e3c546cb`.
+
+- **hermes** — verified. Before: Installed generation candidate-90d6b98f (carry bd0079ba on upstream 90d6b98f) selected by ~/.local/bin/hermes and running as gateway PID 1661885 (verified activation 2026-11-06). Upstream NousResearch/hermes-agent main advanced to a9ff9799. Running gateway and its venv untouched by this prep/install.. After: Carry a56d5d3039287f81a29c1293a962dd99ca503126 built on upstream a9ff9799e273f525b82718cdc69fdec71b1dca5a (10-file carry; plugins.py relocates PluginContext into plugins_context.py); venv built; 257 focused tests + gateway import smoke passed; versioned launcher sha 536f168a installed and provenance receipt written.
+  Verification: operation exit 0/0; prep log PORT_OK carry=a56d5d30 base=a9ff9799 + no_markers_in_carried_files + py_syntax_ok + RESULT: INSTALL_OK; receipt hermes-installed.json upstream_revision a9ff9799 matches; installed launcher --version reports Python 3.14.6 / OpenAI SDK 2.54.0.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/8ac73e5a-cd9e-41e7-b5ce-22ccfae8ef11/operations/4f9b654e-cea6-40d3-870f-61ccd7b7221c`.
+
+- **hermes** — failed. Before: Installed generation candidate-90d6b98f (carry bd0079ba on upstream 90d6b98f) selected by ~/.local/bin/hermes and running as gateway PID 1661885 (verified activation 2026-11-06). Upstream NousResearch/hermes-agent main advanced to a9ff9799. Running gateway and its venv untouched by this prep/install.. After: First carry attempt aborted before touching the launcher: per-file 3-way merge conflict in hermes_cli/plugins.py because upstream a9ff9799 relocated PluginContext into plugins_context.py.
+  Verification: operation exit 4; prep log 'MERGE_CONFLICT: hermes_cli/plugins.py' then 'RESULT: PATCH_CONFLICT'; launcher and running gateway unchanged.
+  Activation: none (preparation failure; superseded by the successful re-run).
+  Evidence: `/var/lib/update-bot/runs/8ac73e5a-cd9e-41e7-b5ce-22ccfae8ef11/operations/c409e1d4-92f4-41ec-b9a8-7e056ea336e7`.
+
 ## 2026-11-06 14:35 UTC — bf06e64e-d9c0-4d70-96f9-309fab65429e
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
