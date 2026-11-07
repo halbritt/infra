@@ -31,7 +31,7 @@ class NativeInputsTests(unittest.TestCase):
         if hasattr(self, 'outputs'):
             document['outputs'] = self.outputs
         self.manifest.write_text(json.dumps(document))
-        return subprocess.run([sys.executable, str(SCRIPT), 'prepare', str(self.manifest),
+        return subprocess.run([sys.executable, str(getattr(self, 'script', SCRIPT)), 'prepare', str(self.manifest),
                                '--evidence-dir', str(self.root / 'evidence'),
                                '--args-file', str(self.root / 'args')],
                               capture_output=True, text=True, timeout=30)
@@ -226,6 +226,110 @@ class NativeInputsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn('reserved native input name', result.stderr)
         self.assertFalse((self.root / 'args').exists())
+
+    def test_descendant_selection_keeps_the_sibling_build_plan_in_the_same_readonly_snapshot(self):
+        (self.source / 'receipt.json').unlink()
+        (self.source / 'inputs').mkdir()
+        (self.source / 'inputs/circuit.json').write_bytes(b'original circuit\n')
+        (self.source / 'build-plan.json').write_bytes(b'original plan\n')
+        original = {p.relative_to(self.source).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                    for p in self.source.rglob('*') if p.is_file()}
+        self.inputs = [{'name': 'base', 'env': 'AGENT_EE_FILM_BASE', 'path': str(self.source),
+                        'files': original, 'select': 'inputs', 'modules': ['test_acquisition_film']}]
+        result = self.prepare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads(Path(json.loads(result.stdout)['receipt']).read_text())
+        item = receipt['inputs'][0]
+        self.assertEqual(item['container_path'], '/opt/agent-ee-inputs/base/inputs')
+        selected = Path(item['snapshot']) / 'inputs'
+        self.assertEqual((selected.parent / 'build-plan.json').read_bytes(), b'original plan\n')
+        args = (self.root / 'args').read_bytes().decode().split('\0')
+        self.assertIn(f'type=bind,src={selected.parent},dst=/opt/agent-ee-inputs/base,readonly', args)
+        self.assertEqual(receipt['module_environment']['modules']['test_acquisition_film']['inputs'],
+                         {'AGENT_EE_FILM_BASE': '/opt/agent-ee-inputs/base/inputs'})
+        self.assertEqual(original, {p.relative_to(self.source).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                                    for p in self.source.rglob('*') if p.is_file()})
+        for value in ('../inputs', '/inputs', '.', '', None, 'inputs//circuit.json', 'absent'):
+            with self.subTest(select=value):
+                (self.root/'args').unlink(missing_ok=True)
+                self.inputs[0]['select'] = value
+                refused = self.prepare()
+                self.assertEqual(refused.returncode, 2, refused.stderr)
+                self.assertFalse((self.root/'args').exists())
+        self.inputs[0]['select'] = 'inputs'
+        (self.source/'inputs/link').symlink_to(self.source/'build-plan.json')
+        self.assertEqual(self.prepare().returncode, 2)
+
+    def test_named_historical_layout_preserves_pin_bytes_and_binds_only_verified_snapshots_readonly(self):
+        runner = self.root / 'runner'
+        runner.mkdir()
+        self.script = runner / SCRIPT.name
+        shutil.copy2(SCRIPT, self.script)
+        policy = json.loads(SCRIPT.with_name('native-input-policy.json').read_text())
+        alias_tmp = tempfile.TemporaryDirectory(prefix='ae-layout-policy-', dir=Path.home() / '.cache')
+        self.addCleanup(alias_tmp.cleanup)
+        alias = Path(alias_tmp.name) / 'historical-film'
+        (self.source / 'receipt.json').unlink()
+        probe = self.source / 'model-r1/probe'
+        probe.mkdir(parents=True)
+        (probe / 'model.sub').write_bytes(b'genuine fixture model\n')
+        model_sha = hashlib.sha256((probe / 'model.sub').read_bytes()).hexdigest()
+        pins = self.source / 'model-r1/input-pins.json'
+        pins.write_text(json.dumps({'files': {'/outside/metadata-only': '0'*64},
+                                   'generated_files': {str(alias/'model-r1/probe/model.sub'): model_sha}}))
+        pins_sha = hashlib.sha256(pins.read_bytes()).hexdigest()
+        execution = self.source / 'model-r1/execution.json'
+        execution.write_text(json.dumps({'input_pins_sha256': pins_sha, 'outputs': {}}))
+        policy['layouts'] = {'film-model-r1': {
+            'at': str(alias), 'env': 'AGENT_EE_FILM_RUN', 'modules': ['test_acquisition_film'],
+            'pins_sha256': pins_sha, 'execution_sha256': hashlib.sha256(execution.read_bytes()).hexdigest()}}
+        self.script.with_name('native-input-policy.json').write_text(json.dumps(policy))
+        files = {p.relative_to(self.source).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                 for p in self.source.rglob('*') if p.is_file()}
+        self.inputs = [{'name': 'film-run', 'env': 'AGENT_EE_FILM_RUN', 'path': str(self.source),
+                        'files': files, 'layout': 'film-model-r1', 'modules': ['test_acquisition_film']}]
+        result = self.prepare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        record = json.loads(Path(json.loads(result.stdout)['receipt']).read_text())
+        snapshot = Path(record['inputs'][0]['snapshot'])
+        args = (self.root / 'args').read_bytes().decode().split('\0')
+        self.assertIn(f'type=bind,src={snapshot},dst={alias},readonly', args)
+        self.assertIn(f'type=bind,src={snapshot},dst=/opt/agent-ee-inputs/film-run,readonly', args)
+        self.assertEqual((snapshot/'model-r1/input-pins.json').read_bytes(), pins.read_bytes())
+        self.assertEqual(record['inputs'][0]['container_path'], str(alias))
+        self.assertEqual(record['inputs'][0]['layout'], 'film-model-r1')
+        self.assertTrue(record['inputs'][0]['read_only'])
+        self.assertFalse(alias.exists())
+        self.assertEqual(files, {p.relative_to(self.source).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                                 for p in self.source.rglob('*') if p.is_file()})
+        original_item = dict(self.inputs[0])
+        for fault in ('unknown-layout', 'arbitrary-destination', 'global-scope', 'wrong-module',
+                      'select-and-layout', 'forbidden-root', 'collision', 'changed-pins', 'missing-generated'):
+            with self.subTest(fault=fault):
+                (self.root/'args').unlink(missing_ok=True)
+                self.inputs = [dict(original_item)]
+                changed_policy = json.loads(json.dumps(policy))
+                if fault == 'unknown-layout': self.inputs[0]['layout'] = 'unreviewed'
+                if fault == 'arbitrary-destination': self.inputs[0]['layout'] = {'at': '/etc'}
+                if fault == 'global-scope': self.inputs[0].pop('modules')
+                if fault == 'wrong-module': self.inputs[0]['modules'] = ['test_other']
+                if fault == 'select-and-layout': self.inputs[0]['select'] = 'model-r1'
+                if fault == 'forbidden-root': changed_policy['layouts']['film-model-r1']['at'] = '/artifacts/private'
+                if fault == 'collision':
+                    changed_policy['layouts']['film-model-r1']['modules'].append('test_acquisition_film_loop')
+                    self.inputs.append({**original_item, 'name': 'film-copy', 'modules': ['test_acquisition_film_loop']})
+                if fault == 'changed-pins': pins.write_text('rewritten receipt')
+                if fault == 'missing-generated':
+                    (probe/'model.sub').unlink()
+                    self.inputs[0]['files'] = {k: v for k,v in files.items() if k != 'model-r1/probe/model.sub'}
+                self.script.with_name('native-input-policy.json').write_text(json.dumps(changed_policy))
+                refused = self.prepare()
+                self.assertEqual(refused.returncode, 2, refused.stderr)
+                self.assertFalse((self.root/'args').exists())
+                if fault == 'changed-pins':
+                    pins.write_bytes((snapshot/'model-r1/input-pins.json').read_bytes())
+                if fault == 'missing-generated':
+                    (probe/'model.sub').write_bytes(b'genuine fixture model\n')
 
 
 if __name__ == '__main__':

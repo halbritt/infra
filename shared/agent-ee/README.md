@@ -404,7 +404,36 @@ must match agent-ee `scripts/native-input-policy.json` for a selected source pai
 Missing module-scoped sources produce explicit `unavailable` declarations;
 global schema, custody and confinement errors still refuse setup. Global setup
 refusals retain a `status: failed` receipt when the requested evidence path is safe.
-The input name `receipt` is reserved for authoritative receipt metadata.
+The input names `receipt` and `module-env` are reserved for authoritative metadata.
+
+Finite-file inputs may declare `"select": "inputs"`. The complete declared bundle
+is still copied and mounted read-only at `/opt/agent-ee-inputs/<name>`; only the
+environment value selects that descendant. A consumer can therefore read
+`base.parent/build-plan.json` from the same immutable snapshot. The selection must
+be a canonical relative path covered by the complete inventory. Git inputs,
+traversal, symlinks and undeclared or empty descendant trees are refused.
+
+The optional `"layout": "film-model-r1"` selects one historical view defined in
+the matching source policy. It cannot be combined with `select`. It accepts only
+`AGENT_EE_FILM_RUN` for the three declared FILM model consumers, and binds the same
+finite snapshot read-only at both its canonical path and the fixed historical
+path. The module environment uses the historical path so original absolute
+`generated_files` keys remain valid. Original pins and execution receipts must
+match the policy hashes; all generated files and all declared execution outputs
+must belong to the verified inventory. External `pins.files` strings remain
+metadata and never become mount sources. No caller-selected destination is
+accepted. Overlapping historical destinations and runtime roots are refused.
+
+The strict-input consumer verifies the fresh run receipt's policy and module
+selection hashes, explicit module scope, read-only declaration, canonical mount
+identity and both complete views before dispatch. It rechecks receipt identity
+and file inventories for each child. Missing views remain module-local setup
+failures; changed bytes or invalid custody refuse setup. The historical view is
+an explicit source-policy exception, with no general relaxation of confinement.
+Portable tests exercise receipt/argv production and consumer interpretation;
+they do not prove a live container mount. These changes require a newly reviewed
+source pair, CI composition and a separately granted native validation. Earlier
+accepted receipts retain their original source identities.
 
 With `AGENT_EE_EVIDENCE_DIR` set, the affected tests copy reports, subprocess
 diagnostics and replay trees through `tests/artifact_retention.py` before each

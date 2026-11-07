@@ -93,6 +93,70 @@ def mount_path(path):
     return str(path)
 
 
+def descendant(item):
+    value = item.get('select')
+    if 'select' not in item:
+        return ''
+    if (not isinstance(value, str) or not value or value == '.' or Path(value).is_absolute()
+            or '..' in Path(value).parts or Path(value).as_posix() != value
+            or any(c in value for c in (',', '\n', '\r', '\0')) or 'git' in item):
+        raise ValueError('select must be a canonical confined descendant of a finite-file input')
+    if not any(name == value or name.startswith(value + '/') for name in item['files']):
+        raise ValueError('selected descendant is not covered by the complete input inventory')
+    return value
+
+
+def historical_layout(item, scopes):
+    """Only a reviewed, named policy can select an additional container destination."""
+    name = item.get('layout')
+    if 'layout' not in item:
+        return None
+    if not isinstance(name, str) or name not in POLICY.get('layouts', {}):
+        raise ValueError('unknown historical input layout')
+    layout = POLICY['layouts'][name]
+    if ('git' in item or 'select' in item or item['env'] != layout['env']
+            or '*' in scopes or not set(scopes) <= set(layout['modules'])):
+        raise ValueError('historical layout needs its declared finite input and explicit module scope')
+    at = Path(layout['at'])
+    # The destination comes from source policy, never from manifest path or receipt metadata.
+    if (not at.is_absolute() or '..' in at.parts or str(at) != layout['at']
+            or any(at == root or at.is_relative_to(root) or root.is_relative_to(at)
+                   for root in map(Path, ('/opt', '/artifacts', '/app', '/work', '/workspace',
+                                         '/proc', '/sys', '/dev', '/etc', '/usr', '/bin', '/run', '/tmp')))):
+        raise ValueError('historical layout destination overlaps a forbidden runtime root')
+    mount_path(at)
+    return layout
+
+
+def check_historical_files(root, files, layout):
+    """Keep original absolute generated-file keys and their execution chain unchanged."""
+    pins_path, execution_path = 'model-r1/input-pins.json', 'model-r1/execution.json'
+    if (files.get(pins_path) != layout['pins_sha256']
+            or files.get(execution_path) != layout['execution_sha256']):
+        raise ValueError('historical layout requires the exact reviewed pins and execution receipt')
+    pins = json.loads((root / pins_path).read_text(), object_pairs_hook=unique_object)
+    execution = json.loads((root / execution_path).read_text(), object_pairs_hook=unique_object)
+    if execution.get('input_pins_sha256') != layout['pins_sha256']:
+        raise ValueError('historical execution does not bind the original input pins')
+    generated = pins.get('generated_files')
+    if not isinstance(generated, dict) or not generated:
+        raise ValueError('historical pins need generated files')
+    for absolute, sha in generated.items():
+        path = Path(absolute)
+        if (not path.is_relative_to(Path(layout['at']) / 'model-r1/probe')
+                or '..' in path.parts or str(path) != absolute
+                or files.get(path.relative_to(layout['at']).as_posix()) != sha):
+            raise ValueError('historical generated file is outside or differs from the finite snapshot')
+    outputs = execution.get('outputs')
+    if not isinstance(outputs, dict):
+        raise ValueError('historical execution needs a finite output inventory')
+    for relative, identity in outputs.items():
+        if (not isinstance(identity, dict) or not relative.startswith('probe/')
+                or '..' in Path(relative).parts or Path(relative).as_posix() != relative
+                or files.get('model-r1/' + relative) != identity.get('sha256')):
+            raise ValueError('historical execution output differs from the finite snapshot')
+
+
 def git(root, *args):
     environment = {**os.environ, 'GIT_CONFIG_GLOBAL': '/dev/null', 'GIT_CONFIG_NOSYSTEM': '1',
                    'GIT_TERMINAL_PROMPT': '0'}
@@ -158,15 +222,16 @@ def prepare(manifest, evidence_dir, args_file=None, image=None, runner=None, sou
     names, bindings, checked = set(), {}, []
     known_modules = {p.stem for p in (source / 'tests').glob('test_*.py')} if source else None
     for item in inputs:
-        if not isinstance(item, dict) or set(item) - {'modules'} not in (
+        if not isinstance(item, dict) or set(item) - {'modules', 'select', 'layout'} not in (
                 {'name', 'env', 'path', 'files'}, {'name', 'env', 'path', 'git'}):
             raise ValueError('each native input needs name, env, path, and either files or git=true')
         name = item['name']
         if not isinstance(name, str) or not re.fullmatch('[a-z][a-z0-9-]{0,63}', name) or name in names:
             raise ValueError(f'invalid or duplicate native input name: {name!r}')
-        if name == 'receipt':
-            raise ValueError('reserved native input name: receipt')
+        if name in ('receipt', 'module-env'):
+            raise ValueError(f'reserved native input name: {name}')
         scopes = bind_environment(item, bindings, known_modules)
+        layout = historical_layout(item, scopes)
         names.add(name)
         if not isinstance(item['path'], str) or not Path(item['path']).is_absolute():
             raise ValueError(f'native input path must be absolute: {name}')
@@ -179,14 +244,25 @@ def prepare(manifest, evidence_dir, args_file=None, image=None, runner=None, sou
                 raise ValueError(f'Git input selector must be true: {name}')
         else:
             validate_files(item['files'])
+        descendant(item)
         unavailable = None
         try:
             identity = checkout_identity(root) if 'git' in item else check_files(root, item['files'])
+            if layout:
+                check_historical_files(root, identity, layout)
         except UnavailableInput as exc:
             if scopes == ['*']:
                 raise
             identity, unavailable = None, str(exc)
         checked.append((item, root.resolve(), identity, scopes, unavailable))
+    destinations = [Path('/opt/agent-ee-inputs') / name for name in names]
+    for item, _, _, scopes, _ in checked:
+        layout = historical_layout(item, scopes)
+        if layout:
+            at = Path(layout['at'])
+            if any(at == other or at.is_relative_to(other) or other.is_relative_to(at) for other in destinations):
+                raise ValueError('historical layout destinations overlap')
+            destinations.append(at)
     outputs = document.get('outputs', [])
     if not isinstance(outputs, list):
         raise ValueError('native outputs must be a list of module-specific output selectors')
@@ -231,8 +307,13 @@ def prepare(manifest, evidence_dir, args_file=None, image=None, runner=None, sou
     try:
         for item, root, identity, scopes, unavailable in checked:
             snapshot = snapshots / item['name']
-            target = '/opt/agent-ee-inputs/' + item['name']
+            mount_target = '/opt/agent-ee-inputs/' + item['name']
+            target = mount_target + ('/' + descendant(item) if item.get('select') else '')
+            layout = historical_layout(item, scopes)
+            if layout:
+                target = layout['at']
             if unavailable is not None:
+                target = mount_target + ('/' + descendant(item) if item.get('select') else '')
                 for module in scopes:
                     selected_module(module)['inputs'][item['env']] = target
                     module_env.setdefault('unavailable', {}).setdefault(module, {})[item['env']] = unavailable
@@ -251,7 +332,11 @@ def prepare(manifest, evidence_dir, args_file=None, image=None, runner=None, sou
                 shutil.copyfile(root, snapshot, follow_symlinks=False)
             if 'files' in item:
                 check_files(snapshot, identity)
-            argv += ['--mount', f'type=bind,src={mount_path(snapshot)},dst={target},readonly']
+                if layout:
+                    check_historical_files(snapshot, identity, layout)
+            argv += ['--mount', f'type=bind,src={mount_path(snapshot)},dst={mount_target},readonly']
+            if layout:
+                argv += ['--mount', f'type=bind,src={mount_path(snapshot)},dst={target},readonly']
             if scopes == ['*']:
                 argv += ['-e', item['env'] + '=' + target]
             else:
@@ -259,6 +344,8 @@ def prepare(manifest, evidence_dir, args_file=None, image=None, runner=None, sou
                     selected_module(module)['inputs'][item['env']] = target
             record['inputs'].append({'name': item['name'], 'env': item['env'], 'source': str(root),
                                      'snapshot': str(snapshot), 'container_path': target,
+                                     'mount_path': mount_target, 'select': item.get('select'), 'read_only': True,
+                                     'layout': item.get('layout'),
                                      'modules': scopes,
                                      'git' if 'git' in item else 'files': identity})
         for item in outputs:
