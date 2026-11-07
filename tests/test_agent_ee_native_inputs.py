@@ -279,7 +279,9 @@ class NativeInputsTests(unittest.TestCase):
                                    'generated_files': {str(alias/'model-r1/probe/model.sub'): model_sha}}))
         pins_sha = hashlib.sha256(pins.read_bytes()).hexdigest()
         execution = self.source / 'model-r1/execution.json'
-        execution.write_text(json.dumps({'input_pins_sha256': pins_sha, 'outputs': {}}))
+        (probe/'result.raw').write_bytes(b'original output\n')
+        execution.write_text(json.dumps({'input_pins_sha256': pins_sha, 'outputs': {
+            'result.raw': {'bytes': 16, 'sha256': hashlib.sha256(b'original output\n').hexdigest()}}}))
         policy['layouts'] = {'film-model-r1': {
             'at': str(alias), 'env': 'AGENT_EE_FILM_RUN', 'modules': ['test_acquisition_film'],
             'pins_sha256': pins_sha, 'execution_sha256': hashlib.sha256(execution.read_bytes()).hexdigest()}}

@@ -151,9 +151,10 @@ def check_historical_files(root, files, layout):
     if not isinstance(outputs, dict):
         raise ValueError('historical execution needs a finite output inventory')
     for relative, identity in outputs.items():
-        if (not isinstance(identity, dict) or not relative.startswith('probe/')
-                or '..' in Path(relative).parts or Path(relative).as_posix() != relative
-                or files.get('model-r1/' + relative) != identity.get('sha256')):
+        if (not isinstance(identity, dict) or relative in ('.', '..') or Path(relative).name != relative
+                or files.get('model-r1/probe/' + relative) != identity.get('sha256')
+                or type(identity.get('bytes')) is not int
+                or (root / 'model-r1/probe' / relative).stat().st_size != identity['bytes']):
             raise ValueError('historical execution output differs from the finite snapshot')
 
 
