@@ -1,0 +1,48 @@
+{
+  "schema": "infra.agent-ee-full-suite-install/1",
+  "host": "proximal",
+  "work_item": "AGENTEE-619",
+  "status": "prepared-awaiting-review-and-lead-activation",
+  "observed_before_change": {
+    "date": "2026-11-06",
+    "unit_files_present": false
+  },
+  "activation_owner": "AGENTEE-619 remediation lead",
+  "unit_installation": {
+    "agent-ee-full-suite.service": "~/.config/systemd/user/agent-ee-full-suite.service",
+    "agent-ee-full-suite.timer": "~/.config/systemd/user/agent-ee-full-suite.timer"
+  },
+  "entrypoint": "~/git/agent-ee/scripts/nightly_full_suite.py",
+  "state_directory": "~/.local/share/agent-ee-full-suite",
+  "baseline_policy": "Explicit run --initialize-baseline or validated import-baseline of the one reviewed composed full gate after its exact commit/tree lands; preserve original completion time and inherited problems. Nothing initialized now.",
+  "reviewed_input_manifest": {
+    "path": "~/.local/share/agent-ee/native-inputs/runtime/nightly-manifest.json",
+    "sha256": null,
+    "status": "runtime-owned separate module-scoped nightly manifest pending; focused 4420b18c remains frozen"
+  },
+  "per_run_evidence_policy": {
+    "root": "~/.local/share/agent-ee-full-suite/runs/<attempt>/native",
+    "outcome": "sibling outcome.json; private and outside native output mount",
+    "output_inventory": "output-manifest.json with file hashes and link metadata",
+    "scratch": "AE_CI_KEEP_TMP=1; paths indexed in execution.json",
+    "worktree": "fresh per attempt, retained until lead release",
+    "max_retained_runs": 7,
+    "max_retained_bytes": 21474836480,
+    "automatic_deletion": false,
+    "approval": "Selected by lead1262 on 2026-11-06; implementation/review pending",
+    "history_index": "retention-index.json, all states; unique attempt IDs and regular-file inode bytes, including kept scratch/worktrees",
+    "operational_failure": "nonzero service; retention-check.json reason/count/bytes/remediation; no SHA advancement"
+  },
+  "installed_at": null,
+  "infra_commit": null,
+  "agent_ee_commit": null,
+  "installed_unit_sha256": null,
+  "first_moved_main_evidence": null,
+  "focused_runtime_manifest": {
+    "path": "~/.local/share/agent-ee/native-inputs/runtime/manifest.json",
+    "sha256": "4420b18c6b5a7bc763b908b6fce2940e604b32e2504a483fb28f6cda79f8a658",
+    "runtime_source": "b531c4fc1c111ee8792a90a3c38f6696a8affbda",
+    "runtime_infra": "28616c643221cfb3624bebaca8e4341014574fed",
+    "nightly_scope_agreement": "pending runtime H2 closure; current owned manifest is global"
+  }
+}

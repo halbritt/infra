@@ -1,0 +1,12 @@
+[Unit]
+Description=Check moved agent-ee main nightly at 04:00 Pacific
+Documentation=file://%h/git/infra/hosts/proximal/config/agent-ee-full-suite/README.md
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 America/Los_Angeles
+RandomizedDelaySec=5min
+Persistent=true
+Unit=agent-ee-full-suite.service
+
+[Install]
+WantedBy=timers.target
