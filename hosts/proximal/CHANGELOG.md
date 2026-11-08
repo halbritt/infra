@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-08 — OpenTax CLI installation
+
+- Owner requested an OpenTax clone under `~/git` and installation on proximal.
+  Cloned `filedcom/opentax` and installed the official v2.7.0 Linux x64 binary
+  at `/usr/local/bin/opentax`, after verifying both published SHA-256 digests.
+- Version/help and the upstream synthetic TY2025 W-2 example passed. Source
+  checkout remains clean; no runtime, daemon, container, or tax filing configured.
+- Package provenance, usage, and evidence:
+  [`config/opentax/`](config/opentax/README.md).
+
 ## 2026-11-04 — archive the Agent EE qualification cache
 
 - Owner decision: moved `~/.cache/agent-ee-qualification` (207,215 files, 593
