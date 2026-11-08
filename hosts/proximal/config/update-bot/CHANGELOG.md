@@ -1,5 +1,19 @@
 # Maintenance outcomes — proximal
 
+## 2026-11-08 14:33 UTC — 25074ebf-fbdd-4fca-bd74-0e46c82c63c7
+
+Host: proximal. Policy: maintenance-v2. Run status: completed.
+
+- **hermes** — verified. Before: Installed generation candidate-a9ff9799 (carry a56d5d30 on upstream a9ff9799) selected by ~/.local/bin/hermes and running as gateway PID 2729818 (verified activation 2026-11-07). Upstream NousResearch/hermes-agent main advanced to e0754412 (632 commits; only agent/turn_context.py of the 11 carried files changed upstream, verified via 3-way merge-file that resolves cleanly). Running gateway and its venv untouched by this prep/install.. After: Carry 533da98c20ae02424069e467f19cedc541d291cc built on upstream e075441241b8d626789b4aae0e376f86eabf824d (11-file per-file 3-way carry; only agent/turn_context.py changed upstream and merged cleanly); venv built; focused behavior tests + gateway import smoke passed; versioned launcher sha cca71536 installed and provenance receipt written.
+  Verification: operation exit 0/0; prep log PORT_OK carry=533da98c base=e0754412 + no_markers + py_syntax_ok + RESULT: INSTALL_OK; installed launcher --version reports Python 3.14.6 / OpenAI SDK 2.54.0; receipt hermes-installed.json upstream_revision e0754412 matches.
+  Activation: installed for new launches; running gateway not restarted by this operation.
+  Evidence: `/var/lib/update-bot/runs/25074ebf-fbdd-4fca-bd74-0e46c82c63c7/operations/38cbb2c3-21a9-4464-b3d2-3c4bd6f69651`.
+
+- **hermes** — verified. Before: Gateway PID 2729818 running candidate-a9ff9799 (carry a56d5d30 on upstream a9ff9799). ~/.local/bin/hermes now selects candidate-e0754412 (carry 533da98c20ae02424069e467f19cedc541d291cc on upstream e0754412), launcher sha cca71536. Native drain must show fresh matching-PID zero chat/cron/API work before one reload; busy/uncertain state refuses.. After: Fixed helper performed a fresh native zero-work drain and one supported reload; new gateway PID 3010650 on candidate-e0754412, revision 533da98c, Slack connected.
+  Verification: operation exit 0/0 changed=true; hermes-activation-latest.json status=verified revision 533da98c old_pid 2729818 pid 3010650 slack connected; gateway process live on candidate-e0754412.
+  Activation: running (activated).
+  Evidence: `/var/lib/update-bot/runs/25074ebf-fbdd-4fca-bd74-0e46c82c63c7/operations/60fad001-88ad-4218-af10-57fb1b3b2399`.
+
 ## 2026-11-07 14:39 UTC — 8ac73e5a-cd9e-41e7-b5ce-22ccfae8ef11
 
 Host: proximal. Policy: maintenance-v2. Run status: partial.
