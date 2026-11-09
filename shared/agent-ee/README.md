@@ -33,6 +33,58 @@ ae-ci-exec --gc [--dry-run]      # evict unused images and copies now (runs do i
 
 ## What it reproduces
 
+### Explicit retained regression inputs
+
+AGENTEE-619/621/622/624 uses an optional finite external manifest:
+
+```sh
+AE_CI_INPUT_MANIFEST=/absolute/inputs.json \
+AE_CI_EVIDENCE_DIR=/absolute/evidence/new-attempt \
+AE_CI_KEEP_TMP=1 ae-ci-exec /absolute/agent-ee -- \
+  python3 scripts/strict_suite.py --jobs 3 --full
+```
+
+The existing runner prepares private copies, records their exact inventory,
+and mounts them read-only at `/opt/agent-ee-inputs`. A named historical layout
+may additionally expose the same copy at its reviewed path; historical producer
+paths and bytes are preserved. `/artifacts` is a separate retained writable
+directory. Missing, incomplete, changed, linked or undeclared inputs refuse
+before Docker execution. Outputs must start absent. The manifest and captures
+remain outside Git; the manifest contains no credentials.
+
+The schema and allowed environment variables are in
+[`native-input-policy.json`](native-input-policy.json). An input has `name`,
+`env`, absolute `path`, and either a relative-file SHA-256 `files` inventory
+or `git: true`. `modules` selects explicit test modules; `select` chooses a
+confined descendant while preserving sibling evidence. `outputs` names absent
+per-module leaves. A verifier selection must be clean, including untracked and
+ignored files, and have no object alternates. Its retained clone has independent
+objects. The agent-ee source must have no tracked or untracked changes; ordinary
+ignored build outputs do not change its recorded commit/tree.
+
+`native-inputs.json` records source, verifier, runner, preparer, policy, manifest,
+input and output identities. After image selection the runner checks the actual
+Docker mounts against that receipt, rejects overlap with its existing mounts or
+any writable alias, and binds the exact launch command and its hash. It preserves
+normal admission, stdin, waiting, exit status and signal cleanup. Without the
+manifest the existing Docker invocation is unchanged. An outer Bubblewrap was
+tested and rejected because it prevented the native tests' own namespace creation;
+no extra process supervisor or execution wrapper is used.
+
+Install the three canonical files beside one another on proximal:
+
+| Repository source | Installed path |
+|---|---|
+| `shared/agent-ee/ae-ci-exec` | `~/.local/bin/ae-ci-exec` |
+| `shared/agent-ee/native-inputs.py` | `~/.local/bin/native-inputs.py` |
+| `shared/agent-ee/native-input-policy.json` | `~/.local/bin/native-input-policy.json` |
+
+The selected agent-ee checkout must carry identical policy bytes. Retain an
+installation backup and the actual hashes/infra revision with operational test
+evidence. Pure custody tests are `tests/test_agent_ee_native_inputs.py`; real
+container checks additionally verify read-only mounts, nested native tools,
+retained artifacts and unchanged source stores.
+
 Source of truth: `~/agent-ee-gate/ci-run.sh` on peecee-wsl and agent-ee's
 `.github/workflows/ci.yml` (job `image`, step "Full test suite, strict toolchain
 mode, no skips").

@@ -1,5 +1,22 @@
 # Changelog — proximal (system)
 
+## 2026-11-08 — agent-ee retained input provisioning
+
+- The owner's AGENTEE-619/621/622/624 recovery requires genuine retained inputs
+  in the ordinary admitted runner. An actual stdin/outer-Bubblewrap experiment
+  failed before tests because native nested namespaces were refused. Astra,
+  Fable and Argon explicitly agreed to the smaller direct mount extension.
+- Added optional finite manifest preparation and launch validation to the
+  existing `ae-ci-exec`. Inputs and receipts are read-only; artifacts remain
+  durable and writable. Missing/damaged inputs, dirty verifier content and
+  writable aliases refuse. Admission, process handling and default invocation
+  remain unchanged; no supervisor or outcome companion was added.
+- Pure verification: 68 infrastructure tests pass, including 14 input custody
+  tests; repository validation passes. Native checks and installation are
+  pending in this candidate. Evidence is retained at
+  `~/.local/share/agent-ee/recovery-agent1321/`.
+- File/install mapping and contract: [shared runner](../../../shared/agent-ee/README.md#explicit-retained-regression-inputs).
+
 ## 2026-11-08 — OpenTax CLI installation
 
 - Owner requested an OpenTax clone under `~/git` and installation on proximal.

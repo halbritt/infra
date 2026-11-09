@@ -169,6 +169,11 @@
 #     host paths, and /opt/agent-ee/.git names that gitdir by absolute path.
 #     Object alternates are mounted read-only. Plain checkouts need nothing extra.
 # AGENT_EE_SKIP_VISUALS is passed through when set.
+# AE_CI_INPUT_MANIFEST optionally selects finite verified external regression inputs.
+# AE_CI_EVIDENCE_DIR must then name an external durable directory. The adjacent
+# native-inputs.py snapshots inputs, validates the actual launch and adds only
+# read-only inputs/receipts plus writable /artifacts. Missing inputs stop before
+# Docker execution. Without the manifest, the existing invocation is unchanged.
 #
 # State: ${AE_CI_EXEC_HOME:-~/.cache/ae-ci-exec} (inputs, kicad-route copies, locks,
 # build and gc logs, build records in builds/, use markers in used/, tree identities in
@@ -1074,6 +1079,20 @@ fetch_inputs() {
   printf '%s  %s\n' "$J1_DRAWING_SHA256" "$j1" | sha256sum --check --strict --quiet || die "J1 drawing $j1 hash mismatch"
 }
 
+input_opts=()
+input_receipt=
+if [ -n "${AE_CI_INPUT_MANIFEST+x}" ]; then
+  [ -f "$AE_CI_INPUT_MANIFEST" ] || die "native input manifest not found: $AE_CI_INPUT_MANIFEST"
+  [ -n "${AE_CI_EVIDENCE_DIR:-}" ] || die "AE_CI_INPUT_MANIFEST requires AE_CI_EVIDENCE_DIR"
+  input_helper=$(dirname "$self")/native-inputs.py
+  [ -f "$input_helper" ] || die "native-inputs.py is not installed beside $self"
+  input_plan=$(python3 "$input_helper" prepare "$AE_CI_INPUT_MANIFEST" \
+    --evidence-dir "$AE_CI_EVIDENCE_DIR" --runner "$self" --source "$wt")
+  input_receipt=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["receipt"])' <<< "$input_plan")
+  input_args=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["args_file"])' <<< "$input_plan")
+  mapfile -d '' -t input_opts < "$input_args"
+fi
+
 # --- claim this run's image and router copy (see Retention in the header) -------
 # gc.lock is held shared from before the image is resolved until both use locks are held,
 # so an eviction never runs between the choice of an image or copy and its protection.
@@ -1092,6 +1111,7 @@ rm -f "$resolved"; trap - EXIT
 exec 8>"$STATE/locks/use-image-${IMAGE_ID#sha256:}.lock"; flock -s 8
 mark_used image "${IMAGE_ID#sha256:}"
 echo "$prog: image $IMAGE_ID (agent-ee:exec-$KEY-${IMAGE_ID:7:12}, $image_how, resolved in $(( SECONDS - resolve_start ))s)" >&2
+[ -z "$input_receipt" ] || python3 "$input_helper" bind-image "$input_receipt" "$IMAGE_ID"
 claim_copy "$IMAGE_ID"
 flock -u 7; exec 7>&-
 echo "$prog: kicad-route copy $KR" >&2
@@ -1163,14 +1183,18 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
-status=0
-docker run --rm --name "$name" "${CONTAINER_LABELS[@]}" "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
-  --user "$(id -u):$(id -g)" "${env_opts[@]}" \
+launch=(docker run --rm --name "$name" "${CONTAINER_LABELS[@]}" "${tty[@]}" "${SANDBOX_OPTS[@]}" "${LIMIT_OPTS[@]}" \
+  --user "$(id -u):$(id -g)" "${env_opts[@]}" "${input_opts[@]}" \
   -v "$wt:/opt/agent-ee" "${git_mounts[@]}" "${scratch_mount[@]}" \
   -v "$STATE/inputs/fome-mc-$FOME_MC_COMMIT:/opt/fome-mc:ro" \
   -v "$STATE/inputs/te-776228-1.pdf:/opt/j1/te-776228-1.pdf:ro" \
   -v "$KR:/opt/kicad-route:ro" \
-  -w /opt/agent-ee "$IMAGE_ID" "$@" <&0 &
+  -w /opt/agent-ee "$IMAGE_ID" "$@")
+if [ -n "$input_receipt" ]; then
+  python3 "$input_helper" check-launch "$input_receipt" -- "${launch[@]}"
+fi
+status=0
+"${launch[@]}" <&0 &
 wait $! || status=$?
 # Eviction (see Retention): a separate process, so its errors never change the status.
 # This run still holds its use locks, so its own image and copy are kept.

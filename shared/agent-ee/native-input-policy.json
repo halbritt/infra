@@ -1,0 +1,61 @@
+{
+  "schema": "agent-ee.native-input-policy/1",
+  "inputs": [
+    "AGENT_EE_ACQUISITION_CPL_INPUTS",
+    "AGENT_EE_ACQUISITION_INPUTS",
+    "AGENT_EE_ACQUISITION_ORIGINAL",
+    "AGENT_EE_ACQUISITION_PLAN",
+    "AGENT_EE_ACQUISITION_TEXT_INPUTS",
+    "AGENT_EE_ADDR_620_CONTEXT",
+    "AGENT_EE_ADDR_620_SOURCE",
+    "AGENT_EE_ADDR_CONTEXT",
+    "AGENT_EE_ADDR_POWER",
+    "AGENT_EE_ADDR_POWER620",
+    "AGENT_EE_ADDR_SOURCE",
+    "AGENT_EE_ADDR_SUPPLEMENT",
+    "AGENT_EE_ADI_MODEL_LIBRARY",
+    "AGENT_EE_COMPLETION_EVIDENCE",
+    "AGENT_EE_FILM_BASE",
+    "AGENT_EE_FILM_C3_ASSEMBLY",
+    "AGENT_EE_FILM_LOOP",
+    "AGENT_EE_FILM_MODEL",
+    "AGENT_EE_FILM_NATIVE",
+    "AGENT_EE_FILM_REMOVAL",
+    "AGENT_EE_FILM_RUN",
+    "AGENT_EE_FILM_STOCK",
+    "AGENT_EE_GROUP_FACTS",
+    "AGENT_EE_K91_FINAL_RECEIPT",
+    "AGENT_EE_K91_PROTECTED_EXISTING",
+    "AGENT_EE_K91_PROTECTED_HUMAN",
+    "AGENT_EE_POWER_BUILD_EXTRA",
+    "AGENT_EE_POWER_BUILD_NATIVE",
+    "AGENT_EE_POWER_PART_SOURCES",
+    "AGENT_EE_POWER_PRODUCTION",
+    "AGENT_EE_POWER_REMOVAL_TRACE",
+    "AGENT_EE_RESISTOR_CAPTURE",
+    "AGENT_EE_RESISTOR_SOURCE",
+    "AGENT_EE_REVERSE_BLOCKING_SOURCES",
+    "PCBSCHEMAGEN_ROOT"
+  ],
+  "outputs": [
+    "AGENT_EE_ADDR_EVIDENCE",
+    "AGENT_EE_POWER_BUILD_TEST_OUTPUT",
+    "AGENT_EE_POWER_PART_ARTIFACTS",
+    "AGENT_EE_REVERSE_BLOCKING_ARTIFACTS",
+    "AGENT_EE_STENCIL_ARTIFACTS",
+    "AGENT_EE_VIA_QUALIFICATION_ARTIFACTS"
+  ],
+  "layouts": {
+    "film-model-r1": {
+      "at": "/home/halbritt/.local/share/agent-ee/zeroasic-20261029-agent707/film-build-integration-r1",
+      "env": "AGENT_EE_FILM_RUN",
+      "modules": [
+        "test_acquisition_film",
+        "test_acquisition_film_loop",
+        "test_acquisition_film_removal"
+      ],
+      "pins_sha256": "781a40a84ab99daeb1afbecc43293149f695845a498fec2277f35d9270ffcfcd",
+      "execution_sha256": "2855949086fbf73988dcf3198fe596feea0bb66dfe5c895ff6f34f3af8054cf2"
+    }
+  }
+}
