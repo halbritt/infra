@@ -1,5 +1,5 @@
 {
-  "status": "installed-awaiting-operational-verification",
+  "status": "installed-and-operationally-verified",
   "prepared_at": "2026-11-09T03:35:54.445406+00:00",
   "host": "proximal",
   "agent_ee_candidate": "c31959b5a91a8e7c6e12c7e91443ae47eed0f9fb",
@@ -17,11 +17,86 @@
     "/home/halbritt/.local/share/agent-ee/native-inputs/runtime/nightly-stock-config.json": "71e0eec10a0829d39dbdde8aa8d30628dbc88bb929c20cc478fdff1d17292caf"
   },
   "operational_verification": {
-    "status": "full-gate-pending",
-    "wrong_manifest_failure": "u6-operation/failure-RESULT.json",
-    "incomplete_full_attempt": "u6-terminal/RESULT.json",
-    "incomplete_reason": "7200-second timeout after 393/451 modules and 7009 tests, with two separately repaired obsolete meta-test failures. No full verdict or baseline; cleanup and GitHub error verified.",
-    "next_attempt": "One fresh installed timer/service attempt on the new landed agent-ee revision after scoped checks and review."
+    "verified_at": "2026-11-09T08:46:54.075002+00:00",
+    "previous_incomplete_evidence": {
+      "status": "full-gate-pending",
+      "wrong_manifest_failure": "u6-operation/failure-RESULT.json",
+      "incomplete_full_attempt": "u6-terminal/RESULT.json",
+      "incomplete_reason": "7200-second timeout after 393/451 modules and 7009 tests, with two separately repaired obsolete meta-test failures. No full verdict or baseline; cleanup and GitHub error verified.",
+      "next_attempt": "One fresh installed timer/service attempt on the new landed agent-ee revision after scoped checks and review."
+    },
+    "full_suite": {
+      "run_dir": "/home/halbritt/.local/share/agent-ee-full-suite/runs/20261109-063117-190870-ff762426",
+      "attempt_id": "d0621de7-9148-4352-99d7-ec186cfc3e7b",
+      "service_invocation_id": "306eed24b5d041f4a751f765f6634ef1",
+      "commit": "ff7624265cdda04dd3cdb66ccf063bd98c0b1631",
+      "tree": "fa5d42bdcf58cba41661288cddb95b0abefe2cbf",
+      "exit_code": 0,
+      "modules": 451,
+      "tests": 8090,
+      "problems": 0,
+      "skips": 0,
+      "native_seconds": 7662.067555,
+      "execution_sha256": "6278bc00e5495b43e41b419ce2ea5c40fd028dcdc52754e33543ba459aa471df",
+      "suite_log_sha256": "1bf28af39c82f4baec3b1075fa12a4705531d450e38338d7cd1c57fbb0015c57",
+      "output_manifest_sha256": "2cd52f3943de0496da792c6e41da41ceb334a4b84c7b6be48486037fe2893085",
+      "evidence": "u7-full/RESULT.json"
+    },
+    "original_baseline": {
+      "problems": 152,
+      "resolved": 152,
+      "new_problems": 0,
+      "removed_modules": 0,
+      "comparison": "u7-full/baseline-comparison.json",
+      "qualification": "One unchanged parameterized CPL test uses the documented successful-parent/matrix evidence; separate retired meta-test replacements are explicitly mapped."
+    },
+    "source_custody": {
+      "files_verified": 2044,
+      "bytes": 389673252,
+      "evidence": "u7-full/original-input-custody.json"
+    },
+    "retained_output": {
+      "files": 39675,
+      "links": 22,
+      "bytes": 2761624702,
+      "evidence": "u7-full/artifact-verification.json"
+    },
+    "github": {
+      "status_id": 58404245386,
+      "state": "success",
+      "original_finish": "2026-11-09T08:40:13Z",
+      "problems": 0,
+      "recency": "u7-operation/recency.log",
+      "hosted_workflow": "https://github.com/halbritt/agent-ee/actions/runs/42588148169",
+      "hosted_conclusion": "success"
+    },
+    "normal_service": {
+      "unchanged_main": "passed; no new attempt, capture or native work; state and retention index hashes unchanged",
+      "evidence": [
+        "u7-operation/unchanged-before.json",
+        "u7-operation/unchanged-after.json",
+        "u7-operation/unchanged-journal.jsonl"
+      ],
+      "bootstrap_removed": true,
+      "complete_state_preserved": true
+    },
+    "timer": {
+      "enabled": true,
+      "calendar": "*-*-* 04:00:00 America/Los_Angeles",
+      "observed_next_trigger": "2026-11-09 04:03:41 PST",
+      "randomized_delay_seconds": 300,
+      "temporary_trigger_removed": true,
+      "evidence": "u7-operation/normal-timer-status.txt"
+    },
+    "cleanup": {
+      "owned_container_absent": true,
+      "owned_lease_absent": true,
+      "controller_absent": true,
+      "active_marker_absent": true,
+      "retained_attempts": 3,
+      "evidence": "u7-operation/cleanup.json"
+    },
+    "scope": "Tooling and local nightly/reporting only; the telemetry-pod HOLD remains in force."
   },
   "selected_configuration": {
     "nightly-manifest.json": "ff682e014c48701fc0a85afa375f16f7b16664adffd281be2bf2f24dd9659620",

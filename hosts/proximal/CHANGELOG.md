@@ -1,5 +1,24 @@
 # Changelog — proximal (system)
 
+## 2026-11-09 — verify the installed agent-ee nightly and reporting
+
+- The existing timer/service ran exact agent-ee `ff762426` through native-admit
+  and ae-ci-exec: 451 modules, 8090 tests, zero problems and zero skips in
+  7662.068 native seconds. All 152 original problems have executed resolution
+  evidence; no baseline module was removed. The earlier timeout remains indexed.
+- Verified all retained output-manifest entries, six portable source variants,
+  anchored-artwork target/control states, 2044 unchanged original input files
+  and the clean verifier identity. Native output contains 39675 files and
+  22 links, totaling 2.76 GB; captures and private artifacts stay local.
+- Real GitHub completion status and hosted recency workflow succeeded. A normal
+  unchanged-main service invocation produced no attempt/capture/native work and
+  preserved complete state and the retention index.
+- Removed the owned initialization/one-shot overrides. The ordinary timer is
+  enabled for 04:00 America/Los_Angeles with its existing five-minute delay;
+  observed next trigger is 2026-11-09 04:03:41 PST. Cleanup is verified.
+- Full identities and evidence links: [installation record](config/agent-ee-full-suite/install-record.json).
+  The telemetry-pod HOLD is unchanged.
+
 ## 2026-11-09 — size the agent-ee nightly budget from an actual full attempt
 
 - The installed two-worker full run reached its 7200-second aggregate deadline
