@@ -10,11 +10,11 @@ Python (3.12.3 / 3.14.4 / 3.14.8), poppler (24.02 / 26.01 / 26.08) and ngspice
 peecee-wsl and 3 fail on archon. The CI image is the release-gate authority, so
 agent-ee tests run inside it on every host.
 
-Installed at `~/.local/bin/ae-ci-exec` (canonical copy: this directory). proximal runs
-the 2026-11-03 version (a build on every run), sha256 `2e1a6567…`, installed
-2026-11-03T23:54:08Z by atomic rename. The retention version described below (refresh
-window, router copies keyed by content, eviction) is not installed yet. peecee-wsl was
-not updated and its copy was not checked; it is not used by the current single-agent
+Installed at `~/.local/bin/ae-ci-exec` (canonical copy: this directory). The proximal
+recovery began with runner SHA-256 `539ede13f438993c4bd3aaf15d0eeb03afcf56afcf11ca8fa32c90c7389afb6f`.
+Current installation and verification are recorded in the host's
+[nightly subsystem](../../hosts/proximal/config/agent-ee-full-suite/README.md).
+peecee-wsl was not updated and its copy was not checked; it is not used by the current single-agent
 campaign. talos, archon and agent-ee-gate-c4 were retired from agent-ee on 2026-10-24; the owner replaced the campaign with a single agent. Since
 2026-10-22 every run is admitted by `native-admit` (host-wide budget, leases,
 queue, CPU/PID bounds, init for old images); see
@@ -85,9 +85,9 @@ evidence. Pure custody tests are `tests/test_agent_ee_native_inputs.py`; real
 container checks additionally verify read-only mounts, nested native tools,
 retained artifacts and unchanged source stores.
 
-Source of truth: `~/agent-ee-gate/ci-run.sh` on peecee-wsl and agent-ee's
-`.github/workflows/ci.yml` (job `image`, step "Full test suite, strict toolchain
-mode, no skips").
+The selected agent-ee Dockerfile and this runner define local execution. The
+workflow's retained FOME/J1 metadata is still consumed by the runner; GitHub's
+current workflow checks local completion and runs no actual test suite.
 
 | Gate | ae-ci-exec |
 |---|---|

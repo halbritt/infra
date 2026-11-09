@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-11-08 — prepare agent-ee nightly service recovery
+
+- Reused the previously prepared full-suite service/timer, with explicit finite
+  inputs and fresh stock configuration, the installed runner, retained scratch,
+  no automatic GC and no retained-run/byte hard stops. No supervisor, receiver or
+  outcome companion is part of this recovery.
+- Astra, Fable and Argon agreed to source-bound scoped landing followed by one
+  timer-triggered full gate. All 152 recorded problems have scoped passing
+  evidence; full qualification and actual service installation remain pending.
+- The input extension now has actual native mount/refusal/default/interruption
+  evidence as well as the 68 infrastructure tests. A 24-module, 493-test native
+  check also verifies nightly retry, manifest drift, request spacing and bounded
+  capture cleanup. No skips were accepted.
+- Configuration, mappings and observed installation status:
+  [agent-ee-full-suite](config/agent-ee-full-suite/README.md).
+
 ## 2026-11-08 — agent-ee retained input provisioning
 
 - The owner's AGENTEE-619/621/622/624 recovery requires genuine retained inputs

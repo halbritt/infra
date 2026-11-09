@@ -1,0 +1,16 @@
+{
+  "status": "prepared-not-installed",
+  "prepared_at": "2026-11-09T03:35:54.445406+00:00",
+  "host": "proximal",
+  "agent_ee_candidate": "c31959b5a91a8e7c6e12c7e91443ae47eed0f9fb",
+  "input_runner_candidate": "0b44d4294941f4f27bdd65a7a488529a8f647d21",
+  "evidence_directory": "/home/halbritt/.local/share/agent-ee/recovery-agent1321",
+  "committee_agreement": "u6-final-astra-result.json; u6-final-fable-result.json; u6-final-argon-result.json",
+  "installed_at": null,
+  "installed_hashes": null,
+  "operational_verification": null,
+  "selected_configuration": {
+    "nightly-manifest.json": "ff682e014c48701fc0a85afa375f16f7b16664adffd281be2bf2f24dd9659620",
+    "nightly-stock-config.json": "71e0eec10a0829d39dbdde8aa8d30628dbc88bb929c20cc478fdff1d17292caf"
+  }
+}

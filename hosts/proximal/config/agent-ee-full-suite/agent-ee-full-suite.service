@@ -1,0 +1,20 @@
+[Unit]
+Description=agent-ee local nightly full strict suite on moved main
+Documentation=file://%h/git/infra/hosts/proximal/config/agent-ee-full-suite/README.md
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/git/agent-ee
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=AE_CI_KEEP_TMP=1
+Environment=AE_CI_AUTO_GC=0
+Environment=AE_CI_MAX_WAIT=600
+UnsetEnvironment=AE_CI_TMPFS
+ExecStart=/usr/bin/python3 -B %h/git/agent-ee/scripts/nightly_full_suite.py run --root %h/git/agent-ee --weight 2 --jobs 2 --runner %h/.local/bin/ae-ci-exec --fresh-worktree --input-manifest %h/.local/share/agent-ee/native-inputs/runtime/nightly-manifest.json --stock-config %h/.local/share/agent-ee/native-inputs/runtime/nightly-stock-config.json --plane-assignee a3f369ea-d8dd-42ed-bea3-db653abd632b
+TimeoutStartSec=150min
+TimeoutStopSec=90s
+KillMode=control-group
+Nice=10
+IOSchedulingClass=idle
+UMask=0077
