@@ -1,16 +1,26 @@
 {
-  "status": "prepared-not-installed",
+  "status": "installed-awaiting-operational-verification",
   "prepared_at": "2026-11-09T03:35:54.445406+00:00",
   "host": "proximal",
   "agent_ee_candidate": "c31959b5a91a8e7c6e12c7e91443ae47eed0f9fb",
   "input_runner_candidate": "0b44d4294941f4f27bdd65a7a488529a8f647d21",
   "evidence_directory": "/home/halbritt/.local/share/agent-ee/recovery-agent1321",
   "committee_agreement": "u6-final-astra-result.json; u6-final-fable-result.json; u6-final-argon-result.json",
-  "installed_at": null,
-  "installed_hashes": null,
+  "installed_at": "2026-11-09T04:04:43.328756+00:00",
+  "installed_hashes": {
+    "/home/halbritt/.local/bin/ae-ci-exec": "6108539c614ad359dd11c10de1196b264545854c01a19c91df45a650357b9622",
+    "/home/halbritt/.local/bin/native-inputs.py": "1cbe22ffb7316d5c601832068934b144a0c6b46005056093ef3590268a93e7cf",
+    "/home/halbritt/.local/bin/native-input-policy.json": "07cc29a6cd6023460a215af689945147c0c45d9cccd40f88dd23ccf9a1626abf",
+    "/home/halbritt/.config/systemd/user/agent-ee-full-suite.service": "7c92f8dc0aa7dae938b9a509b0902910ad6f6f50c7fea6bb61c505b71f76ddde",
+    "/home/halbritt/.config/systemd/user/agent-ee-full-suite.timer": "0683590a6f1bbbaff16ab6bd542f1a55b683607a53452d20c370a1cf261e7bec",
+    "/home/halbritt/.local/share/agent-ee/native-inputs/runtime/nightly-manifest.json": "ff682e014c48701fc0a85afa375f16f7b16664adffd281be2bf2f24dd9659620",
+    "/home/halbritt/.local/share/agent-ee/native-inputs/runtime/nightly-stock-config.json": "71e0eec10a0829d39dbdde8aa8d30628dbc88bb929c20cc478fdff1d17292caf"
+  },
   "operational_verification": null,
   "selected_configuration": {
     "nightly-manifest.json": "ff682e014c48701fc0a85afa375f16f7b16664adffd281be2bf2f24dd9659620",
     "nightly-stock-config.json": "71e0eec10a0829d39dbdde8aa8d30628dbc88bb929c20cc478fdff1d17292caf"
-  }
+  },
+  "landed_agent_ee": "deed7e0a77a134cf5eab93e49e481a4dead71c79",
+  "installed_infra_revision": "38f427c4c4370f9d3e6e055dbe3daa082501a521"
 }
