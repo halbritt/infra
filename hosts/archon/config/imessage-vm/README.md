@@ -104,6 +104,28 @@ replies, edits or unsends, typing indicators, read receipts or effects, and it
 cannot create group chats. Firebase/Google is not configured, so there is no
 Android-style push; desktop clients hold a live socket.
 
+### Services: read-only BlueBubbles gateway (missive)
+
+Endpoint `https://archon.tail0ecc2e.ts.net:8766` (tailnet only) →
+`imessage-vm-bb-readonly.service` on `127.0.0.1:18766` → BlueBubbles
+`127.0.0.1:11234`. The BlueBubbles password can send messages, so it stays on
+archon (systemd `LoadCredential`, `DynamicUser`). Clients authenticate with
+`Authorization: Bearer` and the separate token `identity/bb-readonly-token`.
+Proximal keeps its copy at `~/.config/missive/bb-readonly-token` (0600).
+
+| Route | Upstream |
+|---|---|
+| `GET /v1/health` (no auth) | `/api/v1/ping` |
+| `GET /v1/server`, `GET /v1/totals` | server info, statistics totals |
+| `GET /v1/contacts` | `/api/v1/contact` |
+| `POST /v1/messages` `{after_rowid, edited_after_ms, retracted_after_ms, created_after_ms, created_before_ms, limit≤1000, offset, sort}` | `/api/v1/message/query` with a fixed `with` list; the gateway writes the `where` clauses |
+| `POST /v1/chats` `{limit, offset}` | `/api/v1/chat/query` with participants |
+| `GET /v1/attachments/<guid>[/download]` | attachment metadata / original bytes |
+
+Everything else returns 404 or 405. The gateway logs only method and path, never
+query strings. Edit and retraction cursors are converted to Apple-epoch nanoseconds,
+because the raw `where` compares chat.db columns.
+
 ### Console (GUI steps only)
 
 From peecee: double-click `Desktop\imessage-vm-console.cmd`
@@ -272,6 +294,13 @@ client reconnecting after a VM restart (owner confirmation pending), and a
 group-chat send.
 
 ## Known limitations
+
+- imessage-mcp 3.2.0 (2026-11-09): after a `DATABASE_CHANGED` restart, every
+  message tool returns `UNSUPPORTED_SCHEMA` ("a message belongs to multiple
+  conversations that Apple did not link through chat_lookup"; `chat_lookup` is
+  absent on 15.8.1). `server_status` and `resolve_contact` still work. Its index
+  covered 12,128 of 50,315 messages. Agents that need full history should use
+  missive on proximal.
 
 - After an archon power loss, the VM only returns if TPM unlock succeeds
   (passphrase fallback needs someone at the keyboard).

@@ -1,0 +1,36 @@
+[Unit]
+Description=Read-only gateway to the imessage-vm BlueBubbles API (127.0.0.1:18766)
+Documentation=file:///usr/local/lib/imessage-vm/bb-readonly-proxy
+After=imessage-vm.service
+PartOf=imessage-vm.service
+
+[Service]
+Type=simple
+DynamicUser=yes
+# The BlueBubbles password can send messages; it stays here. Clients only get
+# the separate proxy token. Both files live in the 0700 identity directory.
+LoadCredential=bb-password:/var/lib/imessage-vm/identity/bluebubbles-password
+LoadCredential=proxy-token:/var/lib/imessage-vm/identity/bb-readonly-token
+Environment=BBRO_LISTEN=127.0.0.1:18766
+Environment=BBRO_UPSTREAM=http://127.0.0.1:11234
+ExecStart=/usr/bin/python3 -I /usr/local/lib/imessage-vm/bb-readonly-proxy
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+MemoryMax=512M
+
+[Install]
+WantedBy=imessage-vm.service

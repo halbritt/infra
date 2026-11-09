@@ -1,0 +1,281 @@
+#!/usr/bin/env python3
+"""Read-only gateway in front of the imessage-vm BlueBubbles server.
+
+BlueBubbles has one password, and that password can also send messages.
+This gateway keeps the password on archon. Clients get a separate bearer
+token, and the gateway accepts only a fixed set of read operations. It builds
+every upstream request itself, so a client cannot reach any other BlueBubbles
+endpoint or supply raw SQL `where` fragments.
+
+Credentials come from systemd LoadCredential:
+  $CREDENTIALS_DIRECTORY/bb-password   BlueBubbles server password
+  $CREDENTIALS_DIRECTORY/proxy-token   bearer token accepted from clients
+
+Environment:
+  BBRO_LISTEN    default 127.0.0.1:18766
+  BBRO_UPSTREAM  default http://127.0.0.1:11234
+"""
+
+from __future__ import annotations
+
+import hmac
+import http.client
+import json
+import os
+import re
+import sys
+import urllib.parse
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+APPLE_EPOCH_MS = 978_307_200_000
+GUID_RE = re.compile(r"^[A-Za-z0-9_.:;+@\-]{1,200}$")
+MAX_BODY = 16 * 1024
+MESSAGE_WITH = [
+    "chat",
+    "chat.participants",
+    "handle",
+    "attachment",
+    "attributedBody",
+    "messageSummaryInfo",
+]
+
+
+def _read_cred(name: str) -> str:
+    base = os.environ.get("CREDENTIALS_DIRECTORY")
+    if not base:
+        sys.exit("CREDENTIALS_DIRECTORY is not set; run under systemd LoadCredential")
+    with open(os.path.join(base, name), encoding="utf-8") as fh:
+        value = fh.read().strip()
+    if not value:
+        sys.exit(f"credential {name} is empty")
+    return value
+
+
+BB_PASSWORD = _read_cred("bb-password")
+PROXY_TOKEN = _read_cred("proxy-token").encode()
+UPSTREAM = urllib.parse.urlsplit(os.environ.get("BBRO_UPSTREAM", "http://127.0.0.1:11234"))
+if UPSTREAM.scheme != "http" or UPSTREAM.hostname not in ("127.0.0.1", "localhost"):
+    sys.exit("BBRO_UPSTREAM must be a loopback http URL")
+
+
+class BadRequest(Exception):
+    pass
+
+
+def _int(body: dict, key: str, default: int | None, lo: int, hi: int) -> int | None:
+    value = body.get(key, default)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or not lo <= value <= hi:
+        raise BadRequest(f"{key} must be an integer in [{lo}, {hi}]")
+    return value
+
+
+def _unix_ms_to_apple_ns(ms: int) -> int:
+    return (ms - APPLE_EPOCH_MS) * 1_000_000
+
+
+def build_message_query(body: dict) -> dict:
+    allowed = {"after_rowid", "edited_after_ms", "retracted_after_ms", "created_after_ms",
+               "created_before_ms", "limit", "offset", "sort"}
+    extra = set(body) - allowed
+    if extra:
+        raise BadRequest(f"unknown fields: {sorted(extra)}")
+    where = []
+    rowid = _int(body, "after_rowid", None, 0, 2**53)
+    if rowid is not None:
+        where.append({"statement": "message.ROWID > :rid", "args": {"rid": rowid}})
+    edited = _int(body, "edited_after_ms", None, 0, 2**53)
+    if edited is not None:
+        where.append({"statement": "message.dateEdited > :ed",
+                      "args": {"ed": _unix_ms_to_apple_ns(max(edited, APPLE_EPOCH_MS))}})
+    retracted = _int(body, "retracted_after_ms", None, 0, 2**53)
+    if retracted is not None:
+        where.append({"statement": "message.dateRetracted > :rt",
+                      "args": {"rt": _unix_ms_to_apple_ns(max(retracted, APPLE_EPOCH_MS))}})
+    query: dict = {
+        "limit": _int(body, "limit", 500, 1, 1000),
+        "offset": _int(body, "offset", 0, 0, 10_000_000),
+        "with": MESSAGE_WITH,
+        "where": where,
+    }
+    sort = body.get("sort", "ASC")
+    if sort not in ("ASC", "DESC"):
+        raise BadRequest("sort must be ASC or DESC")
+    query["sort"] = sort
+    after = _int(body, "created_after_ms", None, 0, 2**53)
+    before = _int(body, "created_before_ms", None, 0, 2**53)
+    if after is not None:
+        query["after"] = after
+    if before is not None:
+        query["before"] = before
+    return query
+
+
+def build_chat_query(body: dict) -> dict:
+    extra = set(body) - {"limit", "offset"}
+    if extra:
+        raise BadRequest(f"unknown fields: {sorted(extra)}")
+    return {
+        "limit": _int(body, "limit", 500, 1, 1000),
+        "offset": _int(body, "offset", 0, 0, 10_000_000),
+        "with": ["participants", "lastmessage"],
+        "sort": "lastmessage",
+    }
+
+
+def _upstream_path(path: str, params: dict | None = None) -> str:
+    q = {"password": BB_PASSWORD}
+    if params:
+        q.update(params)
+    return path + "?" + urllib.parse.urlencode(q)
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "bb-readonly-proxy/1"
+    protocol_version = "HTTP/1.1"
+
+    def log_message(self, fmt, *args):  # never log query strings
+        sys.stderr.write("%s %s\n" % (self.command, self.path.split("?", 1)[0]))
+
+    # --- helpers -----------------------------------------------------------
+    def _authorized(self) -> bool:
+        header = self.headers.get("Authorization", "")
+        if not header.startswith("Bearer "):
+            return False
+        return hmac.compare_digest(header[7:].strip().encode(), PROXY_TOKEN)
+
+    def _send_json(self, status: int, payload: dict) -> None:
+        data = json.dumps(payload).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _drain_body(self) -> None:
+        """Consume the request body up front so keep-alive framing stays intact
+        even when the request is rejected before the body is used."""
+        self._raw_body = b""
+        self._body_too_large = False
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if length > MAX_BODY:
+            self._body_too_large = True
+            self.close_connection = True
+            return
+        if length > 0:
+            self._raw_body = self.rfile.read(length)
+
+    def _json_body(self) -> dict:
+        if self._body_too_large:
+            raise BadRequest("body too large")
+        raw = self._raw_body or b"{}"
+        try:
+            body = json.loads(raw or b"{}")
+        except json.JSONDecodeError as exc:
+            raise BadRequest("invalid JSON") from exc
+        if not isinstance(body, dict):
+            raise BadRequest("body must be a JSON object")
+        return body
+
+    def _upstream(self, method: str, path: str, params: dict | None = None,
+                  body: dict | None = None, stream: bool = False) -> None:
+        conn = http.client.HTTPConnection(UPSTREAM.hostname, UPSTREAM.port or 80, timeout=120)
+        headers = {}
+        payload = None
+        if body is not None:
+            payload = json.dumps(body).encode()
+            headers["Content-Type"] = "application/json"
+        try:
+            conn.request(method, _upstream_path(path, params), body=payload, headers=headers)
+            resp = conn.getresponse()
+            if stream and resp.status == 200:
+                self.send_response(200)
+                for h in ("Content-Type", "Content-Length", "Content-Disposition"):
+                    if resp.getheader(h):
+                        self.send_header(h, resp.getheader(h))
+                if not resp.getheader("Content-Length"):
+                    self.send_header("Connection", "close")
+                    self.close_connection = True
+                self.end_headers()
+                while chunk := resp.read(64 * 1024):
+                    self.wfile.write(chunk)
+                return
+            data = resp.read()
+            self.send_response(resp.status)
+            self.send_header("Content-Type", resp.getheader("Content-Type") or "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except (OSError, http.client.HTTPException) as exc:
+            self._send_json(502, {"error": "upstream unavailable", "detail": type(exc).__name__})
+        finally:
+            conn.close()
+
+    # --- routes ------------------------------------------------------------
+    def _route(self, method: str) -> None:
+        self._drain_body()
+        if self.headers.get("Transfer-Encoding"):
+            self.close_connection = True
+            return self._send_json(411, {"error": "Content-Length required"})
+        path = urllib.parse.urlsplit(self.path).path
+        if path == "/v1/health" and method == "GET":
+            # Unauthenticated liveness only; reveals nothing beyond up/down.
+            return self._upstream("GET", "/api/v1/ping")
+        if not self._authorized():
+            return self._send_json(401, {"error": "unauthorized"})
+        try:
+            if method == "GET" and path == "/v1/server":
+                return self._upstream("GET", "/api/v1/server/info")
+            if method == "GET" and path == "/v1/totals":
+                return self._upstream("GET", "/api/v1/server/statistics/totals")
+            if method == "GET" and path == "/v1/contacts":
+                return self._upstream("GET", "/api/v1/contact")
+            if method == "POST" and path == "/v1/messages":
+                return self._upstream("POST", "/api/v1/message/query",
+                                      body=build_message_query(self._json_body()))
+            if method == "POST" and path == "/v1/chats":
+                return self._upstream("POST", "/api/v1/chat/query",
+                                      body=build_chat_query(self._json_body()))
+            m = re.fullmatch(r"/v1/attachments/([^/]+)(/download)?", path)
+            if method == "GET" and m:
+                guid = urllib.parse.unquote(m.group(1))
+                if not GUID_RE.fullmatch(guid):
+                    raise BadRequest("invalid attachment guid")
+                quoted = urllib.parse.quote(guid, safe="")
+                if m.group(2):
+                    return self._upstream("GET", f"/api/v1/attachment/{quoted}/download",
+                                          params={"original": "true"}, stream=True)
+                return self._upstream("GET", f"/api/v1/attachment/{quoted}")
+        except BadRequest as exc:
+            return self._send_json(400, {"error": str(exc)})
+        return self._send_json(404, {"error": "not an allowed read operation"})
+
+    def do_GET(self):
+        self._route("GET")
+
+    def do_POST(self):
+        self._route("POST")
+
+    def _deny(self):
+        self._drain_body()
+        self._send_json(405, {"error": "method not allowed"})
+
+    do_PUT = do_DELETE = do_PATCH = do_HEAD = do_OPTIONS = _deny
+
+
+def main() -> None:
+    host, _, port = os.environ.get("BBRO_LISTEN", "127.0.0.1:18766").rpartition(":")
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        sys.exit("BBRO_LISTEN must be loopback; expose it with tailscale serve")
+    server = ThreadingHTTPServer((host, int(port)), Handler)
+    server.daemon_threads = True
+    print(f"bb-readonly-proxy listening on {host}:{port}", file=sys.stderr, flush=True)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

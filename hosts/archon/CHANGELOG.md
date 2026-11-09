@@ -1,5 +1,24 @@
 # Host changelog
 
+## 2026-11-09 — read-only BlueBubbles gateway for missive
+
+Owner requested a read-only path so proximal never holds the send-capable
+BlueBubbles password. Added `imessage-vm-bb-readonly.service` (DynamicUser,
+LoadCredential) running `bin/bb-readonly-proxy` on `127.0.0.1:18766`, published
+tailnet-only as `https://archon.tail0ecc2e.ts.net:8766` with `tailscale serve`.
+It accepts only fixed read operations (messages by ROWID/edit/retraction
+cursor, chats, contacts, attachment metadata and download, server info and totals)
+behind its own token `identity/bb-readonly-token`. It builds every upstream query
+itself, so clients cannot send raw `where` SQL. Verified: 401 without a token, 404 for
+`/api/v1/message/text`, 405 for other methods, and a rejected body no longer
+corrupts the next keep-alive request. Also restarted imessage-mcp after it
+reported `DATABASE_CHANGED`; it then refused every message call with
+`UNSUPPORTED_SCHEMA` (a message in several chats without `chat_lookup`), which is
+still open. Rollback: `sudo tailscale serve --https=8766 off; sudo systemctl
+disable --now imessage-vm-bb-readonly; sudo rm
+/etc/systemd/system/imessage-vm-bb-readonly.service
+/var/lib/imessage-vm/identity/bb-readonly-token`.
+
 ## 2026-10-26 — install ast-grep
 
 Installed ast-grep `0.51.0` at `/usr/local/bin/ast-grep`. Seven structural-search
