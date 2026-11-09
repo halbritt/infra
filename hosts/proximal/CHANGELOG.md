@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-11-09 — deploy missive (text-message archive for agents)
+
+- Owner request: archive text history from archon's macOS VM continuously and durably,
+  with semantic search, per-message metadata and sender identification, available to agents.
+  Owner decisions: BlueBubbles as source, but proximal must not hold the send-capable
+  password (so archon got a read-only gateway); MCP on the tailnet with a token;
+  archive attachments and transcribe voice notes; LLM enrichment only on local models.
+- New database `missive`, units `missive-sync`, `missive-worker`, `missive-mcp` and
+  `missive-enrich.timer`, `tailscale serve --https=8770`, Claude Code MCP registration on
+  proximal and archon. Details, verification and rollback: [config/missive](config/missive/README.md).
+
 ## 2026-11-09 — verify the installed agent-ee nightly and reporting
 
 - The existing timer/service ran exact agent-ee `ff762426` through native-admit
