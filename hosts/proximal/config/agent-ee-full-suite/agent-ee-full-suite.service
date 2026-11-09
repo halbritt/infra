@@ -1,7 +1,6 @@
 [Unit]
 Description=agent-ee local nightly full strict suite on moved main
 Documentation=file://%h/git/infra/hosts/proximal/config/agent-ee-full-suite/README.md
-After=network-online.target
 
 [Service]
 Type=oneshot
@@ -16,5 +15,6 @@ TimeoutStartSec=150min
 TimeoutStopSec=90s
 KillMode=control-group
 Nice=10
-IOSchedulingClass=idle
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
 UMask=0077

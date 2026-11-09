@@ -20,6 +20,8 @@ The earlier worktree and its unrelated work remain untouched.
 | `shared/agent-ee/ae-ci-exec` | `~/.local/bin/ae-ci-exec` |
 | `shared/agent-ee/native-inputs.py` | `~/.local/bin/native-inputs.py` |
 | `shared/agent-ee/native-input-policy.json` | `~/.local/bin/native-input-policy.json` |
+| Recovery `u6-config/nightly-manifest.json` (private) | `~/.local/share/agent-ee/native-inputs/runtime/nightly-manifest.json` |
+| Recovery `u6-config/nightly-stock-config.json` (private) | `~/.local/share/agent-ee/native-inputs/runtime/nightly-stock-config.json` |
 
 Paths under `shared/` are relative to the infra repository root. The runtime
 manifest and stock configuration are private local files under
@@ -30,6 +32,13 @@ R6 variants. Each selected run recaptures them with the existing producer:
 10 seconds per request, 190 seconds per population, five seconds between
 requests (including the population boundary), two MiB per response, no retry.
 Historical captures and design identities remain unchanged.
+
+The two ADDR entries select the durable recovery store at
+`~/.local/share/agent-ee/recovery-agent1321/u5-capture/addr-current*`.
+The manifest binds its complete file inventory; the stock configuration and
+installation record bind the selected paths and hashes. This is retained input
+data, not a producer worktree. Do not remove it as session scratch: migration or
+release requires an explicit replacement selection and custody verification.
 
 The service selects both files through explicit controller arguments. It uses
 weight 2 and two module workers, a fresh retained worktree for every attempt,
@@ -52,6 +61,11 @@ installation. Install from landed infra, preserve the previous runtime files,
 record both repository revisions and actual installed hashes, and verify the
 units with `systemd-analyze --user verify`. Do not enable the timer while its
 inputs or initialization are unresolved.
+
+Before the first invocation, back up the existing four-input runtime manifest,
+install both prepared private files at the exact two paths in `ExecStart`, and
+verify their SHA-256 digests against recovery `u6-config/selection.json`. Record
+those installed digests. Installing the units alone is insufficient.
 
 The initial recovery uses one ordinary temporary service drop-in selecting
 `--initialize-baseline`, because no prior nightly state exists. An owned manifest
