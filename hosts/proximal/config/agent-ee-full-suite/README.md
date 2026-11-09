@@ -46,12 +46,24 @@ and retained scratch with automatic GC disabled. It does not select or hold
 an installed tool version. Actual source, verifier, runner, image and input
 identities are recorded for each run.
 
-Stock preparation has a 440-second outer bound. The controller's 7200-second
+Stock preparation has a 440-second outer bound. The controller's 10800-second
 suite deadline includes admission waiting (at most 600 seconds); its termination
-grace is 60 seconds. The 150-minute service start limit leaves room for capture,
+grace is 60 seconds. The 210-minute service start limit leaves room for capture,
 checkout, reporting and cleanup. `KillMode=control-group` and a 90-second stop
 limit cover service termination. No automatic retry or evidence deletion is
-configured. The timer follows 04:00 America/Los_Angeles, including DST, with
+configured. The previous 7200-second cap was exhausted on 2026-11-09 after
+393 of 451 modules and 7009 tests at weight 2 / two workers. Completed modules
+used 14260 worker-seconds; no per-module timeout occurred. The same run also
+exposed two obsolete ESP-Prog meta-test expectations, repaired separately.
+The existing cleanup removed the owned container/processes/lease, retained the
+attempt as incomplete, left the baseline absent and published GitHub error.
+The 10800-second budget provides finite headroom for the remaining work and
+host contention; the 210-minute service limit preserves 30 minutes for outer
+work. The per-module 3600-second limit and all strict checks remain unchanged.
+Evidence: recovery `u6-terminal/RESULT.json`; all three committee members
+explicitly agreed to this bounded adjustment in `u7-reconciled-*-result.json`.
+
+The timer follows 04:00 America/Los_Angeles, including DST, with
 up to five minutes of delay; persistent catch-up can fire when it is enabled.
 
 ## Installation and operational proof

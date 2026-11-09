@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-11-09 — size the agent-ee nightly budget from an actual full attempt
+
+- The installed two-worker full run reached its 7200-second aggregate deadline
+  after 393 of 451 modules and 7009 tests. Its two obsolete ESP-Prog meta-test
+  failures are a separate agent-ee repair; no other problem was observed in the
+  completed modules. The unfinished modules remain unverified.
+- Existing cleanup and failure reporting worked: the attempt is retained as
+  incomplete, owned execution resources are gone, no baseline advanced and
+  GitHub received error. No new process or scheduling machinery is needed.
+- Astra, Fable and Argon agreed to a 10800-second controller bound and the
+  existing service's 210-minute outer limit, keeping weight 2, two workers,
+  the per-module deadline, strict checks and stock limits unchanged.
+- Scoped verification, source-bound landing and installation precede one fresh
+  full attempt. Actual installation and operational results remain recorded in
+  [the installation record](config/agent-ee-full-suite/install-record.json).
+
 ## 2026-11-08 — fix Cairn's Codex interruption response
 
 - Fixed the owner's recurring invalid Interrupt JSON warning in Cairn commit
