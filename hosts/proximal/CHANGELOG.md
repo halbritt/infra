@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-11-08 — fix Cairn's Codex interruption response
+
+- Fixed the owner's recurring invalid Interrupt JSON warning in Cairn commit
+  `86a78e6f`. The hook now returns `{}` after updating presence, preserving pending
+  inbox work. The new assertion reproduced the failure; all 80 related tests pass.
+- Installed the exact repair over the checked installed bundle through a regular
+  stable launcher. All three Codex profiles use it on subsequent hook invocations.
+  The installed stdin/stdout probe passed with synthetic state; existing sessions
+  and services were not restarted.
+- An initial symlink failed the loader's entrypoint check and was immediately
+  rolled back before installing the verified regular launcher. Provenance,
+  verification, and rollback: [deployment record](config/cairn/codex-interrupt-20261108.md).
+
 ## 2026-11-08 — prepare agent-ee nightly service recovery
 
 - Reused the previously prepared full-suite service/timer, with explicit finite

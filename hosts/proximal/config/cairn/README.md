@@ -38,6 +38,27 @@ Search diagnostics expire after 14 days, by a daily timer. See
 [candidate-retention.md](candidate-retention.md) for the decision, operation and
 recovery.
 
+## Native coordination hooks
+
+`coordination-entrypoint.py` is installed as the regular executable file
+`~/.local/share/cairn/coordination/coordination.py`. It selects the complete
+verified bundle at
+`~/.local/share/cairn/deployments/codex-interrupt-agent1333-20261108/lifecycle/`.
+The native hook commands keep their existing paths and account configurations.
+Runtime implementation remains canonical in the Cairn repository; this launcher
+records the host's selected deployment.
+
+The selected bundle preserves the previously installed implementation with only
+the Codex interruption repair from Cairn commit `86a78e6f`. Interruption updates
+presence and returns `{}`, preserving pending inbox work. All three Codex profiles
+use this entrypoint. The presence service and pinned inbox memory/bridge bundles
+keep their separate deployment paths.
+
+The adjacent old helper files and manifest are retained installation material;
+the launcher loads the selected deployment's own manifest and helpers. Do not
+replace individual members of a live pinned bundle. See the
+[deployment record](codex-interrupt-20261108.md) for verification and rollback.
+
 ## Backup and recovery
 
 The managed cluster's pgBackRest backup/WAL schedule now covers the Cairn database.
