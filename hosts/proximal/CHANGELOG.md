@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-09 — inspect added SATA SSDs and remove capacity limit
+
+- All three added SSDs enumerate after reboot, pass SMART and link at 6 Gb/s.
+  NVR remains healthy. At the owner's request, permanently disabled the HPA on
+  Samsung S2L2NWAG700037N; drive IDENTIFY now reports 960 GB, while the running
+  kernel retains its old device capacity pending reinitialization.
+- Preserved and verified the partition metadata, then mounted the existing
+  NTFS, exFAT, HFS+ and EFI filesystems read-only for owner inspection.
+  Mount paths and exact identities: [SATA SSD inventory](config/storage/README.md).
+
 ## 2026-11-09 — checkpoint Herdr agents for SATA maintenance
 
 - Owner requested preserving the layout and conversations before a possible reboot.
