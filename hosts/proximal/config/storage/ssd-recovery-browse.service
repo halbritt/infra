@@ -1,0 +1,18 @@
+[Unit]
+Description=Read-only browser for the archived SATA SSD contents
+RequiresMountsFor=/nvr/archive
+ConditionPathExists=/nvr/archive/ssd-recovery-2026-11-09/repository/config
+
+[Service]
+Type=simple
+UMask=0077
+Environment=RESTIC_REPOSITORY=/nvr/archive/ssd-recovery-2026-11-09/repository
+Environment=RESTIC_PASSWORD_FILE=/nvr/archive/ssd-recovery-2026-11-09/password
+Environment=RESTIC_CACHE_DIR=/nvr/archive/ssd-recovery-2026-11-09/cache
+ExecStart=/usr/bin/restic mount --allow-other --no-default-permissions /mnt/ssd-archive-private/browse
+ExecStop=/usr/bin/fusermount3 -u /mnt/ssd-archive-private/browse
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

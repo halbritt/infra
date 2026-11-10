@@ -38,3 +38,45 @@ Linux still reports the old block-device capacity after sysfs SCSI rescan and
 `hdparm -z`; another drive reinitialization/power cycle may be needed to expose
 the extra space to the kernel. No controller reset or drive disconnect was
 performed because the owner requested inspecting the mounted filesystems.
+
+## Deduplicated NVR archive (owner request, 2026-11-09)
+
+Owner requested moving the identified material to NVR with deduplication, then
+explicitly selected removal of originals **after verification**. Destination:
+`/nvr/archive/ssd-recovery-2026-11-09`. The transfer also includes the complete
+NTFS and exFAT volumes to avoid losing material missed by the initial inventory.
+The entire SM863 HFS+ filesystem is captured with partclone, preserving the
+Time Machine catalog and directory links which Linux displays as zero-byte files.
+Its `external` directory and standalone document are also archived as ordinary
+files for convenient browsing.
+
+Restic 0.18.1 provides content-addressed chunk deduplication and compression,
+preserving separate filenames and metadata. It is a new **local** repository;
+no existing restic repository or ZFS dedup property is changed. Its random
+password is stored beside it in `password`, mode 0600, below the owner's private
+0700 archive directory. Retain that file with the archive. Never commit it.
+Existing off-site backup policy includes `/nvr/archive`; it does not follow
+the browser symlink.
+
+`archive-ssds.sh` is canonical here, installed as `<destination>/archive-ssds.sh`
+and run as the transient system unit `ssd-recovery-archive.service`. It verifies
+source UUIDs and read-only mounts, backs up the files, rereads them with `--force`,
+unmounts SM863 for partclone capture and remounts it read-only, performs a full
+`restic check --read-data`, and verifies the archived partclone image checksums.
+It stops on failures, including incomplete restic backups or producer failure.
+It does not delete source files. Source removal is a separate action after the
+verification evidence is reviewed. No bypass of HFS+ journal/write protections
+is authorized by this procedure.
+
+`status`, `job.log`, and `logs/` record progress and errors. `COMPLETE` means the
+archive's verification stages completed; it does not mean sources were removed.
+`snapshots.json`, `stored-stats.json`, and `files-logical-stats.json` capture the
+final snapshot identities and sizes. A failed run must be inspected before retry.
+
+`ssd-recovery-browse.service` is installed under `/etc/systemd/system/` and enabled.
+It mounts the archive read-only at `/mnt/ssd-archive-private/browse`, behind an
+owner-only 0700 parent. `<destination>/browse` is a symlink to that mount.
+The `/mnt` location is allowed by the installed fusermount AppArmor profile;
+mounting directly below `/nvr` was rejected. No AppArmor policy was changed.
+The mount retains separate views of every snapshot and updates as snapshots
+finish. The local repository remains usable through restic if the browser is down.
