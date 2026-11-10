@@ -10,7 +10,8 @@
 - Migrated `~/git` to `/srv/ssd1/git` with a persistent bind mount preserving paths.
   Full content/metadata comparison passed with zero differences. Checkpointed and
   restarted 24 other agent conversations and restored 26 affected services.
-- Rollback tree retained until the maintenance coordinator releases its old cwd.
+- Restarted the maintenance coordinator, confirmed no old-tree references, and
+  removed the verified original copy, reclaiming 112.98 GiB net on the OS disk.
   Exact identities, configuration and evidence: [storage](config/storage/README.md).
 
 ## 2026-11-10 — complete SSD archive and provision Btrfs workspace pool

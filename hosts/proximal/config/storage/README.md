@@ -34,14 +34,19 @@ The 24 other agent conversations were checkpointed, exited, and relaunched with
 their saved conversation IDs, account profiles and model arguments. All 26
 affected services returned active. A later old-directory reference check found
 the llama service had been independently restarted during verification; it was
-restarted again after cutover and now resolves the new tree. Only the maintenance
-coordinator and its helper processes retain old directory references.
+restarted again after cutover and now resolves the new tree. The maintenance
+coordinator then restarted into the same conversation, releasing the final old
+directory references.
 
-Rollback currently remains at `/home/halbritt/git.before-ssd-20261110` until the
-coordinator restarts and releases those references. Do not use this old tree for
-work. Evidence, exact launch profiles and recovery prompts are under
+After confirming no process cwd, executable, open-file or mapped-file references
+remained, removed only `/home/halbritt/git.before-ssd-20261110`. The removal unit
+exited successfully and the old tree is absent. Root available space increased
+by 112.98 GiB net during removal (other workloads were active). The source tree
+is no longer retained; the SSD copy is authoritative. Evidence, exact launch
+profiles and recovery prompts are under
 `~/.local/state/ssd-independent-20261110/` (`COPY_VERIFIED`, `CUTOVER`,
-`checksum-diff.log`, `resume-manifest.json`, `services-restored.json`).
+`checksum-diff.log`, `resume-manifest.json`, `services-restored.json`,
+`cleanup-result.json`).
 
 ### Quick performance check
 
