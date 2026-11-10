@@ -1,5 +1,20 @@
 # Host changelog
 
+## 2026-11-09 — retire imessage-mcp
+
+Owner approved retiring imessage-mcp: missive on proximal replaced it, and since
+the morning restart every message tool failed with `UNSUPPORTED_SCHEMA`. Removed in
+the guest: the LaunchAgent, `/opt/imessage-mcp` (Node.js and the app), its token
+and log, the tunnel key line in `authorized_keys`, and node's Full Disk Access entry
+(through the console; BlueBubbles keeps its own). Removed on archon:
+`imessage-vm-mcp-tunnel.service`, Tailscale Serve `:8765`, the Claude Code `imessage`
+registration and helper scripts, the token copies (also on proximal), and the
+shredded `identity/imessage-mcp-token` and `identity/tunnel_ed25519`. The guest
+bootstrap and `install.sh` now remove the leftovers instead of installing them.
+Verified afterwards: `:8765` closed, the BlueBubbles gateway healthy, Messages and
+BlueBubbles running, missive polling. Rollback: the runbook's
+[Retired: imessage-mcp](config/imessage-vm/README.md#retired-imessage-mcp).
+
 ## 2026-11-09 — read-only BlueBubbles gateway for missive
 
 Owner requested a read-only path so proximal never holds the send-capable

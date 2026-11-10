@@ -16,7 +16,7 @@ case "${1:-}" in
     tar -C "$SHARE" -cf - . | "${SSH[@]}" 'rm -rf /tmp/imessage-vm-guest && mkdir -p /tmp/imessage-vm-guest && tar -C /tmp/imessage-vm-guest -xf -'
     pw=$(secret macos-imessage-password)
     printf '%s\n%s\n' "$pw" "$pw" | "${SSH[@]}" 'sudo -S -p "" bash /tmp/imessage-vm-guest/bootstrap-root.sh'
-    printf '%s\n%s\n' "$pw" "$(secret imessage-mcp-token)" | "${SSH[@]}" 'bash /tmp/imessage-vm-guest/bootstrap-user.sh'
+    printf '%s\n' "$pw" | "${SSH[@]}" 'bash /tmp/imessage-vm-guest/bootstrap-user.sh'
     unset pw
     ;;
   *) echo "usage: $0 ssh [CMD...] | bootstrap" >&2; exit 2 ;;

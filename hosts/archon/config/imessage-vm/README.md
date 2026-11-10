@@ -2,26 +2,30 @@
 
 Always-on macOS guest on archon that keeps the owner's iMessage running
 independently of the MacBook. It provides Windows access through BlueBubbles
-and read-only agent access through imessage-mcp. Deployed 2026-10-19.
+and, through a read-only gateway, the source for missive, the agent-facing text
+archive on proximal. Deployed 2026-10-19. imessage-mcp was retired 2026-11-09
+(see [Retired: imessage-mcp](#retired-imessage-mcp)).
 
 ## Architecture
 
 ```text
-Windows (peecee) BlueBubbles client ──https://archon.tail0ecc2e.ts.net:8443──┐
-Agents (Claude Code on archon, …)  ──https://archon.tail0ecc2e.ts.net:8765──┐ │  tailscale serve
-                                                                             │ │  (tailnet only)
-archon (Omarchy/Arch, i7-1360P, 62 GiB)                                      ▼ ▼
-  imessage-vm-mcp-tunnel.service  127.0.0.1:18765 ─ssh -L─┐      127.0.0.1:11234
-  imessage-vm.service (QEMU/KVM, user imsgvm)             │           │ hostfwd
-    macOS 15.8.1 guest, user `imessage` (auto-login)      ▼           ▼
-      imessage-mcp 3.2.0 (LaunchAgent, 127.0.0.1:8765)    BlueBubbles 1.9.9 (:1234)
-      Messages.app (Apple Account, Messages in iCloud)
+peecee BlueBubbles client ── https://archon.tail0ecc2e.ts.net:8443 ──┐   tailscale serve
+                                                                     │   (tailnet only)
+missive (proximal) ── https://archon.tail0ecc2e.ts.net:8766 ─┐       │
+                                                             ▼       │
+archon (Omarchy/Arch, i7-1360P, 62 GiB)                              │
+  imessage-vm-bb-readonly.service 127.0.0.1:18766                    │
+    (read allowlist; holds the BB password) ──────────┐              │
+                                                      ▼              ▼
+                                               127.0.0.1:11234 (QEMU hostfwd)
+  imessage-vm.service (QEMU/KVM, user imsgvm)          │
+    macOS 15.8.1 guest, user `imessage` (auto-login)   ▼
+      Messages.app (Apple Account, Messages in iCloud) ◄── BlueBubbles 1.9.9 (:1234)
 ```
 
 - Guest networking is QEMU user networking (archon is Wi-Fi only, so no
   bridge). Host forwards bind loopback only: guest SSH `127.0.0.1:10022`,
-  BlueBubbles `127.0.0.1:11234`. imessage-mcp binds guest loopback, so archon
-  reaches it through an SSH tunnel whose guest key may forward only that port.
+  BlueBubbles `127.0.0.1:11234`.
 - Private console: the QEMU VNC unix socket `/run/imessage-vm/vnc.sock`
   (group `imsgvm`, no VNC auth). It is reachable only through SSH to archon.
 - Tailscale Serve terminates TLS with archon's tailnet certificate. Funnel is
@@ -31,15 +35,13 @@ archon (Omarchy/Arch, i7-1360P, 62 GiB)                                      ▼
 
 | Component | Version | Notes |
 |---|---|---|
-| macOS guest | 15.8.1 Sequoia (24H32) | imessage-mcp needs ≥14. **Not Tahoe:** BlueBubbles #777 breaks non-Private-API AppleScript sends on 26 (`any;-;` chat GUIDs), #761 crashes on connect. Installed from Apple recovery (OSX-KVM `fetch-macOS-v2.py`, chunklist-verified, `DmgLoading=Signed`). |
+| macOS guest | 15.8.1 Sequoia (24H32) | **Not Tahoe:** BlueBubbles #777 breaks non-Private-API AppleScript sends on 26 (`any;-;` chat GUIDs), #761 crashes on connect. Installed from Apple recovery (OSX-KVM `fetch-macOS-v2.py`, chunklist-verified, `DmgLoading=Signed`). |
 | QEMU | 11.1.1 (Arch `qemu-base`) | Installed from the Arch Linux Archive at the exact versions in archon's sync DB (mirrors had moved on; no `-Syu`). |
 | OSX-KVM | 4c378a4 | OVMF (Debian edk2 2025.11), CPU line `Skylake-Client,-hle,-rtm,…` for Sequoia/Tahoe. |
 | OpenCore | 1.0.8 | Config base: LongQT-sea/OpenCore-ISO v0.7 (the config OSX-KVM adopted). Changes in `opencore/render-config.py`: VMHide after Lilu, no VoodooPS2, builtin picker, `HideVerbose` keys, identity. `ocvalidate` clean. OSX-KVM's own `OpenCore.qcow2` was inconsistent (config references kexts absent from the image; Lilu 1.6.8), so it is unused. |
 | Kexts | Lilu 1.7.2, VirtualSMC 1.3.8, WhateverGreen 1.7.1, VMHide 2.0.0, AppleMCEReporterDisabler | VMHide hides `kern.hv_vmm_present` from Apple Account processes (needed on 15+; OSX-KVM's kernel patch was dropped in its Tahoe config). |
 | BlueBubbles server | 1.9.9 (Intel DMG, sha256 in `guest/bootstrap-root.sh`) | Developer ID signed (team WPV275H8W7) but **not notarized** upstream; codesign plus team ID verified at install. Afterwards the app writes `cloudflare.pid` into its own bundle, which breaks the seal. Private API off; Automation (control Messages) granted. |
 | BlueBubbles Windows | 2.1.3 (`bluebubbles_installer.exe`, sha256 e61e3493…, Authenticode SignPath Foundation) | Installed per-user on peecee. |
-| Node.js | 24.22.0 LTS at `/opt/imessage-mcp/node` | SHASUMS256-verified; signed by the Node.js Foundation (HX7739G8FX). |
-| imessage-mcp | 3.2.0 at `/opt/imessage-mcp/app` | Pinned, not `@latest`. HTTP transport, `IMESSAGE_UPDATE_CHECK=0`, privacy `full` (attachments). |
 
 All artifact hashes are in `upstream.lock` or the bootstrap scripts.
 
@@ -57,15 +59,12 @@ All artifact hashes are in `upstream.lock` or the bootstrap scripts.
     MAC), SSH keys, guest known_hosts, secrets.
   - `src/` (OSX-KVM checkout, artifact cache).
 - Host tooling: `/usr/local/lib/imessage-vm/`, `/etc/imessage-vm/vm.conf`,
-  units `/etc/systemd/system/imessage-vm{,-mcp-tunnel}.service`, guest files
+  units `/etc/systemd/system/imessage-vm{,-bb-readonly}.service`, guest files
   `/usr/local/share/imessage-vm/guest/`. Install or refresh everything with
   `sudo ./install.sh` from this directory.
-- Guest: `/opt/imessage-mcp/{node,app}` (root-owned), the LaunchAgent at
-  `~imessage/Library/LaunchAgents/org.halbritt.imessage-mcp.plist`, its log at
-  `~imessage/Library/Logs/imessage-mcp.log`, the session watchdog
-  `/opt/imessage-vm/bin/session-watchdog` with its LaunchAgent
-  `org.halbritt.imessage-vm-watchdog`, and the token at
-  `~/.config/imessage-mcp/token` (0600).
+- Guest: the session watchdog `/opt/imessage-vm/bin/session-watchdog` with its
+  LaunchAgent `org.halbritt.imessage-vm-watchdog`. Only BlueBubbles has Full
+  Disk Access.
 
 ### Identity
 
@@ -83,8 +82,8 @@ image are one unit: back up and restore them together.
 |---|---|---|
 | macOS `imessage` password | `identity/macos-imessage-password` | auto-login (`/etc/kcpassword` in guest), sudo, typed into prompts via `imessage-vm-ctl type -` (stdin) |
 | BlueBubbles server password | `identity/bluebubbles-password` | BlueBubbles server; Windows client |
-| imessage-mcp bearer token | `identity/imessage-mcp-token`; guest `~/.config/imessage-mcp/token`; archon `~halbritt/.config/imessage-mcp/token` | MCP server and clients (separate from the BB password) |
-| host → guest SSH keys | `identity/host_ed25519` (forced `shutdown -h now`), `identity/tunnel_ed25519` (forward to 127.0.0.1:8765 only) | stop hook, MCP tunnel |
+| read-only gateway token | `identity/bb-readonly-token`; proximal `~/.config/missive/bb-readonly-token` | `imessage-vm-bb-readonly` and missive (cannot send) |
+| host → guest SSH key | `identity/host_ed25519` (forced `shutdown -h now`) | stop hook |
 
 Read them with `sudo cat` on archon. Never echo them into a command line;
 pipe them instead.
@@ -137,65 +136,37 @@ viewer at `localhost:5901`. peecee's key on archon is
 would also block the unix-socket forward). archon backup:
 `~/.ssh/authorized_keys.bak-20261019`.
 
-### Agents: read-only MCP
+### Agents
 
-Endpoint `https://archon.tail0ecc2e.ts.net:8765/mcp` (tailnet only), Streamable
-HTTP, `Authorization: Bearer <token>`. Allowed Host/Origin values:
-`localhost,127.0.0.1,archon.tail0ecc2e.ts.net`. The 8 tools are `server_status`,
-`resolve_contact`, `list_conversations`, `get_conversation`, `search_messages`,
-`analyze_communication`, `get_attachment` and `sync_messages` (cursor-based
-new-message feed). All are `readOnlyHint`; there are no send, edit, react,
-delete or mark-read tools. The server enforces 60 requests/min and 2
-concurrent requests.
-
-- archon, Claude Code (connected): user-scope server `imessage` with
-  `headersHelper` `~/.local/bin/imessage-mcp-headers` (`client/`), which reads
-  the 0600 token file.
-- Windows, Claude Code (not installed on peecee yet): put the token in
-  `%USERPROFILE%\.config\imessage-mcp\token`, then
-  `claude mcp add --transport http --scope user imessage https://archon.tail0ecc2e.ts.net:8765/mcp --header "Authorization: Bearer <token>"`.
-  This stores the token in `~/.claude.json`; a `headersHelper` PowerShell
-  script avoids that.
-- Windows, Claude Desktop or another stdio-only client: bridge with
-  `npx -y mcp-remote https://archon.tail0ecc2e.ts.net:8765/mcp --header "Authorization:${AUTH}"`
-  and set `AUTH=Bearer <token>` in the server's `env`.
-- Hosted clients (ChatGPT custom connectors, Claude.ai custom connectors) are
-  **not connected and deliberately not supported**. They call MCP servers from
-  the provider's cloud, so they need a public HTTPS endpoint with OAuth, and
-  neither sends static bearer headers. imessage-mcp's SECURITY.md declares
-  public exposure and Funnel unsupported. Hosted access would require a public
-  OAuth gateway in front of private messages; do not build one without an
-  explicit owner decision.
-
-Untrusted content: message text can contain prompt injection. imessage-mcp
-labels it as data, and agents should treat it so.
+Agents use **missive** on proximal (MCP `https://proximal.tail0ecc2e.ts.net:8770/mcp`,
+bearer token; see `hosts/proximal/config/missive/README.md`). It reads through the
+gateway above, so no agent path can send. Hosted clients (ChatGPT or Claude.ai custom
+connectors) are **deliberately not supported**: they would need a public OAuth
+endpoint in front of private messages. Do not build one without an explicit owner
+decision.
 
 ## Operations
 
 ```sh
 # VM
 sudo systemctl start|stop|restart|status imessage-vm        # stop = graceful macOS shutdown (≤200 s)
-journalctl -u imessage-vm -u imessage-vm-mcp-tunnel -f
+journalctl -u imessage-vm -u imessage-vm-bb-readonly -f
 imessage-vm-ctl status | screendump /var/lib/imessage-vm/logs/s.png | powerdown
 imessage-vm-guest ssh [cmd]                                 # shell in the guest as imessage (from archon)
-# Guest services (inside the guest)
-launchctl print gui/501/org.halbritt.imessage-mcp | grep -E 'state|pid'
-launchctl kickstart -k gui/501/org.halbritt.imessage-mcp    # restart MCP
-tail -f ~/Library/Logs/imessage-mcp.log
+# Guest (inside the guest)
 pkill -x BlueBubbles   # the watchdog restarts it within 60 s (log: ~/Library/Logs/imessage-vm-watchdog.log)
 # Edge
-sudo tailscale serve status                                 # 8443 → BB, 8765 → MCP
+sudo tailscale serve status                                 # 8443 → BB, 8766 → read-only gateway
 ```
 
 Startup chain (each piece has one mechanism):
 1. archon boots: TPM unlock, see [tpm-unlock](../tpm-unlock/README.md).
 2. `imessage-vm.service` (enabled, `Restart=on-failure`) starts the VM, and
-   pulls in `imessage-vm-mcp-tunnel.service` (`Restart=always`).
+   pulls in `imessage-vm-bb-readonly.service` (`Restart=always`).
 3. OpenCore boots macOS (its own volume is hidden via `.contentVisibility`).
 4. macOS auto-logs-in `imessage` (FileVault off; the disk image sits on
    archon's LUKS volume).
-5. LaunchAgents start imessage-mcp (KeepAlive, ThrottleInterval 30) and the
-   session watchdog (RunAtLoad + every 60 s). The watchdog starts Messages and
+5. A LaunchAgent starts the session watchdog (RunAtLoad + every 60 s). The watchdog starts Messages and
    BlueBubbles if they are missing; `open` does nothing to a running app.
    BlueBubbles' own auto-start is set to "Do Not Auto Start", with "Start
    Minimized" on. Its "Launch Agent (Crash Persistent)" mode does not
@@ -233,17 +204,13 @@ rebuilt and resynced. It keeps the same identity if `identity.env` survives.
 Snapshot first (above) before any of these.
 
 - macOS 15.x updates: System Settings → Software Update over the console,
-  then re-check Messages, BlueBubbles and MCP. **Decline macOS 26 Tahoe** until
+  then re-check Messages, BlueBubbles and the gateway. **Decline macOS 26 Tahoe** until
   BlueBubbles fixes #777/#761 and VMHide supports it. Rollback = restore the
   snapshot.
 - OpenCore/kexts: edit `upstream.lock` plus the pins in
   `bin/imessage-vm-build-boot`, then `sudo imessage-vm-build-boot fetch &&
   sudo imessage-vm-build-boot opencore` (it runs `ocvalidate` and keeps
   `OpenCore.img.prev`). Rollback: `mv OpenCore.img.prev OpenCore.img`, restart.
-- imessage-mcp or Node: bump `MCP_VER`/`NODE_VER` in `guest/bootstrap-root.sh`,
-  `sudo ./install.sh`, then `imessage-vm-guest bootstrap` (Node keeps
-  `/opt/imessage-mcp/node.prev`). Full Disk Access is tied to the stable path
-  and the Node.js Foundation signature. Re-check `server_status`.
 - BlueBubbles: bump `BB_VER`/`BB_SHA256` and rerun the bootstrap. Rollback by
   reinstalling the previous DMG.
 - QEMU: updated by archon's normal system updates; takes effect on VM restart.
@@ -295,13 +262,6 @@ group-chat send.
 
 ## Known limitations
 
-- imessage-mcp 3.2.0 (2026-11-09): after a `DATABASE_CHANGED` restart, every
-  message tool returns `UNSUPPORTED_SCHEMA` ("a message belongs to multiple
-  conversations that Apple did not link through chat_lookup"; `chat_lookup` is
-  absent on 15.8.1). `server_status` and `resolve_contact` still work. Its index
-  covered 12,128 of 50,315 messages. Agents that need full history should use
-  missive on proximal.
-
 - After an archon power loss, the VM only returns if TPM unlock succeeds
   (passphrase fallback needs someone at the keyboard).
 - Private API is off; see the client feature limits above.
@@ -312,3 +272,33 @@ group-chat send.
   2026-10-19 doing so while debugging the console logged the owner's typed
   Apple credentials to the journal. The affected journal file was deleted.
   Diagnose console input with screendumps and `query-vnc` only.
+
+## Retired: imessage-mcp
+
+imessage-mcp 3.2.0 ran in the guest from 2026-10-19 to 2026-11-09: Node.js 24.22.0 and
+the app under `/opt/imessage-mcp` with Full Disk Access, a LaunchAgent on guest loopback
+`:8765`, `imessage-vm-mcp-tunnel.service` (SSH `-L` with a forward-only guest key), and
+Tailscale Serve `:8765`, registered in Claude Code on archon as `imessage`.
+
+Why it was retired: missive replaced it (full history kept past source deletions,
+sender identity, summaries, semantic search, archived attachments), and from
+2026-11-09 every message tool failed with `UNSUPPORTED_SCHEMA` (a message in several
+conversations that Apple did not link through `chat_lookup`, which 15.8.1 lacks). Its
+index never covered more than 12,128 of about 50,000 messages. It was the guest's
+broadest privilege: Full Disk Access over the Messages database, plus its own runtime,
+tunnel and port.
+
+Removed 2026-11-09: the LaunchAgent, `/opt/imessage-mcp`, the guest token and log, the
+tunnel line in the guest `authorized_keys`, node's Full Disk Access entry (System
+Settings, through the console; TCC.db is SIP-protected), the tunnel unit, Serve `:8765`,
+the Claude Code registration and helper scripts on archon, and the token copies on
+archon and proximal. `identity/imessage-mcp-token` and `identity/tunnel_ed25519` were
+shredded. The guest bootstrap and `install.sh` remove the leftovers if a restored
+snapshot still has them. The message index was in memory only.
+
+Rollback: restore the files from the commit before the retirement (`git log --
+hosts/archon/config/imessage-vm`), generate a new token and tunnel key, add the tunnel
+key to the guest `authorized_keys`, then `sudo ./install.sh`, `imessage-vm-guest
+bootstrap`, grant `/opt/imessage-mcp/node/bin/node` Full Disk Access through the
+console, `sudo systemctl enable --now imessage-vm-mcp-tunnel` and
+`sudo tailscale serve --bg --https=8765 http://127.0.0.1:18765`.

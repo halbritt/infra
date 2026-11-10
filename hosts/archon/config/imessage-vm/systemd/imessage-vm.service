@@ -1,5 +1,5 @@
 [Unit]
-Description=macOS (Sequoia) guest for iMessage, BlueBubbles and imessage-mcp
+Description=macOS (Sequoia) guest for iMessage and BlueBubbles
 Documentation=file:///home/halbritt/git/infra/hosts/archon/config/imessage-vm/README.md
 After=network-online.target
 Wants=network-online.target

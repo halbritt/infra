@@ -4,8 +4,6 @@
 # the imessage account password (line 1 is consumed by sudo -S).
 set -euo pipefail
 U=imessage
-NODE_VER=v24.22.0
-MCP_VER=3.2.0
 BB_VER=1.9.9
 BB_SHA256=9681e65f60214a6a95f3bd12b57bd4cc8ad6d8f58cd9c1d8811b2a4606ad7c04  # size 306050865, matches the GitHub asset; computed 2026-10-19
 IFS= read -r PW
@@ -44,31 +42,13 @@ if [[ "$(fdesetup status)" != "FileVault is Off." ]]; then
   exit 1
 fi
 
-# Node.js LTS at a stable path (Full Disk Access is granted to this binary).
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-if [[ "$(/opt/imessage-mcp/node/bin/node --version 2>/dev/null)" != "$NODE_VER" ]]; then
-  tarball="node-$NODE_VER-darwin-x64.tar.gz"
-  curl -fsSL -o "$work/$tarball" "https://nodejs.org/dist/$NODE_VER/$tarball"
-  curl -fsSL -o "$work/SHASUMS256.txt" "https://nodejs.org/dist/$NODE_VER/SHASUMS256.txt"
-  (cd "$work" && grep " $tarball\$" SHASUMS256.txt | shasum -a 256 -c -)
-  mkdir -p /opt/imessage-mcp
-  tar -xzf "$work/$tarball" -C "$work"
-  rm -rf /opt/imessage-mcp/node.prev
-  [[ -d /opt/imessage-mcp/node ]] && mv /opt/imessage-mcp/node /opt/imessage-mcp/node.prev
-  mv "$work/node-$NODE_VER-darwin-x64" /opt/imessage-mcp/node
-  chown -R root:wheel /opt/imessage-mcp/node
-fi
-codesign --verify --strict /opt/imessage-mcp/node/bin/node
 
-# imessage-mcp, pinned; npm verifies the registry integrity hash.
-installed=$(/opt/imessage-mcp/node/bin/node -p "require('/opt/imessage-mcp/app/node_modules/imessage-mcp/package.json').version" 2>/dev/null || true)
-if [[ "$installed" != "$MCP_VER" ]]; then
-  mkdir -p /opt/imessage-mcp/app
-  PATH=/opt/imessage-mcp/node/bin:$PATH npm install --prefix /opt/imessage-mcp/app \
-    --omit=dev --no-audit --no-fund --save-exact "imessage-mcp@$MCP_VER"
-  chown -R root:wheel /opt/imessage-mcp/app
-fi
+# imessage-mcp and its Node.js were retired 2026-11-09 (missive replaced them).
+# Remove them from older guests; also remove node's Full Disk Access entry in
+# System Settings (TCC.db is SIP-protected, so this step cannot do it).
+rm -rf /opt/imessage-mcp
 
 # BlueBubbles server (Intel build), checksum-pinned and notarization-checked.
 if [[ "$(defaults read /Applications/BlueBubbles.app/Contents/Info CFBundleShortVersionString 2>/dev/null)" != "$BB_VER" ]]; then

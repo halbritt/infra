@@ -16,6 +16,11 @@ rm -rf /usr/local/share/imessage-vm/guest
 install -d -m 0755 /usr/local/share/imessage-vm
 cp -r guest /usr/local/share/imessage-vm/guest
 chmod -R a+rX /usr/local/share/imessage-vm
+# Retired 2026-11-09 with imessage-mcp.
+if [[ -e /etc/systemd/system/imessage-vm-mcp-tunnel.service ]]; then
+  systemctl disable --now imessage-vm-mcp-tunnel.service || true
+  rm -f /etc/systemd/system/imessage-vm-mcp-tunnel.service
+fi
 for u in systemd/*.service; do install -m 0644 "$u" /etc/systemd/system/; done
 systemctl daemon-reload
 # Client token for the read-only BlueBubbles gateway (never the BB password).
