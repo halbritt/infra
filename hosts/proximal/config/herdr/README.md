@@ -13,6 +13,13 @@ It holds the original layout, per-pane acknowledgments and Cairn handoff referen
 an exact conversation/profile/launch manifest, and a corrected `session.json.restore`.
 Do not commit the bundle or authentication files.
 
+On the owner's follow-up instruction, all 24 other agents exited after saving;
+the coordinating pane finishes last. `shutdown-verified.json` records the process
+check. All 25 exact resume commands and recovery prompts are in
+`recovery-prompts.md` and `recovery-prompts.json`. The coordinating Cairn handoff
+is `ee3852f3-2cef-43a5-bc70-4530f0ad5e03`, version 2. One pane had an unsent score-rule
+draft: the available report was saved, not submitted or applied.
+
 The original layout has 7 workspaces, 12 tabs and 25 agent panes. Twelve Codex
 panes lack native session references. Bare Claude resume commands lose account
 profiles and Cairn channel flags. One Claude pane has a deleted working directory.

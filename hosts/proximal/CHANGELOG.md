@@ -15,6 +15,10 @@
   paths. No reboot, server stop or live layout replacement occurred; conversation
   launches must be checked after the eventual reboot.
 - Procedure and installed-file mapping: [Herdr recovery](config/herdr/README.md).
+- Follow-up owner instruction: shut agents down and record all recovery prompts.
+  All 24 other original launcher processes exited; all 25 per-session prompts
+  and exact launch commands are saved in the private bundle. The coordinator
+  exits last after delivering the recovery instructions.
 
 ## 2026-11-09 — deploy missive (text-message archive for agents)
 
