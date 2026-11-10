@@ -1,5 +1,20 @@
 # Changelog — proximal (system)
 
+## 2026-11-10 — complete SSD archive and provision Btrfs workspace pool
+
+- Archived 761.4 GB logical content to NVR in a deduplicated/compressed restic
+  repository using 568.0 GB of stored blobs, including a complete HFS+ image.
+  Source reread/diff, all 32209 stored packs, partclone checksums, and restored
+  sample hashes passed before any source was erased.
+- On the owner's explicit instruction, discarded exactly the three Samsung
+  SATA SSDs and created a 4.80 TB Btrfs RAID0-data/single-metadata pool at
+  `/srv/workspaces`. Restored recognition of the 960 GB drive's full size with
+  a targeted SCSI re-detection. NVR and NVMe OS storage remained intact.
+- Added the canonical fstab entry, compression and async TRIM, owner-writable
+  repos/build/cache subvolumes. Verified persistent mounting, writes/fsync,
+  reflink CoW behavior and zero device error counters.
+- Archive paths, identities and verification evidence: [storage](config/storage/README.md).
+
 ## 2026-11-09 — inspect added SATA SSDs and remove capacity limit
 
 - All three added SSDs enumerate after reboot, pass SMART and link at 6 Gb/s.

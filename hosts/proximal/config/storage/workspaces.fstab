@@ -1,0 +1,1 @@
+UUID=4e05e477-9107-4eea-af5b-d1760d1d7408 /srv/workspaces btrfs nofail,x-systemd.device-timeout=10s,noatime,compress=zstd:1,discard=async,subvol=@workspaces 0 0

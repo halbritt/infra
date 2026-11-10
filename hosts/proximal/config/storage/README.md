@@ -1,5 +1,50 @@
 # Additional SATA SSDs
 
+## Current state — 2026-11-10
+
+All three Samsung SSDs were archived, verified, discarded, repartitioned with
+GPT, and combined into Btrfs UUID `4e05e477-9107-4eea-af5b-d1760d1d7408`,
+label `workspaces`. Live mount: **`/srv/workspaces`**, 4.80 TB / 4.37 TiB,
+RAID0 data and single metadata as requested by the owner. The OS/NVMe and NVR
+disks were not reformatted. Existing working checkouts were not relocated.
+
+[`workspaces.fstab`](workspaces.fstab) is the canonical entry installed in
+`/etc/fstab`; it enables zstd level 1, asynchronous discard, noatime, and the
+`@workspaces` subvolume. `nofail` keeps missing workspace disks from blocking
+OS startup. The owner has write access to the mount and its `repos`, `build`,
+and `cache` subvolumes. Mounting through the generated systemd unit was tested
+after unmounting. Owner write/read/fsync, reflink cloning and independent CoW
+modification passed; Btrfs device error counters are zero.
+
+The 960 GB SSD's full capacity became visible after unmounting it, removing
+only its SCSI device via sysfs, scanning its exact host/target, and refreshing
+udev. All serials and byte capacities were revalidated before discard. No
+controller-wide reset was used, and NVR remained healthy.
+
+### Preserved data
+
+Archive: `/nvr/archive/ssd-recovery-2026-11-09`.
+
+- `files/` browses the ordinary files on NVR: `ssd-ntfs/`, `ssd-exfat/`, and
+  `ssd-sm863/external/`, including `My Pictures2`.
+- `timemachine-image` accesses the complete SM863 partclone image. This retains
+  the HFS+ structure; restoring it requires partclone and a sufficiently large
+  target, not merely extracting Linux's zero-byte directory-link placeholders.
+- 761419483107 logical bytes across the ordinary-file snapshot and filesystem
+  image occupy 567993729184 stored blob bytes: 193425753923 bytes (25.4%) saved
+  through deduplication and compression, excluding small repository overhead.
+- All 32209 repository packs passed a complete read; partclone image checksum
+  verification passed. A second source read introduced zero data blobs;
+  snapshot comparison found zero added, removed or changed files. Three
+  representative restored photo/document/RAW files matched source SHA-256.
+- `COMPLETE` records archive verification. `PROVISIONED`, `provision-result.json`,
+  `provision-preflight.json`, `mkfs-btrfs.log` and `btrfs-usage.txt` record the
+  subsequent wipe/provisioning and checks. Original SSD filesystems are gone.
+
+The browser service remains enabled. One-shot completion callback installation
+was removed after successful provisioning; its canonical files remain below as
+provenance. No automatic snapshots or migration of existing workloads was added.
+
 ## 2026-11-09 post-reboot inspection
 
 After the SATA maintenance reboot, all three added SSDs enumerate at 6 Gb/s.
