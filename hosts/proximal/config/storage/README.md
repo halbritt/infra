@@ -225,3 +225,27 @@ performs the complete repository read and partclone checksum checks, records
 stats/COMPLETE, and restarts the browser. It runs as `ssd-recovery-verify.service`
 with the same existing-conversation success/failure callback. No source wipe
 is permitted until this verification actually succeeds.
+
+## Claude default-profile restart correction — 2026-11-10
+
+The maintenance restart incorrectly normalized an unset `CLAUDE_CONFIG_DIR` to
+`/home/halbritt/.claude` for six default-profile Claude conversations. This is
+not equivalent: setting it selects `~/.claude/.claude.json`, while leaving it
+unset selects `~/.claude.json`. The former lacked the normal user MCP servers.
+The storage migration succeeded, but those sessions lost Cairn and other user
+MCP tools until their launch environment was corrected.
+
+Preserve **unset** versus explicitly set profile variables in future restart
+manifests. Default-profile Claude must launch with `env -u CLAUDE_CONFIG_DIR`;
+keep explicit custom profiles such as `~/.claude-harm` unchanged. Preserve the
+conversation ID and model/effort flags. Agent-1348 supplied the six exact commands
+in `~/.local/state/ssd-independent-20261110/relaunch-default-profile.sh`.
+Repair checkpoints and verification live under
+`~/.local/state/cairn-profile-fix-20261110/`. The current SSD `resume-manifest.json`
+now explicitly unsets the variable for those six panes. Its original was retained
+as `resume-manifest.before-profile-fix.json`; older maintenance bundles are
+historical evidence, not commands to reuse without this correction.
+
+All six corrected sessions passed a native `mcp__cairn__cairn_search` call after
+relaunch (no CLI fallback). Live process environments confirmed the variable
+was absent, and all conversation IDs matched their saved originals.

@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-10 — repair default-profile Claude MCP access after restart
+
+- Corrected six maintenance relaunches that explicitly set the default
+  `CLAUDE_CONFIG_DIR`, selecting the wrong user MCP configuration. Relaunched
+  the same conversations with the variable unset, preserving model/effort flags.
+- Verified all six through successful native Cairn MCP read calls and checked
+  their live process environments and original conversation IDs.
+- Corrected the reusable SSD resume manifest and documented the distinction
+  between unset and explicit default paths. Custom-profile sessions were unchanged.
+
 ## 2026-11-10 — independent SSDs and repository bind mount
 
 - Owner revised the RAID0 choice to isolate drive failures and preserve future
