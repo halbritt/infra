@@ -59,3 +59,26 @@ labeled `SSD`, UUID `5717-D3E5`, and an HPA exposing 1,534,405,915 of
 and no logged errors. Its filesystem and capacity limit were left untouched.
 After Seagate recovery, none of the three added SSDs was visible; further
 SATA-port diagnosis remains outstanding.
+
+### Missing SSDs: chipset port-disable bits confirmed
+
+Further read-only diagnosis on November 9 found PCI `0000:00:17.0`
+(Intel `8086:43d2`) MAP at offset `0x90` = `0x00fe0000` and PCS at
+`0x94` = `0x00010001`. MAP bits 17–21 disable the five remaining physical
+ports; only port 0 is enabled/present in PCS. All six ports are exposed to
+AHCI, but that does not override the chipset disable bits.
+
+Intel 500 Series PCH Datasheet Volume 2, document 636174-002, sections
+15.1.24–15.1.25 (pages 753–758), defines MAP.SPD as read/write-once,
+not reset by function-level reset. The access definition says those bits
+become read-only after the first write following power-up. Disabled ports'
+PCS enable bits are read-only zero. This explains the unsuccessful scans
+and power-policy experiment; the missing links do not establish bad cables.
+Source: https://cdrdv2-public.intel.com/636174/636174-002.pdf
+
+No PCI register writes, driver unbind, controller reset or reboot were
+attempted. The owner needs roughly 20 running agent sessions preserved.
+The NVR pool remains healthy. Enabling all required ports and hot-plug in
+firmware at a planned maintenance boot is the onboard path; an external
+USB-to-SATA adapter permits drive inspection without changing this boot.
+The exact firmware option responsible for setting MAP.SPD is not confirmed.
