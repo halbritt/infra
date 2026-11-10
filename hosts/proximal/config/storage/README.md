@@ -95,3 +95,19 @@ using supported `codex queue --resume`; it does not create a replacement agent.
 The follow-up must inspect actual verification results before wiping or formatting.
 Its journal records whether queueing and resumption succeeded. The original
 archive service itself never wipes drives.
+
+### Verification continuation — 2026-11-10
+
+The initial transfer completed all 491860 files (320200807199 logical bytes)
+and the 441218675908-byte partclone stream. Snapshots: `7457e3fb` initial files,
+`c600a92e` forced reread, `22b969c9` HFS+ image. Source reread added zero data
+blobs; `restic diff` reports zero added, removed or changed files. Full read
+verification initially refused the live browser's shared lock (exit 11).
+The browser was stopped normally; no lock was forcibly removed.
+
+`verify-ssd-archive.sh`, installed beside the archive script, resumes only the
+remaining checks with the browser stopped. It validates the captured summaries,
+performs the complete repository read and partclone checksum checks, records
+stats/COMPLETE, and restarts the browser. It runs as `ssd-recovery-verify.service`
+with the same existing-conversation success/failure callback. No source wipe
+is permitted until this verification actually succeeds.

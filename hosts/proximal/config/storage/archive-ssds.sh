@@ -8,6 +8,7 @@ export RESTIC_PASSWORD_FILE="$base/password"
 export RESTIC_CACHE_DIR="$base/cache"
 hfs=/dev/disk/by-uuid/fc8f9ee1-2d51-3d62-a7a8-366c62bd4fa1
 unmounted=0
+browser_stopped=0
 
 stage() {
     printf '%s %s\n' "$(date -Is)" "$1" | tee "$base/status"
@@ -24,6 +25,9 @@ finish() {
     fi
     if [[ $result != 0 ]]; then
         stage "FAILED exit=$result; originals retained; inspect logs"
+    fi
+    if [[ $browser_stopped == 1 ]]; then
+        if ! systemctl start ssd-recovery-browse.service; then result=1; fi
     fi
     exit "$result"
 }
@@ -67,6 +71,8 @@ mount -t hfsplus -o ro "$hfs" /mnt/ssd-sm863
 unmounted=0
 
 stage REPOSITORY_FULL_READ_VERIFY
+systemctl stop ssd-recovery-browse.service
+browser_stopped=1
 restic check --read-data > "$base/logs/repository-check.log" 2>&1
 stage HFS_IMAGE_CHECKSUM_VERIFY
 restic dump --tag sm863-filesystem latest /sm863.hfsp.partclone \
@@ -78,3 +84,5 @@ restic stats --mode restore-size --tag ssd-files latest --json > "$base/files-lo
 sync -f "$base"
 stage 'VERIFIED; originals retained pending owner disposition'
 touch "$base/COMPLETE"
+systemctl start ssd-recovery-browse.service
+browser_stopped=0
