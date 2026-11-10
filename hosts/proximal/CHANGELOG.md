@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-11-10 — independent SSDs and repository bind mount
+
+- Owner revised the RAID0 choice to isolate drive failures and preserve future
+  flexibility. Replaced the empty pool with three independent Btrfs filesystems
+  mounted persistently at `/srv/ssd1`, `/srv/ssd2`, and `/srv/ssd3`.
+- Quick fio measurements: all read about 567 MB/s; filesystem writes 372/362/340
+  MB/s, mixed 4 KiB IOPS 47448/46156/43751. Selected the first 1.92 TB SSD for Git.
+- Migrated `~/git` to `/srv/ssd1/git` with a persistent bind mount preserving paths.
+  Full content/metadata comparison passed with zero differences. Checkpointed and
+  restarted 24 other agent conversations and restored 26 affected services.
+- Rollback tree retained until the maintenance coordinator releases its old cwd.
+  Exact identities, configuration and evidence: [storage](config/storage/README.md).
+
 ## 2026-11-10 — complete SSD archive and provision Btrfs workspace pool
 
 - Archived 761.4 GB logical content to NVR in a deduplicated/compressed restic

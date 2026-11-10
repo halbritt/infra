@@ -18,10 +18,30 @@ and noatime. DUP metadata is not inter-drive mirroring.
 replacing the obsolete `/srv/workspaces` entry. The owner authorized migrating
 `/home/halbritt/git` to `/srv/ssd1/git` and binding it at its original path,
 including coordinating agent/service restarts to release old directory handles.
-`git-bind.fstab` is the bind entry, installed only at cutover. Its source mount
-is an explicit systemd dependency. Migration is in progress; the source remains active until final synchronization
-and cutover verification. Evidence and session checkpoints are under
-`~/.local/state/ssd-independent-20261110/`.
+`git-bind.fstab` is installed in `/etc/fstab`: `/srv/ssd1/git` is bound at
+`/home/halbritt/git`. Its source mount is an explicit systemd dependency and
+it is ordered before `local-fs.target`. The underlying mountpoint is root-owned
+mode 000, so an absent mount does not silently become an owner-writable tree.
+The original paths, including Git worktree references, remain valid.
+
+Cutover passed a full `rsync -aHAXxnc --delete` comparison with zero differences
+after final synchronization. The staged tree contains about 125.2 GB logical
+data and used about 77.1 GB including Btrfs metadata at verification. Mount
+identity/inode equivalence and owner write/read/fsync checks passed. All three
+drives have zero Btrfs device errors; NVR remains healthy.
+
+The 24 other agent conversations were checkpointed, exited, and relaunched with
+their saved conversation IDs, account profiles and model arguments. All 26
+affected services returned active. A later old-directory reference check found
+the llama service had been independently restarted during verification; it was
+restarted again after cutover and now resolves the new tree. Only the maintenance
+coordinator and its helper processes retain old directory references.
+
+Rollback currently remains at `/home/halbritt/git.before-ssd-20261110` until the
+coordinator restarts and releases those references. Do not use this old tree for
+work. Evidence, exact launch profiles and recovery prompts are under
+`~/.local/state/ssd-independent-20261110/` (`COPY_VERIFIED`, `CUTOVER`,
+`checksum-diff.log`, `resume-manifest.json`, `services-restored.json`).
 
 ### Quick performance check
 
