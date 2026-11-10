@@ -1,0 +1,11 @@
+[Unit]
+Description=Return SSD archive completion to its existing Codex conversation
+
+[Service]
+Type=oneshot
+User=halbritt
+Environment=HOME=/home/halbritt
+Environment=CODEX_HOME=/home/halbritt/.codex-3
+Environment=PATH=/home/halbritt/.local/bin:/home/halbritt/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=/home/halbritt/git/infra
+ExecStart=/home/halbritt/.local/bin/codex queue --thread 01a1becb-6c36-7d21-9efd-5d04055d46ef --resume --message "Local completion notification: ssd-recovery-archive.service ended. Continue the existing SSD archive and provisioning task; do not assume success. Read /nvr/archive/ssd-recovery-2026-11-09/status, COMPLETE, logs and Cairn handoff 3cd6c991-f0ca-451f-9ec0-eec493ef898b. Verify archive integrity, source reread results and Time Machine image checksums. Latest owner instructions explicitly authorize wiping the THREE SAMSUNG SATA SSDs AFTER verification and configuring OS storage. Owner rejected mirroring and accepts failure risk; use Btrfs RAID0 data, single metadata, capacity/throughput first, mounted persistently at /srv/workspaces. Recover full960GB device size if safely possible after unmount; use stable serial identities and never touch Seagate NVR or NVMe OS disk. If archive job failed, diagnose and resume safely; no wiping before verified. Report final archive path, dedup savings and verified new storage. Resume this existing conversation only."

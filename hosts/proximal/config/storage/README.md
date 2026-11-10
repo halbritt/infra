@@ -80,3 +80,18 @@ The `/mnt` location is allowed by the installed fusermount AppArmor profile;
 mounting directly below `/nvr` was rejected. No AppArmor policy was changed.
 The mount retains separate views of every snapshot and updates as snapshots
 finish. The local repository remains usable through restic if the browser is down.
+
+The owner subsequently authorized wiping the three Samsung SATA SSDs after
+verification and provisioning them for OS use. They explicitly rejected data
+mirroring and accepted failure risk: planned Btrfs RAID0 data, single metadata,
+capacity/throughput first, at `/srv/workspaces`. Target raw capacity is about
+4.8 TB once Linux recognizes the 960 GB SSD's full capacity. Never include the
+Seagate NVR drive or NVMe OS drive in this operation.
+
+`ssd-recovery-archive-notify.conf` is installed as a runtime drop-in on the
+archive service, with success/failure activation of `ssd-recovery-continue.service`.
+The latter queues a follow-up on the same native Codex conversation/profile
+using supported `codex queue --resume`; it does not create a replacement agent.
+The follow-up must inspect actual verification results before wiping or formatting.
+Its journal records whether queueing and resumption succeeded. The original
+archive service itself never wipes drives.
