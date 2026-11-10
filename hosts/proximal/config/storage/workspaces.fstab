@@ -1,1 +1,4 @@
-UUID=4e05e477-9107-4eea-af5b-d1760d1d7408 /srv/workspaces btrfs nofail,x-systemd.device-timeout=10s,noatime,compress=zstd:1,discard=async,subvol=@workspaces 0 0
+# Independent Samsung SATA SSDs; supersedes the temporary RAID0 pool.
+UUID=954c1ca5-f288-4927-b2a8-71d45dfcc9f4 /srv/ssd1 btrfs nofail,x-systemd.device-timeout=10s,noatime,compress=zstd:1,discard=async 0 0
+UUID=1f2e26d5-78a7-4a1c-bfd0-9a48daa151cc /srv/ssd2 btrfs nofail,x-systemd.device-timeout=10s,noatime,compress=zstd:1,discard=async 0 0
+UUID=37d48f58-7d33-46f6-9e3d-5d87c5a392a1 /srv/ssd3 btrfs nofail,x-systemd.device-timeout=10s,noatime,compress=zstd:1,discard=async 0 0

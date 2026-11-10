@@ -1,6 +1,49 @@
 # Additional SATA SSDs
 
-## Current state — 2026-11-10
+## Independent filesystems and repository migration — 2026-11-10
+
+The owner subsequently rejected the RAID0 failure domain and selected three
+independent Btrfs filesystems for isolation and future flexibility. The empty
+RAID0 pool was replaced; the verified NVR archive remains intact. Each SSD uses
+single data, DUP metadata on the same drive, zstd:1 compression, async discard
+and noatime. DUP metadata is not inter-drive mirroring.
+
+| Mount | Serial | Capacity | UUID |
+| --- | --- | --- | --- |
+| `/srv/ssd1` | S2L6NWAG900094X | 1.92 TB | 954c1ca5-f288-4927-b2a8-71d45dfcc9f4 |
+| `/srv/ssd2` | S2L2NWAG700037N | 960 GB | 1f2e26d5-78a7-4a1c-bfd0-9a48daa151cc |
+| `/srv/ssd3` | S2HNNYAG700171 | 1.92 TB | 37d48f58-7d33-46f6-9e3d-5d87c5a392a1 |
+
+`workspaces.fstab` now supplies these three UUID mounts to `/etc/fstab`,
+replacing the obsolete `/srv/workspaces` entry. The owner authorized migrating
+`/home/halbritt/git` to `/srv/ssd1/git` and binding it at its original path,
+including coordinating agent/service restarts to release old directory handles.
+Migration is in progress; the source remains active until final synchronization
+and cutover verification. Evidence and session checkpoints are under
+`~/.local/state/ssd-independent-20261110/`.
+
+### Quick performance check
+
+fio 3.41, direct I/O, one drive at a time for each test. Sequential reads:
+1 MiB, queue depth 16, 15 seconds over an 8 GiB raw-device region, read-only.
+Filesystem sequential writes: 4 GiB incompressible data, 1 MiB, queue depth 16,
+final fsync. Random: same 4 GiB file, 4 KiB, 70% reads / 30% writes, queue depth
+32, 15 seconds. CoW and checksums remained enabled. All tests returned zero
+errors. Files were deleted afterward. Short tests on an active host do not
+establish steady-state performance; the repository staging copy began during
+the third drive's test, so small differences should not be overinterpreted.
+
+| Drive | Read MB/s (decimal) | Write MB/s | Mixed IOPS |
+| --- | ---: | ---: | ---: |
+| SSD1 | 566.9 | 371.6 | 47448 |
+| SSD2 | 567.4 | 361.5 | 46156 |
+| SSD3 | 567.5 | 339.8 | 43751 |
+
+SSD1 was selected for repositories for its capacity and adequate measured
+performance. SSD2 and SSD3 remain available for independent workload placement.
+The following sections preserve the superseded RAID0 setup and recovery history.
+
+## Initial RAID0 provisioning — 2026-11-10
 
 All three Samsung SSDs were archived, verified, discarded, repartitioned with
 GPT, and combined into Btrfs UUID `4e05e477-9107-4eea-af5b-d1760d1d7408`,
