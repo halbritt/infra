@@ -77,7 +77,7 @@ tunnel.
 
 ## Cards on the index
 
-Sweep of 2026-10-27 — 18 cards, all reachable
+Sweep of 2026-11-10 — 19 cards, all reachable
 (`check-links.sh` exit 0). Card names are the `<h2>` text.
 
 | card | target | status |
@@ -93,6 +93,7 @@ Sweep of 2026-10-27 — 18 cards, all reachable
 | BinKeeper: Sort a Stash | `:8766/stash` | 200 |
 | Pastebin | `:18080/` | 200 |
 | Artifact | `https://artifact.harm.org/` | 200 |
+| Toyota 5R Engine Repair Manual | `https://artifact.harm.org/tdudmv/index.html` | 200 |
 | Markdown Browser | `:8444/` | 200 |
 | Grafana — proximal dashboards | `:8853/` | 302 (login) |
 | VictoriaMetrics — proximal | `:9491/` | 200 |
@@ -103,6 +104,7 @@ Sweep of 2026-10-27 — 18 cards, all reachable
 
 All port-only targets use `https://proximal.tail0ecc2e.ts.net`.
 The Artifact card targets public `https://artifact.harm.org/`.
+The Toyota 5R manual card targets one published artifact on the same service.
 
 ### Removed cards
 
@@ -270,3 +272,14 @@ Git. See [artifact](../artifact/README.md) for the CLI and deployment.
 
 Verified 2026-10-27 03:18 UTC: all 18 cards reachable (17 HTTP 200, Grafana
 HTTP 302), link sweep exit 0.
+
+## Toyota 5R manual card — 2026-11-10
+
+Added at the owner's request: a card for the HTML edition of the Toyota Forklift
+Repair Manual, 5R Engine (No. 95725), published on the public Artifact service.
+The URL is recorded in `~/git/pincite-5r/runtime/site.json`. Each republish of
+that edition gets a new artifact path (two earlier paths are already superseded),
+so update this card when `site.json` changes.
+
+Verified 2026-11-10 18:44 UTC: all 19 cards reachable (18 HTTP 200, Grafana
+HTTP 302), link sweep exit 0, public page serves the new card.
