@@ -1,0 +1,2 @@
+# Install only after the stopped-writer synchronization and verification.
+/srv/ssd1/git /home/halbritt/git none bind,nofail,x-systemd.requires-mounts-for=/srv/ssd1 0 0

@@ -18,7 +18,8 @@ and noatime. DUP metadata is not inter-drive mirroring.
 replacing the obsolete `/srv/workspaces` entry. The owner authorized migrating
 `/home/halbritt/git` to `/srv/ssd1/git` and binding it at its original path,
 including coordinating agent/service restarts to release old directory handles.
-Migration is in progress; the source remains active until final synchronization
+`git-bind.fstab` is the bind entry, installed only at cutover. Its source mount
+is an explicit systemd dependency. Migration is in progress; the source remains active until final synchronization
 and cutover verification. Evidence and session checkpoints are under
 `~/.local/state/ssd-independent-20261110/`.
 
