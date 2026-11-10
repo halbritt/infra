@@ -140,10 +140,12 @@ would also block the unix-socket forward). archon backup:
 
 Agents use **missive** on proximal (MCP `https://proximal.tail0ecc2e.ts.net:8770/mcp`,
 bearer token; see `hosts/proximal/config/missive/README.md`). It reads through the
-gateway above, so no agent path can send. Hosted clients (ChatGPT or Claude.ai custom
-connectors) are **deliberately not supported**: they would need a public OAuth
-endpoint in front of private messages. Do not build one without an explicit owner
-decision.
+gateway above, so no agent path can send. When the owner asks an OpenAI or Anthropic
+agent about their texts, that agent may send the relevant content to its model
+provider (owner decision, 2026-11-09). ChatGPT reaches missive through OpenAI's private
+MCP tunnel, an outbound connection from proximal; see missive's README. Background
+embedding and enrichment stay on local models. This VM still exposes nothing outside
+the tailnet.
 
 ## Operations
 
