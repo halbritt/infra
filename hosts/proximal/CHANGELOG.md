@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-11-09 — checkpoint Herdr agents for SATA maintenance
+
+- Owner requested preserving the layout and conversations before a possible reboot.
+  All 24 other panes acknowledged saved work and a maintenance pause; the preparing
+  infra pane is the 25th. Saved exact conversation IDs, account profiles, launch
+  options and Cairn handoff references under `~/.local/state/infra-restart-20261109/`.
+- Prepared an offline recovery snapshot for 7 workspaces and 12 tabs. Added explicit
+  resume commands for 12 Codex, 12 Claude and one Agy conversation, and corrected
+  the deleted working directory in one pane. Verified transcript existence and
+  Codex's saved permission policies; retained Claude Cairn channel flags.
+- Added a restore helper that refuses a running server, the preparation boot,
+  checksum mismatches and unconfirmed pauses. Checked its dry-run and refusal
+  paths. No reboot, server stop or live layout replacement occurred; conversation
+  launches must be checked after the eventual reboot.
+- Procedure and installed-file mapping: [Herdr recovery](config/herdr/README.md).
+
 ## 2026-11-09 — deploy missive (text-message archive for agents)
 
 - Owner request: archive text history from archon's macOS VM continuously and durably,
