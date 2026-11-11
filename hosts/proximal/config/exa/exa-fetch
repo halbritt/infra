@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""exa-fetch — read web pages through Exa's /contents. Always prints one JSON object on stdout.
+
+usage: exa-fetch <url> [<url> ...] [--max-chars N] [--fresh] [--json]
+
+Returns each page's main text (Markdown-like plain text; JS pages and PDFs are handled by
+Exa's crawler). The default cap is 20000 characters per page; raise --max-chars (up to
+200000) for papers and long documents. --fresh forces a live crawl instead of Exa's cache.
+
+The API key comes from EXA_API_KEY or from <account home>/.config/exa/env (the account's passwd
+home, not $HOME, so a caller running under a private HOME still finds it). Exit 0 when at least
+one page was read; on failure a JSON {"error": ...} goes to stdout and the exit code is non-zero
+(3 no key, 4 HTTP error, 5 network, 6 no page could be read).
+"""
+import argparse, json, os, pwd, sys, time, urllib.request, urllib.error
+
+ENDPOINT = "https://api.exa.ai/contents"
+MAX_URLS = 10
+MAX_CHARS = 200000
+
+
+def load_key():
+    key = os.environ.get("EXA_API_KEY", "").strip()
+    if key:
+        return key
+    home = pwd.getpwuid(os.getuid()).pw_dir
+    try:
+        with open(os.path.join(home, ".config", "exa", "env")) as fh:
+            for line in fh:
+                line = line.strip()
+                if line.startswith("EXA_API_KEY="):
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return ""
+
+
+def fail(message, code=2, **extra):
+    print(json.dumps({"error": message, **extra}), flush=True)
+    sys.exit(code)
+
+
+def main():
+    p = argparse.ArgumentParser(prog="exa-fetch", add_help=True)
+    p.add_argument("urls", nargs="+", help=f"page URLs (at most {MAX_URLS})")
+    p.add_argument("--max-chars", type=int, default=20000, help=f"text cap per page (max {MAX_CHARS})")
+    p.add_argument("--fresh", action="store_true", help="always live-crawl instead of using Exa's cache")
+    p.add_argument("--json", action="store_true", help="accepted for symmetry; output is always JSON")
+    a = p.parse_args()
+
+    if len(a.urls) > MAX_URLS:
+        fail(f"at most {MAX_URLS} URLs per call")
+    bad = [u for u in a.urls if not u.startswith(("http://", "https://"))]
+    if bad:
+        fail("URLs must start with http:// or https://", bad=bad)
+    key = load_key()
+    if not key:
+        fail("no Exa API key: set EXA_API_KEY or create ~/.config/exa/env", code=3)
+
+    cap = max(1000, min(a.max_chars, MAX_CHARS))
+    body = {"urls": a.urls, "text": {"maxCharacters": cap}}
+    if a.fresh:
+        body["maxAgeHours"] = 0
+    req = urllib.request.Request(ENDPOINT, data=json.dumps(body).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "x-api-key": key,
+                                          "User-Agent": "exa-fetch/1 (proximal)"})
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=90) as r:
+            raw = json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        fail(f"Exa HTTP {e.code}", code=4, detail=e.read()[:400].decode(errors="replace"))
+    except Exception as e:  # network, timeout, bad JSON
+        fail(f"{type(e).__name__}: {e}", code=5)
+
+    by_url = {r.get("url"): r for r in raw.get("results", [])}
+    by_id = {r.get("id"): r for r in raw.get("results", [])}
+    statuses = {s.get("id"): s for s in raw.get("statuses", [])}
+    pages = []
+    for u in a.urls:
+        r = by_url.get(u) or by_id.get(u)
+        st = statuses.get(u) or {}
+        if r and r.get("text"):
+            text = r["text"]
+            pages.append({"url": r.get("url") or u, "title": r.get("title"),
+                          "published": r.get("publishedDate"), "author": r.get("author"),
+                          "chars": len(text), "truncated": len(text) >= cap, "text": text})
+        else:
+            err = (st.get("error") or {}).get("tag") or st.get("status") or "NO_CONTENT"
+            pages.append({"url": u, "error": err})
+    out = {"pages": pages, "page_count": sum(1 for x in pages if "text" in x),
+           "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "latency_ms": round((time.time() - t0) * 1000),
+           "cost_dollars": (raw.get("costDollars") or {}).get("total"), "request_id": raw.get("requestId")}
+    print(json.dumps(out, ensure_ascii=False), flush=True)
+    if out["page_count"] == 0:
+        sys.exit(6)
+
+
+if __name__ == "__main__":
+    main()
