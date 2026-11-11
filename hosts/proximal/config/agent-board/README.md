@@ -11,7 +11,7 @@ Proximal runs the server for the Fernside board. Source and documentation:
 | Unit | user unit `agent-board.service` (`~/.config/systemd/user/`), enabled |
 | Working directory | `~/agent-board`, a copy of the repository's `server/`, `web/`, `kiosk/` and `bin/` |
 | Listener | `0.0.0.0:8787` |
-| Version | agent-board commit `480fd0f` |
+| Version | agent-board commit `5dc7616` |
 
 The unit file is `deploy/agent-board.service` in the repository; it did not
 change with the touch-board work. Deploy with the `rsync` commands in the
@@ -40,6 +40,22 @@ session.
 Scene reads and touch actions need the kiosk token from other hosts and are
 open to loopback clients. `/board.png` and `/api/state` stay open on the LAN
 for the E1002 e-paper device.
+
+## Light control (2026-11-11, later the same day)
+
+The owner asked for light controls on the board. The server now calls
+`light.turn_on` and `light.turn_off` through the Home Assistant MCP endpoint
+when a light is tapped on the Iris display. This is the first write the board
+makes to Home Assistant; before this it only read.
+
+- Only entities that Home Assistant lists in the `light` domain can be switched.
+  Locks, switches and everything else are refused in `server/lights.py`.
+- "All off" and "Room off" skip lights whose name contains "grow".
+- The calls need the kiosk token from other hosts, like the other touch actions.
+- Light states are read every 60 seconds, and every 5 seconds while the lights
+  view is open on the display.
+- Verified through Iris: the hall night light was set to 15 %, read back, and
+  turned off; a lock entity was refused.
 
 ## Check
 
