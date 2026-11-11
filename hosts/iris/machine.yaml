@@ -12,13 +12,13 @@
   },
   "network": {
     "lan_interface": "wlan0",
-    "lan_address": "192.168.1.216",
+    "lan_address": "192.168.1.219",
     "lan_mac": "2c:cf:67:96:b9:50",
     "mdns_name": "iris.local",
     "observed_on": "2026-11-11"
   },
   "roles": ["linux"],
-  "responsibilities": ["local touch display"],
+  "responsibilities": ["local touch display", "Fernside board kiosk"],
   "paths": {
     "config": "config",
     "notes": "notes.md",
