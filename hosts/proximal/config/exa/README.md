@@ -59,13 +59,19 @@ Reproduce: `ln -sfn ~/git/infra/hosts/proximal/config/exa/exa-fetch ~/.local/bin
 
 ## Where it is wired
 
-- **Council** (`~/git/council`, release of 2026-09-08): a member with `capabilities.web` is told to
-  search with `exa-search` and read pages with `wigolo fetch` (with a bigger `--max-tokens-out`
-  for papers), falling back to `wigolo search` if exa-search fails. Isolated Claude members get
-  `Bash(exa-search:*)` + `Bash(wigolo:*)`; opencode policy revision 3 opens `bash` to
-  `exa-search *` and `wigolo *`. The service resolves both CLIs from its own PATH at startup and
-  diagnoses a missing one as `web_capability_unavailable`.
-- Not wired: wigolo's own engine pool (it has no Exa adapter), the Claude Code MCP layer.
+- **Council** (`~/git/council` `2da200b`, deployed 2026-11-11): a member with `capabilities.web`
+  searches with `exa-search` and reads pages with `exa-fetch` (renderer
+  `council-native-member-input/11`). Isolated Claude members get `Bash(exa-search:*)` +
+  `Bash(exa-fetch:*)`, and opencode policy revision 4 opens `bash` to `exa-search *` and
+  `exa-fetch *`. The service resolves both CLIs from its own PATH and diagnoses a missing one
+  as `web_capability_unavailable`.
+- **Relay** (`~/git/relay` 0.8.0, `7dad9f8`): Exa is the only grounding provider, for search and
+  for reading known URLs through `/contents`.
+- **ai-newsroom** (`010b87d`): the `exa` source plus the daily brief's web searches (at most 5
+  queries per brief).
+- **Hermes** outbreak-watch collector: Hermes's `web` toolset with `web.backend: exa`; the
+  runner passes `EXA_API_KEY` to that subprocess only.
+- **Agents:** the skillpack `exa` skill documents both CLIs.
 
 ## Guardrails
 
@@ -75,3 +81,13 @@ Reproduce: `ln -sfn ~/git/infra/hosts/proximal/config/exa/exa-fetch ~/.local/bin
   ~1,400 calls. The CLI clamps `--max-results` to 20 and makes exactly one request per invocation.
 - The key file is the only credential; rotating it in the Exa dashboard and rewriting
   `~/.config/exa/env` is the whole rotation.
+
+## Retired: wigolo (2026-11-11)
+
+The owner retired wigolo, the keyless local search/fetch MCP server that had stayed on as the
+page fetcher and fallback search after this comparison. Removed from proximal: the global npm
+package, the `wigolo.service` daemon (`:3333`), `~/.wigolo` (~1 GB), the `~/git/wigolo`
+source checkout, its MCP registrations (claude-harm profile, Hermes), the skills and rules it
+had installed into Cursor and Hermes, member caches under `~/.council`, and update-bot's
+maintenance of it. No other host had it. `config/wigolo/` was deleted from this repo; its
+last content (audit, synthesis-model benchmarks, MCP block) is at commit `86e8859`.

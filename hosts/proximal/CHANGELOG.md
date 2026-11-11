@@ -1,5 +1,25 @@
 # Changelog — proximal (system)
 
+## 2026-11-11 — retire wigolo; Exa is the only web search and page reader
+
+- Owner request: remove every trace of wigolo. Exa had been the primary search since
+  2026-09-08 (0.94 vs 0.54 nDCG@5), but wigolo stayed as page fetcher and fallback, and
+  its MCP server instructions told connecting agents to prefer it.
+- Added [`exa-fetch`](config/exa/exa-fetch) (Exa `/contents`, $0.001 a page) to replace
+  `wigolo fetch`. Consumers moved: Council `2da200b` (renderer /11, opencode policy 4),
+  Relay 0.8.0 `7dad9f8`, ai-newsroom `010b87d`, skillpack `exa` skill `66b3d02`, Hermes
+  outbreak-watch (web toolset, `web.backend: exa`), update-bot targets. All deployed.
+- Removed from proximal: global npm `wigolo`, `wigolo.service` (`:3333`), seven stale MCP
+  stdio processes, `~/.wigolo`, `~/git/wigolo`, MCP entries in `~/.claude-harm/.claude.json`
+  and `~/.hermes/config.yaml` (backup `config.yaml.before-wigolo-removal`), Cursor and
+  archived Hermes wigolo skills, `~/.council` member caches and Claude MCP logs.
+  archon, talos, iris, peecee and enceladus had no wigolo; truck-pc was unreachable.
+- Kept as history: CHANGELOG/verification entries, the benchmark (now under
+  `config/exa/exa-comparison-2026-09-08/`), frozen Council renderer/policy revisions.
+- Found, not fixed: outbreak-watch has failed daily since at least 2026-10-29
+  (`No module named 'yaml'` in the cron script; its `--run-budget` flag is also rejected by
+  the current Hermes launcher).
+
 ## 2026-11-10 — move owner cache tree to dedicated SATA SSD3
 
 - Preserved 505.1 GB logical data and 24 cached Git worktrees at their existing
