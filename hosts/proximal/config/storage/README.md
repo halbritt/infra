@@ -70,7 +70,7 @@ performance. SSD2 now hosts the managed PostgreSQL cluster at `/srv/ssd2/postgre
 at `/var/lib/postgresql/18/main`; its mount root is root-owned 0755 and the data
 subvolume is postgres-owned 0700. SSD3 is assigned to the owner's cache tree,
 as described below. See the [PostgreSQL migration report](../postgres/reports/SATA_MIGRATION_2026-11-10.md).
-The following sections preserve the superseded RAID0 setup and recovery history.
+The historical RAID0 setup and recovery history are retained below.
 
 ## Cache placement on SSD3 — 2026-11-10
 
@@ -93,14 +93,35 @@ stages with `rsync -aHAXx`, asks the 25 other Herdr sessions to checkpoint and
 pause cache jobs without exiting, and stops the three services holding cache
 files: user units `cairn-api`, `kayakgen` and `agent-usage`. It checks process
 cwd, executable, fd, mapped-file and mount-namespace references before the final
-checksum synchronization. Offline `rsync -aHAXxc --delete` verifies file contents
-and transfers changes; the subsequent metadata dry-run must be empty.
+checksum synchronization. `rsync -aHAXxc --delete` verifies file contents and
+transfers changes; the subsequent metadata dry-run must be empty.
 
 After cutover, verify mount UUID and inode identity, owner write/read/fsync,
 all 24 cached Git worktree paths and HEADs, and restored services before
 releasing the agents' maintenance pause. Remove the original only after these
 checks and a scan showing no old-tree references. The one-time scripts in the
 evidence directory are migration records, not commands to rerun.
+
+Completed: 2,040,264 entries and 505,124,835,619 logical bytes preserved.
+The full checksum synchronization succeeded. Its subsequent metadata check
+caught Cairn restarting and touching two ONNX SQLite cache sidecars, so cutover
+did not proceed. A temporary `ConditionPathExists` service guard blocked starts;
+the only changed files were resynchronized, the entire ONNX subtree passed
+another checksum comparison, and a second full metadata comparison was empty.
+All temporary guards and runtime masks were removed after cutover. A runtime
+user-unit mask alone did not override these units installed in `~/.config`.
+
+Mount identity, owner write/read/fsync, all 24 worktrees and all three restored
+services passed. Cairn native MCP returned READY. All 749 inspected process root
+views resolved the new cache directory, and no process held the original tree.
+Removed only `/home/halbritt/.cache.before-ssd-20261110`, reclaiming 322.43 GiB
+net on NVMe; root had about 838 GiB available afterward. SSD3 used about 179 GiB
+and had 1.6 TiB available. Btrfs device error counters were zero. All 25 agent
+conversations received resume notices without restarting their processes.
+Mount dependencies and fstab validation passed (the preexisting swapfile warning
+remains); no reboot was performed. Evidence includes `COPY_VERIFIED`, `CUTOVER`,
+`VERIFIED`, `onnx-checksum-diff.log`, `metadata-diff.log`,
+`namespace-visibility.json`, `cleanup-result.json` and per-pane acknowledgments.
 
 ## Initial RAID0 provisioning — 2026-11-10
 

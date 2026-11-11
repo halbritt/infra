@@ -1,5 +1,19 @@
 # Changelog — proximal (system)
 
+## 2026-11-10 — move owner cache tree to dedicated SATA SSD3
+
+- Preserved 505.1 GB logical data and 24 cached Git worktrees at their existing
+  paths through a persistent `/srv/ssd3/cache` bind at `/home/halbritt/.cache`.
+- Paused 25 other agent sessions and three cache-using services. Full content
+  verification caught Cairn restarting and changing two cache files; blocked
+  further starts, reconciled and rechecked them before the mount cutover.
+- Verified owner fsync, worktree identities, restored services, mount dependencies
+  and cache visibility through 749 process roots. Sent resume notices to all
+  paused conversations without restarting them.
+- Removed the verified NVMe original, reclaiming 322.43 GiB net. Root now has
+  about 838 GiB free; SSD3 uses about 179 GiB. See
+  [storage configuration and evidence](config/storage/README.md#cache-placement-on-ssd3--2026-11-10).
+
 ## 2026-11-10 — connect Frank to Cairn messaging
 
 - Owner supplied a dedicated OpenAI tunnel for Frank to communicate with resident
