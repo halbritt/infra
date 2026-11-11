@@ -80,10 +80,13 @@ shows a red banner with the time it last heard from proximal.
 - With proximal's `agent-board.service` stopped for 50 seconds, the page showed
   "Not receiving updates since 10:40". The link recovered within 30 seconds of
   the service returning.
-- Physical touch was not tested. Interactions were driven over HTTP.
-- The display's mounting orientation is not known. The board is drawn for both
-  orientations; **Rotate** in its settings sheet turns the output a quarter turn
-  and the setting persists in `~/.local/state/agent-board/display.json`.
+- Interactions were driven over HTTP during the install, not by touch.
+- Orientation: later on 2026-11-11 the owner turned the output a quarter turn
+  with **Rotate** on the board and set manual brightness, both by touch.
+  `~/.local/state/agent-board/display.json` then held `"rotation": "90"` and
+  `"auto": false, "level": 0.67`, and a capture was 1920×1200. Iris is used in
+  landscape. This also shows touch input reaches the page; the individual
+  controls were still not checked one by one.
 
 ## Not done
 
