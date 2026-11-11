@@ -1,0 +1,2 @@
+# PostgreSQL data and WAL stay at their existing logical path on dedicated SSD2.
+/srv/ssd2/postgresql /var/lib/postgresql/18/main none bind,nofail,x-systemd.before=local-fs.target,x-systemd.requires-mounts-for=/srv/ssd2 0 0

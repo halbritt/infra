@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-11-10 — move PostgreSQL to dedicated SATA SSD2
+
+- Owner authorized migration if durable-write tests passed. Both paired runs
+  passed: SATA mean flush 0.61–0.64 ms, p99 1.22–1.27 ms; PostgreSQL native
+  fsync test corroborated the advantage over current NVMe/ext4 placement.
+- Live staging followed by clean shutdown and offline checksum synchronization;
+  bound `/srv/ssd2/postgresql` at the unchanged PostgreSQL data path. Outage 161 s.
+- Verified all 21 connectable databases, cluster identity, unchanged durability,
+  WAL archiving, Cairn MCP, Engram database health and service reconnection.
+- Removed the verified old cluster copy, reclaiming 119.9 GiB net on the OS disk.
+  Configuration, startup dependencies, limits and evidence: [migration report](config/postgres/reports/SATA_MIGRATION_2026-11-10.md).
+
 ## 2026-11-10 — repair default-profile Claude MCP access after restart
 
 - Corrected six maintenance relaunches that explicitly set the default

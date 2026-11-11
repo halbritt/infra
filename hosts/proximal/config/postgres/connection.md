@@ -33,6 +33,17 @@ Database `cairn` now resides in this managed cluster, owned by `halbritt` via
 peer authentication. Its private PostgreSQL service is retired. See
 [the migration report](../cairn/MIGRATION-2026-09-29.md).
 
+## Storage — 2026-11-10
+
+`/var/lib/postgresql/18/main` is a persistent bind mount of
+`/srv/ssd2/postgresql` on dedicated Samsung SATA SSD S2L2NWAG700037N (960 GB,
+Btrfs UUID `1f2e26d5-78a7-4a1c-bfd0-9a48daa151cc`). PostgreSQL data and WAL both
+reside there; socket, port, data-directory setting, cluster identity and
+pgBackRest configuration are unchanged. The old NVMe copy was removed after
+verification. Mount and service dependencies are canonical in `storage.fstab`
+and `storage.conf`; installation and measurements are in the
+[SATA migration report](reports/SATA_MIGRATION_2026-11-10.md).
+
 ## Databases (confirmed 2026-06-17, post-upgrade)
 
 `striatum_daemon` (busiest, 27 GB — down from 34 GB after the 57014 bloat reclaim),
