@@ -1,0 +1,2 @@
+# Install after quiescing cache users and verifying the final copy.
+/srv/ssd3/cache /home/halbritt/.cache none bind,nofail,x-systemd.before=local-fs.target,x-systemd.requires-mounts-for=/srv/ssd3 0 0

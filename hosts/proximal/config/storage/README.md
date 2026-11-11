@@ -68,9 +68,39 @@ the third drive's test, so small differences should not be overinterpreted.
 SSD1 was selected for repositories for its capacity and adequate measured
 performance. SSD2 now hosts the managed PostgreSQL cluster at `/srv/ssd2/postgresql`, bound
 at `/var/lib/postgresql/18/main`; its mount root is root-owned 0755 and the data
-subvolume is postgres-owned 0700. SSD3 remains available for independent workload
-placement. See the [PostgreSQL migration report](../postgres/reports/SATA_MIGRATION_2026-11-10.md).
+subvolume is postgres-owned 0700. SSD3 is assigned to the owner's cache tree,
+as described below. See the [PostgreSQL migration report](../postgres/reports/SATA_MIGRATION_2026-11-10.md).
 The following sections preserve the superseded RAID0 setup and recovery history.
+
+## Cache placement on SSD3 — 2026-11-10
+
+The owner authorized moving `/home/halbritt/.cache` to the independent 1.92 TB
+SSD3 to release NVMe capacity and separate build/cache activity from Git and
+database I/O. The tree contains retained artifacts and Git worktrees as well
+as disposable caches; preserve it as user data during migrations.
+
+`cache-bind.fstab` is installed additively in `/etc/fstab`, binding the Btrfs
+subvolume `/srv/ssd3/cache` at `/home/halbritt/.cache`. It requires `/srv/ssd3`
+and is ordered before `local-fs.target`. SSD3 retains its UUID mount,
+zstd:1 compression, checksums, single data and DUP metadata. Its mount root
+is root-owned 0755; the cache is owner-owned 0700. The hidden empty mountpoint
+is root-owned 000, preventing owner writes to the underlying OS directory if
+the bind is absent.
+Existing cache paths and Git worktree registrations remain unchanged.
+
+Migration evidence is under `~/.local/state/cache-ssd-20261110/`. The procedure
+stages with `rsync -aHAXx`, asks the 25 other Herdr sessions to checkpoint and
+pause cache jobs without exiting, and stops the three services holding cache
+files: user units `cairn-api`, `kayakgen` and `agent-usage`. It checks process
+cwd, executable, fd, mapped-file and mount-namespace references before the final
+checksum synchronization. Offline `rsync -aHAXxc --delete` verifies file contents
+and transfers changes; the subsequent metadata dry-run must be empty.
+
+After cutover, verify mount UUID and inode identity, owner write/read/fsync,
+all 24 cached Git worktree paths and HEADs, and restored services before
+releasing the agents' maintenance pause. Remove the original only after these
+checks and a scan showing no old-tree references. The one-time scripts in the
+evidence directory are migration records, not commands to rerun.
 
 ## Initial RAID0 provisioning — 2026-11-10
 
