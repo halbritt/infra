@@ -4,6 +4,7 @@ import asyncio
 import fcntl
 import json
 import os
+import pwd
 import signal
 import subprocess
 import sys
@@ -68,6 +69,17 @@ have NON_BLOCKING cautions. A material source/identity/criterion doubt is always
 Do not interpret the existence of a completed panel as evidence that the fact is true."""
 
 
+def exa_key():
+    path = Path(pwd.getpwuid(os.getuid()).pw_dir) / ".config/exa/env"
+    try:
+        for line in path.read_text().splitlines():
+            if line.strip().startswith("EXA_API_KEY="):
+                return line.split("=", 1)[1].strip().strip("'\"")
+    except OSError:
+        pass
+    raise RuntimeError("no Exa API key for the web toolset")
+
+
 def run_scanner(home, prompt):
     command = [
         str(Path.home() / ".local/bin/hermes"),
@@ -77,7 +89,7 @@ def run_scanner(home, prompt):
         "--format",
         "stream-json",
         "--toolsets",
-        "wigolo",
+        "web",
         "--ignore-rules",
         "--source",
         "tool",
@@ -87,6 +99,10 @@ def run_scanner(home, prompt):
         "300",
     ]
     env = dict(os.environ, HERMES_HOME=str(home))
+    # Hermes's web toolset uses its Exa backend (web.backend: exa). The key stays in
+    # ~/.config/exa/env and reaches only this collector subprocess.
+    if not env.get("EXA_API_KEY"):
+        env["EXA_API_KEY"] = exa_key()
     # Each subprocess group is owned until it exits, including on timeout/cancel.
     with subprocess.Popen(
         command,

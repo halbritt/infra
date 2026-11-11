@@ -9,7 +9,6 @@
   "slack_target": "slack:D0BMCL7T2FM",
   "update_targets": [
     "hermes",
-    "wigolo",
     "llama.cpp",
     "codex",
     "claude",

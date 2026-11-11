@@ -1,10 +1,11 @@
-# exa — Exa search API for agents (`exa-search` CLI)
+# exa — Exa search and page reading for agents (`exa-search`, `exa-fetch`)
 
 [Exa](https://exa.ai) is the hosted neural web-search API adopted on `proximal` on
 2026-09-08 as the **primary search backend for Council members and research grounding**,
 after a blind 40-query comparison beat the on-box wigolo search decisively (nDCG@5 0.94 vs
-0.54; write-up in [`../wigolo/exa-comparison-2026-09-08/`](../wigolo/exa-comparison-2026-09-08/README.md)).
-wigolo stays for page fetch and as the keyless fallback search.
+0.54; write-up in [`exa-comparison-2026-09-08/`](exa-comparison-2026-09-08/README.md)).
+Since 2026-11-11 it is the only web search and page reader on this host: the owner retired
+wigolo, and `exa-fetch` replaced `wigolo fetch` (see **Retired: wigolo** below).
 
 - **Account:** free tier (signed up 2026-09-08; $20 signup credit, $10/month non-rolling, no
   card on file, 10 QPS). `auto` search is $7 per 1,000 requests, so the monthly credit is
@@ -35,6 +36,26 @@ fetched_at, latency_ms, cost_dollars, request_id}`. `--text` swaps `highlights` 
 `text`. Errors print `{"error": …}` and exit non-zero (3 no key, 4 HTTP error, 5 network).
 
 Reproduce: `ln -sfn ~/git/infra/hosts/proximal/config/exa/exa-search ~/.local/bin/exa-search`.
+
+## `exa-fetch` — page reading
+
+[`exa-fetch`](exa-fetch) is the same kind of stdlib wrapper over `POST /contents`, installed at
+`~/.local/bin/exa-fetch`. It reads up to 10 URLs per call, including JS pages and PDFs.
+
+```bash
+exa-fetch <url> [<url> ...] [--max-chars N] [--fresh]
+
+exa-fetch https://en.wikipedia.org/wiki/Systemd
+exa-fetch https://arxiv.org/abs/2306.05685 --max-chars 60000    # papers (cap 200000)
+```
+
+Output: `{pages:[{url,title,published,author,chars,truncated,text} | {url,error}], page_count,
+fetched_at, latency_ms, cost_dollars, request_id}`. The default cap is 20000 characters per page.
+`--fresh` forces a live crawl (`maxAgeHours: 0`). A page Exa cannot read carries its
+`statuses[]` tag as `error`. Exit codes: 3 no key, 4 HTTP error, 5 network, 6 no page read.
+Measured 2026-11-11: $0.001 a page, ~0.2 s for a cached page.
+
+Reproduce: `ln -sfn ~/git/infra/hosts/proximal/config/exa/exa-fetch ~/.local/bin/exa-fetch`.
 
 ## Where it is wired
 

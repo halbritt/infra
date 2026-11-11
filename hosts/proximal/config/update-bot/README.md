@@ -1,7 +1,8 @@
 # Daily software and OS maintenance — proximal
 
 The owner clarified on 2026-09-27 that this job must **perform updates**, including
-Hermes, wigolo, llama.cpp, coding harnesses and the underlying OS. The installed
+Hermes, llama.cpp, coding harnesses and the underlying OS (wigolo was retired on
+2026-11-11). The installed
 `maintenance-v2` policy supersedes the initial discovery-only deployment. Routine
 updates in that scope are standing-authorized; specific unsafe transitions are
 held without stopping unrelated updates.
@@ -11,7 +12,6 @@ held without stopping unrelated updates.
 | Target | Approved behavior |
 | --- | --- |
 | Hermes | Preserve carried commits and native integrations; use supported updates, preserving active sessions. Maintenance runs from an independent frozen runtime. |
-| wigolo | Follow its existing upstream-main build/pack/npm installation; preserve configuration and data. Never downgrade to stale npm latest. |
 | llama.cpp | Invoke the existing canonical updater under its native lock when warranted; its existing timer stays authoritative. Install binaries without restarting inference. |
 | Codex, Claude Code, OpenCode, Agy | Update existing installations on their current stable channels, with native methods. Preserve wrappers, configuration and live session resources. Gemini CLI is covered only if installed. |
 | Herdr (proximal and Archon) | Maintain stable binaries, inspect installed and running versions separately, retain live sessions. Archon uses a fixed remote helper; no broad SSH access for the agent. |

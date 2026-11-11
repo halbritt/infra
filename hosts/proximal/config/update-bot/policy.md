@@ -1,7 +1,8 @@
 # Approved proximal maintenance policy — maintenance-v2
 
 Authority: on 2026-09-27 the owner clarified that the bot should actually update
-Hermes, wigolo, llama, the coding harnesses, and the underlying OS. This supersedes
+Hermes, llama, the coding harnesses, and the underlying OS (wigolo was in this list
+until it was retired on 2026-11-11). This supersedes
 the initial discovery-only restriction. Routine updates in this scope are standing
 approved; do not ask again merely because a new version is available.
 
@@ -16,9 +17,6 @@ Approved targets and channels:
   gateway. It verifies installed source/launcher identity, requires a fresh native
   zero-work drain and issues only the gateway's supported reload. Busy/stale/foreign
   state refuses the restart and releases only its own drain. No force-stop fallback.
-- wigolo: existing upstream-main source build -> pack -> global npm installation;
-  preserve its provider configuration, data/cache and current source provenance.
-  Do not replace the newer source build with an older published npm version.
 - llama.cpp: keep the existing autonomous updater and its native update.lock.
   The agent may invoke the canonical llama-cpp-update script when an update is
   warranted, using the same lock and build/clean-tree checks. Install binaries;

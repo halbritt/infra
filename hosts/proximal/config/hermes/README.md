@@ -45,7 +45,7 @@ runs (its own headers and error handling) rather than the generic `custom` endpo
 `base_url`, when set, takes precedence over `provider` and bypasses it.
 
 **Why GLM 5.2 and not the local 35B:** this repeats a conclusion already benchmarked for
-[`wigolo/`](../wigolo/README.md#synthesis-model--glm-52-via-openrouter-chosen-2026-07-21)
+the since-retired wigolo synthesis path
 on 2026-07-21 — **OpenRouter returns GLM's reasoning in a separate field, so `content` is
 always clean prose**, whereas the local reasoning model's thinking tokens compete with the
 answer inside a fixed budget. Hermes is long-horizon and tool-heavy (500 max turns,
@@ -120,8 +120,10 @@ Credentials are **not** in either file. `OPENROUTER_API_KEY` is already exported
   and ripgrep were already present and were reused rather than re-bundled.
 - `hermes doctor` reports npm audit findings in the bundled `web` and `ui-tui` workspaces,
   and warns about absent optional integration keys (Discord, xAI, EXA/Tavily/Firecrawl).
-  Both are upstream-bundled noise, not local misconfiguration — this box's web-research
-  path is [`wigolo/`](../wigolo/README.md), not Hermes's `web` toolset.
+  Both are upstream-bundled noise, not local misconfiguration. Web research on this box
+  goes through Exa ([`exa/`](../exa/README.md)); Hermes's `web` toolset is set to its Exa
+  backend (`web.backend: exa`) and is used only by the outbreak-watch collector, which
+  passes the key to its own subprocess.
 
 ## Gateway: Slack enabled (2026-08-04); other messaging platforms not
 

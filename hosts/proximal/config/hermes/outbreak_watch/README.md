@@ -11,7 +11,9 @@ the existing Hermes scheduler still delivers to the existing Slack thread.
 
 The job is a Hermes `no_agent` script. That means the scheduler returns its stdout
 without a final model rewrite; the script itself runs a bounded Hermes collector.
-The collector has only the `wigolo` toolset and receives policy plus the entire
+The collector has only Hermes's `web` toolset (Exa backend: `web_search` and
+`web_extract`; the runner passes `EXA_API_KEY` from `~/.config/exa/env` to this
+subprocess only) and receives policy plus the entire
 fact registry. Its structured answer cannot directly produce a Slack message.
 It gets 12 tool iterations and a 300-second run budget (330-second process deadline).
 

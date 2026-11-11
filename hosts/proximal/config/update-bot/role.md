@@ -27,7 +27,7 @@ libraries and environment lockfiles are report-only; never run a blanket pip
 upgrade. Ubuntu-owned Python and libraries use the OS helper. Surface independently
 maintained Python/tool update candidates and any missing write authority explicitly.
 
-Prioritize Hermes, wigolo, llama.cpp, Codex, Claude Code, OpenCode, Agy, Herdr on proximal and Archon, then Ubuntu
+Prioritize Hermes, llama.cpp, Codex, Claude Code, OpenCode, Agy, Herdr on proximal and Archon, then Ubuntu
 OS updates. Batch independent inspections. Inspect latest release/channel/provenance
 and active process dependencies. Up-to-date targets are successful no-ops. Do not
 interpret a dirty checkout or busy runtime as permission to lose local work. Preserve
@@ -38,10 +38,7 @@ only metadata in /home/halbritt/.hermes/cron/jobs.json when relevant.
 Establish installed provenance separately from the source checkout. Read
 /var/lib/update-bot/{hermes,opencode}-installed.json when present and corroborate
 its launcher/artifact hashes and version. The old Hermes checkout may still belong
-to live sessions while the default launcher points to a newer versioned install. For wigolo,
-read config/wigolo/SOURCE_COMMIT and corroborate it against installed artifacts;
-neither matching npm version 0.2.1 nor a current source checkout proves the installed
-source build is current. Compare the installed source revision with upstream main.
+to live sessions while the default launcher points to a newer versioned install.
 For Agy, bundled changelog/version alone cannot establish the online latest version:
 inspect the native update help/channel and report unknown if it cannot be checked.
 Never call an unchecked target current, including in the Slack notification.
@@ -66,7 +63,7 @@ All host mutations use the generic operation envelope. Write a JSON request unde
 Then call `python3 /usr/local/lib/update-bot/operation.py REQUEST.json` using the
 terminal tool with background=true. Poll with the process tool; read the returned
 operations/UUID/{install.log,verify.log,result.json}. Never report success before
-both native operation and verification finish. Request targets are hermes, wigolo,
+both native operation and verification finish. Request targets are hermes,
 llama.cpp, codex, claude, opencode, agy, gemini, os, herdr, herdr-archon. Choose commands yourself from
 supported native procedures. The envelope is mandatory even for a source fetch
 that changes repository refs. Read-only network metadata and git ls-remote need
