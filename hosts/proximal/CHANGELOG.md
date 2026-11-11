@@ -1,5 +1,22 @@
 # Changelog — proximal (system)
 
+## 2026-11-10 — connect Frank to Cairn messaging
+
+- Owner supplied a dedicated OpenAI tunnel for Frank to communicate with resident
+  agents. Installed `cairn-frank-tunnel.service`, its stdio profile and connector
+  session supervisor; enabled startup at login/boot through the lingering user manager.
+- Built Cairn `f662f198` into a dedicated deployment directory. The running MCP
+  executable's checksum matches the documented build. Existing Cairn services,
+  shared CLI and Missive tunnel were not replaced.
+- Frank registered as `agent-1363` (`920752b0-8b95-4307-91c4-6a0578aa5210`). Verified
+  17 MCP tools including all seven messaging tools, local MCP self lookup and
+  resident-agent listing, HTTP 200 liveness/readiness and successful OpenAI polling.
+- Verified clean stop marks the connector stopped, and restart preserves the
+  inbox UUID while replacing the execution UUID. Ten supervisor tests, all 78
+  infrastructure tests, repository validation and unit verification passed.
+- ChatGPT plugin installation and a hosted request/reply remain to be verified.
+  See [configuration and operating contract](config/cairn/frank-tunnel.md).
+
 ## 2026-11-10 — move PostgreSQL to dedicated SATA SSD2
 
 - Owner authorized migration if durable-write tests passed. Both paired runs

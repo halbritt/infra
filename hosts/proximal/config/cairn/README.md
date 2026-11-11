@@ -59,6 +59,11 @@ the launcher loads the selected deployment's own manifest and helpers. Do not
 replace individual members of a live pinned bundle. See the
 [deployment record](codex-interrupt-20261108.md) for verification and rollback.
 
+## Frank / ChatGPT messaging
+
+Frank reaches Cairn through a dedicated private OpenAI tunnel and a supervised
+connector inbox. See [configuration, identity and operations](frank-tunnel.md).
+
 ## Backup and recovery
 
 The managed cluster's pgBackRest backup/WAL schedule now covers the Cairn database.

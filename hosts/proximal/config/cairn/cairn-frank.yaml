@@ -1,0 +1,17 @@
+config_version: 1
+control_plane:
+  base_url: https://api.openai.com
+  tunnel_id: tunnel_6af3d023e590819194500a5bb31fe28e
+  api_key: file:/home/halbritt/.config/missive/openai-tunnel-key
+health:
+  listen_addr: 127.0.0.1:0
+  url_file: /home/halbritt/.local/state/tunnel-client/cairn-frank-health.url
+admin_ui:
+  open_browser: false
+log:
+  level: info
+  format: json
+mcp:
+  commands:
+    - channel: main
+      command: /home/halbritt/.local/share/cairn/deployments/frank-tunnel-20261110/cairn mcp --messaging --socket /home/halbritt/.local/share/cairn/api.sock --token-file /home/halbritt/.local/share/cairn/hosted-agent.token --repo /home/halbritt/git/cairn --task frank-tunnel --run tunnel_6af3d023e590819194500a5bb31fe28e --native-session tunnel_6af3d023e590819194500a5bb31fe28e --client-harness other --tool-profile compact/2
