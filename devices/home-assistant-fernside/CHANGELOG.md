@@ -296,3 +296,55 @@ is Supervisor-side.
   leftovers that can be pruned on the add-on's configuration page.
 
 Versions re-captured in `inventory.md` (new "Re-capture — 2026-10-21" section).
+
+## 2026-11-11 — Activate HAOS 18.5, clear the reboot-required repair
+
+The owner asked for the pending repairs and updates to be handled. Work done
+through ha-mcp. By the time this pass started nothing was left to install: the
+Supervisor log shows every pending update had already been applied earlier the
+same day (not by this pass), and HAOS 18.5 was staged in the inactive slot
+waiting for a reboot.
+
+- **Already applied before this pass** (Supervisor log, 2026-11-11 PST):
+  Supervisor → 2026.11.0 (10:04, self-update); at 11:12–11:14 HA core
+  2026.11.0 → 2026.11.1, OpenThread Border Router 3.3.0 → 3.4.0, Grafana
+  13.0.4 → 13.1.0, ESPHome Device Builder 2026.10.0 → 2026.10.2, Matter Server
+  9.2.0 → 9.3.0, and HAOS 18.5 downloaded and installed ("reboot required");
+  at 13:50 Home Assistant MCP Server 9.1.2 → 9.2.0. No full backup preceded
+  those; the newest was the 05:00 automatic backup (`36c4e225`, core 2026.11.0).
+- Took a **full backup** before the reboot: `pre-os-18.5-reboot-2026-11-11`
+  (`dc8d4fdc`, 13:55 PST, core 2026.11.1 + database, all ten add-ons, folders
+  share/addons-local/ssl/media, 478.8 MB, local only, no failed parts). No
+  existing backup was deleted (21 → 22).
+- **HAOS 18.4 → 18.5** activated with `hassio.host_reboot` at 13:56 PST — the
+  fix for the `hassio` repair `issue_system_reboot_required`. 18.5 is a
+  Raspberry Pi/Yellow security release (kernel 6.18.59, CVE-2026-98432); no
+  breaking changes listed. The appliance booted slot A, RAUC marked it good,
+  the UI answered 200 at 13:58:38 and ha-mcp was back by 13:59:11 (about
+  2.5 minutes of downtime).
+- Verified afterwards: host reports HAOS 18.5 / kernel `6.18.59-haos-raspi`,
+  Supervisor healthy and supported, core `RUNNING`, config check valid, all ten
+  add-ons `started`, 536 entities (same as before), no update pending, the
+  reboot repair gone. Lock, weather, calendar, plant-moisture and light
+  entities readable with unchanged entity IDs; the Ecowitt sensors returned
+  with their first push at 13:59:25. The proximal agent board logged "HA MCP
+  is unreachable" 13:56–13:58 and nothing after.
+- **Repairs left open (3)**, all `entity_own_area_without_own_name`, not
+  auto-fixable: `media_player.living_room_display`,
+  `media_player.kitchen_display`, `lock.aqara_smart_lock_u200`. Each entity has
+  its own area but no own name. The owner must either give the entity a name or
+  drop its area override in the entity settings; entity IDs need not change.
+- **No device firmware update was offered** for any device, so none was
+  applied or withheld. Nine Zigbee firmware entities report `unknown` (no
+  version information) and three are `unavailable`.
+- Not fixed, pre-existing and unchanged by the reboot: core 2026.11.1 logs
+  `cannot import name 'MCPError' from 'mcp'` when the ha-mcp add-on's `mcp`
+  discovery reaches the built-in `mcp` integration (the discovery flow fails;
+  nothing else is affected); `elgato` (desk lamp) and `ipp` "OmezizyD450 @
+  proximal" sit in `setup_retry`; Zigbee Bathroom Nightlight and Hall Light,
+  the LG TV and the ESPHome node at 192.168.1.66 are offline; Supervisor
+  cannot refresh the `halbritt/claude-code-ha` add-on repository (git exit
+  128); stale ha-mcp add-on options `enable_skills`, `enable_skills_as_tools`,
+  `backup_hint` still draw schema warnings.
+
+Versions re-captured in `inventory.md` ("Re-capture — 2026-11-11").

@@ -33,7 +33,7 @@ desired-state changes belong here.
 | OS | Home Assistant OS (HAOS) — appliance, not a general Linux host |
 | LAN | `192.168.1.64` (`enp3s0` ARP on proximal) |
 | Tailscale | `100.105.145.26` · hostname `home-assistant-fernside` · offers exit node |
-| Versions | see [`inventory.md`](inventory.md) — HAOS/Supervisor/core/add-ons, captured 2026-07-22 |
+| Versions | see [`inventory.md`](inventory.md) — HAOS/Supervisor/core/add-ons, captured 2026-07-22; versions re-captured 2026-10-21 and 2026-11-11 (HAOS 18.5, Supervisor 2026.11.0, core 2026.11.1) |
 
 Identity, Core, HAOS, and add-on state were reverified 2026-08-06. The inventory
 remains a point-in-time 2026-07-22 snapshot; see the changelog for newer version

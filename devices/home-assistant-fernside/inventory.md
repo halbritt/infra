@@ -128,3 +128,35 @@ Add-ons — 10 installed, all `started`:
 InfluxDB (listed above at 5.0.2) is no longer installed — hence 10 add-ons,
 not 11. No update was pending on any add-on or on OS/Supervisor after the
 2026-10-21 maintenance.
+
+## Re-capture — 2026-11-11 (versions only)
+
+Versions re-read through ha-mcp (system health and the installed-apps list)
+after the HAOS 18.5 reboot. Entities, integrations and hardware above remain
+the 2026-07-22 snapshot.
+
+| fact | value |
+|---|---|
+| HAOS | 18.5 (kernel 6.18.59-haos-raspi, aarch64, boot slot A) |
+| Supervisor | 2026.11.0 (OS agent 1.14.0, Docker 29.8.2) |
+| HA core | 2026.11.1 |
+| Disk | 468.7 GB total, 29.9 GB used |
+| Network | LAN 192.168.1.64 · tailnet 100.105.145.26 |
+
+Add-ons — 10 installed, all `started`:
+
+| add-on | slug | version |
+|---|---|---|
+| OpenThread Border Router | `core_openthread_border_router` | 3.4.0 |
+| Grafana | `a0d7b954_grafana` | 13.1.0 |
+| Studio Code Server | `a0d7b954_vscode` | 7.2.0 |
+| ESPHome Device Builder | `5c53de3b_esphome` | 2026.10.2 |
+| Matter Server | `core_matter_server` | 9.3.0 |
+| Claude Terminal Pro | `cf2feb56_claude_terminal_pro` | 2.0.10 |
+| Home Assistant MCP Server | `81f33d0f_ha_mcp` | 9.2.0 |
+| Nabu Casa Webhook Proxy for HA MCP | `81f33d0f_ha_mcp_webhook_proxy` | 3.0.5 |
+| Tailscale | `a0d7b954_tailscale` | 0.30.6 |
+| Terminal & SSH | `core_ssh` | 10.6.0 |
+
+No update was pending on core, OS, Supervisor, any add-on or any device after
+the 2026-11-11 reboot.
