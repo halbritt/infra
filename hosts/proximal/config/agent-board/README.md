@@ -64,3 +64,15 @@ systemctl --user status agent-board
 curl -fsS http://127.0.0.1:8787/api/scene | head -c 300
 journalctl --user -u agent-board -n 20
 ```
+
+## Front door lock (2026-11-11)
+
+The owner asked for the door tile to lock the door. The server now calls
+`lock.lock` on `lock.aqara_smart_lock_u200` when **Lock the door** is tapped on
+the Iris display (`POST /api/door/lock`, kiosk token required from the LAN).
+
+- Lock only. No code path calls `lock.unlock`, and a test fails if one is added.
+- The server waits up to 12 seconds for the lock to report `locked` and returns
+  an error to the display if it does not.
+- Not exercised against the real lock by the agent: the door was unlocked at
+  deploy time and the first real use was left to the owner.
