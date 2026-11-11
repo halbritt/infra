@@ -348,3 +348,35 @@ waiting for a reboot.
   `backup_hint` still draw schema warnings.
 
 Versions re-captured in `inventory.md` ("Re-capture — 2026-11-11").
+
+## 2026-11-11 — Clear the three area/name repairs, uninstall the Grafana add-on
+
+Follow-up to the entry above, at the owner's request and through ha-mcp. The
+owner delegated the per-entity choice for the repairs.
+
+- **`entity_own_area_without_own_name` repairs (3) — all cleared**; Repairs now
+  lists nothing. Entity IDs, friendly names and effective areas were read
+  before and after and are identical.
+  - `lock.aqara_smart_lock_u200`: entity area override `living_room` equalled
+    the device's area, so the override was removed; the entity inherits
+    `living_room` from the device, as its ten sibling entities already did.
+  - `media_player.living_room_display`: the Cast device had no area and this is
+    its only entity, so the device was assigned `living_room` and the entity
+    override removed.
+  - `media_player.kitchen_display`: same case; device assigned `kitchen`,
+    entity override removed.
+  - Undo: set the entity's area again in its settings (and clear the device
+    area for the two displays).
+- **Grafana add-on (`a0d7b954_grafana`, 13.1.0) uninstalled** at 15:20 PST.
+  Supervisor removed the container, image and the add-on's data folder; its
+  ingress sidebar panel went with it. No dashboard card referenced it (the four
+  storage dashboards were searched for `grafana`, `:3000` and iframe cards; the
+  default dashboard is the generated one). The remaining nine add-ons are all
+  `started`. The add-on and its data are in today's backup
+  `pre-os-18.5-reboot-2026-11-11` (`dc8d4fdc`). Grafana on proximal, which
+  serves the Plant Moisture and Indoor Environment dashboards, is a separate
+  installation and was not touched.
+- Left as found: `update.grafana_update` still exists in the entity registry
+  (state `off`) after the uninstall; it was not deleted.
+
+`inventory.md` "Re-capture — 2026-11-11" now lists nine add-ons.

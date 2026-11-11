@@ -143,12 +143,12 @@ the 2026-07-22 snapshot.
 | Disk | 468.7 GB total, 29.9 GB used |
 | Network | LAN 192.168.1.64 · tailnet 100.105.145.26 |
 
-Add-ons — 10 installed, all `started`:
+Add-ons — 9 installed, all `started` (Grafana `a0d7b954_grafana` 13.1.0 was
+uninstalled later the same day at the owner's request):
 
 | add-on | slug | version |
 |---|---|---|
 | OpenThread Border Router | `core_openthread_border_router` | 3.4.0 |
-| Grafana | `a0d7b954_grafana` | 13.1.0 |
 | Studio Code Server | `a0d7b954_vscode` | 7.2.0 |
 | ESPHome Device Builder | `5c53de3b_esphome` | 2026.10.2 |
 | Matter Server | `core_matter_server` | 9.3.0 |
