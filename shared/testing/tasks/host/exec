@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+#MISE description="Run a test on the host with admission, a deadline and descendant cleanup"
+#MISE dir="{{cwd}}"
+#MISE hide=true
+#MISE raw_args=true
+"""Small integration between mise, native-admit and systemd user scopes."""
+import argparse
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import uuid
+
+
+class Cancelled(BaseException):
+    def __init__(self, signum):
+        self.signum = signum
+
+
+def cancel(signum, _frame):
+    raise Cancelled(signum)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--timeout", default=os.environ.get("HOST_TEST_TIMEOUT", "10m"),
+                        help="systemd duration, default 10m (HOST_TEST_TIMEOUT)")
+    parser.add_argument("--weight", type=int, default=os.environ.get("HOST_TEST_WEIGHT"),
+                        help="override native-admit's inferred weight (HOST_TEST_WEIGHT)")
+    parser.add_argument("command", nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    command = args.command[1:] if args.command[:1] == ["--"] else args.command
+    if not command:
+        parser.error("supply -- COMMAND [ARG ...]")
+    if args.weight is not None and args.weight < 1:
+        parser.error("weight must be positive")
+    duration = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?)(ms|s|min|m|h)?", args.timeout)
+    if not duration or float(duration[1]) <= 0:
+        parser.error("timeout must be a positive duration, such as 30s, 10m or 1h")
+    seconds = float(duration[1]) * {None: 1, "ms": .001, "s": 1, "min": 60, "m": 60, "h": 3600}[duration[2]]
+    for tool in ("systemd-run", "systemctl", "native-admit", "timeout"):
+        if not shutil.which(tool):
+            parser.error(f"required host tool missing: {tool}")
+    unit = "host-test-" + uuid.uuid4().hex + ".scope"
+    admission = ["native-admit", "run", "--label", f"test:{os.path.basename(os.getcwd())}", "--max-wait", "60"]
+    if args.weight is not None:
+        admission += ["--weight", str(args.weight)]
+    argv = ["systemd-run", "--user", "--scope", "--collect", "--quiet", "--expand-environment=no",
+            "--unit", unit, "--property=KillMode=control-group",
+            f"--property=RuntimeMaxSec={seconds + 5}s", "--property=TimeoutStopSec=10s",
+            "--", "timeout", "--verbose", "--kill-after=3s", f"{seconds}s",
+            *admission, "--", *command]
+    # No environment filtering or HOME replacement. Native harnesses keep their
+    # normal subscription, tools, skills and local service connections.
+    previous = {s: signal.signal(s, cancel) for s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
+    status = 1
+    try:
+        status = subprocess.run(argv, check=False, close_fds=False).returncode
+        if status < 0:
+            status = 128 - status
+        if status == 124:
+            print(f"host:exec: deadline exceeded ({args.timeout})", file=sys.stderr)
+    except Cancelled as exc:
+        status = 128 + exc.signum
+    finally:
+        # Only our randomly named scope is stopped. Never signal a PID/group
+        # derived from a mock, task output or another session.
+        for signum in previous:
+            signal.signal(signum, signal.SIG_IGN)
+        try:
+            active = subprocess.run(["systemctl", "--user", "is-active", "--quiet", unit],
+                                    capture_output=True, check=False, timeout=5)
+            if active.returncode == 0 and status == 0:
+                print("host:exec: stopping remaining child processes after command exit", file=sys.stderr)
+            stopped = subprocess.run(["systemctl", "--user", "stop", unit],
+                                     env={**os.environ, "LC_ALL": "C"},
+                                     text=True, capture_output=True, check=False, timeout=15)
+            if stopped.returncode and "not loaded" not in stopped.stderr:
+                print(f"host:exec cleanup failed for {unit}: {stopped.stderr.strip()}", file=sys.stderr)
+                status = status or 1
+        except subprocess.TimeoutExpired:
+            print(f"host:exec: cleanup did not finish for {unit}; its cgroup deadline remains active", file=sys.stderr)
+            status = status or 1
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+    return status
+
+
+if __name__ == "__main__":
+    sys.exit(main())

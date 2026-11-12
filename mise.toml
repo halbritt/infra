@@ -1,0 +1,10 @@
+[tasks.test]
+description = "Run infra's existing unit tests and repository validator"
+run = [
+  "mise run host:exec -- python3 -m unittest discover -s tests -p 'test_*.py'",
+  "scripts/validate-infra.py",
+]
+
+[tasks."test:host"]
+description = "Verify real host test execution, timeout, cancellation and cleanup"
+run = "native-admit run --class test --weight 2 --label host-workflow-checks --max-wait 60 -- env HOST_TEST_INTEGRATION=1 python3 -m unittest discover -s tests -p test_host_testing.py -v"

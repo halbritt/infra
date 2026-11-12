@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-11-12 — deploy the shared host test workflow
+
+- Owner authorized overnight implementation and deployment. Installed mise
+  2026.11.7 with shared `host:exec` and `host:doctor` tasks. Project tests retain
+  their host tools, skills, subscriptions and service access; application
+  fixtures own disposable state. Existing native-admit and systemd scopes bound
+  the processes. No container or replacement agent home is required.
+- Added managed testing guidance to existing Codex, Claude and Agy global
+  instructions, with backups. Repaired the stale user pytest launcher to use
+  the installed system pytest 9.0.2. Source, checks and rollback:
+  [testing](config/testing/README.md).
+
 ## 2026-11-11 — notify the owner of repeated Hermes cron failures
 
 - Owner approved a separate failure notice after outbreak-watch failed 35 days

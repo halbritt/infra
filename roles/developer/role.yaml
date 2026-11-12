@@ -4,6 +4,8 @@
   "description": "Interactive software-development workstation responsibilities.",
   "shared": [
     "shared/editor/wezterm/server.lua",
-    "shared/agent-ee/ae-ci-exec"
+    "shared/agent-ee/ae-ci-exec",
+    "shared/testing/tasks/host/exec",
+    "shared/testing/tasks/host/doctor"
   ]
 }
