@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-11-11 — select the saved Timothy Shop Cadpole document
+
+- Replaced the live starter bracket with a parametric model from the owner's
+  Google Drive references, preserving the measured plan and using labelled
+  estimates for heights, the west opening and schematic roof. Reference files
+  remain unchanged in private application data.
+- Saved `~/Documents/cadpole/timothy-shop.cadpoledoc` through Cadpole and changed
+  the canonical user unit to load it at startup. Reloaded systemd without
+  restarting the running viewer, preserving the current browser token.
+- Native evaluation returned no diagnostics; all 18 bodies passed solid and
+  self-intersection checks, and the footprint area matched the reference.
+  Cutaway and exterior renders were visually inspected.
+
 ## 2026-11-11 — expose Cadpole at cadpole.harm.org
 
 - Owner requested public access to the running Cadpole viewer. Added only its

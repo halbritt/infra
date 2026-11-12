@@ -53,8 +53,11 @@ journalctl --user -u cadpole.service -n 20
 Install both Cloudflare configs following their README, validate parity, and
 restart `cloudflared.service`. For upgrades, update the clean upstream checkout,
 build explicitly, restart the user service, verify the new login link and record
-the revision here. Startup loads `examples/bracket.star`; save desired session
-changes through Cadpole before a restart.
+the revision here. Startup loads `~/Documents/cadpole/timothy-shop.cadpoledoc`; save desired session
+changes through Cadpole before a restart. The initial bracket example was replaced
+by the owner's Timothy Shop model on 2026-11-11. Its source, unchanged downloaded
+references, verification and renders are under `~/Documents/cadpole/timothy-shop/`.
+These are private application data, outside this repository.
 
 To remove public access, remove only the Cadpole hostname rule from both tunnel
 configs and redeploy them. Stop/disable the user unit to stop the application.
@@ -68,3 +71,7 @@ returned 200 with the public Origin header. Anonymous API reads returned 401 and
 cross-origin requests returned 403. Both tunnel configurations validated and all
 four canonical/installed ingress blocks matched. The user service is enabled;
 Plane, Artifact and 3D viewer checks returned 200 after the tunnel restart.
+
+Timothy Shop was loaded through revision-checked SetScript and saved through the
+browser Save As endpoint without restarting the service or changing its login
+token. The startup unit now selects that saved document for future restarts.
