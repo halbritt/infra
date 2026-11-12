@@ -1,5 +1,13 @@
 # Changelog — proximal (system)
 
+## 2026-11-11 — notify the owner of repeated Hermes cron failures
+
+- Owner approved a separate failure notice after outbreak-watch failed 35 days
+  without one. New hourly no-agent job `cron-failure-watch` (`a96349767dd0`)
+  messages the owner DM when any enabled Hermes cron job fails 3 runs in a row, and
+  once on recovery. One scheduler run returned ok and silent (no job is failing).
+  Source and tests: [Hermes](config/hermes/README.md#cron-failure-watch--2026-11-11).
+
 ## 2026-11-11 — give Hermes the Exa key
 
 - Owner request. Copied `EXA_API_KEY` from `~/.config/exa/env` into `~/.hermes/.env`

@@ -75,6 +75,7 @@ CUSTOM_BASE_URL=http://localhost:8081/v1 hermes --provider custom -m qwen3.6-35b
 |---|---|---|
 | [`config.yaml`](config.yaml) | `~/.hermes/config.yaml` | canonical desired state, secret-free |
 | [`SOURCE_COMMIT`](SOURCE_COMMIT) | — | upstream commit of the installed clone |
+| [`cron_failure_watch.py`](cron_failure_watch.py) | `~/.hermes/scripts/cron_failure_watch.py` | cron job `a96349767dd0`; see below |
 
 Credentials are **not** in either file. `OPENROUTER_API_KEY` is already exported from
 `~/.profile` and Hermes picks it up from the environment — the key is *not* copied into
@@ -300,3 +301,17 @@ owner-requested independent review. Hermes proposes facts; fetched primary passa
 and a complete Relay panel must affirm them before a durable one-time claim can
 produce an alert. Closure is silent and stops later scans. The existing 07:00 Pacific
 schedule and Slack thread are preserved. See [operation, installation and verification](outbreak_watch/README.md).
+
+## Cron failure watch — 2026-11-11
+
+Job `cron-failure-watch` (`a96349767dd0`) is an hourly no-agent script that reads
+the cron job store and messages the owner DM (`slack:D0BMCL7T2FM`) when an enabled
+job reaches 3 failed runs in a row, and again when it recovers. It sends one notice
+per streak; its state is in `~/.hermes/watchdogs/cron-failure-watch/state.json`.
+Added because outbreak-watch (`failure_deliver: local`) failed 35 days in a row
+with no notice. A failure of this job itself goes to the same DM. It does not detect
+a scheduler that has stopped ticking.
+
+Install: copy `cron_failure_watch.py` to `~/.hermes/scripts/`. The job was created with
+`hermes cron create "every 60m" --name cron-failure-watch --script cron_failure_watch.py --no-agent --deliver slack:D0BMCL7T2FM --catch-up off`.
+Tests: `python3 -m unittest test_cron_failure_watch` in this directory.
