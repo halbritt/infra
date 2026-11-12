@@ -27,4 +27,6 @@ ingress:
     service: http://127.0.0.1:8879
   - hostname: 3dviewer.harm.org
     service: http://127.0.0.1:8881
+  - hostname: cadpole.harm.org
+    service: http://127.0.0.1:7332
   - service: http_status:404

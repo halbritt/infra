@@ -1,0 +1,19 @@
+[Unit]
+Description=Cadpole CAD viewer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/git/cadpole
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=CADPOLE_NO_BUILD=1
+ExecStart=%h/.local/bin/cadpole serve examples/bracket.star --listen loopback --port 7332
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

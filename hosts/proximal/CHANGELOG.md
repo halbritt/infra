@@ -1,5 +1,21 @@
 # Changelog — proximal (system)
 
+## 2026-11-11 — expose Cadpole at cadpole.harm.org
+
+- Owner requested public access to the running Cadpole viewer. Added only its
+  hostname to both Cloudflare ingress files, using existing wildcard DNS and
+  loopback origin `127.0.0.1:7332`; port 7331 already serves another application.
+- Replaced the transient Cadpole user unit with an enabled persistent unit.
+  It starts the built CLI and bracket example without building on boot. Browser
+  token authentication remains enabled; agent tokens stay on the private socket.
+- Verified public HTTPS UI and bundled JavaScript (200), authenticated session
+  reads (200), anonymous API denial (401), and cross-origin denial (403).
+  Plane, Artifact and 3D viewer health remained 200 after tunnel restart.
+- Infrastructure tests: 78 passed. Repaired historical links left broken by
+  the earlier Wigolo removal, retaining the history and linking the moved Exa
+  comparison at its current path. Configuration and installation details are in
+  [Cadpole](config/cadpole/README.md).
+
 ## 2026-11-11 — retire wigolo; Exa is the only web search and page reader
 
 - Owner request: remove every trace of wigolo. Exa had been the primary search since
@@ -1798,20 +1814,20 @@ unrelated: the `fable` Claude member's session fails with
 
 Signed up for [Exa](https://exa.ai) (free tier, no card; key in `~/.config/exa/env`,
 never in git) and ran a 40-query blind comparison against the on-box
-[`wigolo`](config/wigolo/) daemon, judged by local Qwen3.8-27B, plus a 15-URL
+`wigolo` daemon, judged by local Qwen3.8-27B, plus a 15-URL
 fetch leg. Exa `auto` won decisively on technical and research queries
 (nDCG@5 0.94 vs 0.54 overall) and on latency; parity on news and Council-style
 queries. Root cause on the wigolo side is DuckDuckGo challenging proximal's IP
 mid-run (wigolo reports it as `ok:0`), leaving Bing's HTML endpoint alone.
 Fetch is near parity once wigolo's ~14k-token default output budget is raised.
 Write-up + harness + raw results in
-[`config/wigolo/exa-comparison-2026-09-08/`](config/wigolo/exa-comparison-2026-09-08/README.md).
+[`config/exa/exa-comparison-2026-09-08/`](config/exa/exa-comparison-2026-09-08/README.md).
 Recommendation recorded: Exa as primary search for Council / grounding, wigolo
 as keyless fallback and fetch. Total Exa spend: $0.37 of free credit.
 
 ### wigolo updated to unreleased upstream main (c6ad4479)
 
-Rebuilt [`wigolo`](config/wigolo/) from `~/git/wigolo` at upstream `main` `c6ad4479`
+Rebuilt `wigolo` from `~/git/wigolo` at upstream `main` `c6ad4479`
 (2026-08-19) and installed the tarball over the global npm `0.2.1`, ahead of a
 planned wigolo-vs-Exa search comparison. npm has had no release since `0.2.1`
 (2026-07-19); `main` carries 132 commits, mostly fetch fixes and an opt-in
@@ -2072,7 +2088,7 @@ run, including how long it has been dry and the value it re-arms above.
 
 ### wigolo synthesis switched to native gemini-3.6-flash (free tier)
 
-Acting on the re-benchmark below: rewired the [`wigolo`](config/wigolo/) MCP
+Acting on the re-benchmark below: rewired the `wigolo` MCP
 registration from GLM 5.2/OpenRouter to the native `gemini` provider with
 `gemini-3.6-flash` — the round's best reports at both depths, leak-free, and
 free-tier cost. The blocking caveat dissolved on inspection: ai-newsroom no
@@ -2081,12 +2097,12 @@ names in `newsroom/sources/`), so the `GEMINI_API_KEY` in
 `~/.config/ai-newsroom/env` is a leftover and wigolo is now effectively its
 only consumer. Deliberately staying on the free tier — wigolo is low-volume;
 watch billing to confirm it never charges. Canonical block updated in
-[`config/wigolo/mcp-config.json`](config/wigolo/mcp-config.json); GLM 5.2
+`config/wigolo/mcp-config.json`; GLM 5.2
 rollback block preserved in git history (`d3167f0`).
 
 ### wigolo synthesis re-benchmark: GLM 5.2 holds; DeepSeek V4 Flash unfit; Gemini leak gone
 
-Re-ran the [`wigolo`](config/wigolo/) synthesis-model benchmark (8 headless
+Re-ran the `wigolo` synthesis-model benchmark (8 headless
 `research --json` runs, standard + comprehensive) against two challengers:
 `deepseek/deepseek-v4-flash-0731` (~1/10 GLM 5.2's OpenRouter price) and
 `gemini-3.6-flash` (both via OpenRouter and via the native gemini provider on
@@ -2102,7 +2118,7 @@ free-tier cost, but it would couple wigolo to the ai-newsroom key's rate
 limits. Gemini via OpenRouter is 3× GLM's cost and wrote the weakest reports.
 GLM 5.2 stayed solid at `standard` but truncated mid-sentence at
 `comprehensive` this round. **Wiring unchanged: GLM 5.2 via OpenRouter.**
-Full table in [`config/wigolo/README.md`](config/wigolo/README.md).
+Full table in `config/wigolo/README.md`.
 
 ### Removed the idle local Qwen sentiment fallback
 
@@ -2343,7 +2359,7 @@ creation, self-improving skills, FTS5 cross-session recall.
 **Wired to GLM 5.2 via OpenRouter** (`z-ai/glm-5.2`, 1M ctx, $0.769/M in / $2.42/M out),
 reusing the `OPENROUTER_API_KEY` already exported from `~/.profile` — the key is deliberately
 *not* copied into `~/.hermes/.env`, so rotation stays single-source. This re-applies a
-conclusion already benchmarked for [`wigolo/`](config/wigolo/README.md) on 2026-07-21: OpenRouter
+conclusion already benchmarked for `wigolo/` on 2026-07-21: OpenRouter
 returns GLM's reasoning in a *separate* field, so `content` is always clean prose, whereas a
 local reasoning model's thinking tokens compete with the answer inside a fixed budget — which
 matters for a harness running up to 500 turns with compression at 50% of context.
@@ -2472,7 +2488,7 @@ The index dir is not a git repo, so the added cards are recorded as
 documented in the observability README's new "Tailnet index" section.
 
 ### wigolo synthesis switched to GLM 5.2 (OpenRouter)
-Benchmarked research-synthesis quality across models and rewired [`wigolo`](config/wigolo/) from
+Benchmarked research-synthesis quality across models and rewired `wigolo` from
 the local 35B MoE to **GLM 5.2** (`z-ai/glm-5.2`) via OpenRouter, using the OpenAI-compatible
 path (`WIGOLO_LLM_PROVIDER=openai` + `OPENAI_BASE_URL=https://openrouter.ai/api/v1`; key =
 `OPENROUTER_API_KEY` from `~/.config/striatum/openrouter.env`). Root-cause finding: wigolo
@@ -2491,7 +2507,7 @@ calls in `timeout`.
 ## 2026-07-20
 
 ### Added wigolo web-research subsystem (Tavily replacement)
-Adopted [`wigolo`](config/wigolo/) `0.2.1` — a keyless, local-first web-intelligence MCP
+Adopted `wigolo` `0.2.1` — a keyless, local-first web-intelligence MCP
 server (search/fetch/crawl/extract/research/agent) — as the box's web-research layer
 for local agent work, replacing reliance on Tavily/generic hosted research services.
 Cloned and security-audited before adoption (static review of the public repo, source

@@ -41,6 +41,7 @@ no explicit DNS record of its own — onto Pages. Do not point it back at `harm.
 
 | public hostname | local service |
 |---|---|
+| `cadpole.harm.org` | `http://127.0.0.1:7332` ([`../cadpole`](../cadpole/)) |
 | `3dviewer.harm.org` | `http://127.0.0.1:8881` ([`../3dviewer`](../3dviewer/)) |
 | `artifact.harm.org` | `http://127.0.0.1:8879` ([`../artifact`](../artifact/)) |
 | `tailscale.harm.org` | `http://localhost:3912` ([`../tailscale-index`](../tailscale-index/)) |
@@ -169,3 +170,8 @@ Pastebin and Plane instances endpoint each returned HTTP 200 after restart.
 Verified 2026-11-03: added `3dviewer.harm.org` to both ingress files, using existing
 wildcard DNS. Public viewer, model reads and health pass; Plane instances and
 Artifact health still return 200. System/user ingress validation and parity pass.
+
+Verified 2026-11-11: added `cadpole.harm.org` to both ingress files using existing
+wildcard DNS. Origin and public UI/assets return 200; browser-token session reads
+return 200, anonymous API reads 401 and cross-origin reads 403. Plane, Artifact
+and 3D viewer health remain 200. Both installed configs match canonical ingress.
