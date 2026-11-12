@@ -14,8 +14,7 @@ without a final model rewrite; the script itself runs a bounded Hermes collector
 The collector runs as a Hermes gateway session launched with `--toolsets web,no_mcp`:
 `web_search` and `web_extract` on the Exa backend, no MCP servers, and no plugin
 toolsets (`known_plugin_toolsets.cli` lists `relay`, so Relay's tools do not join it).
-Hermes holds no Exa key, so these calls use Exa's keyless free tier; Relay's grounding
-below uses the owner's key. The runner fails the run if the collector uses any
+These calls use the owner's Exa key from `~/.hermes/.env`, as does Relay's grounding below. The runner fails the run if the collector uses any
 other tool. The collector receives policy plus the entire fact registry. Its structured
 answer cannot directly produce a Slack message. It gets 12 tool iterations and a
 330-second client deadline. The gateway refuses a per-launch `--run-budget`, and

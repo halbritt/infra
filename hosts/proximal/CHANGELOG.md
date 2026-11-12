@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-11-11 — give Hermes the Exa key
+
+- Owner request. Copied `EXA_API_KEY` from `~/.config/exa/env` into `~/.hermes/.env`
+  (0600; backup `.env.before-exa-key`). Hermes's web tools had been using Exa's
+  keyless tier.
+- Hermes then reported the Exa SDK missing: the gateway runs from the update-bot
+  staging venv, which was built with only `--extra slack`. Added Hermes's `exa` extra
+  there (`uv sync --frozen --inexact ... --extra exa`, which installed only
+  `exa-py==2.26.0`) and restarted the gateway.
+- Verified: `web_search` and `web_extract` logged `via exa` with no keyless
+  fallback. The update-bot policy now requires `--extra exa` and an `exa_py` import
+  check for each Hermes candidate; installed to `/etc/update-bot/policy.md`.
+
 ## 2026-11-11 — repair the Hermes outbreak watcher
 
 - The daily outbreak-watch job had failed every run since 2026-10-08 (failure
@@ -17,7 +30,7 @@
   has `relay_consult` and `relay_sources`. The runner also fails the run if the
   collector uses any other tool.
 - Removed the runner's Exa key injection: the gateway never receives secrets from
-  a client's environment, so Hermes uses Exa's keyless tier.
+  a client's environment (Hermes got its own key later the same day).
 - The first scheduler run after that scanned but failed validation: an identity
   field was 210 characters against an unstated 200-character limit. The scan
   contract now states every field limit, taken from the validator's constants.

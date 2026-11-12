@@ -79,6 +79,9 @@ CUSTOM_BASE_URL=http://localhost:8081/v1 hermes --provider custom -m qwen3.6-35b
 Credentials are **not** in either file. `OPENROUTER_API_KEY` is already exported from
 `~/.profile` and Hermes picks it up from the environment — the key is *not* copied into
 `~/.hermes/.env` (which stays `0600` and uncommitted), so the box has one place to rotate it.
+`EXA_API_KEY` is the exception: the gateway never takes secrets from a client's environment,
+so the owner had it added to `~/.hermes/.env` (2026-11-11). It duplicates
+`~/.config/exa/env`; rotate both.
 
 ## Verified (2026-07-28)
 

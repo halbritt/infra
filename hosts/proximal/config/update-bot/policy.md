@@ -13,6 +13,10 @@ Approved targets and channels:
   updater that restarts busy gateways or interactive sessions. Stage and test an
   isolated candidate even when activation must wait. Use a versioned installation
   for new launches while retaining the files used by existing processes.
+  Build each candidate venv with the extras the live gateway uses, currently
+  `uv sync --frozen --group dev --group test --extra slack --extra exa`, and
+  check `import slack_bolt, exa_py` with the candidate's python before activation.
+  Without `exa`, Hermes's web tools fall back to Exa's keyless tier.
   Once verified, use the fixed update-bot-hermes-activate.service to activate the
   gateway. It verifies installed source/launcher identity, requires a fresh native
   zero-work drain and issues only the gateway's supported reload. Busy/stale/foreign

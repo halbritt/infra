@@ -70,9 +70,11 @@ Reproduce: `ln -sfn ~/git/infra/hosts/proximal/config/exa/exa-fetch ~/.local/bin
 - **ai-newsroom** (`010b87d`): the `exa` source plus the daily brief's web searches (at most 5
   queries per brief).
 - **Hermes** outbreak-watch collector: Hermes's `web` toolset with `web.backend: exa`.
-  Hermes has no Exa key, so the gateway uses Exa's keyless free tier (`mcp.exa.ai`);
-  the key was not copied into `~/.hermes/.env`. Adding it there would switch every
-  Hermes session's web tools to the paid account.
+  The gateway reads `EXA_API_KEY` from `~/.hermes/.env` (owner request, 2026-11-11), so
+  every Hermes session's web tools use this account. The gateway venv also needs Hermes's
+  `exa` extra (`exa-py`); without the key or the SDK, Hermes falls back to Exa's keyless
+  free tier (`mcp.exa.ai`), and the log shows `one-shot keyless rescue`. The update-bot
+  policy builds candidate venvs with `--extra exa`.
 - **Agents:** the skillpack `exa` skill documents both CLIs.
 
 ## Guardrails
