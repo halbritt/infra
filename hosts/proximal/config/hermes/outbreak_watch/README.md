@@ -142,3 +142,9 @@ tools through `tool_search`; `no_mcp` and the `known_plugin_toolsets` entry clos
 that. `LiveConstructionTest` builds the real runner under the Hermes interpreter,
 and `ScannerContractTest` checks the launch flags, the tool contract and the failure
 detail. 28 tests pass.
+
+The first scheduler run after those fixes scanned successfully but failed in
+validation: one identity `object` was 210 characters against a 200-character limit
+the scan contract never stated. The field limits now live in `core.py`
+(`IDENTITY_LIMIT`, `FACT_LIMIT`, `SOURCE_LIMITS`), and the scan contract states
+them from the same constants. An oversized field still fails the run.

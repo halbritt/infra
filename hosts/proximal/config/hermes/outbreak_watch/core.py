@@ -41,6 +41,18 @@ def json_object(raw):
     return value
 
 
+# Field limits (characters). The scan contract states them; an oversized field fails the run.
+IDENTITY_LIMIT = 200
+FACT_LIMIT = 2000
+SOURCE_LIMITS = (
+    ("url", 2000),
+    ("quote", 3000),
+    ("publisher", 200),
+    ("primary_origin", 400),
+    ("provenance", 1000),
+)
+
+
 def candidate(value, today):
     if not isinstance(value, dict):
         raise ValueError("invalid candidate")
@@ -52,7 +64,10 @@ def candidate(value, today):
         raise ValueError("identity needs subject, predicate, object")
     # Publication metadata never enters this identity. Event/case IDs belong in
     # subject; substantive changes belong in predicate/object. Review checks aliases.
-    ident = {k: " ".join(text(v, 200).casefold().split()) for k, v in ident.items()}
+    ident = {
+        k: " ".join(text(v, IDENTITY_LIMIT).casefold().split())
+        for k, v in ident.items()
+    }
     fact_id = "fact-" + hashlib.sha256(canonical(ident).encode()).hexdigest()[:24]
     evidence = value.get("evidence")
     if not isinstance(evidence, list) or not 1 <= len(evidence) <= 3:
@@ -65,22 +80,13 @@ def candidate(value, today):
         if published > today:
             raise ValueError("future publication")
         sources.append(
-            {
-                k: text(e.get(k), limit)
-                for k, limit in [
-                    ("url", 2000),
-                    ("quote", 3000),
-                    ("publisher", 200),
-                    ("primary_origin", 400),
-                    ("provenance", 1000),
-                ]
-            }
+            {k: text(e.get(k), limit) for k, limit in SOURCE_LIMITS}
             | {"published_at": published.isoformat()}
         )
     result = {
         "fact_id": fact_id,
         "identity": ident,
-        "fact": text(value.get("fact")),
+        "fact": text(value.get("fact"), FACT_LIMIT),
         "criterion": criterion,
         "evidence": sources,
     }

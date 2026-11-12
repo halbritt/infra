@@ -13,7 +13,16 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from .core import SILENT, Store, canonical, execute, json_object
+from .core import (
+    FACT_LIMIT,
+    IDENTITY_LIMIT,
+    SILENT,
+    SOURCE_LIMITS,
+    Store,
+    canonical,
+    execute,
+    json_object,
+)
 
 SCAN_CONTRACT = """You collect candidate facts for outbreak-watch; you cannot authorize alerts.
 Use only web search and page extraction. Never send messages, schedule jobs, or change files.
@@ -43,6 +52,14 @@ anchor to the index death. Close quietly; no closure message is authorized.
 Criteria amendments are proposals only: record them in proposed_amendments, never silently
 change rules. Evidence-derived values (e.g. observation window) follow current sources.
 """
+
+SCAN_CONTRACT += (
+    "Length limits in characters; any longer field fails the whole run: identity "
+    f"subject, predicate and object {IDENTITY_LIMIT} each (short canonical phrases, "
+    f"not sentences), fact {FACT_LIMIT}, "
+    + ", ".join(f"{k} {n}" for k, n in SOURCE_LIMITS)
+    + ".\n"
+)
 
 REVIEW_QUESTION = """Assess this candidate against the criteria, fetched primary passages and
 ENTIRE prior-fact registry. Independently falsify source support, source independence,

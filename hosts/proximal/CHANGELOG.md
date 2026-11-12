@@ -18,6 +18,9 @@
   collector uses any other tool.
 - Removed the runner's Exa key injection: the gateway never receives secrets from
   a client's environment, so Hermes uses Exa's keyless tier.
+- The first scheduler run after that scanned but failed validation: an identity
+  field was 210 characters against an unstated 200-character limit. The scan
+  contract now states every field limit, taken from the validator's constants.
 - Added tests that build the real runner under the Hermes interpreter and check
   the scanner contract; 28 tests pass. Details:
   [outbreak watch](config/hermes/outbreak_watch/README.md).
