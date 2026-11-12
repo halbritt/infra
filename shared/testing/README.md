@@ -42,8 +42,12 @@ inference. The shared task does not reclassify a native suite as a small test.
 
 Each command gets a unique scope. Systemd enforces the deadline and stops the
 scope's descendants, including children that start their own process session.
-GNU timeout reports a normal deadline with exit 124 and a diagnostic; it allows
-three seconds for command cleanup before forced termination. The scope has a
+GNU timeout prints a signal diagnostic when the budget expires and returns 124
+after TERM, or 137 if it must escalate to KILL three seconds later. A command
+can itself return either status: use the signal diagnostic, not the status
+alone, to identify a timeout. Admission waiting counts against this budget;
+`native-admit: waiting` followed by a timeout can mean the test never started.
+Do not treat unavailable host capacity as a code failure. The scope has a
 second deadline five seconds later, so abrupt client loss cannot leave its
 detached children running indefinitely. Systemd allows ten seconds for its own
 graceful stop before the final kill. Cancellation is nonzero (SIGTERM: 143),
@@ -70,7 +74,6 @@ Add a small `mise.toml` around the command the project already documents:
 ```toml
 [tasks."test:unit"]
 description = "Run the existing focused unittest checks; accepts module names"
-raw_args = true
 run = "mise run host:exec -- python3 -m unittest"
 ```
 

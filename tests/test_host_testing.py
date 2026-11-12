@@ -86,6 +86,17 @@ print(json.dumps({'home':os.environ['HOME'], 'cwd':os.getcwd(), 'args':sys.argv[
         result = self.run_host("import sys; sys.exit(37)")
         self.assertEqual(result.returncode, 37, result.stderr)
 
+    def test_command_returning_timeout_status_is_not_reported_as_expired(self):
+        result = self.run_host("import sys; sys.exit(124)")
+        self.assertEqual(result.returncode, 124, result.stderr)
+        self.assertNotIn("deadline exceeded", result.stderr)
+        self.assertNotIn("sending signal", result.stderr)
+
+    def test_deadline_escalates_when_command_ignores_term(self):
+        result = self.run_host("import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(30)", limit="1s")
+        self.assertEqual(result.returncode, 137, result.stderr)
+        self.assertIn("KILL", result.stderr)
+
     def test_localhost_and_unix_socket_access(self):
         with socket.socket() as tcp, socket.socket(socket.AF_UNIX) as unix:
             tcp.bind(("127.0.0.1", 0))
@@ -133,7 +144,7 @@ time.sleep(60)
         started = time.monotonic()
         result = self.run_host(self.spawn_code(ready), limit="1s")
         self.assertEqual(result.returncode, 124, result.stderr)
-        self.assertIn("deadline exceeded (1s)", result.stderr)
+        self.assertIn("TERM", result.stderr)
         self.assertLess(time.monotonic() - started, 7)
         self.assertTrue(ready.exists(), result.stderr)
         self.assert_not_running(int(ready.read_text()))

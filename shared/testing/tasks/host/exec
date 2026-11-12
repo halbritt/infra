@@ -2,7 +2,6 @@
 #MISE description="Run a test on the host with admission, a deadline and descendant cleanup"
 #MISE dir="{{cwd}}"
 #MISE hide=true
-#MISE raw_args=true
 """Small integration between mise, native-admit and systemd user scopes."""
 import argparse
 import os
@@ -60,8 +59,8 @@ def main():
         status = subprocess.run(argv, check=False, close_fds=False).returncode
         if status < 0:
             status = 128 - status
-        if status == 124:
-            print(f"host:exec: deadline exceeded ({args.timeout})", file=sys.stderr)
+        # GNU timeout reports TERM/KILL itself. A status alone is ambiguous:
+        # commands can return 124 or 137 without exceeding the budget.
     except Cancelled as exc:
         status = 128 + exc.signum
     finally:
