@@ -1,5 +1,27 @@
 # Changelog — proximal (system)
 
+## 2026-11-11 — repair the Hermes outbreak watcher
+
+- The daily outbreak-watch job had failed every run since 2026-10-08 (failure
+  streak 35) with `No module named 'yaml'`: Hermes's venv moved from PyYAML to
+  ruamel.yaml. The runner now uses Hermes's `hermes_yaml` reader.
+- With that fixed, the scanner exited 2 because the Hermes gateway refuses
+  `--run-budget`. Removed the flag; 12 turns and a 330-second client deadline
+  remain.
+- Containment: `--toolsets web` still exposed Cairn's MCP tools (including
+  `cairn_send`) and Relay's plugin tools to the collector, which reads untrusted
+  web pages. The collector now launches with `web,no_mcp`, and
+  `~/.hermes/config.yaml` lists `relay` under `known_plugin_toolsets.cli` (backup
+  `config.yaml.before-outbreak-known-relay`). Verified in live sessions: the
+  collector sees only `web_search` and `web_extract`; a default CLI session still
+  has `relay_consult` and `relay_sources`. The runner also fails the run if the
+  collector uses any other tool.
+- Removed the runner's Exa key injection: the gateway never receives secrets from
+  a client's environment, so Hermes uses Exa's keyless tier.
+- Added tests that build the real runner under the Hermes interpreter and check
+  the scanner contract; 28 tests pass. Details:
+  [outbreak watch](config/hermes/outbreak_watch/README.md).
+
 ## 2026-11-11 — select the saved Timothy Shop Cadpole document
 
 - Replaced the live starter bracket with a parametric model from the owner's

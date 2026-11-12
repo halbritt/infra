@@ -69,8 +69,10 @@ Reproduce: `ln -sfn ~/git/infra/hosts/proximal/config/exa/exa-fetch ~/.local/bin
   for reading known URLs through `/contents`.
 - **ai-newsroom** (`010b87d`): the `exa` source plus the daily brief's web searches (at most 5
   queries per brief).
-- **Hermes** outbreak-watch collector: Hermes's `web` toolset with `web.backend: exa`; the
-  runner passes `EXA_API_KEY` to that subprocess only.
+- **Hermes** outbreak-watch collector: Hermes's `web` toolset with `web.backend: exa`.
+  Hermes has no Exa key, so the gateway uses Exa's keyless free tier (`mcp.exa.ai`);
+  the key was not copied into `~/.hermes/.env`. Adding it there would switch every
+  Hermes session's web tools to the paid account.
 - **Agents:** the skillpack `exa` skill documents both CLIs.
 
 ## Guardrails

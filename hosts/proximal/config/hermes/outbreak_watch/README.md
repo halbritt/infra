@@ -11,11 +11,16 @@ the existing Hermes scheduler still delivers to the existing Slack thread.
 
 The job is a Hermes `no_agent` script. That means the scheduler returns its stdout
 without a final model rewrite; the script itself runs a bounded Hermes collector.
-The collector has only Hermes's `web` toolset (Exa backend: `web_search` and
-`web_extract`; the runner passes `EXA_API_KEY` from `~/.config/exa/env` to this
-subprocess only) and receives policy plus the entire
-fact registry. Its structured answer cannot directly produce a Slack message.
-It gets 12 tool iterations and a 300-second run budget (330-second process deadline).
+The collector runs as a Hermes gateway session launched with `--toolsets web,no_mcp`:
+`web_search` and `web_extract` on the Exa backend, no MCP servers, and no plugin
+toolsets (`known_plugin_toolsets.cli` lists `relay`, so Relay's tools do not join it).
+Hermes holds no Exa key, so these calls use Exa's keyless free tier; Relay's grounding
+below uses the owner's key. The runner fails the run if the collector uses any
+other tool. The collector receives policy plus the entire fact registry. Its structured
+answer cannot directly produce a Slack message. It gets 12 tool iterations and a
+330-second client deadline. The gateway refuses a per-launch `--run-budget`, and
+killing the client detaches the session rather than cancelling it, so the 12-turn
+limit is what bounds the session itself.
 
 The runner fetches the candidate's 1–3 source URLs with Relay's grounding adapter.
 It verifies each exact quote in a fetched page excerpt with retrieval time and
@@ -117,9 +122,23 @@ A subsequent live test ran the full grounding and four-member Relay panel inside
 Hermes's actual cron subprocess with isolated state and local-only output. It
 produced one approved historical-fixture alert; the next identical run returned
 `[SILENT]`. The actual collector session used only Wigolo search/fetch and Hermes's
-tool-call bridge. No test used the real Slack destination or production fact state.
+tool-call bridge. (Wigolo was retired on 2026-11-11.) No test used the real Slack destination or production fact state.
 A second live cron test supplied a primary passage unrelated to a proposed Irkutsk
 claim. All four members refuted it, synthesis returned `HOLD`, the fact became
 `suppressed`, and output stayed `[SILENT]`. The isolated database still held only
 one alert claim from the positive fixture. Final checks: 24 watch tests, 42 repository
 validator tests, infrastructure validation and Ruff passed.
+
+### 2026-11-11 repair
+
+Every run from 2026-10-08 to 2026-11-11 failed before scanning, with
+`No module named 'yaml'`. A Hermes update had moved its venv from PyYAML to
+ruamel.yaml, and the host tests replace the live runner with a fixture, so nothing
+caught it. The runner now reads `config.yaml` with Hermes's own `hermes_yaml`. Once
+the import worked, the scanner exited 2: the Hermes gateway refuses `--run-budget`.
+That flag was removed. Separately, a probe session showed that `--toolsets web`
+still gave the collector Cairn's MCP tools (including `cairn_send`) and Relay's
+tools through `tool_search`; `no_mcp` and the `known_plugin_toolsets` entry close
+that. `LiveConstructionTest` builds the real runner under the Hermes interpreter,
+and `ScannerContractTest` checks the launch flags, the tool contract and the failure
+detail. 28 tests pass.

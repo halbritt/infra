@@ -136,6 +136,15 @@ platform_toolsets:
     - hermes-teams
   google_chat:
     - hermes-google_chat
+# A plugin toolset absent from this list joins every session on that platform,
+# even one launched with explicit --toolsets. Listing relay for cli keeps it out
+# of the outbreak-watch collector (--toolsets web,no_mcp); interactive CLI
+# sessions keep relay through platform_toolsets.cli on the live host.
+known_plugin_toolsets:
+  cli:
+    - relay
+web:
+  backend: exa
 stt:
   enabled: true
   local:

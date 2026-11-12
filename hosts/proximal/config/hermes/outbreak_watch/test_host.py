@@ -104,6 +104,63 @@ raise SystemExit(runtime.main())
 
 
 @unittest.skipUnless(
+    os.environ.get("HERMES_SOURCE"), "set HERMES_SOURCE for live-runner construction"
+)
+class LiveConstructionTest(unittest.TestCase):
+    """The real Live runner under the Hermes interpreter. HostTest replaces Live with
+    a fixture, so a missing import here (PyYAML, 2026-10-08..11-11) failed every run
+    while all tests passed."""
+
+    def test_live_reads_relay_settings_with_hermes_yaml(self):
+        from outbreak_watch import runtime
+
+        with tempfile.TemporaryDirectory() as d:
+            home = Path(d)
+            state = home / "watchdogs/outbreak-watch"
+            state.mkdir(parents=True)
+            (state / "CRITERIA.md").write_text("criteria")
+            relay = home / "plugins/relay"
+            relay.mkdir(parents=True)
+            (relay / "__init__.py").write_text("")
+            (relay / "core.py").write_text(
+                "class Policy:\n"
+                "    @classmethod\n"
+                "    def parse(cls, s):\n"
+                "        p = cls(); p.settings = s\n"
+                "        p.members = [type('M', (), {'name': n}) for n in s['members']]\n"
+                "        return p\n"
+            )
+            (relay / "consult.py").write_text("def run_consultation(*a): pass\n")
+            (relay / "grounding.py").write_text(
+                "def gather_sources(*a): pass\ndef validate_request(r): return r\n"
+            )
+            (home / "config.yaml").write_text(
+                "plugins:\n  entries:\n    relay:\n      settings:\n        routing:\n"
+                "          members: [fable, sol, agy, glm]\n          max_input_bytes: 1000\n"
+            )
+            saved = {
+                k: v
+                for k, v in sys.modules.items()
+                if k == "relay" or k.startswith("relay.")
+            }
+            for k in saved:
+                del sys.modules[k]
+            try:
+                live = runtime.Live(home, state, home / "artifact")
+            finally:
+                if str(home / "plugins") in sys.path:
+                    sys.path.remove(str(home / "plugins"))
+                for k in [
+                    k for k in sys.modules if k == "relay" or k.startswith("relay.")
+                ]:
+                    del sys.modules[k]
+                sys.modules.update(saved)
+            self.assertEqual(live.members, ["fable", "sol", "agy", "glm"])
+            self.assertEqual(live.settings["max_input_bytes"], 64000)
+            self.assertEqual(live.criteria, "criteria")
+
+
+@unittest.skipUnless(
     os.environ.get("HERMES_SOURCE"), "set HERMES_SOURCE for installer integration"
 )
 class InstallTest(unittest.TestCase):

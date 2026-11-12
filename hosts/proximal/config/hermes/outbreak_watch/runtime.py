@@ -4,7 +4,6 @@ import asyncio
 import fcntl
 import json
 import os
-import pwd
 import signal
 import subprocess
 import sys
@@ -69,15 +68,7 @@ have NON_BLOCKING cautions. A material source/identity/criterion doubt is always
 Do not interpret the existence of a completed panel as evidence that the fact is true."""
 
 
-def exa_key():
-    path = Path(pwd.getpwuid(os.getuid()).pw_dir) / ".config/exa/env"
-    try:
-        for line in path.read_text().splitlines():
-            if line.strip().startswith("EXA_API_KEY="):
-                return line.split("=", 1)[1].strip().strip("'\"")
-    except OSError:
-        pass
-    raise RuntimeError("no Exa API key for the web toolset")
+SCANNER_TOOLS = frozenset({"web_search", "web_extract"})
 
 
 def run_scanner(home, prompt):
@@ -88,21 +79,21 @@ def run_scanner(home, prompt):
         "-",
         "--format",
         "stream-json",
+        # web = web_search/web_extract (web.backend: exa). no_mcp keeps every MCP
+        # server out of the session; Relay's plugin toolset stays out because
+        # config.yaml lists it in known_plugin_toolsets.cli.
         "--toolsets",
-        "web",
+        "web,no_mcp",
         "--ignore-rules",
         "--source",
         "tool",
         "--max-turns",
         "12",
-        "--run-budget",
-        "300",
     ]
+    # The session runs inside the Hermes gateway, which refuses a per-launch
+    # --run-budget. 12 turns bound the session; the 330 s deadline bounds this
+    # client (killing it detaches, so the session finishes its turns, unread).
     env = dict(os.environ, HERMES_HOME=str(home))
-    # Hermes's web toolset uses its Exa backend (web.backend: exa). The key stays in
-    # ~/.config/exa/env and reaches only this collector subprocess.
-    if not env.get("EXA_API_KEY"):
-        env["EXA_API_KEY"] = exa_key()
     # Each subprocess group is owned until it exits, including on timeout/cancel.
     with subprocess.Popen(
         command,
@@ -123,7 +114,11 @@ def run_scanner(home, prompt):
             proc.wait()
             raise
     if proc.returncode:
-        raise RuntimeError("scanner process failed")
+        detail = (error or "").strip().splitlines()
+        raise RuntimeError(
+            f"scanner exited {proc.returncode}: "
+            + (detail[0] if detail else "no stderr")
+        )
     events = [json.loads(line) for line in output.splitlines() if line.strip()]
     results = [e for e in events if e.get("type") == "result"]
     if len(results) != 1 or results[0].get("exit_code") != 0:
@@ -133,19 +128,27 @@ def run_scanner(home, prompt):
     answer["scanner_tools"] = sorted(
         {e["name"] for e in events if e.get("type") == "tool_use"}
     )
+    # Fail closed if Hermes ever widens the session (a toolset or config drift).
+    outside = set(answer["scanner_tools"]) - SCANNER_TOOLS
+    if outside:
+        raise RuntimeError(
+            "scanner used tools outside its contract: " + ", ".join(sorted(outside))
+        )
     return answer
 
 
 class Live:
     def __init__(self, home, state, artifact):
-        import yaml
+        # Hermes's shared YAML reader (ruamel). Hermes's venv no longer has
+        # PyYAML; importing `yaml` failed every run 2026-10-08..2026-11-11.
+        from hermes_yaml import safe_load
 
         sys.path.insert(0, str(home / "plugins"))
         from relay.core import Policy
         from relay.consult import run_consultation
         from relay.grounding import gather_sources, validate_request
 
-        self.settings = yaml.safe_load((home / "config.yaml").read_text())["plugins"][
+        self.settings = safe_load((home / "config.yaml").read_text())["plugins"][
             "entries"
         ]["relay"]["settings"]["routing"]
         # Preserve all routing/account/budget settings; retain the full registry

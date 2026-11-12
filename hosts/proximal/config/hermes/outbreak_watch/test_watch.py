@@ -379,5 +379,63 @@ class WatchTest(unittest.TestCase):
             Store.initialize(p, old)
 
 
+class ScannerContractTest(unittest.TestCase):
+    """run_scanner against a stand-in Hermes process (stream-json on stdout)."""
+
+    def run_with(self, events, returncode=0, stderr=""):
+        from unittest.mock import patch
+
+        from outbreak_watch import runtime
+
+        class Proc:
+            pid = 0
+
+            def __init__(self, command, **kwargs):
+                self.command = command
+                self.returncode = returncode
+                Proc.last = self
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def communicate(self, prompt, timeout):
+                return "\n".join(json.dumps(e) for e in events), stderr
+
+        with patch.object(runtime.subprocess, "Popen", Proc):
+            try:
+                return runtime.run_scanner(Path("/nonexistent"), "prompt")
+            finally:
+                self.command = Proc.last.command
+
+    def result(self, text='{"facts": []}'):
+        return {"type": "result", "exit_code": 0, "text": text}
+
+    def test_web_only_session_returns_answer(self):
+        answer = self.run_with(
+            [{"type": "tool_use", "name": "web_search"}, self.result()]
+        )
+        self.assertEqual(answer["facts"], [])
+        self.assertEqual(answer["scanner_tools"], ["web_search"])
+        toolsets = self.command[self.command.index("--toolsets") + 1]
+        self.assertEqual(set(toolsets.split(",")), {"web", "no_mcp"})
+        # The gateway client refuses --run-budget (exit 2); it must not be passed.
+        self.assertNotIn("--run-budget", self.command)
+
+    def test_tool_outside_contract_fails_closed(self):
+        with self.assertRaisesRegex(RuntimeError, "mcp__cairn__cairn_send"):
+            self.run_with(
+                [{"type": "tool_use", "name": "mcp__cairn__cairn_send"}, self.result()]
+            )
+
+    def test_process_failure_reports_its_error(self):
+        with self.assertRaisesRegex(RuntimeError, "exited 2: Error: Unsupported"):
+            self.run_with(
+                [], returncode=2, stderr="Error: Unsupported gateway CLI options\n"
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
