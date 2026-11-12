@@ -114,12 +114,19 @@ time.sleep(60)
 
     def assert_not_running(self, pid):
         # Inspect a child PID reported by our own test. Never signal it.
+        # Pipe EOF can precede the kernel's final process teardown briefly.
         stat = Path(f"/proc/{pid}/stat")
-        try:
-            state = stat.read_text().split(")", 1)[1].split()[0]
-        except (FileNotFoundError, ProcessLookupError):
-            return
-        self.assertEqual(state, "Z", f"test child {pid} survived scope cleanup")
+        deadline = time.monotonic() + 1
+        while True:
+            try:
+                state = stat.read_text().split(")", 1)[1].split()[0]
+            except (FileNotFoundError, ProcessLookupError):
+                return
+            if state == "Z":
+                return
+            if time.monotonic() >= deadline:
+                self.fail(f"test child {pid} survived scope cleanup (state {state})")
+            time.sleep(0.02)
 
     def test_deadline_reaps_detached_child_holding_output_pipe(self):
         ready = self.cwd / "child.pid"
