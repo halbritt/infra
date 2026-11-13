@@ -17,3 +17,23 @@
 - Rebooted to verify: Iris returned showing the board with no desktop panel.
 - Observed the Wi-Fi address change from 192.168.1.216 to 192.168.1.219 during
   the day. There is still no DHCP reservation; `iris.local` resolved throughout.
+
+## 2026-11-13
+
+- Iris dropped off the Wi-Fi network overnight; the board server on proximal
+  stayed up. The owner power-cycled it at about 00:57 PST. The cause is not
+  known: the stock image keeps the journal in memory (`Storage=volatile`), so
+  the earlier logs were lost. `vcgencmd get_throttled` read `0x0` after the
+  reboot. It came back at 192.168.1.247 (was 192.168.1.219; still no DHCP
+  reservation).
+- Re-ran `kiosk/deploy.sh` from `halbritt/agent-board`, which now also installs:
+  - `/etc/NetworkManager/conf.d/agent-board-wifi-powersave.conf`
+    (`wifi.powersave = 2`). The kernel log shows `power save disabled`.
+  - `agent-board-net-watchdog.timer` and `.service` with
+    `/usr/local/sbin/agent-board-net-watchdog`: checks the router every minute;
+    reconnects Wi-Fi after 3 minutes, restarts NetworkManager after 10, reboots
+    after 30.
+  - `/etc/systemd/journald.conf.d/zz-agent-board.conf` (`Storage=persistent`,
+    `SystemMaxUse=200M`), so the next failure leaves logs.
+- Wi-Fi power saving as the cause is a guess. The recovery steps of the
+  watchdog were not exercised; only a healthy check was run.
