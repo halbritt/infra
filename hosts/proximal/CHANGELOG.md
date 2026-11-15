@@ -1,5 +1,18 @@
 # Changelog — proximal (system)
 
+## 2026-11-15 — restart PostgreSQL to activate 18.7
+
+- After the 11:18 package update the running 18.6 server could not load the new
+  on-disk `plpgsql.so` in new backends (`undefined symbol: heap_datum_update_type`).
+  Cairn store operations (search, create, revise, completion) failed with
+  `STORE_ERROR` from about 11:32, which stopped Cairn agent deliveries.
+- The CAIRN-301 coordinator session (agent-1386) restarted `postgresql@18-main` at
+  11:54 PST. Before the restart no client backend was active or in a transaction.
+  After it: server reports 18.7, a plpgsql `DO` block runs in database `cairn`,
+  Cairn search returns OK, and clients reconnected. The explicit `CHECKPOINT` was
+  refused (role lacks `pg_checkpoint`); the normal shutdown checkpoint ran.
+- tailscaled was not restarted, and the libc6 reboot is still pending.
+
 ## 2026-11-15 — remove every PostgreSQL limit from OS updates
 
 - Owner ruling after the metapackage outage: no PostgreSQL limits. `os_update.py` now
