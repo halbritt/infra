@@ -15,12 +15,12 @@ held without stopping unrelated updates.
 | llama.cpp | Invoke the existing canonical updater under its native lock when warranted; its existing timer stays authoritative. Install binaries without restarting inference. |
 | Codex, Claude Code, OpenCode, Agy | Update existing installations on their current stable channels, with native methods. Preserve wrappers, configuration and live session resources. Gemini CLI is covered only if installed. |
 | Herdr (proximal and Archon) | Maintain stable binaries, inspect installed and running versions separately, retain live sessions. Archon uses a fixed remote helper; no broad SSH access for the agent. |
-| OS packages | Install routine Ubuntu and the reviewed vendor channels in `os_update.py`, preserving PostgreSQL major 18. Preserve config files; no removals, release upgrade or reboot. |
+| OS packages | Install routine Ubuntu and the reviewed vendor channels in `os_update.py`, including all PGDG PostgreSQL packages. Preserve config files; no removals, release upgrade or reboot. |
 
 The OS helper also checks simulated dependencies. On 2026-11-03 the owner
 authorized clearing the 18-package vendor backlog and its blanket origin
-restriction. Reviewed vendor rules are in `os_update.py`; PostgreSQL major
-changes, other database engines, Kubernetes, Docker engine/containerd and
+restriction. Reviewed vendor rules are in `os_update.py`; PGDG PostgreSQL
+packages have no limit (2026-11-15); other database engines, Kubernetes, Docker engine/containerd and
 NVIDIA/CUDA transitions remain separately reviewed. It temporarily installs a policy-rc.d restart hold (only when no
 policy already exists), uses needrestart list mode, checks dpkg and observed
 package versions afterward, and reports deferred packages, service activation requirements and reboot requirements.
@@ -189,7 +189,15 @@ built from the same source as a requested package. The metapackage is built from
 batch. The helper now passes `-o APT::Get::Upgrade-By-Source-Package=false` for every
 APT call. A simulation with the 16 selected packages then plans exactly those 16 and
 their real dependencies, and keeps the metapackage at `18+293`. That version depends
-only on `postgresql-18`. The exclusion of unversioned metapackages is unchanged.
+only on `postgresql-18`.
+
+The owner then removed every PostgreSQL limit (2026-11-15). Any package from
+PGDG `resolute-pgdg` is approved, including the metapackages and new majors, and
+`postgresql`/`pgbackrest` are no longer protected names. When the metapackage moves
+to a new major, the run installs that server, and Debian creates its default
+cluster with the start held by policy-rc.d. `activation_required` lists
+`postgresql@N-main` for each server package. Upgrading data between clusters is
+still a database migration and stays outside the bot's scope.
 
 ## Vendor update scope correction — 2026-11-03
 
@@ -197,8 +205,8 @@ The 18 packages were not apt-held or phased. Every candidate failed the old
 Ubuntu-only origin predicate; Compose and HypoPG additionally matched protected
 prefixes. GEOS also required adding `libgeos3.15.0`, which plain `apt-get upgrade`
 would not do. The helper now accepts the reviewed source/package pairs for all
-18 and their scoped dependencies. PostgreSQL stays at major 18, including
-HypoPG; unversioned PostgreSQL metapackages cannot introduce a later server.
+18 and their scoped dependencies. PostgreSQL then stayed at major 18, including
+HypoPG. (Unversioned metapackages were excluded until 2026-11-15; see above.)
 Vendor permissions do not enable arbitrary packages from every configured source.
 
 Install canonical `os_update.py` to `/usr/local/lib/update-bot/os_update.py`

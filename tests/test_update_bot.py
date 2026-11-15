@@ -324,9 +324,10 @@ class MaintenanceBoundaryTests(unittest.TestCase):
             self.assertFalse(bot.operations_active(root))
 
     def test_os_scope_keeps_database_cluster_and_gpu_packages_out(self):
-        for name in ['postgresql', 'postgresql-18', 'kubelet', 'containerd.io', 'nvidia-container-toolkit']:
+        for name in ['mysql-server', 'redis-server', 'kubelet', 'containerd.io', 'nvidia-container-toolkit']:
             self.assertTrue(os_update.PROTECTED.match(name), name)
-        for name in ['curl', 'libaudit1', 'linux-image-generic']:
+        # The owner removed every PostgreSQL limit on 2026-11-15.
+        for name in ['curl', 'libaudit1', 'linux-image-generic', 'postgresql', 'postgresql-18', 'pgbackrest']:
             self.assertFalse(os_update.PROTECTED.match(name), name)
         def version(origin, archive):
             return SimpleNamespace(origins=[SimpleNamespace(origin=origin, archive=archive)])
@@ -344,19 +345,20 @@ class MaintenanceBoundaryTests(unittest.TestCase):
             (['google-cloud-cli', 'google-cloud-cli-anthoscli'], 'packages.cloud.google.com', 'cloud-sdk'),
             (['tailscale'], 'pkgs.tailscale.com', ''),
             (['docker-compose-plugin'], 'download.docker.com', 'resolute'),
-            (['libcgal-dev', 'libgeos-c1t64', 'libgeos-dev', 'libgeos3.15.0', 'libproj25', 'libproj-dev', 'proj-data', 'postgresql-18', 'postgresql-18-hypopg', 'libpq5'], 'apt.postgresql.org', 'resolute-pgdg'),
+            (['libcgal-dev', 'libgeos-c1t64', 'libgeos-dev', 'libgeos3.15.0', 'libproj25', 'libproj-dev', 'proj-data', 'postgresql-18', 'postgresql-18-hypopg', 'libpq5', 'postgresql', 'postgresql-client'], 'apt.postgresql.org', 'resolute-pgdg'),
         ]:
             for name in names:
                 self.assertTrue(os_update.approved_package(name, vendor(site, archive)), name)
                 self.assertFalse(os_update.approved_package(name, vendor('unreviewed.example', archive)), name)
         pg = vendor('apt.postgresql.org', 'resolute-pgdg')
-        for name in ['postgresql', 'postgresql-client', 'postgresql-19', 'postgresql-client-19', 'postgresql-19-hypopg']:
-            self.assertFalse(os_update.approved_package(name, pg), name)
+        for name in ['postgresql-19', 'postgresql-client-19', 'postgresql-19-hypopg', 'pgbackrest']:
+            self.assertTrue(os_update.approved_package(name, pg), name)
+        self.assertFalse(os_update.approved_package('postgresql-19', vendor('apt.postgresql.org', 'resolute-pgdg-testing')))
         for name in ['docker-ce', 'containerd.io', 'nvidia-driver-615', 'cuda-toolkit-14-0', 'kubelet']:
             self.assertFalse(os_update.approved_package(name, vendor('download.docker.com', 'resolute')), name)
 
     def test_apt_does_not_pull_sibling_binaries_of_a_source_package(self):
-        # postgresql-common's source also builds the excluded `postgresql` metapackage.
+        # Install exactly the selected packages, not every sibling from the same source.
         options = os_update.APT_OPTIONS
         self.assertIn('APT::Get::Upgrade-By-Source-Package=false', options)
         self.assertEqual(options[options.index('APT::Get::Upgrade-By-Source-Package=false') - 1], '-o')

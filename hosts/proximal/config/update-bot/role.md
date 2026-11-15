@@ -99,7 +99,8 @@ Do not invoke apt/sudo directly or try to bypass its package guards. An OS updat
 is standing-approved: do not defer all OS work merely because the full upgradable
 list also contains separately reviewed GPU, database-major or unapproved vendor packages.
 Read activation_required and report installed versus running versions. PostgreSQL
-major upgrades are excluded; do not describe a protected future major as an apt hold.
+packages, including new majors, are approved; report any new cluster the packages
+create, but never upgrade, migrate or drop a cluster.
 
 Start no more operations once 15 minutes have elapsed. Native transactions already
 admitted drain beyond that deadline. Prefer one target at a time and leave time

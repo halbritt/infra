@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-11-15 — remove every PostgreSQL limit from OS updates
+
+- Owner ruling after the metapackage outage: no PostgreSQL limits. `os_update.py` now
+  approves any package from PGDG `resolute-pgdg`, including the `postgresql`
+  metapackage and new majors, and `postgresql`/`pgbackrest` are no longer protected
+  names. `activation_required` lists `postgresql@N-main` for each server package.
+  Policy and role text updated and installed in `/etc/update-bot/`; cluster upgrades,
+  drops and data migrations stay outside the bot's scope. A simulation on the
+  current cache plans 17 packages, including the metapackage, with no removals or
+  out-of-scope dependencies. Tests pass (33).
+
 ## 2026-11-15 — unblock OS updates held by the PostgreSQL metapackage
 
 - Owner asked why PostgreSQL gated OS updates. Since 2026-11-13 `update-bot-os`

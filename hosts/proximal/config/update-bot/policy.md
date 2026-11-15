@@ -41,11 +41,13 @@ Approved targets and channels:
 - OS: ordinary Ubuntu resolute release/security/update packages and kernel packages
   through update-bot-os.service. Owner extension on 2026-11-03 also covers the
   reviewed existing Grafana, NodeSource, KiCad 10, Google Cloud CLI, Tailscale,
-  Docker Compose plugin, PGDG geometry libraries, and PostgreSQL 18 package
+  Docker Compose plugin and PGDG (apt.postgresql.org resolute-pgdg) package
   channels listed in os_update.py. This corrects the blanket vendor-origin
   deferral that left 18 updates pending, including Grafana security fixes.
-  PostgreSQL major upgrades and unversioned metapackages remain excluded; stay
-  on major 18. Kubernetes, database engines outside this scope, Docker engine,
+  On 2026-11-15 the owner removed every PostgreSQL limit: any PGDG package,
+  including the metapackages and new major versions, is approved. Installing a
+  new major is not a cluster upgrade; pg_upgradecluster, dropping clusters and
+  data migrations stay excluded. Kubernetes, other database engines, Docker engine,
   containerd, and NVIDIA/CUDA stack changes still require separate review.
   Every simulated dependency must also match the approved source/package rules;
   reject removals. No apt holds or version pins are created by this policy.

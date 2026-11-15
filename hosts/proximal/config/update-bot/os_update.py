@@ -9,8 +9,10 @@ import subprocess
 import time
 
 STATE = Path('/var/lib/update-bot-os')
-PROTECTED = re.compile(r'^(postgresql|mysql|mariadb|redis|pgbackrest|kube|docker|containerd|nvidia|libnvidia|cuda)')
-# Owner-approved vendor channels, 2026-11-03. PostgreSQL remains on major 18.
+PROTECTED = re.compile(r'^(mysql|mariadb|redis|kube|docker|containerd|nvidia|libnvidia|cuda)')
+# Owner-approved vendor channels, 2026-11-03. On 2026-11-15 the owner removed every
+# PostgreSQL limit: any PGDG package is approved, including the metapackages and new
+# majors. Installing packages never migrates a cluster (policy.md).
 # These are source boundaries, not version pins; APT still resolves dependencies.
 VENDORS = [
     (r'grafana', 'apt.grafana.com', 'stable'),
@@ -19,16 +21,15 @@ VENDORS = [
     (r'google-cloud-cli(?:-anthoscli)?', 'packages.cloud.google.com', 'cloud-sdk'),
     (r'tailscale', 'pkgs.tailscale.com', ''),
     (r'docker-compose-plugin', 'download.docker.com', 'resolute'),
-    (r'(?:libcgal-dev|libgeos.*|libproj.*|proj-data|libpq5|libpq-dev|postgresql-18(?:-.*)?|postgresql-client-18|postgresql-(?:client-)?common)',
-     'apt.postgresql.org', 'resolute-pgdg'),
+    (r'.+', 'apt.postgresql.org', 'resolute-pgdg'),
 ]
 
 
 # APT 3 upgrades every installed binary of a source package along with the one
-# requested (Upgrade-By-Source-Package). The excluded `postgresql` metapackage is
-# built from postgresql-common, so each common update dragged it into the plan
-# and the scope check aborted the whole batch (2026-11-13..15). Install exactly
-# the selected packages and their real dependencies.
+# requested (Upgrade-By-Source-Package). The `postgresql` metapackage, then
+# excluded, is built from postgresql-common, so each common update dragged it into
+# the plan and the scope check aborted the whole batch (2026-11-13..15). Install
+# exactly the selected packages and their real dependencies.
 APT_OPTIONS = ['-o', 'DPkg::Lock::Timeout=600', '-o', 'Dpkg::Options::=--force-confold',
                '-o', 'APT::Get::Upgrade-By-Source-Package=false']
 
@@ -105,9 +106,10 @@ def main():
                     item['observed'] = observed[item['package']].installed.version
                     if item['observed'] != item['after']:
                         raise RuntimeError('Installed version does not match the plan: ' + item['package'])
-                services = {'grafana': 'grafana-server', 'tailscale': 'tailscaled',
-                            'postgresql-18': 'postgresql@18-main'}
-                state['activation_required'] = [services[p.name] for p in selected if p.name in services]
+                services = {'grafana': 'grafana-server', 'tailscale': 'tailscaled'}
+                state['activation_required'] = [
+                    services.get(p.name) or re.sub(r'^postgresql-(\d+)$', r'postgresql@\1-main', p.name)
+                    for p in selected if p.name in services or re.fullmatch(r'postgresql-\d+', p.name)]
             state.update(status='completed', finished=time.time(),
                          reboot_required=Path('/var/run/reboot-required').exists())
         except Exception as exc:
