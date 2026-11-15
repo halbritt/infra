@@ -24,6 +24,15 @@ VENDORS = [
 ]
 
 
+# APT 3 upgrades every installed binary of a source package along with the one
+# requested (Upgrade-By-Source-Package). The excluded `postgresql` metapackage is
+# built from postgresql-common, so each common update dragged it into the plan
+# and the scope check aborted the whole batch (2026-11-13..15). Install exactly
+# the selected packages and their real dependencies.
+APT_OPTIONS = ['-o', 'DPkg::Lock::Timeout=600', '-o', 'Dpkg::Options::=--force-confold',
+               '-o', 'APT::Get::Upgrade-By-Source-Package=false']
+
+
 def approved_origin(version):
     return any(o.origin == 'Ubuntu' and o.archive in ('resolute', 'resolute-security', 'resolute-updates')
                for o in version.origins)
@@ -46,7 +55,7 @@ def main():
         run = STATE / stamp
         run.mkdir()
         env = dict(os.environ, DEBIAN_FRONTEND='noninteractive', NEEDRESTART_MODE='l')
-        options = ['-o', 'DPkg::Lock::Timeout=600', '-o', 'Dpkg::Options::=--force-confold']
+        options = APT_OPTIONS
         state = {'started': time.time(), 'status': 'running', 'evidence': str(run)}
         def save():
             body = json.dumps(state, indent=2) + '\n'

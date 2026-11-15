@@ -355,6 +355,12 @@ class MaintenanceBoundaryTests(unittest.TestCase):
         for name in ['docker-ce', 'containerd.io', 'nvidia-driver-615', 'cuda-toolkit-14-0', 'kubelet']:
             self.assertFalse(os_update.approved_package(name, vendor('download.docker.com', 'resolute')), name)
 
+    def test_apt_does_not_pull_sibling_binaries_of_a_source_package(self):
+        # postgresql-common's source also builds the excluded `postgresql` metapackage.
+        options = os_update.APT_OPTIONS
+        self.assertIn('APT::Get::Upgrade-By-Source-Package=false', options)
+        self.assertEqual(options[options.index('APT::Get::Upgrade-By-Source-Package=false') - 1], '-o')
+
 
 if __name__ == '__main__':
     unittest.main()

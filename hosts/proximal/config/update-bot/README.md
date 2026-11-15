@@ -177,6 +177,20 @@ The remote service participates in operation draining even if its initiating
 client exits. A normal no-change receipt must not produce a maintenance commit.
 Native self-update is binary installation, not permission to restart sessions.
 
+## Source-package sibling upgrades — 2026-11-15
+
+From 2026-11-13 every OS run failed with `APT dependency crosses the approved OS
+scope: postgresql`, so nothing installed: PostgreSQL 18.6 -> 18.7, postgresql-common
+293 -> 295, the 18 extensions, libpq5, GEOS, tailscale 1.104.7 and an Ubuntu GTK fix.
+The helper never selected the `postgresql` metapackage. APT 3 (3.2.1 here) defaults
+`APT::Get::Upgrade-By-Source-Package` to true, which upgrades every installed binary
+built from the same source as a requested package. The metapackage is built from
+`postgresql-common`, so the plan added it and the dependency check rejected the whole
+batch. The helper now passes `-o APT::Get::Upgrade-By-Source-Package=false` for every
+APT call. A simulation with the 16 selected packages then plans exactly those 16 and
+their real dependencies, and keeps the metapackage at `18+293`. That version depends
+only on `postgresql-18`. The exclusion of unversioned metapackages is unchanged.
+
 ## Vendor update scope correction — 2026-11-03
 
 The 18 packages were not apt-held or phased. Every candidate failed the old

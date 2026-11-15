@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-11-15 — unblock OS updates held by the PostgreSQL metapackage
+
+- Owner asked why PostgreSQL gated OS updates. Since 2026-11-13 `update-bot-os`
+  aborted before installing anything. APT 3 upgrades sibling binaries of a source
+  package by default, and the excluded `postgresql` metapackage shares a source with
+  `postgresql-common`. The helper now disables that behaviour. Tests pass (33), and the
+  fixed helper is installed at `/usr/local/lib/update-bot/os_update.py`. The next
+  daily run installs the held set (PostgreSQL 18.7, tailscale 1.104.7 and others);
+  service activation stays deferred as before.
+  Details: [update-bot](config/update-bot/README.md#source-package-sibling-upgrades--2026-11-15).
+
 ## 2026-11-12 — deploy the shared host test workflow
 
 - Owner authorized overnight implementation and deployment. Installed mise
