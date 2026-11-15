@@ -10,6 +10,11 @@
   drops and data migrations stay outside the bot's scope. A simulation on the
   current cache plans 17 packages, including the metapackage, with no removals or
   out-of-scope dependencies. Tests pass (33).
+- Owner asked to run the update. The manual `update-bot-os` run installed all 17
+  (evidence `/var/lib/update-bot-os/1794770262470038280`). PostgreSQL 18.7 and
+  tailscale 1.104.7 are installed. The running server is still 18.6, and the running
+  tailscaled is from before the update. Both stay that way until each service restarts.
+  A reboot is still pending for libc6.
 
 ## 2026-11-15 — unblock OS updates held by the PostgreSQL metapackage
 
