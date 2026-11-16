@@ -1,5 +1,23 @@
 # Host changelog
 
+## 2026-11-16 — display wedged after monitor input switches; desktop session restarted
+
+The owner switched the LG 32U990A's inputs away from archon and back (01:03, 08:34,
+08:44). After that, Hyprland 0.56.2 could not light either output. Every atomic
+modeset failed with `Invalid argument`: DP-1 (the 32U990A, over Thunderbolt, 6144x3456)
+at every mode down to 640x480, and HDMI-A-1 at 3840x2160. The kernel logged no
+i915 error. Input still reached Hyprland, but no frame was drawn and the cursor
+was invisible. These did not help: DPMS on, a config reload, runtime monitor rules,
+`force_renderer_reload`, unplugging and replugging Thunderbolt, and forcing the DP-1
+connector off (`/sys/class/drm/card1-DP-1/status`; restored with `detect`).
+
+With the owner's approval, the idle Claude session `4fac0902` was stopped (SIGTERM),
+and Hyprland was exited. SDDM did not autologin again (no `Relogin`). The owner
+logged in on tty2. The new session drives DP-1 at 6144x3456 and HDMI-A-1 at
+3840x2160. No reboot was needed.
+imessage-vm kept running through all of this (up since 2026-10-20, 0 restarts).
+missive's last successful poll was at 09:13. Docker has no containers.
+
 ## 2026-11-09 — retire imessage-mcp
 
 Owner approved retiring imessage-mcp: missive on proximal replaced it, and since
