@@ -1,5 +1,15 @@
 # Changelog — peecee
 
+## 2026-11-16 — install whisper.cpp STT server (WhisperServer)
+
+Owner-directed: peecee is the speech-to-text backend for the ReSpeaker Core v2 mic
+array. Installed the prebuilt CUDA `whisper-server` (build `b5454`) with
+`large-v3-turbo` under `C:\Users\halbr\whisper`, Scheduled Task `WhisperServer`
+(S4U, AtStartup), `0.0.0.0:8910`, firewall rule limited to the LAN and tailnet.
+~2.0 GB VRAM resident; not a fleet slot. It does not fit beside Kev plus a resident
+`qwen3-vl:8b` — see the co-tenancy warning in [Whisper](config/whisper/README.md).
+Verified from archon and from the ReSpeaker the same day.
+
 ## 2026-10-31 — provision CUDA Docling 2.145.0 in WSL2
 
 Installed `docling==2.145.0` (`torch 2.11.0+cu128`, `rapidocr 3.10.0`) via `uv tool`
