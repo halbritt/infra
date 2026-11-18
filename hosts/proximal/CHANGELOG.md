@@ -1,5 +1,11 @@
 # Changelog — proximal (system)
 
+## 2026-11-18 — publish Cairn `3f574e89` Agy Stop fix (`agy-one`)
+
+- Updated `~/.gemini/config/hooks.json` (`agy-one` account layer, sha256 `fa7c490d…`) via `stage_lifecycle_hooks.py publish-agy` (`cairn-stage-lifecycle agy-layer`, `RENAME_EXCHANGE` recovery record `~/.gemini/config/.cairn-recovery-agy-9a1c0c32266d93cc724be2a4056badc8.json`, sha256 `120c2f25…`) onto staged `/3` generation `selection-de116437-1cb3-4123-a619-2d28ec5940b3` built from Cairn `3f574e89dbefcaf2509c86ecc20a70b4269f5708` (`cairn-lifecycle` sha256 `6cef3bcc…`, `cairn-stage-lifecycle` sha256 `35faf56d…`) under `~/.local/share/cairn/go-rollout-3f574e89/` (CAIRN-761, CAIRN-763).
+- Tightened `~/.gemini` directory mode from `0775` (`halbritt:halbritt` single-user group) to `0755` so `publish-agy` ancestor ownership checks pass; `herdr` and `git-hygiene` hooks were preserved unchanged, and no Cairn service (`cairn-api`, `cairn-presence`, scheduler, wake workers) was restarted.
+- Verified: native Agy 1.5.11 CLI Stop protojson decoder (`scripts/check_agy_stop_decoder.py`) accepts `{}` on `fullyIdle: false`, absent `fullyIdle`, and `fullyIdle: true`, and `{"decision":"continue","reason":…}` on pending idle work while preserving busy/idle presence state.
+
 ## 2026-11-18 — deploy Cairn Go runtime, Go lifecycle hooks, and Rust semantic worker
 
 - Upgraded Cairn to source commit `d809e8f3c0f8c31dfd33259427cfbd74f1ab0599` (CAIRN-301):
