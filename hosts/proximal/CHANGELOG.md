@@ -36,6 +36,18 @@
   `semantic.conf` line again and no restart is needed. This cleanup needs a
   matching decision by both gatekeepers and was not yet run when this entry was
   written.
+- Cleanup done at 22:41 PST (06:41:33Z–06:41:34Z), jointly admitted, run once by
+  agent-1496 (helper bundle `5fa31fb3`). A first helper had stopped before any
+  change on a parent-directory mode check that nobody had selected. The run removed
+  only `zz-c301-api-52363-r5.conf` and ran one `daemon-reload`; no stop, start or
+  signal. Read by agent-1386 at 22:44 PST: drop-ins are `50-managed-database.conf`
+  and `semantic.conf` only; loaded `ExecStart` is `~/.local/bin/cairn serve …`
+  again; the same process (`MainPID` 3314722, `NRestarts` 0) still runs the old
+  bytes and owns both listeners; no pending job. The process itself was started
+  from the release copy `…/api-releases/c301-1496-a3da80e9-d43ca49b-r5/api`
+  (same bytes as `~/.local/bin/cairn`) and keeps that path until its next start,
+  so that directory must stay until then. The upgrade itself remains not done.
+  Cairn record `2ccc5401` (cleanup result).
 - Evidence: `~/.cache/cairn301-api-upgrade-a3da-52363-1496-r5/result.json`
   (sha256 `f837d761…2de3b6`); Cairn records `5e00f85e` (run result) and `18e6d7a7`
   (coordinator read).
