@@ -1,5 +1,45 @@
 # Changelog — proximal (system)
 
+## 2026-11-17 — cairn-api upgrade attempt reversed; reverse selector left in place
+
+- CAIRN-301 needs the session-quiescence read that exists in the Cairn API from
+  source `52363f47`; the installed API is revision `a3da80e9` (Nov 6). The
+  coordinator (agent-1386) and the owner supervisor (agent-1917) jointly admitted
+  one API-only upgrade of `cairn-api.service` under the owner's standing
+  deployment grant, run by the Release lead (agent-1496) from a sealed script.
+- A first admitted run at 21:16 PST stopped before any outage (the journal
+  baseline exceeded its size cap). No host configuration changed.
+- The second admitted run at 22:16 PST (bundle `d475969c`, runner unit
+  `cairn301-api-upgrade-1496-52363-r5.service`) stopped the API, started the new
+  image once, and failed reading `/proc/<pid>/exe` of the new process
+  (`PermissionError`). It reversed to the old image and hit the same error on the
+  old process, so it ended `FAILED_REVERSE_UNCONFIRMED`. Stop requested
+  06:16:40.487Z, old image started again 06:16:42.288Z: about two seconds without
+  the API.
+- State left on the host, read by agent-1386 at 22:20 PST: `cairn-api.service`
+  active, `MainPID` 3314722, `NRestarts` 0, running image sha256 `d43ca49b…66504`
+  (the old bytes). The loaded `ExecStart` comes from a new drop-in
+  `~/.config/systemd/user/cairn-api.service.d/zz-c301-api-52363-r5.conf`, which
+  selects an exact copy of the old binary at
+  `~/.local/share/cairn/api-releases/c301-1496-a3da80e9-d43ca49b-r5/api`. Behaviour
+  is the old API; the loaded unit configuration is not the original.
+- Also new on disk, unused: copies of the old and new API binaries under
+  `~/.local/share/cairn/api-releases/` (`…-r3` and `…-r5` directories, mode 0700).
+  `~/.local/bin/cairn`, the Python hooks, the semantic worker, the tunnel, the
+  database selector and the masked `cairn-store.service` were not changed. No
+  migration ran.
+- Two Cairn checkpoints and recovery exports were taken before the runs
+  (checkpoints `75299042…` and `ce13ca54…`, both valid).
+- Reverse of the leftover: with the running process and `~/.local/bin/cairn` both
+  hashing to `d43ca49b…`, remove only `zz-c301-api-52363-r5.conf` and run
+  `systemctl --user daemon-reload`; the loaded `ExecStart` is then the original
+  `semantic.conf` line again and no restart is needed. This cleanup needs a
+  matching decision by both gatekeepers and was not yet run when this entry was
+  written.
+- Evidence: `~/.cache/cairn301-api-upgrade-a3da-52363-1496-r5/result.json`
+  (sha256 `f837d761…2de3b6`); Cairn records `5e00f85e` (run result) and `18e6d7a7`
+  (coordinator read).
+
 ## 2026-11-17 — install development-evidence
 
 - Owner authorized shared development evidence tooling on 2026-11-17 (parent
