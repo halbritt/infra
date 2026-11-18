@@ -1,5 +1,48 @@
 # Changelog — proximal (system)
 
+## 2026-11-17 — cairn-api runs the 52363f47 API image
+
+- `cairn-api.service` was upgraded at 23:22 PST (2026-11-18T07:22Z) from the
+  Nov 6 image (revision `a3da80e9`, sha256 `d43ca49b…66504`) to the API image
+  built from Cairn source `52363f47` (sha256 `788ba838…f6359`). Reason: CAIRN-301
+  needs the session-quiescence read that only the newer API serves. Jointly
+  admitted by the coordinator (agent-1386) and the owner supervisor (agent-1917)
+  under the owner's standing deployment grant; run once by the Release lead
+  (agent-1496) from sealed bundle `d9757143`, runner unit
+  `cairn301-api-upgrade-1496-52363-r6.service`.
+- How it is selected: a new drop-in
+  `~/.config/systemd/user/cairn-api.service.d/zz-c301-api-52363-r6.conf`
+  (sha256 `342d4bfe…051daf`) replaces `ExecStart` with
+  `~/.local/share/cairn/api-releases/c301-1496-52363f47-788ba838-r6/api serve …`
+  (same arguments as before). `semantic.conf` and `50-managed-database.conf` are
+  unchanged.
+- **Only the API server changed.** `~/.local/bin/cairn` is still the old image
+  `d43ca49b…`; it remains the CLI that hooks, agents and the other Cairn units
+  use, and it now talks to a newer server (protocol 2 reads verified). No
+  migration ran. Hooks, semantic worker, tunnel, database selector and the masked
+  `cairn-store.service` are unchanged.
+- Measured: stop requested 07:22:09.055Z, new process verified ready
+  07:22:11.152Z (2.1 s from stop command to ready). Observed for 30 minutes
+  (181 checks) with no restart and no new error class; the script would have
+  reversed otherwise. Read by agent-1386 at 23:56 PST: active, `MainPID` 3690254,
+  `NRestarts` 0, running image `788ba838…`, both listeners owned, no pending job.
+- This was the third run. The first stopped before any outage; the second
+  reversed after a start-up read of `/proc/<pid>/exe` was refused (entry below).
+  The cause was then measured on this systemd (259.9): a `Type=simple` unit is
+  reported running with a `MainPID` about 10–15 ms before that file is readable.
+- A Cairn checkpoint and recovery export were taken before the outage
+  (checkpoint `e216879d…`, valid).
+- Reverse: remove `zz-c301-api-52363-r6.conf`, `systemctl --user daemon-reload`,
+  `systemctl --user restart cairn-api.service`. The unit then runs
+  `~/.local/bin/cairn serve …` (old image) again. An exact copy of the old image
+  is also kept at `…/api-releases/c301-1496-a3da80e9-d43ca49b-r6/api`.
+- Left on disk under `~/.local/share/cairn/api-releases/` (mode 0700): the `-r6`
+  new and old copies (in use / kept for reverse) and unused `-r3` and `-r5`
+  copies from the earlier runs, which can be removed. The runner unit is a
+  transient unit left in `exited` state (`RemainAfterExit=yes`).
+- Evidence: `~/.cache/cairn301-api-upgrade-a3da-52363-1496-r6/result.json`
+  (sha256 `afcb7a83…96a4be`); Cairn record `c395098e` (run result).
+
 ## 2026-11-17 — cairn-api upgrade attempt reversed; reverse selector left in place
 
 - CAIRN-301 needs the session-quiescence read that exists in the Cairn API from
