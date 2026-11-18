@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-11-17 — install development-evidence
+
+- Owner authorized shared development evidence tooling on 2026-11-17 (parent
+  session agent-1916, implemented by agent-1918). The first native skill trials had
+  each harness assemble hashes and observations by hand.
+- Source `shared/development/development_evidence.py` is installed as
+  `~/.local/bin/development-evidence` by `shared/development/install.py`. It records
+  a receipt, inspects it and compares it with a repository's current state. It runs
+  no checks and gates nothing. Interface, schema and limits:
+  `shared/development/README.md`.
+- No service, unit, shared test runner or other installed tool was changed.
+
 ## 2026-11-15 — restart PostgreSQL to activate 18.7
 
 - After the 11:18 package update the running 18.6 server could not load the new

@@ -6,6 +6,7 @@
     "shared/editor/wezterm/server.lua",
     "shared/agent-ee/ae-ci-exec",
     "shared/testing/tasks/host/exec",
-    "shared/testing/tasks/host/doctor"
+    "shared/testing/tasks/host/doctor",
+    "shared/development/development_evidence.py"
   ]
 }
