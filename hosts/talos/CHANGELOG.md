@@ -1,5 +1,25 @@
 # Host changelog
 
+## 2026-11-17 — deploy shared development skills and tools
+
+Owner requested the completed skillpack design on Talos. Fast-forwarded clean
+skillpack to `4cc79a212cfcb2a8f87c47c0a3c568f82c3617ea` and infra to
+`d72cbb702019e9aae4ac6a7f1f005030f6474bcd`; installed canonical Cairn checkout
+`9127ee7dca3e12f19de1a6817d0c0cb86d1e26bf`. The former `~/git/cairn` held one
+loose helper script; preserved it under
+`~/.cache/skillpack-development-1916/remote-talos/cairn-before-checkout/` before
+replacing that directory. Existing `git-land`/`git-wt` wrappers are unchanged.
+
+Installed all 71 skills and the evidence/checkpoint commands. Ten deployment
+checks passed, including 426 skill symlinks and 213 byte-matching copies. Seven
+runtime controls passed: evidence inspection/current/stale, checkpoint
+current/stale, and actual local Git landing with current/stale advisory evidence.
+Disposable repositories were removed; all source checkouts were clean. Selected
+results are `~/.cache/skillpack-development-1916/remote-talos/verification.json`
+on Talos and proximal. Native Cairn history was not exercised. No runtime service,
+authentication or graphical-session changes. Maintenance and installed paths:
+[development-tools](config/development-tools/README.md).
+
 ## 2026-10-26 — install ast-grep
 
 Installed ast-grep `0.51.0` at `/usr/local/bin/ast-grep`. Seven structural-search

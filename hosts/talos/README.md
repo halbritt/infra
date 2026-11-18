@@ -19,6 +19,7 @@ Passwordless administration from proximal: `ssh talos` (entry in
 - [Changelog](CHANGELOG.md)
 - [Updates](config/updates/README.md)
 - [Network](config/network/README.md)
+- [Shared development skills and tools](config/development-tools/README.md)
 
 ## Current state (2026-10-22)
 

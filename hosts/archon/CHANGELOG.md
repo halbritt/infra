@@ -1,5 +1,27 @@
 # Host changelog
 
+## 2026-11-17 — deploy shared development skills and tools
+
+Owner requested the completed skillpack design on Archon. Fast-forwarded clean
+skillpack to `4cc79a212cfcb2a8f87c47c0a3c568f82c3617ea` and infra to
+`d72cbb702019e9aae4ac6a7f1f005030f6474bcd`; cloned canonical Cairn at
+`9127ee7dca3e12f19de1a6817d0c0cb86d1e26bf`. Preserved the existing `git-land`
+and `git-wt` wrappers and archived their old standalone helper before installing
+the matching canonical bytes at `~/.local/lib/git-trunk-tools/git_trunk_tools.py`.
+
+Installed all 71 skills and the evidence/checkpoint commands. Nine deployment
+checks passed, including 426 skill symlinks and 213 byte-matching copies. All
+three installed Python command sources match the canonical bytes. Missing
+optional vendoring source checkouts produce validation warnings; installed skills
+validate with zero failures. Selected results and the old helper are retained at
+`~/.cache/skillpack-development-1916/remote-archon/`; selected manifests and logs
+are also on proximal. Seven installed runtime controls pass: evidence
+inspection/current/stale, checkpoint current/stale, and actual local Git landing
+with current/stale advisory evidence. Disposable repositories were removed; all
+source checkouts were clean. Native Cairn history was not exercised. No desktop,
+service or authentication changes. Maintenance and installed paths:
+[development-tools](config/development-tools/README.md).
+
 ## 2026-11-16 — display wedged after monitor input switches; desktop session restarted
 
 The owner switched the LG 32U990A's inputs away from archon and back (01:03, 08:34,
