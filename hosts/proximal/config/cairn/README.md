@@ -33,15 +33,13 @@ binaries and native behavior.
 No source rebuild, migration-version change, token provisioning, or session
 re-registration is part of this relocation.
 
-## API image
+## Runtime, semantic worker, and lifecycle hooks
 
-Since 2026-11-17 `cairn-api.service` runs the API image built from Cairn source
-`52363f47` (sha256 `788ba838…f6359`), selected by the drop-in
-`zz-c301-api-52363-r6.conf`, which points `ExecStart` at
-`~/.local/share/cairn/api-releases/c301-1496-52363f47-788ba838-r6/api`.
-`~/.local/bin/cairn` is still the older image (revision `a3da80e9`) and remains
-the CLI for hooks and the other units. Reverse and history:
-`hosts/proximal/CHANGELOG.md`, entry of 2026-11-17.
+Since 2026-11-18 (`CAIRN-301`, source `d809e8f3`):
+- `~/.local/bin/cairn`, `~/.local/bin/cairn-lifecycle`, and `~/.local/bin/cairn-stage-lifecycle` run VCS-stamped Go binaries built from `d809e8f3`.
+- `cairn-api.service` uses drop-in `zz-c301-api-rust.conf` to run `~/.local/bin/cairn serve --semantic-rust-config ~/.local/share/cairn/go-rollout-d809e8f3/semantic-rust-embed.json ...` with Rust `cairn-semantic-embed` query/document workers.
+- `cairn-presence.service` uses drop-in `zz-c301-go-presence.conf` to run `~/.local/bin/cairn-lifecycle coordination watch --config-dir ~/.local/share/cairn/go-rollout-d809e8f3/watcher-bindings`.
+- All local Claude, Codex, Agy, OpenCode, and Hermes Cairn hook/plugin configs delegate to staged Go `/3` launchers under `~/.local/share/cairn/go-rollout-d809e8f3/cohorts/`. One-command rollback: `~/.local/share/cairn/go-rollout-d809e8f3/revert.sh`. Details: `hosts/proximal/CHANGELOG.md` (2026-11-18).
 
 ## Candidate detail retention
 

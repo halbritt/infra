@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-11-18 — deploy Cairn Go CLI and OpenCode lifecycle hooks
+
+- Fast-forwarded `~/git/cairn` to `d809e8f3c0f8c31dfd33259427cfbd74f1ab0599` (CAIRN-301) and installed VCS-stamped `~/.local/bin/cairn` (`83f63c06…`), `cairn-lifecycle` (`ca7766bb…`), and `cairn-stage-lifecycle` (`6737cf70…`).
+- Staged `/3` `opencode-one` generation under `~/.local/share/cairn/go-rollout-d809e8f3/` and updated `~/.config/opencode/{cairn-coordination.json,cairn-lifecycle.json}` and `~/.config/opencode/plugins/{cairn-coordination.ts,cairn-lifecycle.ts}` to delegate to Go launchers. Removed leftover `.incoming-876774b1-*` staging files.
+- Verified `cairn agent version` (`client` and `server` both `d809e8f3`) and smoke-tested Go `SessionStart` and zero-prompt `SessionEnd` (`rc=0`). One-command rollback: `~/.local/share/cairn/go-rollout-d809e8f3/revert.sh`.
+
 ## 2026-11-17 — deploy shared development skills and tools
 
 Owner requested the completed skillpack design on Talos. Fast-forwarded clean

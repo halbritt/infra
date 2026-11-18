@@ -1,5 +1,16 @@
 # Changelog — proximal (system)
 
+## 2026-11-18 — deploy Cairn Go runtime, Go lifecycle hooks, and Rust semantic worker
+
+- Upgraded Cairn to source commit `d809e8f3c0f8c31dfd33259427cfbd74f1ab0599` (CAIRN-301):
+  - `~/.local/bin/cairn` (sha256 `83f63c06a52e53f1c4c2de57978b6f58d03bfebf7346afe01fe5114d171ddfb1`), `~/.local/bin/cairn-lifecycle` (`ca7766bbaa3eda4537369e0664c333d9d5123c6c6609b17b08bff9a2ebb44459`), and `~/.local/bin/cairn-stage-lifecycle` (`6737cf70c06b027267d53d03b60c134d782dfcb41cbbab7d25bf0376ed02e664`).
+  - `cairn-api.service`: switched via `zz-c301-api-rust.conf` (replacing `zz-c301-api-52363-r6.conf`) to `~/.local/bin/cairn serve --semantic-rust-config ~/.local/share/cairn/go-rollout-d809e8f3/semantic-rust-embed.json --listen 127.0.0.1:18889 --tls-terminated-proxy --machine-id proximal`, activating the isolated Rust `cairn-semantic-embed` query/document workers (`bge-original-passages/1`, model sha256 `c53c0313…`). Restarted `cairn-scheduler.service` and `cairn-wake-worker-01..07.service` onto the `d809e8f3` CLI.
+  - `cairn-presence.service`: switched via `zz-c301-go-presence.conf` to `~/.local/bin/cairn-lifecycle coordination watch --config-dir ~/.local/share/cairn/go-rollout-d809e8f3/watcher-bindings`.
+  - Client hooks: staged `/3` generations and switched Cairn hook rows (preserving `herdr-agent-state.sh` and `git-stop-hygiene-hook`) across all 8 local members (`claude-one` `~/.claude/settings.json`, `claude-two` `~/.claude-harm/settings.json`, `codex-one/two/three` `~/.codex*/hooks.json`, `agy-one` `~/.gemini/config/hooks.json`, `opencode-one` `~/.config/opencode`, `hermes-one` `~/.hermes`).
+- Stopped and disabled `cairn301-board-watchdog.timer`, reset failed transient `cairn301-api-upgrade-*` units, and removed unused `api-releases/*-{r3,r5}` copies.
+- Verified: CLI and API build stamps match `d809e8f3`; Rust semantic search `state: "ready"` with background re-indexing progressing; live Agy hook and 1-prompt headless Claude session (`agent-2012`) completed Go recall (`delegated`) and `SessionEnd` capture (`saved`); `cairn-presence.service` running with `NRestarts=0` (~12 MiB RSS).
+- Reverse: run `~/.local/share/cairn/go-rollout-d809e8f3/revert.sh` to restore all backed-up hook/plugin configs, `cairn` binary (`d43ca49b`), Python presence watcher, and `r6` API drop-in.
+
 ## 2026-11-17 — cairn-api runs the 52363f47 API image
 
 - `cairn-api.service` was upgraded at 23:22 PST (2026-11-18T07:22Z) from the

@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-11-18 — deploy Cairn Go runtime, presence watcher, and Codex hooks
+
+- Fast-forwarded `~/git/cairn` to `d809e8f3c0f8c31dfd33259427cfbd74f1ab0599` (CAIRN-301) and installed VCS-stamped `~/.local/bin/cairn` (`83f63c06…`), `cairn-lifecycle` (`ca7766bb…`), and `cairn-stage-lifecycle` (`6737cf70…`).
+- Switched `cairn-presence.service` via `zz-c301-go-presence.conf` to `~/.local/bin/cairn-lifecycle coordination watch --config-dir ~/.local/share/cairn/go-rollout-d809e8f3/watcher-bindings`, restarted `cairn-relay.service` onto the `d809e8f3` binary, and switched `codex-archon` Cairn hook rows in `~/.codex/hooks.json` (preserving `herdr-agent-state.sh`) to staged Go `/3` launchers. Removed leftover `.incoming-876774b1-*` staging files.
+- Verified `cairn agent version` (`client` and `server` both `d809e8f3`) and both user services `active (running)` with `NRestarts=0`. One-command rollback: `~/.local/share/cairn/go-rollout-d809e8f3/revert.sh`.
+
 ## 2026-11-17 — deploy shared development skills and tools
 
 Owner requested the completed skillpack design on Archon. Fast-forwarded clean
