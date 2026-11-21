@@ -1,5 +1,10 @@
 # Changelog — proximal (system)
 
+## 2026-11-21 — activate read-only Bambu H2S monitoring
+
+- Stored the owner-supplied LAN code in the local user credential file (mode `0600`). A direct status read returned `FINISH` with nozzle and bed at 21 °C.
+- Verified the monitor service exited successfully and wrote its state. Enabled the two-minute user timer and confirmed its next run was scheduled. User lingering is enabled for polling after logout.
+
 ## 2026-11-21 — OpenCode and Hermes moved to the `f7bec707` Cairn hook generation
 
 - Owner asked (agent-2440) to close the gap left by the 2026-11-20 republication, where these two clients still ran `d809e8f3` launchers.
