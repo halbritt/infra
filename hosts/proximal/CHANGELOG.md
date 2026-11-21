@@ -1,5 +1,14 @@
 # Changelog — proximal (system)
 
+## 2026-11-20 — upgrade Cairn API and CLI to `f7bec707`, schema 084 → 094
+
+- Owner-approved (agent-2440). Built `~/git/cairn` `main` at `f7bec7070a1df8957902e94ab1adb6b6de50b8b6` (`make build`, VCS-stamped, unmodified) and installed `~/.local/bin/cairn` (sha256 `7956c3b34cba3b338dfbf1e7588d780ddee5be4d229091fa0f83c3e2e0d5d232`). Previous `d809e8f3` binary kept at `~/.local/bin/cairn.before-f7bec707-20261120` (`83f63c06…`).
+- Followed `docs/operator/maintenance.md`: stopped `cairn-api`, `cairn-scheduler` and `cairn-wake-worker-01..07`, ran `cairn migrate` (migrations 085–094, schema now 094), installed the binary and started the units again. Downtime 18:52:10–18:52:14 PST.
+- Backup before the migration: `~/.local/share/cairn/backups/pre-f7bec707-20261121T025112Z-no-retrieval-candidate-data.dump` (custom format, 785 MB, sha256 `a544960c…` beside it). It holds the schema and every table's rows except `cairn.retrieval_candidate` (158 GB), so it is not a complete restore image.
+- Not changed: `cairn-presence.service` (not restarted), `~/.local/bin/cairn-lifecycle`, `~/.local/bin/cairn-stage-lifecycle`, the staged `/3` hook launchers and the watcher bindings stay at `d809e8f3` (`agy-one` at `3f574e89`). Lifecycle-side changes in `d809e8f3..f7bec707` are therefore not live. archon and talos were not touched.
+- Verified: `cairn agent version` reports client and server `f7bec707`; all ten units `active`; scheduler logged `scheduler ready`; search and pull through the MCP facade work; `cairn team` and `cairn ledger` are available. One `expand` `STORE_ERROR` was logged 15 s after the restart and did not recur.
+- Reverse: the `d809e8f3` binary refuses a database above schema 084 (`SCHEMA_MISMATCH`), so `go-rollout-d809e8f3/revert.sh` and the kept binary no longer work alone. Going back needs the schema returned to 084 first.
+
 ## 2026-11-18 — publish Cairn `3f574e89` Agy Stop fix (`agy-one`)
 
 - Updated `~/.gemini/config/hooks.json` (`agy-one` account layer, sha256 `fa7c490d…`) via `stage_lifecycle_hooks.py publish-agy` (`cairn-stage-lifecycle agy-layer`, `RENAME_EXCHANGE` recovery record `~/.gemini/config/.cairn-recovery-agy-9a1c0c32266d93cc724be2a4056badc8.json`, sha256 `120c2f25…`) onto staged `/3` generation `selection-de116437-1cb3-4123-a619-2d28ec5940b3` built from Cairn `3f574e89dbefcaf2509c86ecc20a70b4269f5708` (`cairn-lifecycle` sha256 `6cef3bcc…`, `cairn-stage-lifecycle` sha256 `35faf56d…`) under `~/.local/share/cairn/go-rollout-3f574e89/` (CAIRN-761, CAIRN-763).
