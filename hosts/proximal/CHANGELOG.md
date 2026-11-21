@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-21 — OpenCode and Hermes moved to the `f7bec707` Cairn hook generation
+
+- Owner asked (agent-2440) to close the gap left by the 2026-11-20 republication, where these two clients still ran `d809e8f3` launchers.
+- OpenCode: staged hook generation `ebad78eb-85c2-4a14-bbf7-bba42a03bc7b` from lifecycle generation `d362e1a1-0f48-4227-976f-f586b681ded5` and published `cairn-lifecycle.json` and `cairn-coordination.json` with `publish-settings --role memory|coordination` (driver `go-rollout-f7bec707/plans/stage_opencode.py`). Plugin `.ts` files are byte-identical between the revisions and were not rewritten.
+- OpenCode tool adapter: `cairn opencode-install --config-dir ~/.config/opencode ... --replace` wrote `tools/cairn.ts` (sha256 `a134ccb5a794...`, was `1ed3a57a310f...`). `cairn.json` gained the explicit default `max_tokens: 1000000`; nothing else changed. `--messaging` (CAIRN-522) was not enabled.
+- Hermes: rendered `cairn-lifecycle.json` and `cairn-coordination.json` from generation `f21db5fd-5e4e-4ab4-bf58-989ade18b409` with `install-hermes-integration.selected_memory` and the checked Go coordination launchers (driver `plans/stage_hermes.py`), then replaced the two files atomically. Plugin Python is unchanged.
+- Before publication each staged file was compared with the live one after masking hashes, revision and selection id: no other difference.
+- Checked: `opencode run` (local model) registered a session and returned; `hermes -z` logged `Cairn UserPromptSubmit completed` and `Cairn SessionEnd completed`; no live file references `go-rollout-d809e8f3` except the API drop-in's `semantic-rust-embed.json`.
+- Reverse: the new final block of `go-rollout-f7bec707/revert.sh` restores the six files from `backups/`.
+
 ## 2026-11-20 — republish Cairn lifecycle hooks from `f7bec707` (Claude, Codex, Agy) and switch the presence watcher
 
 - Owner-approved (agent-2440), so the hook-side changes in `d809e8f3..f7bec707` are live for the `CAIRN-462` measurement. New rollout root `~/.local/share/cairn/go-rollout-f7bec707/` (`dist/`, pinned `source/`, `inputs/`, `plans/` with the driver scripts and every plan and result, `cohorts/`, `watcher-bindings/`, `backups/`, `rollout-manifest.json`, `revert.sh`).

@@ -1,5 +1,15 @@
 # Host changelog
 
+## 2026-11-21 — Cairn client and Codex hooks to `f7bec707`
+
+- Owner asked (proximal agent-2440) to finish the hook republication on every host. Proximal's API has been `f7bec707` (schema 094) since 2026-11-20.
+- New rollout root `~/.local/share/cairn/go-rollout-f7bec707/` (`dist/` copied from proximal, `repo/` = `git archive f7bec707 integrations scripts`, `rollout_host.py` = the `d809e8f3` driver plus backups of both lifecycle binaries and the presence drop-in).
+- Installed `~/.local/bin/cairn` (sha256 `7956c3b34cba3b33...`), `cairn-lifecycle` (`eb594babd9ac9987...`) and `cairn-stage-lifecycle` (`53a815e166679958...`).
+- `~/.codex/hooks.json`: Cairn rows now point at the `codex-archon` cohort under the new root (hook selection `099ed09f-8eec-4752-a379-3246cbf31e9a`); other rows unchanged. The six new definitions were trusted through `codex app-server` (`codex_trust.py`); `config.toml` before the change is `backups/codex-config.toml`.
+- `cairn-presence.service` drop-in now uses `go-rollout-f7bec707/watcher-bindings`; presence and `cairn-relay.service` restarted 11:38 PST, both active.
+- Not tested live: `codex exec` over SSH fails before any turn with an expired Codex login (`Invalid 'refresh_token': empty string`), which predates this change.
+- Reverse: `~/.local/share/cairn/go-rollout-f7bec707/revert.sh`; Codex trust must then be repeated. Keep `go-rollout-d809e8f3/`.
+
 ## 2026-11-18 — deploy Cairn Go runtime, presence watcher, and Codex hooks
 
 - Fast-forwarded `~/git/cairn` to `d809e8f3c0f8c31dfd33259427cfbd74f1ab0599` (CAIRN-301) and installed VCS-stamped `~/.local/bin/cairn` (`83f63c06…`), `cairn-lifecycle` (`ca7766bb…`), and `cairn-stage-lifecycle` (`6737cf70…`).

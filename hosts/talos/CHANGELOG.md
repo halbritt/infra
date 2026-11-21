@@ -1,5 +1,15 @@
 # Host changelog
 
+## 2026-11-21 — Cairn client and OpenCode hooks to `f7bec707`
+
+- Owner asked (proximal agent-2440) to finish the hook republication on every host. Proximal's API has been `f7bec707` (schema 094) since 2026-11-20.
+- New rollout root `~/.local/share/cairn/go-rollout-f7bec707/` (same layout and driver as archon's).
+- Installed `~/.local/bin/cairn` (sha256 `7956c3b34cba3b33...`), `cairn-lifecycle` (`eb594babd9ac9987...`) and `cairn-stage-lifecycle` (`53a815e166679958...`).
+- `~/.config/opencode/cairn-lifecycle.json` and `cairn-coordination.json` now point at the `opencode-one` cohort under the new root (hook selection `578e8c97-41a6-44a2-93a5-eca7e621c9be`); the two plugin `.ts` files were rewritten with identical bytes.
+- `cairn opencode-install --config-dir ~/.config/opencode ... --replace` updated `tools/cairn.ts`; `cairn.json` gained the explicit default `max_tokens`. `--messaging` not enabled. Previous copies: `backups/tools-cairn.ts`, `backups/cairn.json`.
+- Checked: an `opencode run` session wrote coordination and memory hook state with no Cairn error in the OpenCode log. The model call itself failed with the provider's `Insufficient balance` error, which is unrelated.
+- Reverse: `~/.local/share/cairn/go-rollout-f7bec707/revert.sh` (binaries and the four plugin files; the tool adapter restore command is printed at the end). Keep `go-rollout-d809e8f3/`.
+
 ## 2026-11-18 — deploy Cairn Go CLI and OpenCode lifecycle hooks
 
 - Fast-forwarded `~/git/cairn` to `d809e8f3c0f8c31dfd33259427cfbd74f1ab0599` (CAIRN-301) and installed VCS-stamped `~/.local/bin/cairn` (`83f63c06…`), `cairn-lifecycle` (`ca7766bb…`), and `cairn-stage-lifecycle` (`6737cf70…`).
