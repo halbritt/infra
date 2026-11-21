@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-11-20 — republish Cairn lifecycle hooks from `f7bec707` (Claude, Codex, Agy) and switch the presence watcher
+
+- Owner-approved (agent-2440), so the hook-side changes in `d809e8f3..f7bec707` are live for the `CAIRN-462` measurement. New rollout root `~/.local/share/cairn/go-rollout-f7bec707/` (`dist/`, pinned `source/`, `inputs/`, `plans/` with the driver scripts and every plan and result, `cohorts/`, `watcher-bindings/`, `backups/`, `rollout-manifest.json`, `revert.sh`).
+- Installed `~/.local/bin/cairn-lifecycle` (sha256 `eb594babd9ac9987d6047c0ce0f5c6d83467120a8e6e9facba97b6f82f70a5ae`) and `~/.local/bin/cairn-stage-lifecycle` (`53a815e1666799587fddfecd4093ad3920d3b7fddeab2848f336e726ce2d5db7`), both built from `f7bec707`.
+- Staged `/3` compatibility generations for all six cohorts with `stage_lifecycle_compatibility.py` (configuration bytes copied from the `d809e8f3` inputs, only the binding path re-rendered) and verified each with `inspect`.
+- Staged hook settings with `stage_lifecycle_hooks.py` and applied them with `publish-settings` (`RENAME_EXCHANGE`, recovery records beside each target) to `~/.claude/settings.json`, `~/.claude-harm/settings.json`, `~/.codex/hooks.json`, `~/.codex-harm/hooks.json`, `~/.codex-3/hooks.json` and `~/.gemini/config/hooks.json`. Each live file equals its staged `hook-settings.json`; `herdr` and `git-stop-hygiene-hook` rows are unchanged.
+- Codex: the ten new Cairn hook definitions per account showed `modified`; trusted exactly those through `codex app-server` (`hooks/list` + `config/value/write`, codex-cli 0.170.0). All now read `trusted`, enabled.
+- `cairn-presence.service`: drop-in `zz-c301-go-presence.conf` now points at `go-rollout-f7bec707/watcher-bindings`; restarted 21:36:57 PST, `NRestarts=0`.
+- Not republished: `opencode-one` and `hermes-one` stay on their `d809e8f3` generations (their plugin sources did not change between the revisions; generations are staged but not applied). archon and talos untouched.
+- Verified: a one-prompt headless Claude session on `~/.claude-harm` wrote memory hook state and a coordination session record that ended and retired; a one-prompt `codex exec` on `~/.codex-harm` ran its Stop hooks to completion. Not verified: Agy on the new hooks, a native wake through the new watcher, and sessions that were already running (they keep the hooks they loaded; a running Codex thread can treat changed hooks as untrusted until it is refreshed or restarted).
+- Reverse: `~/.local/share/cairn/go-rollout-f7bec707/revert.sh` (hook rows, both lifecycle binaries, the drop-in; Codex trust must be repeated). It leaves `~/.local/bin/cairn` and schema 094 alone.
+
 ## 2026-11-20 — stage read-only Bambu H2S monitor (timer disabled)
 
 - Owner-approved (agent-2440). Cloned `heyixuan2/bambu-studio-ai` at `cdc26987d5bf1052a055d9403e3cb9630959dd08` to `~/git/bambu-studio-ai` with a virtualenv holding `paho-mqtt` 2.2.0 and `requests`.

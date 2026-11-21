@@ -35,12 +35,12 @@ re-registration is part of this relocation.
 
 ## Runtime, semantic worker, and lifecycle hooks
 
-Since 2026-11-18 (`CAIRN-301`, source `d809e8f3`):
-- `~/.local/bin/cairn-lifecycle` and `~/.local/bin/cairn-stage-lifecycle` run VCS-stamped Go binaries built from `d809e8f3`.
-- Since 2026-11-20 `~/.local/bin/cairn` (API, CLI, scheduler, wake supervisors) is built from `f7bec707` and the database is at schema 094. The `d809e8f3` binary refuses that schema, so `go-rollout-d809e8f3/revert.sh` no longer works alone. See `hosts/proximal/CHANGELOG.md` (2026-11-20).
-- `cairn-api.service` uses drop-in `zz-c301-api-rust.conf` to run `~/.local/bin/cairn serve --semantic-rust-config ~/.local/share/cairn/go-rollout-d809e8f3/semantic-rust-embed.json ...` with Rust `cairn-semantic-embed` query/document workers.
-- `cairn-presence.service` uses drop-in `zz-c301-go-presence.conf` to run `~/.local/bin/cairn-lifecycle coordination watch --config-dir ~/.local/share/cairn/go-rollout-d809e8f3/watcher-bindings`.
-- All local Claude, Codex, Agy, OpenCode, and Hermes Cairn hook/plugin configs delegate to staged Go `/3` launchers (`~/.local/share/cairn/go-rollout-d809e8f3/cohorts/`, with `agy-one` `~/.gemini/config/hooks.json` updated to `3f574e89` under `~/.local/share/cairn/go-rollout-3f574e89/cohorts/agy-one/` via `publish-agy` for CAIRN-761). Details and recovery records: `hosts/proximal/CHANGELOG.md` (2026-11-18).
+Since 2026-11-20 (source `f7bec707`; see `hosts/proximal/CHANGELOG.md`, two 2026-11-20 entries):
+- `~/.local/bin/cairn` (API, CLI, scheduler, wake supervisors), `~/.local/bin/cairn-lifecycle` and `~/.local/bin/cairn-stage-lifecycle` are VCS-stamped Go binaries built from `f7bec707`. The database is at schema 094; the `d809e8f3` `cairn` binary refuses that schema.
+- `cairn-api.service` uses drop-in `zz-c301-api-rust.conf` to run `~/.local/bin/cairn serve --semantic-rust-config ~/.local/share/cairn/go-rollout-d809e8f3/semantic-rust-embed.json ...` with Rust `cairn-semantic-embed` query/document workers (that file still lives in the `d809e8f3` rollout directory; do not delete it).
+- `cairn-presence.service` uses drop-in `zz-c301-go-presence.conf` to run `~/.local/bin/cairn-lifecycle coordination watch --config-dir ~/.local/share/cairn/go-rollout-f7bec707/watcher-bindings`.
+- Claude (`~/.claude`, `~/.claude-harm`), Codex (`~/.codex`, `~/.codex-harm`, `~/.codex-3`) and Agy (`~/.gemini/config`) hook rows delegate to staged Go `/3` launchers under `~/.local/share/cairn/go-rollout-f7bec707/cohorts/`. OpenCode and Hermes plugin configs still delegate to `~/.local/share/cairn/go-rollout-d809e8f3/cohorts/`. Sessions started before the rollout keep the older launchers, so the `d809e8f3` and `3f574e89` rollout directories must stay.
+- Reverse of the hook rollout only: `~/.local/share/cairn/go-rollout-f7bec707/revert.sh`.
 
 ## Candidate detail retention
 
