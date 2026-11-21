@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the Bambu H2S every two minutes (read-only)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+AccuracySec=10s
+Unit=bambu-h2s-monitor.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Bambu H2S read-only status check (bambu-studio-ai monitor.py --once)
+Documentation=https://github.com/heyixuan2/bambu-studio-ai/blob/cdc26987d5bf1052a055d9403e3cb9630959dd08/references/monitoring.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/git/bambu-studio-ai
+Environment=BAMBU_OUTPUT_DIR=%h/.local/state/bambu-h2s-monitor
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=%h/git/bambu-studio-ai/.venv/bin/python scripts/monitor.py --once --json
+TimeoutStartSec=60
+UMask=0077
+NoNewPrivileges=yes

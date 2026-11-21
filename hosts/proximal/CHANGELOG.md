@@ -1,5 +1,12 @@
 # Changelog — proximal (system)
 
+## 2026-11-20 — stage read-only Bambu H2S monitor (timer disabled)
+
+- Owner-approved (agent-2440). Cloned `heyixuan2/bambu-studio-ai` at `cdc26987d5bf1052a055d9403e3cb9630959dd08` to `~/git/bambu-studio-ai` with a virtualenv holding `paho-mqtt` 2.2.0 and `requests`.
+- Saved model, IP (`192.168.1.96`) and serial in `~/.bambu-studio-ai/config.json`; added user units `bambu-h2s-monitor.service` and `bambu-h2s-monitor.timer` (every two minutes).
+- The timer is disabled and no status was read: the LAN access code is not on proximal. One manual service start failed as expected with "missing access_code". TCP 8883 on the printer accepts connections.
+- Details and the steps to finish: `hosts/proximal/config/bambu-h2s-monitor/README.md`.
+
 ## 2026-11-20 — upgrade Cairn API and CLI to `f7bec707`, schema 084 → 094
 
 - Owner-approved (agent-2440). Built `~/git/cairn` `main` at `f7bec7070a1df8957902e94ab1adb6b6de50b8b6` (`make build`, VCS-stamped, unmodified) and installed `~/.local/bin/cairn` (sha256 `7956c3b34cba3b338dfbf1e7588d780ddee5be4d229091fa0f83c3e2e0d5d232`). Previous `d809e8f3` binary kept at `~/.local/bin/cairn.before-f7bec707-20261120` (`83f63c06…`).
