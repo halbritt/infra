@@ -6,7 +6,65 @@ The owner requested command-line feasibility verification and installation on
 geometry, meshing, result selection, and image export. CGX still initializes
 OpenGL/X even with `-bg`, so use the existing Xvfb for unattended runs.
 
-## Installed state
+## Active installation
+
+On 2026-11-22 the owner requested the current upstream release. The default commands
+`/usr/local/bin/{ccx,cgx}` resolve through `/opt/calculix/current` to
+`/opt/calculix/2.23/bin/`. Both run on the CPU. Ubuntu still supplies 2.21
+in `/usr/bin`; APT updates those packages independently. Check command resolution
+with `type -a ccx cgx`. For the upstream version, see the [authors' release page](https://www.dhondt.de/).
+
+CGX is the official x86-64 Linux binary. The upstream CCX executable requires
+`libgfortran.so.4`. Proximal has `libgfortran.so.5`, so CCX was built from the
+2.23 release source using Ubuntu GCC and GFortran 13.4.0 and linked to the host's
+SPOOLES 2.2-16, ARPACK 3.9.1-6build1, LAPACK and BLAS 3.12.1-7ubuntu1.
+The build extracted matching Ubuntu SPOOLES development headers into its workspace.
+
+### Rebuild the 2.23 tools
+
+Run these commands in Bash as an ordinary user. Use the CLI checks below with the
+new `bin` directory first on PATH before selecting the executables on the host.
+
+```bash
+set -e
+builddir=$(mktemp -d "$HOME/.cache/calculix-build.XXXXXX")
+cd "$builddir"
+curl -fsSLO https://www.dhondt.de/ccx_2.23.src.tar.bz2
+curl -fsSLO https://www.dhondt.de/cgx_2.23.bz2
+apt-get download libspooles-dev=2.2-16
+sha256sum -c <<'HASHES'
+9c88385c10fb04f5dc6c4e98027a51bebdd8aee3920e05190d6c1dd08357d6e7  ccx_2.23.src.tar.bz2
+847e625a95eb2db01ebcbef043b6b2d5a1e4a99c2fa8e5d49575ba28e6716404  cgx_2.23.bz2
+d6224a523fc4c0731ae6b0bbd2624e66d82fbcef2c8766cf36375a119b7c253b  libspooles-dev_2.2-16_amd64.deb
+HASHES
+tar xjf ccx_2.23.src.tar.bz2
+dpkg-deb -x libspooles-dev_2.2-16_amd64.deb deps
+mkdir bin
+bzip2 -dc cgx_2.23.bz2 > bin/cgx
+chmod 755 bin/cgx
+src="$builddir/CalculiX/ccx_2.23/src"
+lib=/usr/lib/x86_64-linux-gnu
+make -C "$src" -j8 CC=gcc-13 FC=gfortran-13 \
+  "CFLAGS=-O2 -I$builddir/deps/usr/include/spooles -DARCH=\"Linux\" -DSPOOLES -DARPACK -DMATRIXSTORAGE -DNETWORKOUT" \
+  'FFLAGS=-O2 -cpp -std=legacy' \
+  "LIBS=$lib/libspooles.so.2.2 $lib/libarpack.so.2 $lib/liblapack.so.3 $lib/libblas.so.3 -lpthread -lm -lc"
+install -m 755 "$src/ccx_2.23" bin/ccx
+export PATH="$builddir/bin:$PATH"
+```
+
+The verified binaries were installed root-owned under `/opt/calculix/2.23/bin`.
+The relative `current -> 2.23` link selects the release for both command links.
+For a rollback to Ubuntu, use `/usr/bin/ccx` and `/usr/bin/cgx` directly, or
+remove the two local command links to restore that selection on PATH.
+
+Verification on 2026-11-22 used the default command paths in a fresh directory.
+CGX generated 27 nodes and eight C3D8 elements. CCX finished the tension solve.
+All eight nodal displacement vectors and all eight integration-point stress tensors
+matched the analytical values within output precision. CGX read the FRD and
+exported a 784 × 672 stress PNG. Build log, installed executable hashes, solve
+outputs and PNG are in `~/.local/state/calculix-2.23-20261122.BeMcxx/`.
+
+## Original Ubuntu installation (2026-11-04)
 
 Native Ubuntu 26.04 packages, managed by APT, with no version hold:
 

@@ -1,5 +1,10 @@
 # Changelog — proximal (system)
 
+## 2026-11-22 — upgrade CalculiX CCX and CGX to upstream 2.23
+
+- Installed native CCX and upstream CGX in `/opt/calculix/2.23` and selected them in `/usr/local/bin`. The Ubuntu 2.21 tools remain available in `/usr/bin`.
+- Verified the default commands with batch meshing, an analytical cube-tension solve and a rendered stress plot. [Build inputs, installation paths and results](config/calculix/README.md)
+
 ## 2026-11-21 — activate read-only Bambu H2S monitoring
 
 - Stored the owner-supplied LAN code in the local user credential file (mode `0600`). A direct status read returned `FINISH` with nozzle and bed at 21 °C.
