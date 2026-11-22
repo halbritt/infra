@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-22 — correction to the 2026-11-18 Rust semantic worker record
+
+- The 2026-11-18 entry gives `c53c0313…` as the "model sha256". It is the embedding derivation identity, which Cairn stores in `semantic_document.model_sha256`, and not the ONNX file hash. Recorded in full (read-only check, agent-2484, CAIRN-330):
+  - Derivation identity: `c53c031337e30163abfa0c0f0f06604ad0df27957f676ff8904ee8a72a3ae37c`. It is the only value in `cairn.semantic_document`.
+  - ONNX model `payloads/834eda5e…/model/model_optimized.onnx`: sha256 `51f1bd0addd6e859e42c2c8021a5e5461385bb676a649f4b269aa445449f2431`. This is the same blob as the Python model cache.
+  - Embed binary `~/.local/share/cairn/semantic-rust/payloads/834eda5e920b5d0329210fccfac973bf6523621ad9ae9f513e75ad236553fc3d/bin/cairn-semantic-embed`: sha256 `d93c238b9318ac4740a253676ef0a8ab7447a5fc63d851276b7a35d6f89ba12e`. It matches the running child's `/proc/PID/exe` and manifest `semantic-rust/manifests/21a31a0b…/manifest.json`.
+  - Deployed command (unit drop-in `zz-c301-api-rust.conf`, still loaded after the 2026-11-20 restart): `~/.local/bin/cairn serve --semantic-rust-config ~/.local/share/cairn/go-rollout-d809e8f3/semantic-rust-embed.json --listen 127.0.0.1:18889 --tls-terminated-proxy --machine-id proximal`. The config sha256 is `d6b1b845e456d4e944c8d94691367b55ef9581b0c1eabd3e9c8e8e774f170657`.
+  - Launcher mode: raw payload. The config is `"mode": "embed"` with the payload `executable` and asset paths, and the API appends the asset arguments. The staged fixed launcher `semantic-rust/launchers/bc471692…/embed` (sha256 `3d5d320f…`) is not used. Selecting it would change the derivation identity (`b0b20300…` in the 2026-11-18 landing review) and start a full re-index.
+- The manifest still records the embed and rank derivations as `unobserved`. Nothing was changed on the host.
+
 ## 2026-11-22 — upgrade CalculiX CCX and CGX to upstream 2.23
 
 - Installed native CCX and upstream CGX in `/opt/calculix/2.23` and selected them in `/usr/local/bin`. The Ubuntu 2.21 tools remain available in `/usr/bin`.
