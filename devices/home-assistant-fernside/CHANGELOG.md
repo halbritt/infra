@@ -1,5 +1,16 @@
 # Home Assistant at Fernside changelog
 
+## 2026-11-22 — Owner SSH access from the Fernside hosts
+
+At the owner's request, configured the short SSH client aliases and pinned the
+add-on host key on each client listed in the [access record](README.md).
+Kept proximal's existing authorization and added six public keys to both the
+Supervisor options and the running SSH server's authorized keys. No service
+restart was needed. Verified a fresh key-only login from each of the seven
+clients and read the Supervisor host identity as `home-assistant-fernside`.
+Truck-PC was offline on Tailscale and unreachable at its recorded LAN address.
+The GCP gate is a disposable build image and has no owner login configured here.
+
 ## 2026-10-08 — Subscribe to Nest events and resolve familiar faces inside HA
 
 Installed native Nest Pub/Sub and the custom `google_home_faces` integration.

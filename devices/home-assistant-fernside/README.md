@@ -47,12 +47,30 @@ observations.
   **Supported**, Health **Healthy**.
 - **`:9583`** — **[ha-mcp](https://github.com/homeassistant-ai/ha-mcp)** add-on
   (v8.1.1 as of 2026-08-06), the agent interface of record — see below.
-- **`:22`** — Terminal & SSH add-on access, enabled 2026-08-06 with one
-  authorized public key, no password, and TCP forwarding disabled. This is an
-  add-on shell with Supervisor CLI access, not HAOS developer SSH. Keep the
-  private key outside Git.
+- **`:22`** — Terminal & SSH add-on access using per-client public keys. Password
+  login and TCP forwarding are disabled. The shell provides the Supervisor CLI.
 - **Native MCP Server integration: not enabled** (`/mcp_server/sse` → `404`) —
   and not wanted: ha-mcp supersedes it.
+
+### SSH from the owner's hosts
+
+Run `ssh ha` to open the Fernside Terminal & SSH add-on as `root`.
+The local OpenSSH aliases `homeassistant`, `home-assistant`, and
+`home-assistant-fernside` use the same settings. They do not change DNS.
+
+| Client | Route | Identity under the owner's local SSH directory |
+| --- | --- | --- |
+| proximal | Tailscale | `hassio.key` |
+| peecee (Windows), enceladus (Windows owner account), archon | Tailscale | Each client's existing `id_ed25519` |
+| talos, peecee-wsl | Tailscale | Each client's own `fernside_ha_ed25519` |
+| iris | Fernside LAN | `fernside_ha_ed25519` |
+
+The tailnet endpoint is `100.105.145.26:22` and the LAN endpoint is
+`192.168.1.64:22`. Each client verifies the add-on's Ed25519 host key under
+`HostKeyAlias fernside-ha-addon` using `~/.ssh/known_hosts_fernside`.
+The Supervisor `core_ssh` add-on's `authorized_keys` option is the persistent
+allowlist. Verify the appliance identity from a client with
+`ssh ha 'ha host info --raw-json'` (look for `data.hostname`).
 
 ### Agent access
 
