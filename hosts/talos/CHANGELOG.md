@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-11-23 — Cairn OpenCode hooks restaged as Go-only `/2` (`ae498426`, canary)
+
+- Owner-approved (2026-11-23) second step of the redeploy, CAIRN-301 w15 (operator agent-2485, coordinator agent-2481): restage as Go-only `/2` (`receipt_schema cairn.lifecycle-compatibility/2`: no snapshot, no `.py` member, empty retained launchers) from the same build (`ae498426`; `cairn-lifecycle` `881ab664…`, `cairn-stage-lifecycle` `8577155c…`), in the same root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/*2.py`). The `ae498426` /1 generations stay as the rollback; `revert-v2.sh` reverses the /2 publications from their recovery records.
+- /2 generation opencode-one `daef8225` (no `.py` member); hook selection with 12 Go rows published 09:25:26 with `publish-settings --role memory|coordination` (recovery records in `~/.config/opencode/.cairn-native-*.json`).
+- Verified: fresh `opencode run` SessionStart recall and PostToolUse rc 0; a self-addressed notice drained into a context whose launcher is the `/2` Go launcher `54b4cfab…` (exec `bin/881ab664…`), acknowledged; a process sampler saw no snapshot-directory access during the run. SessionEnd capture still fails on the selector's Fable usage limit (unchanged config).
+- Reverse: `go-rollout-ae498426/revert-v2.sh`.
+
 ## 2026-11-23 — Cairn client and OpenCode hooks to `ae498426`
 
 - Owner-approved redeploy (CAIRN-301 w9, operator proximal agent-2485). Rollout root `~/.local/share/cairn/go-rollout-ae498426/` with `dist/` copied from proximal: `cairn` `be9e35d6a1b50f9b…`, `cairn-lifecycle` `881ab664548ad4c1…`, `cairn-stage-lifecycle` `8577155c0fd6e679…`, installed in `~/.local/bin`.

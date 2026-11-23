@@ -1,5 +1,13 @@
 # Changelog — proximal (system)
 
+## 2026-11-23 — Cairn hooks restaged as Go-only `/2` (`ae498426`)
+
+- Owner-approved (2026-11-23) second step of the redeploy, CAIRN-301 w15 (operator agent-2485, coordinator agent-2481): restage as Go-only `/2` (`receipt_schema cairn.lifecycle-compatibility/2`: no snapshot, no `.py` member, empty retained launchers) from the same build (`ae498426`; `cairn-lifecycle` `881ab664…`, `cairn-stage-lifecycle` `8577155c…`), in the same root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/*2.py`). The `ae498426` /1 generations stay as the rollback; `revert-v2.sh` reverses the /2 publications from their recovery records.
+- /2 generations: opencode-one `8225504b`, agy-one `ab643a09`, codex-shared `b0f6083d`, claude-one `ea73fe78`, claude-two `927b5fec`. No cohort refused; every hook row is Go with no retained launcher. Published one cohort at a time 09:29:25-09:29:41 with `publish-settings` (recovery records per target); Codex trust repeated (10/10 in `~/.codex` and `~/.codex-harm`). codex-three and Hermes unchanged.
+- `cairn-presence.service` drop-in now uses `go-rollout-ae498426/watcher-bindings-v2` (bound bindings point at the /2 generations; codex-three and hermes-one are the unchanged `f7bec707` files), restarted 09:29:51; journal clean over more than two watch passes. cairn-api not restarted. New observation start: 09:29:51.
+- Verified with fresh sessions: claude-one/claude-two recall ran and a self-addressed notice produced a context whose `acknowledgement[0]` is a `/2` launcher (exec `bin/881ab664…`); codex-one/codex-two all hooks completed, recall ran, self-probe context on `/2`; opencode-one SessionStart/PostToolUse/SessionEnd rc 0 and drained context on `/2`; agy-one registered. No `/2` launcher references a snapshot directory; a process sampler saw no snapshot access.
+- Reverse: `go-rollout-ae498426/revert-v2.sh`, then repeat Codex trust and restore the presence drop-in from `backups/zz-c301-go-presence.conf.v1`.
+
 ## 2026-11-23 — Cairn redeploy of `ae498426` (lifecycle /1 restage, API, presence, scheduler, wake workers)
 
 - Owner-approved redeploy (CAIRN-301 w9/w12, operator agent-2485, coordinator agent-2481). One clean build from `ae498426` (`vcs_modified=false`): `cairn` `be9e35d6a1b50f9b…`, `cairn-lifecycle` `881ab664548ad4c1…`, `cairn-stage-lifecycle` `8577155c0fd6e679…`. Rollout root `~/.local/share/cairn/go-rollout-ae498426/` (plan helpers in `plans/` are the `f7bec707` ones re-pointed; lifecycle closure and OpenCode plugins byte-identical to `f7bec707`).

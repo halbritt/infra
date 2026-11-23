@@ -1,5 +1,13 @@
 # Host changelog
 
+## 2026-11-23 — Cairn Codex hooks restaged as Go-only `/2` (`ae498426`)
+
+- Owner-approved (2026-11-23) second step of the redeploy, CAIRN-301 w15 (operator agent-2485, coordinator agent-2481): restage as Go-only `/2` (`receipt_schema cairn.lifecycle-compatibility/2`: no snapshot, no `.py` member, empty retained launchers) from the same build (`ae498426`; `cairn-lifecycle` `881ab664…`, `cairn-stage-lifecycle` `8577155c…`), in the same root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/*2.py`). The `ae498426` /1 generations stay as the rollback; `revert-v2.sh` reverses the /2 publications from their recovery records.
+- /2 generation codex-archon `24c0d7e1` (no `.py` member); 6 Go rows published to `~/.codex/hooks.json` (recovery record `.cairn-native-3ad3047c…`); Codex trust repeated (6/6).
+- `cairn-presence.service` drop-in now uses `go-rollout-ae498426/watcher-bindings-v2` (unbound, same bytes as before), restarted 09:28:17; journal clean over two watch passes.
+- Verified: fresh `codex exec` completed all hooks; a self-addressed notice produced a context whose `acknowledgement[0]` is the `/2` launcher `88daffcb…` (exec `bin/881ab664…`), handled. No process held a snapshot directory open.
+- Reverse: `go-rollout-ae498426/revert-v2.sh`, repeat Codex trust, restore `backups/zz-c301-go-presence.conf.v1`.
+
 ## 2026-11-23 — Cairn client and Codex hooks to `ae498426`
 
 - Owner-approved redeploy (CAIRN-301 w9, operator proximal agent-2485). Rollout root `~/.local/share/cairn/go-rollout-ae498426/` with `dist/` copied from proximal: `cairn` `be9e35d6a1b50f9b…`, `cairn-lifecycle` `881ab664548ad4c1…`, `cairn-stage-lifecycle` `8577155c0fd6e679…`, installed in `~/.local/bin`.
