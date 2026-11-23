@@ -1,5 +1,25 @@
 # Changelog — proximal (system)
 
+## 2026-11-23 — Rust semantic selection observed across the controlled cairn-api restart
+
+- agent-2485 restarted `cairn-api.service` at 08:59:31 PST onto `ae498426`. This entry records the semantic check before and after that restart against manifest `semantic-rust/manifests/21a31a0b8e970950eeb4466a8b67b09f8af7b68eac932d442669e5b109a67e82/manifest.json` (read-only check, agent-2484, CAIRN-330 criterion 2). Nothing on the host was changed.
+- Before the restart, at 08:43-08:50 PST:
+  - MainPID 3793376, running since 2026-11-20 18:52:11; cairn binary sha256 `7956c3b3…d232` (`f7bec707`).
+  - Two `cairn-semantic-embed` children of that PID: 3698969 (the document/indexing lane, since 2026-11-21 13:28:53) and 3290632 (the query lane, since 2026-11-22 15:15:50).
+  - Coverage: 23,385 of 23,385 eligible records.
+- After the restart, at 09:01-09:02 PST:
+  - MainPID 3794912, `NRestarts=0`. The cairn binary sha256 is `be9e35d6a1b50f9bd3ff01b93f041c6b5aaa250ad57f7502caafa3248e164394` for both `/proc` exe and `~/.local/bin/cairn`.
+  - The same unit drop-ins and the same argv with `--semantic-rust-config ~/.local/share/cairn/go-rollout-d809e8f3/semantic-rust-embed.json`, whose config sha256 is unchanged (`d6b1b845…0657`, mode `embed`, raw payload `834eda5e…`).
+  - Two embed children: 3794925 (since 08:59:30) and 3803412 (since 09:00:26). Both run `d93c238b9318ac4740a253676ef0a8ab7447a5fc63d851276b7a35d6f89ba12e` and have no sockets.
+  - Coverage, in a repeatable-read transaction at 09:01:57: 23,405 of 23,405 eligible records are on derivation `c53c031337e30163abfa0c0f0f06604ad0df27957f676ff8904ee8a72a3ae37c` with matching version and body hash and valid passages. There are 0 queued jobs and 0 documents for ineligible records, so the restart started no re-index.
+  - The only writer is `cairn-api`. No semantic worker or second `cairn serve` runs on proximal, archon or talos.
+  - No refusal other than `session-inbox-reconcile` has been logged since the restart, so the new `TIMEOUT`/`cause` classification (`423ab472`, included in `ae498426`) has not been seen live yet.
+- Two embed children are expected. `semantic/embedding_command.go` keeps one persistent worker each for the query lane and the document lane. A worker that fails or times out is killed as a process group and reaped, then restarted on the next call.
+- Manifest derivations, now observed:
+  - `embed`: observed in the running selection as `c53c0313…e37c` (raw payload `834eda5e…`, binary `d93c238b…`, ONNX `51f1bd0a…2431`), before and after the restart.
+  - `rank`: still unobserved. Rank mode is not selected on proximal.
+  - The manifest file itself is content-addressed and read-only and was not edited. Its own `derivations` field still reads `unobserved`; this entry is the observation record.
+
 ## 2026-11-22 — remove the deprecated Codex 3 subscription from renewal
 
 - The owner is phasing out `codex-3`. The 15-minute Codex job now renews, checks, and mirrors only `~/.codex` and `~/.codex-harm`.
