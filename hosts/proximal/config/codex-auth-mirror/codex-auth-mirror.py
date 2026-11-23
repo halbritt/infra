@@ -24,10 +24,12 @@ Never prints token material.
 
 import argparse
 import base64
+import http.client
 import json
 import logging
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import threading
@@ -35,11 +37,11 @@ import time
 from pathlib import Path
 
 PROFILES = ("~/.codex", "~/.codex-harm", "~/.codex-3")
-REMOTE_HOSTS = ("peecee-wsl", "archon", "agent-ee-gate-c4", "talos")
+REQUIRED_HOSTS = ("talos", "archon")
+REMOTE_HOSTS = (*REQUIRED_HOSTS, "peecee-wsl", "agent-ee-gate-c4")
 # Renew this far ahead of expiry. Seven days into a ten-day token, ahead of the
 # eight-day `last_refresh` interval older CLIs (peecee-wsl's 0.153) still use.
 LEAD_HOURS = 72
-CODEX_BIN = os.environ.get("CODEX_BIN", "~/.npm-global/bin/codex")
 APP_SERVER_TIMEOUT = 120
 REMOTE_SSH = ("ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
               "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3")
@@ -77,20 +79,29 @@ for job in json.load(sys.stdin):
 LOG = logging.getLogger("codex-auth-mirror")
 
 
+class ProfileError(Exception):
+    """A profile failure with a diagnostic safe to put in the journal."""
+
+
 def auth_path(profile):
     return Path(profile).expanduser() / "auth.json"
 
 
 def load(profile):
     try:
-        return json.loads(auth_path(profile).read_text())
+        auth = json.loads(auth_path(profile).read_text())
     except FileNotFoundError:
         return None
+    if not isinstance(auth, dict) or not isinstance(auth.get("tokens") or {}, dict):
+        raise ProfileError("invalid auth.json")
+    return auth
 
 
 def access_expiry(auth):
     """The access token's `exp` claim (seconds), or None. Reads claims only."""
     token = ((auth or {}).get("tokens") or {}).get("access_token") or ""
+    if not isinstance(token, str):
+        return None
     try:
         payload = token.split(".")[1]
         claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
@@ -107,11 +118,16 @@ def chatgpt_login(auth):
 def renew_via_cli(profile):
     """Have the profile's own CLI rotate its tokens; returns True on a JSON-RPC reply."""
     env = dict(os.environ, CODEX_HOME=str(Path(profile).expanduser()))
-    process = subprocess.Popen(
-        [str(Path(CODEX_BIN).expanduser()), "app-server"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-        text=True, env=env, cwd=str(Path.home()),
-    )
+    executable = os.path.expanduser(env.get("CODEX_BIN") or shutil.which("codex") or "~/.local/bin/codex")
+    try:
+        process = subprocess.Popen(
+            [executable, "app-server"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            text=True, env=env, cwd=str(Path.home()),
+        )
+    except OSError as error:
+        LOG.error("%s: cannot start %s (%s)", profile, executable, type(error).__name__)
+        return False
     watchdog = threading.Timer(APP_SERVER_TIMEOUT, process.kill)
     watchdog.start()
 
@@ -149,6 +165,8 @@ def renew_via_cli(profile):
             process.wait(timeout=20)
         except subprocess.TimeoutExpired:
             process.kill()
+            process.wait()
+        process.stdout.close()
 
 
 def renew_profile(profile, lead_seconds, force, dry_run):
@@ -165,7 +183,7 @@ def renew_profile(profile, lead_seconds, force, dry_run):
         return False
     remaining = expires - time.time()
     if not force and remaining > lead_seconds:
-        LOG.info("%s: access token valid for %.1f more days", profile, remaining / 86400)
+        LOG.info("%s: access token expires in %.1f days", profile, remaining / 86400)
         return True
     LOG.info("%s: renewing through the CLI (%s)", profile,
              "forced" if force else f"{remaining / 3600:.1f} h to expiry")
@@ -180,25 +198,48 @@ def renew_profile(profile, lead_seconds, force, dry_run):
     return True
 
 
-def remote_job(profile):
+def check_access(profile, tokens):
+    """A revoked token can carry a future expiry. Only a 401 establishes rejection."""
+    connection = http.client.HTTPSConnection("chatgpt.com", timeout=10)
+    try:
+        headers = {"Authorization": "Bearer " + tokens["access_token"]}
+        if tokens.get("account_id"):
+            headers["ChatGPT-Account-Id"] = tokens["account_id"]
+        connection.request("GET", "/backend-api/wham/usage", headers=headers)
+        status = connection.getresponse().status
+    except (OSError, http.client.HTTPException) as error:
+        LOG.warning("%s: access check unavailable (%s)", profile, type(error).__name__)
+        return
+    finally:
+        connection.close()
+    if status == 401:
+        raise ProfileError("ChatGPT rejected access (HTTP 401); check the login on Proximal")
+    if status != 200:
+        LOG.warning("%s: access check inconclusive (HTTP %d)", profile, status)
+
+
+def remote_job(profile, dry_run):
     auth = load(profile)
     if not chatgpt_login(auth):
+        if Path(profile).expanduser() in (Path(name).expanduser() for name in PROFILES):
+            raise ProfileError("missing source ChatGPT login; check the profile on Proximal")
         return None
     expires = access_expiry(auth)
     if expires is None or expires <= time.time():
-        LOG.error("%s: access token expired or unreadable; not mirroring it", profile)
-        return None
+        raise ProfileError("access token expired or unreadable")
+    if not dry_run:
+        check_access(profile, auth["tokens"])
     stripped = json.loads(json.dumps(auth))
     # Empty, not absent: the CLI's TokenData requires the field.
     stripped["tokens"]["refresh_token"] = ""
     return {"profile": profile, "path": f"{profile}/auth.json", "auth": stripped}
 
 
-def mirror_remotes(profiles, hosts, dry_run):
-    """Push refresh-token-free copies; an unreachable host is logged by name and retried next tick."""
-    jobs = [job for job in (remote_job(profile) for profile in profiles) if job]
+def mirror_remotes(jobs, hosts, dry_run):
+    """Attempt every destination and surface failures for the required hosts."""
     if not jobs:
-        return
+        return True
+    ok = True
     payload = json.dumps(jobs)
     for host in hosts:
         if dry_run:
@@ -209,12 +250,14 @@ def mirror_remotes(profiles, hosts, dry_run):
             result = subprocess.run(command, input=payload, capture_output=True,
                                     text=True, timeout=REMOTE_TIMEOUT, check=False)
         except (OSError, subprocess.TimeoutExpired):
+            result = None
+        if result is None or result.returncode != 0:
             LOG.warning("%s: remote mirror failed; retrying next tick", host)
-            continue
-        if result.returncode != 0:
-            LOG.warning("%s: remote mirror failed; retrying next tick", host)
+            if host in REQUIRED_HOSTS:
+                ok = False
             continue
         LOG.info("%s: %s", host, " ".join(result.stdout.split()))
+    return ok
 
 
 def main():
@@ -230,11 +273,23 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s", stream=sys.stderr)
     ok = True
-    if not args.no_renew:
-        for profile in args.profiles:
-            ok &= renew_profile(profile, args.lead_hours * 3600, args.force, args.dry_run)
+    jobs = []
+    for profile in args.profiles:
+        try:
+            if not args.no_renew:
+                ok &= renew_profile(profile, args.lead_hours * 3600, args.force, args.dry_run)
+            if not args.no_remote:
+                job = remote_job(profile, args.dry_run)
+                if job:
+                    jobs.append(job)
+        except ProfileError as error:
+            LOG.error("%s: %s", profile, error)
+            ok = False
+        except (OSError, ValueError) as error:
+            LOG.error("%s: cannot process credentials (%s)", profile, type(error).__name__)
+            ok = False
     if not args.no_remote:
-        mirror_remotes(args.profiles, REMOTE_HOSTS, args.dry_run)
+        ok &= mirror_remotes(jobs, REMOTE_HOSTS, args.dry_run)
     return 0 if ok else 1
 
 

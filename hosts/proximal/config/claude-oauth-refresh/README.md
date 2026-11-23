@@ -98,8 +98,12 @@ fields, overlays the mirrored fields, and writes only when something changed
 (temp file in the same directory, `fsync`, mode `0600`, `rename`). The journal
 line is per host: `~/.claude mirrored|current[+account]`. A host that is
 unreachable, times out (60 s) or fails logs `<host>: remote mirror failed;
-retrying next tick` and nothing else. It never fails the unit or blocks the
-local refresh.
+retrying next tick`. A failure on Talos or Archon fails the unit after the
+other hosts have been attempted. Offline optional hosts retry at the next tick.
+After each successful Talos push the same SSH session runs Talos's
+`~/git/infra/hosts/talos/config/striatum/install-profile-links.py`. This repairs
+a harness that has replaced its profile link with a stale regular file. A
+failed link check counts as a failed Talos delivery.
 
 A remote copy stays valid without a refresh token because this timer renews
 45 minutes before expiry and pushes in the same run. The remote CLI's own

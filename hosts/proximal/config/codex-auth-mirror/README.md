@@ -63,12 +63,14 @@ The source is the version installed on proximal and archon. File:
 
 1. For each of `~/.codex`, `~/.codex-harm`, `~/.codex-3`: if the access token
    expires within `LEAD_HOURS = 72`, start that profile's own CLI
-   (`CODEX_HOME=<profile> ~/.npm-global/bin/codex app-server`) and send
+   (`CODEX_HOME=<profile> codex app-server`) and send
    `initialize` and then `account/read` with `refreshToken: true`. The protocol
    documents this request as "triggers the normal refresh-token flow" (see
    `codex-rs/app-server-protocol/src/protocol/v2/account.rs`). The CLI rotates
    and persists the tokens itself, so this script never writes proximal's
-   `auth.json`. Success is judged by re-reading the file: the `exp` claim must
+   `auth.json`. The script looks for `codex` on the user service's `PATH`,
+   then at `~/.local/bin/codex`. Set `CODEX_BIN` to select an explicit installation.
+   Success is judged by re-reading the file: the `exp` claim must
    have moved forward, or the unit fails. That failure is the signal to look.
    72 h is seven days into a ten-day token, ahead of the eight-day
    `last_refresh` interval that older CLIs use. peecee-wsl runs 0.153.4, whose
@@ -80,8 +82,19 @@ The source is the version installed on proximal and archon. File:
    `0600`, `rename`). Each file is therefore pushed again within 15 minutes of
    any change on proximal, and a renewal by step 1 is pushed in the same run. An
    unreachable or failing host logs `<host>: remote mirror failed; retrying next
-   tick` and never fails the unit. An expired or unreadable access token is not
-   pushed.
+   tick`. A delivery failure on Talos or Archon makes the unit exit nonzero
+   after it has attempted the other destinations. The service contacts Talos
+   and Archon first. Offline optional hosts retry
+   on the next timer tick.
+
+Before a push, Proximal checks each unexpired access token against ChatGPT's
+read-only `/backend-api/wham/usage` endpoint. HTTP 401 excludes that profile
+from delivery and fails the unit. Other profiles still go out. An inconclusive
+check (for example HTTP 429 or a timeout) logs a warning and lets unexpired
+credentials reach the workers. Expired or unreadable tokens are excluded.
+Use `CODEX_HOME="$HOME/.codex-3" codex login` on Proximal if that profile's
+forced CLI renewal fails and ChatGPT rejects its existing token. Select the
+corresponding home for other accounts.
 
 Nothing is logged but profile paths, days to expiry and per-host states. No
 token material is passed in argv or written to the journal or this repository.

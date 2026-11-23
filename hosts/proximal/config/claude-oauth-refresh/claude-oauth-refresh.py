@@ -51,7 +51,8 @@ MIRRORED_FIELDS = ("accessToken", "expiresAt", "scopes", "subscriptionType", "ra
 # gets an access-token-only copy of every source profile at the same path, plus
 # the source's `oauthAccount` block in the matching config file when that file
 # exists there. proximal stays the only holder of the refresh token.
-REMOTE_HOSTS = ("peecee-wsl", "archon", "agent-ee-gate-c4", "talos")
+REQUIRED_HOSTS = ("talos", "archon")
+REMOTE_HOSTS = (*REQUIRED_HOSTS, "peecee-wsl", "agent-ee-gate-c4")
 REMOTE_SSH = ("ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
               "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3")
 REMOTE_TIMEOUT = 60  # seconds per host; a hung host must not hold the timer
@@ -348,13 +349,10 @@ def remote_job(source, now_ms):
     key = canonical.get(source.directory)
     if key is None:
         return None
-    try:
-        oauth = (read(source.credentials).get("claudeAiOauth") or {})
-    except FileNotFoundError:
-        return None
+    oauth = read(source.credentials).get("claudeAiOauth") or {}
     if not oauth.get("accessToken") or (oauth.get("expiresAt") or 0) <= now_ms:
         LOG.error("%s: no live access token; not mirroring to remote hosts", key)
-        return None
+        raise ValueError("no live access token")
     try:
         account = read(source.config).get("oauthAccount")
     except (FileNotFoundError, ValueError):
@@ -375,29 +373,43 @@ def mirror_remotes(sources, now_ms, hosts, dry_run):
     worker CLIs there run unmodified. Any refresh token a remote holds is
     dropped: the provider rotates on every renewal, so a second holder either
     dies at proximal's next renewal or, if it renews first, logs proximal out.
-    An unreachable or failing host is logged by name only (stderr can carry
-    remote paths or tracebacks) and never fails the unit; the next tick retries.
+    A failure on a required host fails the unit after all hosts are attempted.
     """
-    jobs = [job for job in (remote_job(source, now_ms) for source in sources) if job]
+    jobs = []
+    ok = True
+    for source in sources:
+        try:
+            job = remote_job(source, now_ms)
+        except (OSError, ValueError) as error:
+            LOG.error("%s: cannot read mirror source (%s)", source.key, type(error).__name__)
+            ok = False
+            continue
+        if job:
+            jobs.append(job)
     if not jobs:
-        return
+        return ok
     payload = json.dumps(jobs)
     for host in hosts:
         if dry_run:
             LOG.info("%s: would mirror %s", host, ", ".join(job["profile"] for job in jobs))
             continue
-        command = [*REMOTE_SSH, host, f"python3 -I -c {shlex.quote(REMOTE_WRITER)}"]
+        remote = f"python3 -I -c {shlex.quote(REMOTE_WRITER)}"
+        if host == "talos":
+            remote += " && python3 -I ~/git/infra/hosts/talos/config/striatum/install-profile-links.py"
+        command = [*REMOTE_SSH, host, remote]
         try:
             result = subprocess.run(command, input=payload, capture_output=True,
                                     text=True, timeout=REMOTE_TIMEOUT, check=False)
         except (OSError, subprocess.TimeoutExpired):
+            result = None
+        if result is None or result.returncode != 0:
             LOG.warning("%s: remote mirror failed; retrying next tick", host)
-            continue
-        if result.returncode != 0:
-            LOG.warning("%s: remote mirror failed; retrying next tick", host)
+            if host in REQUIRED_HOSTS:
+                ok = False
             continue
         states = " ".join(result.stdout.split())
         LOG.info("%s: %s", host, states)
+    return ok
 
 
 def main():
@@ -418,11 +430,15 @@ def main():
     ok = True
     sources = [Source(profile) for profile in args.profiles]
     for source in sources:
-        ok &= refresh_profile(source.directory, now_ms, args.lead_minutes * 60000, args.force, args.dry_run)
-        if not args.no_mirror:
-            ok &= mirror_profile(source, now_ms, args.dry_run)
+        try:
+            ok &= refresh_profile(source.directory, now_ms, args.lead_minutes * 60000, args.force, args.dry_run)
+            if not args.no_mirror:
+                ok &= mirror_profile(source, now_ms, args.dry_run)
+        except (OSError, ValueError) as error:
+            LOG.error("%s: cannot process credentials (%s)", source.key, type(error).__name__)
+            ok = False
     if not (args.no_mirror or args.no_remote):
-        mirror_remotes(sources, int(time.time() * 1000), REMOTE_HOSTS, args.dry_run)
+        ok &= mirror_remotes(sources, int(time.time() * 1000), REMOTE_HOSTS, args.dry_run)
     return 0 if ok else 1
 
 

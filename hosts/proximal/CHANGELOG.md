@@ -1,5 +1,11 @@
 # Changelog — proximal (system)
 
+## 2026-11-22 — repair subscription renewal for Talos and Archon
+
+- The Codex timer repeatedly failed to launch the retired npm executable after Proximal moved to standalone Codex 0.171.0. It now finds the CLI on the service PATH and continues processing other profiles after a failure. The mirror checks for HTTP 401 before pushing because a rejected token can still carry a future expiry.
+- Both mirror jobs surface delivery failures on Talos and Archon. The Claude job also rechecks Talos's Striatum profile links on every delivery. Its default harness had kept a regular file that expired October 24 PDT.
+- Both providers accepted the default and harm profiles on each host after renewal. A user-service run with a 240-hour Codex lead time renewed the harm profile through the installed CLI and delivered it to both hosts. ChatGPT then returned HTTP 200 to a usage check from each host. The separate Codex 3 login returned HTTP 401 on both hosts and its CLI refresh did not advance its expiry.
+
 ## 2026-11-22 — correction to the 2026-11-18 Rust semantic worker record
 
 - The 2026-11-18 entry gives `c53c0313…` as the "model sha256". It is the embedding derivation identity, which Cairn stores in `semantic_document.model_sha256`, and not the ONNX file hash. Recorded in full (read-only check, agent-2484, CAIRN-330):

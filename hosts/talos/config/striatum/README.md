@@ -9,8 +9,10 @@ timer. The Striatum harnesses must read those profile files through symlinks:
 | `claude-code/.credentials.json` | `~/.claude/.credentials.json` |
 | `claude-harm/.credentials.json` | `~/.claude-harm/.credentials.json` |
 
-After the scheduled mirror has delivered unexpired profiles, install from the
-Talos infra checkout:
+Proximal's 15-minute Claude mirror runs the link installer on Talos after each
+delivery, including when the source files are already current. A failed check
+appears in Proximal's `claude-oauth-refresh.service` result. To run the same
+check manually from the Talos infra checkout:
 
 ```sh
 python3 hosts/talos/config/striatum/install-profile-links.py
