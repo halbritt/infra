@@ -28,3 +28,11 @@ ssh -o BatchMode=yes -o ConnectTimeout=10 peecee hostname
 
 The expanded hostname must be `100.113.63.58`, and the remote hostname must be
 `PEECEE`.
+
+## Windows outbound route to Talos
+
+The [Talos stanza](talos.conf) belongs in the Windows user's existing
+`%USERPROFILE%\.ssh\config` on peecee. It selects the Linux account
+`halbritt` for `ssh talos`. Without this stanza, Windows OpenSSH defaults to
+the Windows username `halbr`. Preserve the other Windows SSH aliases when
+installing it. Verify from Windows with `ssh talos whoami`.

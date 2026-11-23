@@ -1,5 +1,9 @@
 # Changelog — peecee
 
+## 2026-11-22 — Windows SSH login to Talos
+
+Added the Talos username to the Windows OpenSSH client configuration after reproducing a public-key denial for the Windows username. Verified the short aliases `ssh talos` and `ssh archon` both connect as `halbritt` from Windows. See [SSH client configuration](config/ssh-client/README.md).
+
 ## 2026-11-16 — install whisper.cpp STT server (WhisperServer)
 
 Owner-directed: peecee is the speech-to-text backend for the ReSpeaker Core v2 mic

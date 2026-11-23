@@ -1,5 +1,9 @@
 # Host changelog
 
+## 2026-11-22 — Windows peecee SSH access
+
+At the owner’s request, added the Windows account `halbr@peecee`’s existing Ed25519 public key to `halbritt`’s SSH authorized keys. Fingerprint: `SHA256:qfaOrUQoQNDerf26zlAYKPou0E9EQq7NkBhmQAijo2c`. Verified a public-key login from Windows peecee with strict host-key checking. Windows peecee now selects this account with `ssh talos`.
+
 ## 2026-11-21 — Cairn client and OpenCode hooks to `f7bec707`
 
 - Owner asked (proximal agent-2440) to finish the hook republication on every host. Proximal's API has been `f7bec707` (schema 094) since 2026-11-20.

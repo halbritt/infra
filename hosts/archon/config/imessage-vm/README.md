@@ -131,9 +131,9 @@ From peecee: double-click `Desktop\imessage-vm-console.cmd`
 (`windows/imessage-vm-console.ps1`). It opens an SSH tunnel to the VNC socket
 and launches TigerVNC. Click inside the window before typing. Elsewhere:
 `ssh -N -L 127.0.0.1:5901:/run/imessage-vm/vnc.sock archon`, then point a VNC
-viewer at `localhost:5901`. peecee's key on archon is
-`restrict,port-forwarding,command="/usr/bin/false"` (OpenSSH's `permitopen`
-would also block the unix-socket forward). archon backup:
+viewer at `localhost:5901`. peecee's key on archon also allows the owner's interactive
+shell. Its authorized-key options are `restrict,port-forwarding,pty`. See
+[the host changelog](../../CHANGELOG.md) for the tunnel-only rollback. Original archon backup:
 `~/.ssh/authorized_keys.bak-20261019`.
 
 ### Agents

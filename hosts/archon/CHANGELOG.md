@@ -1,5 +1,9 @@
 # Host changelog
 
+## 2026-11-22 — Windows peecee SSH shell access
+
+The owner approved normal shell access for the existing Windows peecee key (Ed25519 fingerprint `SHA256:qfaOrUQoQNDerf26zlAYKPou0E9EQq7NkBhmQAijo2c`). Replaced its tunnel-only forced command with `restrict,port-forwarding,pty` for `halbritt`. Verified interactive terminal allocation and account identity over public-key SSH from peecee. For rollback, restore `restrict,port-forwarding,command="/usr/bin/false"` on this key.
+
 ## 2026-11-21 — Cairn client and Codex hooks to `f7bec707`
 
 - Owner asked (proximal agent-2440) to finish the hook republication on every host. Proximal's API has been `f7bec707` (schema 094) since 2026-11-20.

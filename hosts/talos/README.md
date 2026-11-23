@@ -27,7 +27,7 @@ Passwordless administration from proximal: `ssh talos` (entry in
 |---|---|
 | Boot | UEFI, Secure Boot disabled. GRUB, kernel `7.0.0-38-generic` |
 | Storage | GPT: 1 GiB ESP, 2 GiB `/boot` (ext4), LVM PV. `ubuntu-vg/ubuntu-lv` ext4 on `/`, extended to the whole VG (473.9 GiB) on 2026-10-24. No disk encryption. 8 GiB `/swap.img` |
-| Access | OpenSSH on `:22`, keys only (`PasswordAuthentication no`, root `prohibit-password`). `authorized_keys` holds the two `gh:halbritt` ed25519 keys imported by the installer |
+| Access | OpenSSH on `:22`, keys only (`PasswordAuthentication no`, root `prohibit-password`). `authorized_keys` includes the two `gh:halbritt` Ed25519 keys imported by the installer and the Windows peecee key documented in the host changelog |
 | Network | systemd-networkd via netplan (`00-installer-config.yaml`, Wi-Fi credential inside, not recorded). `eno1` DHCP + optional, not required for online ([network](config/network/README.md)). systemd-resolved, Tailscale MagicDNS. No firewall rules (ufw inactive, empty nftables) |
 | Tailscale | 1.104.2, auto-update on, Tailscale SSH off, no routes or exit node. Node key expires 2027-04-20 |
 | Updates | Automatic: release, security and `-updates` pockets daily. Guarded nightly reboot when required. Docker held (KiCad removed 2026-10-24). See [updates](config/updates/README.md) |
