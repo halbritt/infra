@@ -1,5 +1,13 @@
 # Host changelog
 
+## 2026-11-23 — Cairn client and Codex hooks to `ae498426`
+
+- Owner-approved redeploy (CAIRN-301 w9, operator proximal agent-2485). Rollout root `~/.local/share/cairn/go-rollout-ae498426/` with `dist/` copied from proximal: `cairn` `be9e35d6a1b50f9b…`, `cairn-lifecycle` `881ab664548ad4c1…`, `cairn-stage-lifecycle` `8577155c0fd6e679…`, installed in `~/.local/bin`.
+- Staged /1 `codex-archon` generation `b373629a`; hook selection with 6 Go coordination rows published to `~/.codex/hooks.json` with `publish-settings` (recovery record `.cairn-native-70daa73d…`); other rows unchanged. Codex trust repeated (6/6).
+- `cairn-presence.service` drop-in now uses `go-rollout-ae498426/watcher-bindings`; presence and `cairn-relay.service` restarted 08:53:33 PST, both active on the new binaries.
+- Codex login works again (`Logged in using ChatGPT`). A fresh `codex exec` completed SessionStart, UserPromptSubmit, PostToolUse and Stop; a self-addressed notice produced a context whose `acknowledgement[0]` is the Go launcher `launch/32c94628…` in the new root.
+- Reverse: `go-rollout-ae498426/revert.sh`, then repeat Codex trust. Keep `go-rollout-f7bec707/` and `go-rollout-d809e8f3/`.
+
 ## 2026-11-22 — Windows peecee SSH shell access
 
 The owner approved normal shell access for the existing Windows peecee key (Ed25519 fingerprint `SHA256:qfaOrUQoQNDerf26zlAYKPou0E9EQq7NkBhmQAijo2c`). Replaced its tunnel-only forced command with `restrict,port-forwarding,pty` for `halbritt`. Verified interactive terminal allocation and account identity over public-key SSH from peecee. For rollback, restore `restrict,port-forwarding,command="/usr/bin/false"` on this key.

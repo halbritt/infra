@@ -1,5 +1,13 @@
 # Host changelog
 
+## 2026-11-23 — Cairn client and OpenCode hooks to `ae498426`
+
+- Owner-approved redeploy (CAIRN-301 w9, operator proximal agent-2485). Rollout root `~/.local/share/cairn/go-rollout-ae498426/` with `dist/` copied from proximal: `cairn` `be9e35d6a1b50f9b…`, `cairn-lifecycle` `881ab664548ad4c1…`, `cairn-stage-lifecycle` `8577155c0fd6e679…`, installed in `~/.local/bin`.
+- Staged /1 `opencode-one` generation `e04035b3` and hook selection `71550eba` (all 12 rows Go, including PostToolUse/PostToolUseFailure). Published `cairn-lifecycle.json` and `cairn-coordination.json` with `publish-settings --role memory|coordination` (recovery records in `~/.config/opencode/.cairn-native-*.json`). Plugin `.ts` files are unchanged.
+- `publish-settings` refuses a group-writable ancestor; `~/.config` was `0775`. Changed to `0755` with coordinator approval (group `halbritt` has no other member, nothing else owns files there). Inverse: `chmod 775 ~/.config`.
+- Checked: fresh `opencode run` (local model) ran SessionStart recall and PostToolUse through the Go launcher (rc 0) and registered a session. SessionEnd capture failed because the capture selector's Claude account hit its Fable usage limit; the configuration is unchanged from `f7bec707`. No presence unit on talos.
+- Reverse: `go-rollout-ae498426/revert.sh` (reverse-settings, prior binaries, `~/.config` mode). Keep `go-rollout-f7bec707/` and `go-rollout-d809e8f3/`.
+
 ## 2026-11-22 — Windows peecee SSH access
 
 At the owner’s request, added the Windows account `halbr@peecee`’s existing Ed25519 public key to `halbritt`’s SSH authorized keys. Fingerprint: `SHA256:qfaOrUQoQNDerf26zlAYKPou0E9EQq7NkBhmQAijo2c`. Verified a public-key login from Windows peecee with strict host-key checking. Windows peecee now selects this account with `ssh talos`.

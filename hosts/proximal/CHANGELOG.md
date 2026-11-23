@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-23 — Cairn redeploy of `ae498426` (lifecycle /1 restage, API, presence, scheduler, wake workers)
+
+- Owner-approved redeploy (CAIRN-301 w9/w12, operator agent-2485, coordinator agent-2481). One clean build from `ae498426` (`vcs_modified=false`): `cairn` `be9e35d6a1b50f9b…`, `cairn-lifecycle` `881ab664548ad4c1…`, `cairn-stage-lifecycle` `8577155c0fd6e679…`. Rollout root `~/.local/share/cairn/go-rollout-ae498426/` (plan helpers in `plans/` are the `f7bec707` ones re-pointed; lifecycle closure and OpenCode plugins byte-identical to `f7bec707`).
+- Staged /1 generations for claude-two, claude-one, codex-shared, agy-one and opencode-one; every rendered hook row is Go. Published with `publish-settings` (recovery record per target): `~/.claude-harm/settings.json`, `~/.claude/settings.json`, `~/.codex/hooks.json`, `~/.codex-harm/hooks.json`, `~/.gemini/config/hooks.json`, `~/.config/opencode/cairn-{lifecycle,coordination}.json`. Codex trust repeated (10/10 rows in each home).
+- Not changed (owner decisions 2026-11-23): codex-three (`~/.codex-3`, deprecated) and Hermes stay on `f7bec707`; their watcher bindings are the unchanged `f7bec707` files. MCP facade untouched. No database or schema change.
+- `cairn-presence.service` drop-in now uses `go-rollout-ae498426/watcher-bindings`, restarted 08:58:36. `cairn-api.service` restarted 08:59:31 onto `be9e35d6` (server revision `ae498426`); see the CAIRN-330 entry below for the semantic check. `cairn-scheduler` and `cairn-wake-worker-01,03-07` restarted one at a time 09:10:09-09:10:43 after checking no `cairn-wake-attempt-*` unit was active (worker-02 had already restarted onto the new binary at 08:59:36). Observation window starts 09:10:43.
+- Verified with fresh sessions: claude-one/claude-two UserPromptSubmit recall ran and a self-addressed notice produced a context whose `acknowledgement[0]` is a Go launcher in the new root; codex-one/two all hooks completed and recall ran; opencode-one SessionStart, PostToolUse and SessionEnd rc 0; agy-one registered through its Go hook.
+- Still on older binaries (unmanaged, owned by live sessions): per-session `cairn claude-channel` children and the MCP facade executables. Running sessions keep their loaded `f7bec707` hooks until they restart. The watcher does not run the native hook census; no census result exists for this deploy.
+- Reverse: `go-rollout-ae498426/revert.sh` (reverse-settings from the recovery records, prior binaries, prior presence drop-in; `--api` also restores the `f7bec707` cairn binary and restarts the API). Codex trust must then be repeated. Keep every earlier rollout directory.
+
 ## 2026-11-23 — Rust semantic selection observed across the controlled cairn-api restart
 
 - agent-2485 restarted `cairn-api.service` at 08:59:31 PST onto `ae498426`. This entry records the semantic check before and after that restart against manifest `semantic-rust/manifests/21a31a0b8e970950eeb4466a8b67b09f8af7b68eac932d442669e5b109a67e82/manifest.json` (read-only check, agent-2484, CAIRN-330 criterion 2). Nothing on the host was changed.
