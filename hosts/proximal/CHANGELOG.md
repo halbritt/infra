@@ -1,5 +1,9 @@
 # Changelog — proximal (system)
 
+## 2026-11-22 — remove the deprecated Codex 3 subscription from renewal
+
+- The owner is phasing out `codex-3`. The 15-minute Codex job now renews, checks, and mirrors only `~/.codex` and `~/.codex-harm`.
+
 ## 2026-11-22 — repair subscription renewal for Talos and Archon
 
 - The Codex timer repeatedly failed to launch the retired npm executable after Proximal moved to standalone Codex 0.171.0. It now finds the CLI on the service PATH and continues processing other profiles after a failure. The mirror checks for HTTP 401 before pushing because a rejected token can still carry a future expiry.

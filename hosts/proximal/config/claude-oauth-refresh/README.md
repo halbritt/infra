@@ -88,7 +88,7 @@ access token it can use but cannot rotate.
 | Account files | What each remote gets | Mechanism |
 |---|---|---|
 | `~/.claude/.credentials.json`, `~/.claude-harm/.credentials.json` | `claudeAiOauth` reduced to `MIRRORED_FIELDS`; `refreshToken`/`refreshTokenExpiresAt` dropped; other keys kept. The source `oauthAccount` block goes into `~/.claude.json` / `~/.claude-harm/.claude.json` when that file already exists there. | this timer, every run |
-| `~/.codex/auth.json`, `~/.codex-harm/auth.json`, `~/.codex-3/auth.json` | proximal's file with `tokens.refresh_token` set to `""` | [`codex-auth-mirror/`](../codex-auth-mirror/README.md), sibling 15-minute timer |
+| `~/.codex/auth.json`, `~/.codex-harm/auth.json` | proximal's file with `tokens.refresh_token` set to `""` | [`codex-auth-mirror/`](../codex-auth-mirror/README.md), sibling 15-minute timer |
 | `~/.gemini/oauth_creds.json` (+ `google_accounts.json`, `settings.json`) | the full copy, left as is | none needed: Google refresh tokens do not rotate (see the codex-auth-mirror README) |
 
 How a run reaches a remote: one `ssh -o BatchMode=yes <host> python3 -I -c

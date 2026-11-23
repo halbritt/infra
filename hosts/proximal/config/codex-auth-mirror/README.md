@@ -61,7 +61,7 @@ The source is the version installed on proximal and archon. File:
 
 `codex-auth-mirror.py` (symlinked to `~/.local/bin/codex-auth-mirror`), each run:
 
-1. For each of `~/.codex`, `~/.codex-harm`, `~/.codex-3`: if the access token
+1. The timer manages `~/.codex` and `~/.codex-harm`. If either access token
    expires within `LEAD_HOURS = 72`, start that profile's own CLI
    (`CODEX_HOME=<profile> codex app-server`) and send
    `initialize` and then `account/read` with `refreshToken: true`. The protocol
@@ -92,9 +92,9 @@ read-only `/backend-api/wham/usage` endpoint. HTTP 401 excludes that profile
 from delivery and fails the unit. Other profiles still go out. An inconclusive
 check (for example HTTP 429 or a timeout) logs a warning and lets unexpired
 credentials reach the workers. Expired or unreadable tokens are excluded.
-Use `CODEX_HOME="$HOME/.codex-3" codex login` on Proximal if that profile's
-forced CLI renewal fails and ChatGPT rejects its existing token. Select the
-corresponding home for other accounts.
+If a managed profile fails forced renewal and ChatGPT rejects its existing
+token, sign in on Proximal with `CODEX_HOME` set to that profile. The owner
+deprecated `codex-3` on 2026-11-22 and removed it from scheduled renewal and delivery.
 
 Nothing is logged but profile paths, days to expiry and per-host states. No
 token material is passed in argv or written to the journal or this repository.

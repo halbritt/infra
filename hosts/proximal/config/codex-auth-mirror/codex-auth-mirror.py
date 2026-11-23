@@ -36,7 +36,7 @@ import threading
 import time
 from pathlib import Path
 
-PROFILES = ("~/.codex", "~/.codex-harm", "~/.codex-3")
+PROFILES = ("~/.codex", "~/.codex-harm")
 REQUIRED_HOSTS = ("talos", "archon")
 REMOTE_HOSTS = (*REQUIRED_HOSTS, "peecee-wsl", "agent-ee-gate-c4")
 # Renew this far ahead of expiry. Seven days into a ten-day token, ahead of the
