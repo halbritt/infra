@@ -72,6 +72,20 @@ subvolume is postgres-owned 0700. SSD3 is assigned to the owner's cache tree,
 as described below. See the [PostgreSQL migration report](../postgres/reports/SATA_MIGRATION_2026-11-10.md).
 The historical RAID0 setup and recovery history are retained below.
 
+## Compiler scratch for new local campaign runs
+
+On proximal, `~/.local/share` resides on the NVMe root filesystem. During the
+November 19–23 routing campaign, hundreds of isolated Cargo build directories
+accumulated there alongside the run reports. The SSD3 bind mount covers
+`~/.cache`.
+
+For ad hoc Cargo runs where the build directory is selectable, point
+`CARGO_TARGET_DIR` at a per-run directory under `~/.cache` before the first
+build. Check the device with `findmnt -T ~/.cache`. Keep isolation between
+concurrent runs and retain any binaries named in an evidence manifest with
+that run. A project-controlled target path may serve a verification contract;
+check that contract before changing it.
+
 ## Cache placement on SSD3 — 2026-11-10
 
 The owner authorized moving `/home/halbritt/.cache` to the independent 1.92 TB

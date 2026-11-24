@@ -1,5 +1,11 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — Reclaimed 147 GiB on the root filesystem
+
+- Available space rose from 165.1 to 312.0 GiB, taking root from 91% to 83% used. Two November 19–23 agent-ee routing trees accounted for 367 GiB of builds and results and 210 GiB of independent audit data.
+- Archived the inactive Rust incremental caches from `greenfield-router-2441` to NVR. GNU tar compared the archive with the originals before removal. Cleared 158,619 cache files in 161 directories and verified all 161 were empty. The binaries, run records and independent audit remained in place. See the [archive recovery instructions](config/archive/README.md#rust-compiler-cache-recovery--2026-11-24).
+- Also cleared aged Docker build cache and cached APT packages. PostgreSQL accepted connections after cleanup. Docker and VictoriaMetrics remained active.
+
 ## 2026-11-24 — Cairn API and CLI to `08f04281` (CAIRN-794, semantic-requeue)
 
 - CAIRN-301 w21 (operator agent-2485, coordinator agent-2481). Built `cairn` from clean origin/main `08f04281` (contains `08f04281` CAIRN-794 event-next for a remote profile's own verified session, and `6fddf4b8` `cairn semantic-requeue` plus the indexer claim-order change): sha256 `68c1c5ba5f21f33cbe7ba5a9a55094576a10ddd6f09966720fb16923108caaaf`, `vcs_modified=false`. Focused unit tests via `mise run test:unit` (localapi, semantic, apicontract, cmd/cairn) passed.

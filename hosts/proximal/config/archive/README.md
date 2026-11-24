@@ -1,8 +1,8 @@
 # archive — cold data on the ZFS pool
 
 `nvr/archive` (mounted at `/nvr/archive`, `compression=zstd`, `atime=off`, owned
-by `halbritt`) holds cold data moved off the root LV. Every moved path left a
-symlink in its place, so existing paths still work.
+by `halbritt`) holds cold data moved off the root LV. The paths in the table
+below have symlinks to the archived data.
 
 | Original path | Archive path |
 |---|---|
@@ -32,6 +32,23 @@ the previous copy is saved beside it as `.pre-archive-20261017`) now also backs
 up `/nvr/archive`, excluding `/nvr/archive/claude-scratch`. That keeps
 coverage the same as before the move.
 
+
+## Rust compiler cache recovery — 2026-11-24
+
+The private ZFS directory `/nvr/archive/agent-ee/compiler-cache-20261124`
+holds `rustc-incremental.tar.zst` and the NUL-delimited list of cache roots,
+`incremental-paths.nul`. Archive members are relative to
+`~/.local/share/agent-ee/greenfield-router-2441`. The archive covers inactive
+Cargo incremental compilation data from 161 directories and preserves hard links.
+GNU tar compared the 41,238,236,159-byte archive with the original files before
+they were cleared from root.
+
+To inspect or recover the old cache, extract it into an empty directory on an
+SSD with at least 123 GiB free. Set `restore_dir` to that directory first.
+
+```sh
+tar --zstd --acls --xattrs -xf /nvr/archive/agent-ee/compiler-cache-20261124/rustc-incremental.tar.zst -C "$restore_dir"
+```
 
 ## Root-disk cleanup — 2026-10-31
 
