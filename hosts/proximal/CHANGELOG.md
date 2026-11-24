@@ -1,5 +1,13 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — Cairn API and CLI to `08f04281` (CAIRN-794, semantic-requeue)
+
+- CAIRN-301 w21 (operator agent-2485, coordinator agent-2481). Built `cairn` from clean origin/main `08f04281` (contains `08f04281` CAIRN-794 event-next for a remote profile's own verified session, and `6fddf4b8` `cairn semantic-requeue` plus the indexer claim-order change): sha256 `68c1c5ba5f21f33cbe7ba5a9a55094576a10ddd6f09966720fb16923108caaaf`, `vcs_modified=false`. Focused unit tests via `mise run test:unit` (localapi, semantic, apicontract, cmd/cairn) passed.
+- Root `~/.local/share/cairn/go-rollout-08f04281/` (`dist/cairn`, `backups/bin-cairn-ae498426` = `be9e35d6…`). Installed as `~/.local/bin/cairn`; `cairn-api` restarted once at 02:12:37 PST (pid 3794912 → 449251, exe `68c1c5ba…`). Semantic config unchanged (`go-rollout-d809e8f3/semantic-rust-embed.json`); after restart semantic search READY, model `c53c0313…`, coverage 7952/7952. `semantic-requeue` not run.
+- Not moved: scheduler and wake workers keep running `be9e35d6` in memory (neither change touches them; they pick up the new on-disk binary on their next restart); lifecycle binaries and other hosts unchanged (both changes are central API or proximal-operator only).
+- Verified: fresh archon `codex exec` request round trip through the central API (drain returned the request, complete + respond OK, drain returned the response); no `event-next` 403 in the cairn-api journal since the restart (6 before it). CAIRN-794 closed.
+- Reverse: `go-rollout-08f04281/revert.sh` (restores `be9e35d6` and restarts cairn-api; get the coordinator's go first).
+
 ## 2026-11-23/24 — Cairn compact inbox enabled on the Claude and Codex bindings (`/3`)
 
 - Owner decision 2026-11-23 22:15 PST ("do it"), CAIRN-301 w20 (operator agent-2485, coordinator agent-2481). Restaged from the `/2` generations with only `compact_inbox_version: 1` added to the coordination configs of claude-one, claude-two, codex-one and codex-two (binding path aside, the configs are byte-identical to `/2`). Same build `ae498426` and root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/stage_compat3.py`, `stage_hooks3.py`, `codex_trust3.py`).
