@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-11-24 — Cairn compact inbox enabled on codex-archon (`/3`)
+
+- Owner decision 2026-11-23 22:15 PST, CAIRN-301 w20 (operator agent-2485). Restaged codex-archon from `/2` with only `compact_inbox_version: 1` added to its coordination config: generation `ac15151a`, 2 coordination commands replaced in `~/.codex/hooks.json` (recovery record `.cairn-native-7c14c92e…`), Codex trust repeated (6/6).
+- `cairn-presence.service` drop-in now uses `go-rollout-ae498426/watcher-bindings-v3`; restarted 2026-11-24 02:02:07 PST on `cairn-lifecycle` `881ab664…`. cairn-relay unchanged.
+- Verified: fresh `codex exec` received a self-addressed notice in compact form (handle `9683c94c…`) and ran `inbox compact read` and `settle … handled` (`ok`, `attempts 1`). Evidence: `go-rollout-ae498426/backups/w20-codex-archon.log`.
+- Reverse: `go-rollout-ae498426/revert-v3.sh`.
+
 ## 2026-11-23 — Cairn Codex hooks restaged as Go-only `/2` (`ae498426`)
 
 - Owner-approved (2026-11-23) second step of the redeploy, CAIRN-301 w15 (operator agent-2485, coordinator agent-2481): restage as Go-only `/2` (`receipt_schema cairn.lifecycle-compatibility/2`: no snapshot, no `.py` member, empty retained launchers) from the same build (`ae498426`; `cairn-lifecycle` `881ab664…`, `cairn-stage-lifecycle` `8577155c…`), in the same root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/*2.py`). The `ae498426` /1 generations stay as the rollback; `revert-v2.sh` reverses the /2 publications from their recovery records.

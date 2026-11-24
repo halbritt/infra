@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-11-24 — Cairn: hooks-only by decision; compact inbox not applicable; capture rerun passes
+
+- Owner decision 2026-11-23 22:15 PST (CAIRN-301 w20): Talos runs Cairn hooks only. It has no `cairn-presence` watcher by decision, so the idle-wake and watcher-census rows do not apply here. Do not install a watcher.
+- Compact inbox (`compact_inbox_version`) cannot be enabled on the `opencode-one` binding: it requires Codex or Claude native delivery. No configuration was changed.
+- The SessionEnd capture that failed on the Fable limit in w17 now completes: a fresh `opencode run` (local model) at 02:07 PST gave SessionStart, PostToolUse and SessionEnd `engine_completed` rc 0 (SessionEnd `saved`, 10.4 s). Evidence: `go-rollout-ae498426/backups/w20-opencode-talos-trace.jsonl`.
+
 ## 2026-11-23 — Cairn OpenCode hooks restaged as Go-only `/2` (`ae498426`, canary)
 
 - Owner-approved (2026-11-23) second step of the redeploy, CAIRN-301 w15 (operator agent-2485, coordinator agent-2481): restage as Go-only `/2` (`receipt_schema cairn.lifecycle-compatibility/2`: no snapshot, no `.py` member, empty retained launchers) from the same build (`ae498426`; `cairn-lifecycle` `881ab664…`, `cairn-stage-lifecycle` `8577155c…`), in the same root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/*2.py`). The `ae498426` /1 generations stay as the rollback; `revert-v2.sh` reverses the /2 publications from their recovery records.

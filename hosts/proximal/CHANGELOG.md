@@ -1,5 +1,14 @@
 # Changelog — proximal (system)
 
+## 2026-11-23/24 — Cairn compact inbox enabled on the Claude and Codex bindings (`/3`)
+
+- Owner decision 2026-11-23 22:15 PST ("do it"), CAIRN-301 w20 (operator agent-2485, coordinator agent-2481). Restaged from the `/2` generations with only `compact_inbox_version: 1` added to the coordination configs of claude-one, claude-two, codex-one and codex-two (binding path aside, the configs are byte-identical to `/2`). Same build `ae498426` and root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/stage_compat3.py`, `stage_hooks3.py`, `codex_trust3.py`).
+- New generations: claude-one `6f2a5cfd`, claude-two `f131b449`, codex-shared `da06c663` (codex-three's config in it is unchanged). Published one target at a time at 22:22 PST with `publish-settings` (recovery records `~/.claude/.cairn-native-6572f13b…`, `~/.claude-harm/.cairn-native-ef36bae6…`, `~/.codex/.cairn-native-a5683ed3…`, `~/.codex-harm/.cairn-native-f45f3b3e…`). Codex trust repeated (10/10 in each home).
+- `cairn-presence.service` drop-in now uses `go-rollout-ae498426/watcher-bindings-v3` (the four changed bindings copied from the `/3` configs; agy-one, opencode-one, codex-three and hermes-one copied unchanged from v2). Restarted at 2026-11-23 22:23:00 PST; journal clean. cairn-api not restarted.
+- Cannot take the option: agy-one and opencode-one (compact inbox requires Codex or Claude native delivery, `internal/lifecycle/coordination/cli.go:105`). Skipped by decision: codex-three, zai, Hermes, the MCP facade and frank-tunnel.
+- Verified with fresh sessions: claude-one (handle `fac4dbd6…`) and codex-one (handle `a684a919…`) each received a self-addressed notice in compact form and ran `inbox compact read` and `inbox compact settle HANDLE handled` (`ok`, `attempts 1`). The claude-one SessionEnd capture now completes (`engine_completed/saved`, rc 0); the Fable limit on `~/.claude` is gone. Evidence: `go-rollout-ae498426/backups/w20-*`.
+- Reverse: `go-rollout-ae498426/revert-v3.sh` (reverse-settings from the four records, Codex trust for the `/2` rows, presence drop-in from `backups/zz-c301-go-presence.conf.pre-w20`).
+
 ## 2026-11-23 — Cairn hooks restaged as Go-only `/2` (`ae498426`)
 
 - Owner-approved (2026-11-23) second step of the redeploy, CAIRN-301 w15 (operator agent-2485, coordinator agent-2481): restage as Go-only `/2` (`receipt_schema cairn.lifecycle-compatibility/2`: no snapshot, no `.py` member, empty retained launchers) from the same build (`ae498426`; `cairn-lifecycle` `881ab664…`, `cairn-stage-lifecycle` `8577155c…`), in the same root `~/.local/share/cairn/go-rollout-ae498426/` (helpers `plans/*2.py`). The `ae498426` /1 generations stay as the rollback; `revert-v2.sh` reverses the /2 publications from their recovery records.

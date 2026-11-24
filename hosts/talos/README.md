@@ -95,6 +95,14 @@ delete the profile dirs.
 The root LV was extended to the whole VG (473.9 GiB) on 2026-10-24, outside this
 cleanup.
 
+## Cairn: hooks only (decision 2026-11-23)
+
+Talos runs Cairn lifecycle hooks for OpenCode (`~/.config/opencode/cairn-lifecycle.json`
+and `cairn-coordination.json`, rollout root `~/.local/share/cairn/go-rollout-ae498426/`).
+By owner decision it has no `cairn-presence` watcher. Idle wake and the watcher
+census do not apply on Talos; do not install a watcher. Compact inbox is not
+available for its OpenCode binding.
+
 ## Striatum-next runtime — 2026-10-24
 
 The owner moved the Striatum-next engineering runtime from proximal to Talos.
