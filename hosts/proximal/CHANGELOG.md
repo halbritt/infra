@@ -1,5 +1,17 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — Cairn MCP facade (`cairn mcp`) to `08f04281`
+
+- Owner, 2026-11-24 ("the MCP facade should be next"); CAIRN-301 w23 (operator agent-2485, coordinator agent-2481). New content-addressed executable `~/.local/share/cairn/executables/68c1c5ba5f21f33c…/cairn` (the w21 build of `08f04281`, `vcs_modified=false`); `55df58d8…` (`9ae5e4db`) and `d43ca49b…` (`a3da80e9`) are kept.
+- Inventory and change (only the pinned command; names, arguments, profiles and tool allowlists unchanged; per docs/build-identity.md "Upgrade a running MCP facade"; the Codex command equals `cairn codex-config` output):
+  - Claude `~/.claude` and `~/.claude-harm`, and agy (`agy mcp list`): server `cairn` = `~/.local/bin/cairn-messaging-mcp`, a local wrapper (no installer) whose `exec` pin moved 55df58d8 → 68c1c5ba.
+  - Codex `~/.codex` and `~/.codex-harm` `[mcp_servers.cairn].command`: 55df58d8 → 68c1c5ba. Project layer `~/git/cairn/.codex/config.toml` (git-excluded; overrides the user layer for Codex in that checkout): d43ca49b → 68c1c5ba.
+  - Hermes `~/.hermes/config.yaml` `mcp_servers.cairn.command`: 55df58d8 → 68c1c5ba (same `cairn mcp` registration). The running gateway keeps its 55df58d8 helper; `hermes -z` reuses that helper, so Hermes moves when its gateway next restarts (not restarted here).
+  - Unchanged: codex-three (`~/.codex-3`, deprecated), zai, frank-tunnel (`deployments/frank-tunnel-20261110`). OpenCode has no MCP facade (its tool adapter runs `~/.local/bin/cairn`). No registration routes through Python.
+- Tool list (stdio `tools/list`, old vs new, same arguments): 17 tools both, none added or removed; `cairn_complete` gains optional `summary`; `cairn_send` gains optional `action`, `blocker`, `expect_by`, `expect_next_by`, `summary`, `supersedes`.
+- Verified with fresh sessions (Claude `~/.claude` and `~/.claude-harm`, Codex `~/.codex` in the cairn checkout and `~/.codex-harm`, agy): facade process on 68c1c5ba, `cairn_client_info` facade build `08f04281`, `cairn_search` READY and `cairn_pull` returned ae99e5c7 v6. 18 running `cairn mcp` processes remain on 55df58d8 (live sessions and the Hermes gateway); they move when those sessions restart. Last change 13:39:17 PST.
+- Reverse: `~/.local/share/cairn/go-rollout-08f04281/revert-w23.sh` (restores each file from `backups/w23/` only if it differs by exactly this command change).
+
 ## 2026-11-24 — Reclaimed 147 GiB on the root filesystem
 
 - Available space rose from 165.1 to 312.0 GiB, taking root from 91% to 83% used. Two November 19–23 agent-ee routing trees accounted for 367 GiB of builds and results and 210 GiB of independent audit data.

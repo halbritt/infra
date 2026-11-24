@@ -1,5 +1,9 @@
 # Host changelog
 
+## 2026-11-24 — Cairn MCP facade: none registered
+
+- CAIRN-301 w23 inventory: no client on Talos registers the `cairn mcp` facade (Claude homes have no Cairn MCP server; OpenCode uses its tool adapter on `~/.local/bin/cairn`). Nothing changed.
+
 ## 2026-11-24 — Cairn: hooks-only by decision; compact inbox not applicable; capture rerun passes
 
 - Owner decision 2026-11-23 22:15 PST (CAIRN-301 w20): Talos runs Cairn hooks only. It has no `cairn-presence` watcher by decision, so the idle-wake and watcher-census rows do not apply here. Do not install a watcher.

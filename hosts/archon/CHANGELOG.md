@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-11-24 — Cairn MCP facade (`cairn mcp`) to `08f04281`
+
+- CAIRN-301 w23 (operator agent-2485). Codex `~/.codex/config.toml` `[mcp_servers.cairn].command` moved from `executables/d43ca49b…` (`a3da80e9`) to `executables/68c1c5ba…` (`08f04281`, copied from proximal; sha256 checked). Arguments and `enabled_tools` unchanged; d43ca49b kept. No Claude, Hermes or project-layer registration on archon.
+- Tool list with archon's arguments (no `--messaging`): 10 tools both, none added, removed or changed.
+- Verified: fresh `codex exec` ran the facade from 68c1c5ba; `cairn_search` READY, `cairn_pull` ae99e5c7 v6. `cairn_client_info` is not in this host's existing allowlist. No running session remains on d43ca49b. Changed 13:35:56 PST.
+- Reverse: `go-rollout-ae498426/revert-w23.sh`.
+
 ## 2026-11-24 — Cairn compact inbox enabled on codex-archon (`/3`)
 
 - Owner decision 2026-11-23 22:15 PST, CAIRN-301 w20 (operator agent-2485). Restaged codex-archon from `/2` with only `compact_inbox_version: 1` added to its coordination config: generation `ac15151a`, 2 coordination commands replaced in `~/.codex/hooks.json` (recovery record `.cairn-native-7c14c92e…`), Codex trust repeated (6/6).
