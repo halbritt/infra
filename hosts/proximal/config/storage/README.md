@@ -79,12 +79,11 @@ November 19–23 routing campaign, hundreds of isolated Cargo build directories
 accumulated there alongside the run reports. The SSD3 bind mount covers
 `~/.cache`.
 
-For ad hoc Cargo runs where the build directory is selectable, point
-`CARGO_TARGET_DIR` at a per-run directory under `~/.cache` before the first
-build. Check the device with `findmnt -T ~/.cache`. Keep isolation between
-concurrent runs and retain any binaries named in an evidence manifest with
-that run. A project-controlled target path may serve a verification contract;
-check that contract before changing it.
+The fleet's [build storage instructions](../../../../AGENTS.md#build-storage-on-proximal)
+apply to new builds on proximal. The same section is distributed in the owner
+repositories' root `AGENTS.md` and proximal's Codex instructions. Campaign
+wrappers that pass their own target directory must point it at SSD3. Preserve
+the binaries and reports named by each run's evidence manifest.
 
 ## Cache placement on SSD3 — 2026-11-10
 
