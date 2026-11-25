@@ -1,5 +1,14 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — Agy idle wake without Herdr: `cairn-term-launch` and a new presence watcher build
+
+- Coordinator agent-2481, 22:00–22:04 PST, on the owner's instruction ("shouldn't rely on herdr in any case"). Before this, the watcher could wake an idle Agy session only by asking Herdr to type into its pane.
+- Built from cairn 4b310f9e (`vcs.modified=false`): `cairn-lifecycle` sha256 28b5186d…, `cairn-term-launch` 8a0ccd3f…, both under `~/.local/share/cairn/executables/<sha256>/`.
+- Presence: drop-in `zz-c301-go-presence.conf` now runs that `cairn-lifecycle` (same bindings, `go-rollout-ae498426/watcher-bindings-v3`); restarted 22:00:43, journal clean. `~/.local/bin/cairn-lifecycle` (881ab664) is untouched. Inverse: restore `~/.local/share/agent-evidence/term-wake/zz-c301-go-presence.conf.pre-termwake`, `daemon-reload`, restart `cairn-presence`.
+- Agy: the real binary moved from `~/.local/bin/agy` to `~/.local/lib/agy/agy` (sha256 05245f43…, unchanged); `~/.local/bin/agy` is a 0700 sh wrapper that execs `cairn-term-launch -- ~/.local/lib/agy/agy "$@"`. Print mode and piped runs exec agy unchanged. Inverse: `mv ~/.local/lib/agy/agy ~/.local/bin/agy`.
+- Verified outside Herdr (tmux): Agy session agent-2683 started through the launcher; a request sent while it was idle was typed into its terminal by the watcher, and it completed and replied. Ending the terminal ended agy and removed the socket.
+- The Herdr route stays as the fallback for an Agy session started without the launcher. `agy update` behaviour with the moved binary is not tested.
+
 ## 2026-11-24 — retire PostgreSQL 18
 
 Removed the old cluster and eight PG18 packages. PG19 stayed online throughout.
