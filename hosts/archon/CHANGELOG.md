@@ -1,5 +1,20 @@
 # Host changelog
 
+## 2026-11-24 — Codex launcher: Python shim replaced by a native exec (w27)
+
+- CAIRN-301 w27-archon-shim (operator agent-2485, coordinator agent-2481), following cairn f19edc9f (the installer no longer writes the shim), with deploy steps from Cairn record 96d5260c v1.
+- Census: no running session had been launched through the shim (`pgrep launch-codex-coordination`, no `queue-*.sock`).
+- `~/.local/bin/codex` was backed up to `~/.local/bin/codex.cairn-shim-20261124` (sha256 da375a4a…). At 19:58:33 PST it was replaced atomically with `#!/bin/sh` / `exec /home/halbritt/.local/share/cairn/codex-native "$@"` (mode 0700). `codex --version` is still codex-cli 0.163.0. `coordination/launch-codex-coordination.py` stays on disk.
+- Fresh interactive Codex (`codex --yolo`, started in a Herdr pane):
+  - The process is the mise codex, with no python3 launcher and no `--remote unix://…/queue-*.sock`.
+  - It registered as agent-2603 on archon in `cairn agents list`.
+  - A request sent while it was idle (20:00:47) was **not** woken: presence logged "no automatic wake … no native Codex queue endpoint (explicit Unix listener) for this process". The codex-archon watcher still wakes Codex only through the queue route the shim provided.
+  - The request arrived at the next turn boundary, and the session committed finish-reply (completion and reply).
+  - `codex exec` still runs, with all hooks Completed.
+- Net effect: new archon Codex sessions get Cairn work at turn boundaries only. Idle wake without terminal input is gone until the watcher gains a Herdr idle-wake route for Codex here.
+- Herdr was not running on archon. For the test I started it as a transient unit (`w27-herdr`), which restored a saved workspace and resumed an old idle Codex conversation (`codex resume 01a0e3da…`, "Clone skillpack and push skills"). I closed that pane within about a minute. The test pane and the server were stopped afterwards, so no Codex or Herdr process is left running.
+- Reverse: `mv ~/.local/bin/codex.cairn-shim-20261124 ~/.local/bin/codex` (restores the exact shim; new sessions take the queue route again). This resets the archon Codex lane's R-08 window.
+
 ## 2026-11-24 — Cairn removals: R-07 staging, old rollouts, Python presence (w25)
 
 - CAIRN-301 w25-removals (operator agent-2485). Manifest before the first delete: proximal `~/.local/share/agent-evidence/w25/manifest-archon.tsv`; each path rescanned by `refscan` immediately before deletion by exact path.
