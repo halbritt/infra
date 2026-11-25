@@ -1,5 +1,15 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — Codex starts through the Go `cairn-codex-launch` (CAIRN-805)
+
+- Coordinator agent-2481, 21:24 PST, on the owner's instruction. Why: the presence watcher wakes an idle Codex only through a queue socket named on the session's command line; plain `codex` sessions got Cairn work at turn boundaries only.
+- Built from cairn c5b752d2, sha256 ef3ffdfa…, installed at `~/.local/share/cairn/executables/ef3ffdfaec9652b5dbdcbe9078bf46f0c492d75fc2caf8c1216c40a8b947f0a9/cairn-codex-launch`.
+- `~/.local/bin/codex` was a symlink to `~/.codex/packages/standalone/current/bin/codex`; it is now a 0700 sh wrapper that execs the launcher with `--codex` set to that same path. Applies to every Codex home (CODEX_HOME passes through). `codex exec`, `mcp`, `--version` and the other non-interactive commands exec codex unchanged.
+- Verified before install with a fresh session in tmux: registered as agent-2669, woken while idle with no terminal input, replied. After install: a `codex --yolo` start shows the app-server and `--remote` TUI on one socket, and both end with the terminal.
+- Sessions already running are unchanged until restarted. A Codex self-update may put the symlink back; then new sessions lose idle wake until the wrapper is rewritten.
+- Inverse: `ln -sfn /home/halbritt/.codex/packages/standalone/current/bin/codex ~/.local/bin/codex`.
+- Unrelated, observed during the test: PostgreSQL moved from cluster 18-main to 19-main at 21:17 PST (about 20 s of STORE_ERROR from cairn-api). Not part of this change.
+
 ## 2026-11-24 — PostgreSQL 19 cutover
 
 PG19.0 serves port 5432 on SSD2. The stop-to-SQL interval was 20.4 seconds.

@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-11-24 — Codex launcher: Go `cairn-codex-launch` replaces the Python shim (CAIRN-805)
+
+- Coordinator agent-2481, 21:21 PST, on the owner's instruction to port the shim. Built from cairn c5b752d2 (`vcs.modified=false`), sha256 ef3ffdfa…, installed at `~/.local/share/cairn/executables/ef3ffdfaec9652b5dbdcbe9078bf46f0c492d75fc2caf8c1216c40a8b947f0a9/cairn-codex-launch` (mode 0500).
+- `~/.local/bin/codex` is now `exec …/cairn-codex-launch --codex ~/.local/share/cairn/codex-native -- "$@"`. Same behaviour as the shim: an interactive start runs a private `codex app-server --listen unix://$XDG_RUNTIME_DIR/queue-PID.sock` and the TUI as `codex --remote …`; other subcommands exec codex unchanged. No python3 in the launch path. Codex is still 0.163.0.
+- Verified with a fresh `codex --yolo` in tmux (no Herdr): registered as agent-2673; a request sent while it was idle woke it with no terminal input, and finish-reply committed completion and reply. Closing the terminal stopped the app-server and removed the socket.
+- Inverse: `cp -p ~/.local/bin/codex.cairn-shim-20261124 ~/.local/bin/codex` restores the Python shim (its launcher file is still on disk).
+
 ## 2026-11-24 — Codex launcher: Python shim restored (w27 reverted)
 
 - Coordinator agent-2481, about 20:11 PST. The native-exec wrapper from the entry below was kept for 13 minutes and then reverted, because it removed idle wake: the codex-archon watcher wakes an idle Codex only through the queue endpoint that the shim's private app-server provides.
