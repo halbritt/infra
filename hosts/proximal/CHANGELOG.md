@@ -1,5 +1,13 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — Agy terminal wake launcher reverted
+
+- Coordinator agent-2481, 23:09 PST, on the owner's decision ("2 now, 3 later"). Both inverses of the entry below were applied.
+- Agy: `~/.local/bin/agy` is the real binary again (1.5.16); the wrapper and `~/.local/lib/agy/` are gone. No Agy session was running through the wrapper.
+- Presence: drop-in `zz-c301-go-presence.conf` restored from the saved copy, so it runs `~/.local/bin/cairn-lifecycle` again; restarted 23:09:13, active.
+- Effect: an idle Agy session is woken only inside Herdr; elsewhere it gets work at its next turn. Follow-up for a native route through `agy acp`: CAIRN-825.
+- Left in place, unused: `executables/28b5186d…/cairn-lifecycle` and `executables/8a0ccd3f…/cairn-term-launch`.
+
 ## 2026-11-24 — Agy idle wake without Herdr: `cairn-term-launch` and a new presence watcher build
 
 - Coordinator agent-2481, 22:00–22:04 PST, on the owner's instruction ("shouldn't rely on herdr in any case"). Before this, the watcher could wake an idle Agy session only by asking Herdr to type into its pane.
