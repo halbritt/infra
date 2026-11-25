@@ -1,10 +1,34 @@
 # Changelog
 
-Notable changes to the **proximal** PostgreSQL cluster's configuration and to this
-provenance repo. Newest first. Config changes record the live cluster (`proximal:5432`,
-`system_identifier 7701748156229123175`, PG 18.6 — previously
-`7652478211804703267`/17.11 and `7628053153555146077`/16.14); see `reports/` and `inventory/` for the evidence behind each
-entry, and `git log` for granular history.
+Notable changes to the PostgreSQL cluster on `proximal:5432`, newest first.
+See `reports/` and `inventory/` for historical measurements.
+
+## 2026-11-24 — PostgreSQL 19.0 on SSD2
+
+- The owner requested a short outage. Installed PG19 builds of pgvector,
+  HypoPG, pg_qualstats, pg_stat_kcache and pg_repack while PG18.7 was serving.
+  The initial online clone check found that pg_createcluster had set the Btrfs
+  NOCOW flag on the new data directory. Reinitialized that target with CoW
+  enabled to match PG18. The native online `pg_upgrade --clone --check` passed.
+- PG18 stop began at 21:17:03.006 PST. PG19 returned its version on the original
+  socket and port 5432 at 21:17:23.404, **20.4 seconds** later. Native pg_upgrade
+  cloned relations on SSD2 with six jobs. PG19's system ID is
+  `7711973576708682975`. PG18 is stopped on 5433 with manual startup.
+- All 22 database names, OIDs and connection flags and all 39 role names and OIDs
+  matched before and after. Durability, authentication files, preloads and the
+  listener were preserved. The 21 connectable databases passed extension-version,
+  index-validity and database collation checks. pgvector returned the expected
+  distance wherever installed. Updated pg_stat_statements in ten databases by
+  recreating its pg_stat_kcache dependent in the same transaction, checking
+  ownership and effective ACLs before committing. Updated pg_buffercache
+  and collected missing planner statistics online.
+- Cairn served an authenticated agent lookup. Engram MCP reported its database
+  reachable and Plane returned HTTP 200. Missive units now start after the
+  managed PostgreSQL service (missive commit `7bca114`). The active and
+  rollback scrape configurations identify the three PG19 exporters as
+  `19/main`. pgBackRest upgraded the stanza and
+  verified PG19 WAL delivery to `19-4/`. Private local receipts are under
+  `/var/lib/postgresql/pg19-upgrade-20261124/`.
 
 ## 2026-10-28 — remove old clusters and deprecated Striatum database
 

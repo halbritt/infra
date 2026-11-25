@@ -10,7 +10,7 @@ Deployed 2026-11-09. Values only, no credentials.
 | | |
 |---|---|
 | source | archon `imessage-vm-bb-readonly` gateway, `https://archon.tail0ecc2e.ts.net:8766` ([archon imessage-vm](../../../archon/config/imessage-vm/README.md)) |
-| database | `missive` in the `18/main` cluster, owner `halbritt` (peer auth); extensions `vector`, `pg_trgm` |
+| database | `missive` in the `19/main` cluster, owner `halbritt` (peer auth); extensions `vector`, `pg_trgm` |
 | attachments | `~/.local/share/missive/attachments/` (content-addressed, 0700 dirs / 0600 files), in the home restic backup |
 | embeddings | Ollama `nomic-embed-text:latest` (loopback `:11434`) |
 | LLM | `qwen3.8-27b` via `gpu-fleet-run` exact-model lease (proximal slot 0, `localhost:8081`) |

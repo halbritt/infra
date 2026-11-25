@@ -7,7 +7,7 @@ How to reach the PostgreSQL instance on **proximal**. **No passwords here** — 
 |---|---|
 | host | `localhost` (proximal; also LAN `192.168.1.92`, tailnet `100.85.100.81`) |
 | port | `5432` (listening `127.0.0.1:5432` + unix socket `/var/run/postgresql/.s.PGSQL.5432`) |
-| version | PostgreSQL 18.6, cluster `18/main`, `system_identifier 7701748156229123175` |
+| version | PostgreSQL 19.0, cluster `19/main`, `system_identifier 7711973576708682975` |
 | topology | standalone primary (`pg_is_in_recovery()=false`, no slots/standbys) |
 
 > Upgraded PG 16.14 → 17.10 on 2026-06-16/17 (pg_upgrade — note the **new
@@ -19,7 +19,7 @@ See [the execution report](reports/PG17_11_UPGRADE_2026-09-29.md).
 
 Upgraded 17.11 → 18.6 on 2026-10-28 alongside Ubuntu 26.04. After successful
 postboot verification, the owner authorized removal of both old clusters and
-the deprecated `striatum_daemon` database. Only `18/main` remains. The original
+the deprecated `striatum_daemon` database. At that point only `18/main` remained. The original
 access policy and durability settings are preserved. See the
 [October execution report](../../ubuntu-26.04-upgrade.md), including removal of
 21,557 verified orphan test roles, extension updates and collation reindexing.
@@ -43,6 +43,14 @@ pgBackRest configuration are unchanged. The old NVMe copy was removed after
 verification. Mount and service dependencies are canonical in `storage.fstab`
 and `storage.conf`; installation and measurements are in the
 [SATA migration report](reports/SATA_MIGRATION_2026-11-10.md).
+
+## PostgreSQL 19 on SSD2
+
+On 2026-11-24 the primary moved to `19/main`. Its data directory
+`/var/lib/postgresql/19/main` bind-mounts the Btrfs subvolume
+`/srv/ssd2/postgresql19`. PG18 remains stopped on 5433 with manual startup.
+Its files reflect the moment of cutover. PG19 holds subsequent writes.
+See the [cluster changelog](CHANGELOG.md).
 
 ## Databases (confirmed 2026-06-17, post-upgrade)
 

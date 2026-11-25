@@ -66,8 +66,8 @@ the third drive's test, so small differences should not be overinterpreted.
 | SSD3 | 567.5 | 339.8 | 43751 |
 
 SSD1 was selected for repositories for its capacity and adequate measured
-performance. SSD2 now hosts the managed PostgreSQL cluster at `/srv/ssd2/postgresql`, bound
-at `/var/lib/postgresql/18/main`; its mount root is root-owned 0755 and the data
+performance. SSD2 now hosts the managed PostgreSQL cluster at `/srv/ssd2/postgresql19`, bound
+at `/var/lib/postgresql/19/main`; its mount root is root-owned 0755 and the data
 subvolume is postgres-owned 0700. SSD3 is assigned to the owner's cache tree,
 as described below. See the [PostgreSQL migration report](../postgres/reports/SATA_MIGRATION_2026-11-10.md).
 The historical RAID0 setup and recovery history are retained below.

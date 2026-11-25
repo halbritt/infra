@@ -1,5 +1,10 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — PostgreSQL 19 cutover
+
+PG19.0 serves port 5432 on SSD2. The stop-to-SQL interval was 20.4 seconds.
+PG18.7 remains stopped. See the [PostgreSQL changelog](config/postgres/CHANGELOG.md).
+
 ## 2026-11-24 — Cairn removals: R-07 staging, five unused executables, Python presence and Python semantic (w25)
 
 - CAIRN-301 w25-removals (operator agent-2485, coordinator agent-2481; owner "work through the rest", read by the coordinator as approval to delete now). Scope: removal-plan steps 1 (R-07 staging and the five unreferenced executables only), 3 and 4 (`~/.local/share/agent-evidence/w24/removal-plan.md`). Manifest (path, bytes, file count, newest mtime) written before the first delete: `~/.local/share/agent-evidence/w25/manifest-proximal.tsv`. Each path was rescanned by `refscan` (processes, configs, units, launchers, inbox contexts) immediately before it was deleted by exact path; delete log `del-proximal.log`.
