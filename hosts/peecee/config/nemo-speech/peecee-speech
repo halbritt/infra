@@ -2,7 +2,8 @@
 # Run the peecee streaming models under a fleet lease from proximal.
 set -euo pipefail
 models='.local/share/peecee-speech/0.3.0/models'
-asr="$models/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf"
+asr_en="$models/nemotron-speech-streaming-en-0.6b.q8_0.gguf"
+asr_multi="$models/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf"
 diar="$models/diar_streaming_sortformer_4spk-v2.1.f32.gguf"
 
 leased_ssh() {
@@ -19,7 +20,18 @@ leased_ssh() {
     ' _ "$@"
 }
 
-if [[ ${1:-} == --serve && $# == 1 ]]; then
+# English goes to the English-only model, which made about half the errors of the
+# multilingual one on far-field English. Every other language, and auto, goes to
+# the multilingual model.
+pick_asr() {
+    case ${1,,} in
+        en | en-*) asr=$asr_en ;;
+        *) asr=$asr_multi ;;
+    esac
+}
+
+if [[ ${1:-} == --serve && $# -le 2 && ${2:-en-US} =~ ^[A-Za-z0-9-]+$ ]]; then
+    pick_asr "${2:-en-US}"
     leased_ssh peecee-speech-server -o ExitOnForwardFailure=yes \
         -L 127.0.0.1:18921:127.0.0.1:18921 peecee-wsl \
         "exec .local/bin/nemo-speech serve --asr-model $asr --diar-model $diar --backend cuda --host 127.0.0.1 --port 18921"
@@ -27,7 +39,7 @@ if [[ ${1:-} == --serve && $# == 1 ]]; then
 fi
 
 if (( $# < 1 || $# > 2 )); then
-    echo "Usage: $0 RECORDING.wav [LANGUAGE|auto]  or  $0 --serve" >&2
+    echo "Usage: $0 RECORDING.wav [LANGUAGE|auto]  or  $0 --serve [LANGUAGE|auto]" >&2
     exit 2
 fi
 audio=$1
@@ -37,6 +49,7 @@ if [[ ! -r $audio || ! -f $audio || ! $language =~ ^[A-Za-z0-9-]+$ ]]; then
     exit 2
 fi
 
+pick_asr "$language"
 remote=(ssh -T -o BatchMode=yes peecee-wsl)
 jobdir=$("${remote[@]}" 'mktemp -d /tmp/peecee-speech.XXXXXXXX')
 [[ $jobdir =~ ^/tmp/peecee-speech\.[a-zA-Z0-9]{8}$ ]]

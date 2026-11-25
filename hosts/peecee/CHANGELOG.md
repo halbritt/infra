@@ -1,5 +1,15 @@
 # Changelog — peecee
 
+## 2026-11-25 — English streaming ASR model for English speech
+
+Owner-directed after a comparison of five recognizers on far-field ReSpeaker audio
+for a live conversation coach. Added NVIDIA's Nemotron Speech Streaming English
+0.6B to the WSL2 install; the proximal launcher now uses it for `en` locales and
+for `--serve`, and keeps Nemotron 3.5 for other languages and automatic selection.
+On the test recording it made about half the errors of Nemotron 3.5 and delivered
+words a median 0.64 s after they were spoken. See
+[the comparison and verification](config/nemo-speech/README.md#model-choice-on-2026-11-25).
+
 ## 2026-11-24 — install Nemotron 3.5 streaming ASR and Sortformer v2.1
 
 Installed the owner-requested ASR and diarization models under WSL2. A proximal
