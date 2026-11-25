@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""Wrap a command so oversized stdout/stderr is spooled to ~/.cache/bounded-output/
+while preserving exact exit codes, head, middle error/diagnostic lines, and tail.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import os
+from pathlib import Path
+import re
+import signal
+import subprocess
+import sys
+import tempfile
+
+
+DIAG_RE = re.compile(r"(error|panic|fatal|fail|exception|traceback|assert|exit code|signal|refused|stack)", re.I)
+
+
+def is_truthy(raw: str | None) -> bool:
+    return (raw or "").strip().lower() in ("1", "true", "yes")
+
+
+def parse_positive_int(raw: str | None, default: int) -> int:
+    if raw is None or not raw.strip():
+        return default
+    try:
+        val = int(raw.strip())
+        return val if val >= 0 else default
+    except ValueError:
+        return default
+
+
+def resolve_spool_dir() -> Path:
+    override = os.environ.get("BOUNDED_EXEC_OUTPUT_DIR", "").strip()
+    if override and os.path.isabs(override):
+        return Path(override)
+    cache = os.environ.get("XDG_CACHE_HOME", "").strip()
+    if cache and os.path.isabs(cache):
+        return Path(cache) / "bounded-output"
+    return Path.home() / ".cache" / "bounded-output"
+
+
+def spool_raw(raw: bytes, spool_dir: Path) -> Path:
+    spool_dir.mkdir(parents=True, exist_ok=True)
+    if spool_dir.is_symlink():
+        raise RuntimeError(f"refusing symlink spool dir: {spool_dir}")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    final_path = spool_dir / f"{stamp}-{os.getpid()}.log"
+    fd, tmp_name = tempfile.mkstemp(prefix=".bounded-", dir=str(spool_dir))
+    tmp_path = Path(tmp_name)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(raw)
+        os.replace(tmp_path, final_path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
+    return final_path
+
+
+def truncate_prefix_utf8(text: str, max_bytes: int) -> tuple[str, int]:
+    raw = text.encode("utf-8", errors="replace")
+    if max_bytes <= 0 or not raw:
+        return "", 0
+    if len(raw) <= max_bytes:
+        return raw.decode("utf-8", errors="replace"), len(raw)
+    cut = max_bytes
+    while cut > 0 and (raw[cut] & 0xC0) == 0x80:
+        cut -= 1
+    if cut == 0:
+        return "", 0
+    nl = raw.rfind(b"\n", max(cut // 2, cut - 256), cut)
+    if nl > 0:
+        cut = nl
+    return raw[:cut].decode("utf-8", errors="replace"), cut
+
+
+def truncate_suffix_utf8(text: str, max_bytes: int) -> tuple[str, int]:
+    raw = text.encode("utf-8", errors="replace")
+    total = len(raw)
+    if max_bytes <= 0 or not raw:
+        return "", total
+    if total <= max_bytes:
+        return raw.decode("utf-8", errors="replace"), 0
+    start = total - max_bytes
+    while start < total and (raw[start] & 0xC0) == 0x80:
+        start += 1
+    if start >= total:
+        return "", total
+    nl = raw.find(b"\n", start, min(total, start + min(256, (total - start) // 2)))
+    if nl >= 0 and nl + 1 < total:
+        start = nl + 1
+    return raw[start:].decode("utf-8", errors="replace"), start
+
+
+def build_bounded_excerpt(raw: bytes, max_bytes: int, log_path: Path, exit_code: int) -> str:
+    text = raw.decode("utf-8", errors="replace")
+    total_bytes = len(raw)
+    header = f"[bounded-exec] exit_code={exit_code}\n" if exit_code != 0 else ""
+    diag_header = "\n[... diagnostic lines from omitted middle ...]\n"
+    footer_template = f"\n[... omitted {total_bytes} of {total_bytes} bytes; full output: {log_path} ...]\n"
+    reserve = len(header.encode("utf-8")) + len(diag_header.encode("utf-8")) + len(footer_template.encode("utf-8"))
+    if max_bytes <= reserve + 32:
+        compact = f"{header}[... full output ({total_bytes} bytes): {log_path} ...]\n"
+        return compact
+
+    budget = max_bytes - reserve
+    head_budget = budget * 35 // 100
+    diag_budget = budget * 30 // 100
+    tail_budget = budget - head_budget - diag_budget
+
+    head, head_end = truncate_prefix_utf8(text, head_budget)
+    raw_buf = text.encode("utf-8")
+    tail, tail_rel = truncate_suffix_utf8(raw_buf[head_end:].decode("utf-8", errors="replace"), tail_budget)
+    middle = raw_buf[head_end : head_end + tail_rel].decode("utf-8", errors="replace")
+
+    diags: list[str] = []
+    seen: set[str] = set()
+    diag_used = 0
+    for line in middle.splitlines():
+        clean = line.rstrip("\r")
+        trimmed = clean.strip()
+        if not trimmed or not DIAG_RE.search(trimmed) or trimmed in seen:
+            continue
+        seen.add(trimmed)
+        sep = 1 if diags else 0
+        rem = diag_budget - diag_used - sep
+        if rem <= 0:
+            break
+        bounded_line, bounded_len = truncate_prefix_utf8(clean, rem)
+        if not bounded_line:
+            break
+        diags.append(bounded_line)
+        diag_used += sep + bounded_len
+
+    if not diags and diag_budget > 0:
+        extra_head = diag_budget // 2
+        head, head_end = truncate_prefix_utf8(text, head_budget + extra_head)
+        tail, _ = truncate_suffix_utf8(raw_buf[head_end:].decode("utf-8", errors="replace"), tail_budget + (diag_budget - extra_head))
+
+    included = head_end + diag_used + len(tail.encode("utf-8"))
+    omitted = max(1, total_bytes - included)
+    footer = f"\n[... omitted {omitted} of {total_bytes} bytes; full output: {log_path} ...]\n"
+    parts = [header, head]
+    if diags:
+        parts.append(diag_header)
+        parts.append("\n".join(diags))
+    parts.append(footer)
+    parts.append(tail)
+    assembled = "".join(parts)
+    if len(assembled.encode("utf-8")) > max_bytes:
+        assembled, _ = truncate_prefix_utf8(assembled, max_bytes)
+    return assembled
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    if args and args[0] == "--":
+        args = args[1:]
+    if not args:
+        sys.stderr.write("Usage: bounded-exec [--] COMMAND [ARGS...]\n")
+        return 2
+
+    raw_mode = is_truthy(os.environ.get("BOUNDED_EXEC_RAW"))
+    max_bytes = parse_positive_int(os.environ.get("BOUNDED_EXEC_MAX_BYTES"), 16384)
+    max_lines = parse_positive_int(os.environ.get("BOUNDED_EXEC_MAX_LINES"), 300)
+
+    proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    exit_code = proc.returncode
+    if exit_code < 0:
+        exit_code = 128 + abs(exit_code)
+
+    combined = proc.stdout + proc.stderr
+    line_count = combined.count(b"\n")
+    over_bytes = max_bytes > 0 and len(combined) > max_bytes
+    over_lines = max_lines > 0 and line_count > max_lines
+
+    if raw_mode or (not over_bytes and not over_lines):
+        if proc.stdout:
+            sys.stdout.buffer.write(proc.stdout)
+            sys.stdout.buffer.flush()
+        if proc.stderr:
+            sys.stderr.buffer.write(proc.stderr)
+            sys.stderr.buffer.flush()
+        return exit_code
+
+    log_path = spool_raw(combined, resolve_spool_dir())
+    effective_cap = max_bytes if max_bytes > 0 else 16384
+    excerpt = build_bounded_excerpt(combined, effective_cap, log_path, exit_code)
+    dest = sys.stderr if (not proc.stdout and proc.stderr) else sys.stdout
+    dest.write(excerpt)
+    if not excerpt.endswith("\n"):
+        dest.write("\n")
+    dest.flush()
+    return exit_code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

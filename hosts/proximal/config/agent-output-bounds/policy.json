@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "description": "Default tool-output bounds across proximal agent harnesses (PROXIMAL-15 / C2a)",
+  "codex": {
+    "profiles": [
+      ".codex/config.toml",
+      ".codex-harm/config.toml",
+      ".codex-3/config.toml"
+    ],
+    "top_level": {
+      "tool_output_token_limit": 6000
+    }
+  },
+  "claude": {
+    "profiles": [
+      ".claude/settings.json",
+      ".claude-harm/settings.json"
+    ],
+    "settings": {
+      "bashOutputMaxChars": 12000
+    },
+    "env": {
+      "BASH_MAX_OUTPUT_LENGTH": "12000",
+      "MAX_MCP_OUTPUT_TOKENS": "8000",
+      "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "12000"
+    }
+  },
+  "opencode": {
+    "profiles": [
+      ".config/opencode/opencode.json"
+    ],
+    "settings": {
+      "tool_output": {
+        "max_lines": 500,
+        "max_bytes": 16384
+      }
+    }
+  }
+}

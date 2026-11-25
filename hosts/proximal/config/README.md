@@ -19,6 +19,7 @@ Each directory beside this file is one subsystem, self-contained with its own `R
 
 | dir | subsystem | what it tracks |
 |---|---|---|
+| [`agent-output-bounds/`](agent-output-bounds/) | Agent tool-output caps (`PROXIMAL-15`) | Declarative per-harness bounds (`policy.json`), surgical TOML/JSON sync (`sync_bounds.py`), and `bounded-exec` spool wrapper across Codex, Claude Code, and OpenCode |
 | [`update-bot/`](update-bot/) | Daily software and OS maintenance | Hermes/DeepSeek updater for approved tools and Ubuntu packages; protected sessions, Cairn/Git receipts and independent Slack monitoring |
 | [`postgres/`](postgres/) | PostgreSQL 19 (`:5432`) | GUC baseline/desired/known-bad, inventory snapshots, tuning reports, pg-repack maintenance, vendored best-practices skill |
 | [`observability/`](observability/) | Prometheus + Grafana + exporters | node_exporter (host) + postgres_exporter (PG) + nvidia_gpu_exporter (RTX 3090) → Prometheus → Grafana dashboards; all systemd, tailnet-bound |
