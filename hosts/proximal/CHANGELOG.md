@@ -1,5 +1,14 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — Hermes gateway, cairn-api semantic config path, scheduler and wake workers (w24)
+
+- CAIRN-301 w24-hosts-prep (operator agent-2485, coordinator agent-2481; owner "work through the rest"). Nothing deleted.
+- Hermes: `hermes-gateway` was idle (control socket `active-work`: 0 agents, no work). It was restarted through the unit's own graceful path, `systemctl --user reload` (SIGUSR1 drain, exit 75, systemd relaunch), at 16:27:51 PST. This kept the unit and its `50-generation.conf` drop-in as they were. `hermes gateway restart` was not used because it would also rewrite the unit file. PID 1294775 → 3459168, same generation `hermes-candidate-1b39ecab`; Slack `connected`; `cairn mcp` helper pid 3459383 on `executables/68c1c5ba…` (was 55df58d8).
+- cairn-api: the semantic config moved out of the rollout directory to `~/.local/share/cairn/semantic-rust/configs/d6b1b845e456d4e944c8d94691367b55ef9581b0c1eabd3e9c8e8e774f170657/semantic-rust-embed.json`. It is byte-identical, named by its own sha256, and mode 0400. Worker payloads are unchanged in `semantic-rust/payloads/834eda5e…`. The install docs define no stable path for this file, so it sits beside the payload it selects. Only the path changed in drop-in `zz-c301-api-rust.conf` (backup `go-rollout-08f04281/backups/w24/zz-c301-api-rust.conf.pre-w24`). One restart at 16:29:34 PST, pid 449251 → 3476246 on 68c1c5ba. Semantic READY, model `c53c0313…`, coverage 7985/7985 both before and after; `semantic_job` 0 rows before and after.
+- Scheduler and wake workers 01–07 were restarted one at a time, 16:30:16–16:30:38 PST, each checked first for no `cairn-wake-attempt-*` unit and no child process. All went be9e35d6 → 68c1c5ba, active, scheduler ready. No proximal service now runs be9e35d6.
+- Reverse: `~/.local/share/agent-evidence/w24/revert-w24.sh` (restores the drop-in only if it differs by exactly the path, then daemon-reload and a cairn-api restart). For the restarts, `go-rollout-08f04281/revert.sh` restores the be9e35d6 binary.
+- Read-only removal plan for proximal, talos and archon: `~/.local/share/agent-evidence/w24/removal-plan.md`.
+
 ## 2026-11-24 — Cairn MCP facade (`cairn mcp`) to `08f04281`
 
 - Owner, 2026-11-24 ("the MCP facade should be next"); CAIRN-301 w23 (operator agent-2485, coordinator agent-2481). New content-addressed executable `~/.local/share/cairn/executables/68c1c5ba5f21f33c…/cairn` (the w21 build of `08f04281`, `vcs_modified=false`); `55df58d8…` (`9ae5e4db`) and `d43ca49b…` (`a3da80e9`) are kept.

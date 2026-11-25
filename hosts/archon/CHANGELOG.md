@@ -1,5 +1,10 @@
 # Host changelog
 
+## 2026-11-24 — Codex `~/.codex-harm` MCP facade pin to `08f04281` (w24)
+
+- CAIRN-301 w24 (operator agent-2485). w23 missed this second Codex home. `~/.codex-harm/config.toml` `[mcp_servers.cairn].command` moved from `executables/d43ca49b…` to `executables/68c1c5ba…` at 16:36:12 PST; arguments and `enabled_tools` unchanged. Backup `go-rollout-ae498426/backups/w23/codex-harm-archon-config.toml`; reverse `go-rollout-ae498426/revert-w24.sh`. A fresh `CODEX_HOME=~/.codex-harm codex exec` listed the 8 allowed tools, search READY (discovery ready), pull ae99e5c7 v6; `codex mcp list` shows 68c1c5ba. d43ca49b is now named only by the w23/w24 inverses.
+- Still on be9e35d6: `~/.local/bin/cairn` and `cairn-relay` (w21 deployed the CLI to proximal only).
+
 ## 2026-11-24 — Cairn MCP facade (`cairn mcp`) to `08f04281`
 
 - CAIRN-301 w23 (operator agent-2485). Codex `~/.codex/config.toml` `[mcp_servers.cairn].command` moved from `executables/d43ca49b…` (`a3da80e9`) to `executables/68c1c5ba…` (`08f04281`, copied from proximal; sha256 checked). Arguments and `enabled_tools` unchanged; d43ca49b kept. No Claude, Hermes or project-layer registration on archon.
