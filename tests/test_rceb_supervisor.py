@@ -139,6 +139,17 @@ class RotationTests(unittest.TestCase):
                 self.assertLessEqual(len(args[args.index('--summary') + 1].encode()), 280)
             self.assertEqual(module.next_action({'phase': 'registered'}, 0), 'announce')
 
+    def test_handoff_metadata_alone_cannot_authorize_retirement(self):
+        reference = {'record_id': 'r', 'version': 2}
+        record = {'version': 2, 'payload_available': True, 'body': 'selected checkpoint',
+                  'body_sha256': module.hashlib.sha256(b'selected checkpoint').hexdigest()}
+        history = {'record_id': 'r', 'versions': [record]}
+        module.check_saved_handoff(history, reference)
+        for change in ({'payload_available': False}, {'body': ''}, {'version': 1},
+                       {'body_sha256': 'different'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                module.check_saved_handoff(history | {'versions': [record | change]}, reference)
+
 
 if __name__ == '__main__':
     unittest.main()

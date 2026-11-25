@@ -2,6 +2,7 @@
 """Bounded native Codex turns and checkpoint-before-replacement on Talos."""
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -61,6 +62,19 @@ def checked_receipt(value, thread_id, generation):
     if type(version) is not int or version < 1:
         raise ValueError('Invalid handoff version')
     return {'record_id': record, 'version': version}
+
+
+def check_saved_handoff(history, reference):
+    versions = history.get('versions', [])
+    if history.get('record_id') != reference['record_id'] or len(versions) != 1:
+        raise ValueError('Handoff lookup returned a different source')
+    version = versions[0]
+    body = version.get('body')
+    if (version.get('version') != reference['version'] or
+            version.get('payload_available') is not True or not isinstance(body, str) or not body.strip()):
+        raise ValueError('Saved handoff body is unavailable or empty')
+    if hashlib.sha256(body.encode()).hexdigest() != version.get('body_sha256'):
+        raise ValueError('Saved handoff body does not match its digest')
 
 
 class Supervisor:
@@ -258,6 +272,8 @@ class Supervisor:
 
     def finish_turn(self):
         self.state.pop('pending_result', None)
+        if 'failure' in self.state:
+            self.state['last_failure'] = self.state.pop('failure')
         self.state['next_turn_at'] = time.time() + 120
         self.save()
 
@@ -279,7 +295,8 @@ class Supervisor:
         elif action == 'handoff':
             answer = json.loads(self.run_turn('handoff'))
             reference = checked_receipt(answer, self.state['thread_id'], self.state['generation'])
-            self.cairn(['agent', 'history'], json.dumps(reference), session=False)
+            history = self.cairn(['agent', 'history'], json.dumps(reference), session=False)
+            check_saved_handoff(history, reference)
             self.state['handoff'] = reference
             self.state['phase'] = 'handoff_saved'
             self.state.pop('pending_result', None)
