@@ -6,6 +6,7 @@ while preserving exact exit codes, head, middle error/diagnostic lines, and tail
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import errno
 import os
 from pathlib import Path
 import re
@@ -61,6 +62,21 @@ def spool_raw(raw: bytes, spool_dir: Path) -> Path:
     return final_path
 
 
+def split_line_spans(buf: bytes) -> list[tuple[int, int]]:
+    """Return (start, end_incl_nl) byte spans for each line in buf."""
+    spans: list[tuple[int, int]] = []
+    pos = 0
+    n = len(buf)
+    while pos < n:
+        nl = buf.find(b"\n", pos)
+        if nl == -1:
+            spans.append((pos, n))
+            break
+        spans.append((pos, nl + 1))
+        pos = nl + 1
+    return spans
+
+
 def truncate_prefix_utf8(text: str, max_bytes: int) -> tuple[str, int]:
     raw = text.encode("utf-8", errors="replace")
     if max_bytes <= 0 or not raw:
@@ -74,7 +90,7 @@ def truncate_prefix_utf8(text: str, max_bytes: int) -> tuple[str, int]:
         return "", 0
     nl = raw.rfind(b"\n", max(cut // 2, cut - 256), cut)
     if nl > 0:
-        cut = nl
+        cut = nl + 1
     return raw[:cut].decode("utf-8", errors="replace"), cut
 
 
@@ -96,31 +112,100 @@ def truncate_suffix_utf8(text: str, max_bytes: int) -> tuple[str, int]:
     return raw[start:].decode("utf-8", errors="replace"), start
 
 
-def build_bounded_excerpt(raw: bytes, max_bytes: int, log_path: Path, exit_code: int) -> str:
+def select_head_and_tail(
+    raw_buf: bytes,
+    spans: list[tuple[int, int]],
+    head_budget: int,
+    tail_budget: int,
+    head_line_cap: int,
+    tail_line_cap: int,
+) -> tuple[str, int, str, int]:
+    total_lines = len(spans)
+    if head_line_cap > 0 and total_lines > 0:
+        line_head_end = spans[min(head_line_cap, total_lines) - 1][1]
+    else:
+        line_head_end = 0 if head_line_cap == 0 else len(raw_buf)
+    head_candidate = raw_buf[:line_head_end].decode("utf-8", errors="replace")
+    head, head_end = truncate_prefix_utf8(head_candidate, head_budget)
+
+    rem_buf = raw_buf[head_end:]
+    rem_spans = split_line_spans(rem_buf)
+    if tail_line_cap > 0 and rem_spans:
+        line_tail_rel = rem_spans[-min(tail_line_cap, len(rem_spans))][0]
+    else:
+        line_tail_rel = len(rem_buf) if tail_line_cap == 0 else 0
+    tail_candidate = rem_buf[line_tail_rel:].decode("utf-8", errors="replace")
+    tail, tail_in_cand = truncate_suffix_utf8(tail_candidate, tail_budget)
+    tail_start = head_end + line_tail_rel + tail_in_cand
+    return head, head_end, tail, tail_start
+
+
+def build_bounded_excerpt(
+    raw: bytes, max_bytes: int, max_lines: int, log_path: Path, exit_code: int
+) -> str:
     text = raw.decode("utf-8", errors="replace")
-    total_bytes = len(raw)
-    header = f"[bounded-exec] exit_code={exit_code}\n" if exit_code != 0 else ""
-    diag_header = "\n[... diagnostic lines from omitted middle ...]\n"
-    footer_template = f"\n[... omitted {total_bytes} of {total_bytes} bytes; full output: {log_path} ...]\n"
-    reserve = len(header.encode("utf-8")) + len(diag_header.encode("utf-8")) + len(footer_template.encode("utf-8"))
-    if max_bytes <= reserve + 32:
-        compact = f"{header}[... full output ({total_bytes} bytes): {log_path} ...]\n"
-        return compact
-
-    budget = max_bytes - reserve
-    head_budget = budget * 35 // 100
-    diag_budget = budget * 30 // 100
-    tail_budget = budget - head_budget - diag_budget
-
-    head, head_end = truncate_prefix_utf8(text, head_budget)
     raw_buf = text.encode("utf-8")
-    tail, tail_rel = truncate_suffix_utf8(raw_buf[head_end:].decode("utf-8", errors="replace"), tail_budget)
-    middle = raw_buf[head_end : head_end + tail_rel].decode("utf-8", errors="replace")
+    total_bytes = len(raw)
+    total_buf_bytes = len(raw_buf)
+    spans = split_line_spans(raw_buf)
+    total_lines = len(spans)
+
+    header = f"[bounded-exec] exit_code={exit_code}\n" if exit_code != 0 else ""
+    diag_header = "[... diagnostic lines from omitted middle ...]\n"
+    footer_template = (
+        f"[... omitted {total_bytes} of {total_bytes} bytes "
+        f"({total_lines} of {total_lines} lines); full output: {log_path} ...]\n"
+    )
+    reserve = (
+        len(header.encode("utf-8"))
+        + len(diag_header.encode("utf-8"))
+        + len(footer_template.encode("utf-8"))
+        + 4
+    )
+    if max_bytes > 0 and max_bytes <= reserve + 32:
+        return f"{header}[... full output ({total_bytes} bytes, {total_lines} lines): {log_path} ...]\n"
+
+    if max_bytes > 0:
+        budget = max_bytes - reserve
+        head_budget = budget * 35 // 100
+        diag_budget = budget * 30 // 100
+        tail_budget = budget - head_budget - diag_budget
+    else:
+        head_budget = total_buf_bytes
+        diag_budget = total_buf_bytes
+        tail_budget = total_buf_bytes
+
+    cap_lines = max_lines > 0 and total_lines > max_lines
+    if cap_lines:
+        line_budget = max(1, max_lines - 4) if max_lines > 5 else max(1, max_lines)
+        if line_budget == 1:
+            head_line_cap, diag_line_cap, tail_line_cap = 1, 0, 0
+        else:
+            head_line_cap = max(1, line_budget * 35 // 100)
+            diag_line_cap = line_budget * 30 // 100
+            tail_line_cap = line_budget - head_line_cap - diag_line_cap
+            if tail_line_cap == 0:
+                if diag_line_cap > 0:
+                    diag_line_cap -= 1
+                else:
+                    head_line_cap -= 1
+                tail_line_cap = 1
+    else:
+        head_line_cap = total_lines
+        diag_line_cap = total_lines
+        tail_line_cap = total_lines
+
+    head, head_end, tail, tail_start = select_head_and_tail(
+        raw_buf, spans, head_budget, tail_budget, head_line_cap, tail_line_cap
+    )
+    middle = raw_buf[head_end:tail_start].decode("utf-8", errors="replace")
 
     diags: list[str] = []
     seen: set[str] = set()
     diag_used = 0
     for line in middle.splitlines():
+        if len(diags) >= diag_line_cap:
+            break
         clean = line.rstrip("\r")
         trimmed = clean.strip()
         if not trimmed or not DIAG_RE.search(trimmed) or trimmed in seen:
@@ -136,22 +221,54 @@ def build_bounded_excerpt(raw: bytes, max_bytes: int, log_path: Path, exit_code:
         diags.append(bounded_line)
         diag_used += sep + bounded_len
 
-    if not diags and diag_budget > 0:
-        extra_head = diag_budget // 2
-        head, head_end = truncate_prefix_utf8(text, head_budget + extra_head)
-        tail, _ = truncate_suffix_utf8(raw_buf[head_end:].decode("utf-8", errors="replace"), tail_budget + (diag_budget - extra_head))
+    if not diags and (diag_budget > 0 or diag_line_cap > 0):
+        extra_head_bytes = diag_budget // 2
+        extra_tail_bytes = diag_budget - extra_head_bytes
+        extra_head_lines = diag_line_cap // 2 if cap_lines else 0
+        extra_tail_lines = (diag_line_cap - extra_head_lines) if cap_lines else 0
+        head, head_end, tail, tail_start = select_head_and_tail(
+            raw_buf,
+            spans,
+            head_budget + extra_head_bytes,
+            tail_budget + extra_tail_bytes,
+            head_line_cap + extra_head_lines,
+            tail_line_cap + extra_tail_lines,
+        )
 
-    included = head_end + diag_used + len(tail.encode("utf-8"))
-    omitted = max(1, total_bytes - included)
-    footer = f"\n[... omitted {omitted} of {total_bytes} bytes; full output: {log_path} ...]\n"
-    parts = [header, head]
+    middle_buf = raw_buf[head_end:tail_start]
+    middle_bytes = len(middle_buf)
+    omitted_bytes = max(0, middle_bytes - diag_used)
+    if total_buf_bytes != total_bytes and total_buf_bytes > 0:
+        # Preserve raw byte scale when invalid UTF-8 bytes were replaced.
+        omitted_bytes = min(total_bytes, max(0, total_bytes - head_end - diag_used - (total_buf_bytes - tail_start)))
+    middle_lines = len(split_line_spans(middle_buf))
+    omitted_lines = max(0, middle_lines - len(diags))
+
+    if omitted_bytes > 0 and omitted_lines > 0 and cap_lines:
+        omit_desc = f"omitted {omitted_bytes} of {total_bytes} bytes ({omitted_lines} of {total_lines} lines)"
+    elif omitted_bytes > 0:
+        omit_desc = f"omitted {omitted_bytes} of {total_bytes} bytes"
+    elif omitted_lines > 0:
+        omit_desc = f"omitted {omitted_lines} of {total_lines} lines"
+    else:
+        omit_desc = f"{total_bytes} bytes"
+
+    parts: list[str] = []
+    if header:
+        parts.append(header)
+    if head:
+        parts.append(head)
+        if not head.endswith("\n"):
+            parts.append("\n")
     if diags:
         parts.append(diag_header)
         parts.append("\n".join(diags))
-    parts.append(footer)
-    parts.append(tail)
+        parts.append("\n")
+    parts.append(f"[... {omit_desc}; full output: {log_path} ...]\n")
+    if tail:
+        parts.append(tail)
     assembled = "".join(parts)
-    if len(assembled.encode("utf-8")) > max_bytes:
+    if max_bytes > 0 and len(assembled.encode("utf-8")) > max_bytes:
         assembled, _ = truncate_prefix_utf8(assembled, max_bytes)
     return assembled
 
@@ -166,15 +283,34 @@ def main(argv: list[str] | None = None) -> int:
 
     raw_mode = is_truthy(os.environ.get("BOUNDED_EXEC_RAW"))
     max_bytes = parse_positive_int(os.environ.get("BOUNDED_EXEC_MAX_BYTES"), 16384)
-    max_lines = parse_positive_int(os.environ.get("BOUNDED_EXEC_MAX_LINES"), 300)
+    max_lines_env = os.environ.get("BOUNDED_EXEC_MAX_LINES")
+    max_lines = parse_positive_int(max_lines_env, 300)
+    explicit_positive_max_lines = (
+        max_lines_env is not None and max_lines_env.strip() != "" and max_lines > 0
+    )
+    if max_bytes == 0 and not explicit_positive_max_lines:
+        raw_mode = True
 
-    proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    try:
+        proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    except FileNotFoundError:
+        sys.stderr.write(f"bounded-exec: {args[0]}: not found\n")
+        return 127
+    except PermissionError:
+        sys.stderr.write(f"bounded-exec: {args[0]}: permission denied\n")
+        return 126
+    except OSError as exc:
+        sys.stderr.write(f"bounded-exec: {args[0]}: {exc.strerror or exc}\n")
+        if exc.errno in (errno.ENOENT, errno.ENOTDIR):
+            return 127
+        return 126
+
     exit_code = proc.returncode
     if exit_code < 0:
         exit_code = 128 + abs(exit_code)
 
     combined = proc.stdout + proc.stderr
-    line_count = combined.count(b"\n")
+    line_count = len(split_line_spans(combined))
     over_bytes = max_bytes > 0 and len(combined) > max_bytes
     over_lines = max_lines > 0 and line_count > max_lines
 
@@ -188,8 +324,7 @@ def main(argv: list[str] | None = None) -> int:
         return exit_code
 
     log_path = spool_raw(combined, resolve_spool_dir())
-    effective_cap = max_bytes if max_bytes > 0 else 16384
-    excerpt = build_bounded_excerpt(combined, effective_cap, log_path, exit_code)
+    excerpt = build_bounded_excerpt(combined, max_bytes, max_lines, log_path, exit_code)
     dest = sys.stderr if (not proc.stdout and proc.stderr) else sys.stdout
     dest.write(excerpt)
     if not excerpt.endswith("\n"):

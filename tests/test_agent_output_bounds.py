@@ -187,6 +187,117 @@ class AgentOutputBoundsTests(unittest.TestCase):
         self.assertEqual(raw.returncode, 3)
         self.assertEqual(len(raw.stdout) + len(raw.stderr), len(full_text))
 
+    def test_bounded_exec_line_cap_on_short_lines_max_bytes_zero_and_missing_cmd(self) -> None:
+        spool_dir = self.home / "cache" / "bounded-output-lines"
+        env = dict(os.environ, HOME=str(self.home), BOUNDED_EXEC_OUTPUT_DIR=str(spool_dir))
+        short_350_cmd = (
+            "python3 -c \"for i in range(350): "
+            "print('ERROR: mid failure' if i == 175 else f'line {i:03d}')\""
+        )
+
+        # 1. 350 short lines (< 16 KB) genuinely caps lines <= 300 (strictly < 350),
+        #    preserves head, middle diagnostic, tail, full 350-line spool log, and accurate omitted counts.
+        bounded_lines = subprocess.run(
+            [sys.executable, str(BOUNDED_EXEC), "--", "/bin/sh", "-c", short_350_cmd],
+            env=env, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(bounded_lines.returncode, 0)
+        out_lines = bounded_lines.stdout.splitlines()
+        self.assertLess(len(out_lines), 350)
+        self.assertLessEqual(len(out_lines), 301)
+        self.assertIn("line 000", bounded_lines.stdout)
+        self.assertIn("ERROR: mid failure", bounded_lines.stdout)
+        self.assertIn("line 349", bounded_lines.stdout)
+        self.assertNotIn("omitted 1 of", bounded_lines.stdout)
+        self.assertIn("bytes (", bounded_lines.stdout)
+        self.assertIn("of 350 lines)", bounded_lines.stdout)
+        logs = list(spool_dir.glob("*.log"))
+        self.assertEqual(len(logs), 1)
+        self.assertEqual(stat.S_IMODE(logs[0].stat().st_mode), 0o600)
+        self.assertEqual(len(logs[0].read_text(encoding="utf-8").splitlines()), 350)
+
+        # 2. BOUNDED_EXEC_MAX_BYTES=0 on 350 lines passes all 350 lines unclipped without creating a spool log.
+        spool_zero = self.home / "cache" / "bounded-output-zero"
+        zero_env = dict(
+            os.environ,
+            HOME=str(self.home),
+            BOUNDED_EXEC_OUTPUT_DIR=str(spool_zero),
+            BOUNDED_EXEC_MAX_BYTES="0",
+        )
+        zero_env.pop("BOUNDED_EXEC_MAX_LINES", None)
+        unbounded = subprocess.run(
+            [sys.executable, str(BOUNDED_EXEC), "--", "/bin/sh", "-c", short_350_cmd],
+            env=zero_env, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(unbounded.returncode, 0)
+        self.assertEqual(len(unbounded.stdout.splitlines()), 350)
+        self.assertNotIn("full output:", unbounded.stdout)
+        self.assertFalse(spool_zero.exists())
+
+        # 3. Nonexistent command exits 127 cleanly without Python traceback; non-executable exits 126.
+        missing = subprocess.run(
+            [sys.executable, str(BOUNDED_EXEC), "--", "/nonexistent/bounded_exec_missing_cmd"],
+            env=env, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(missing.returncode, 127)
+        self.assertIn("not found", missing.stderr)
+        self.assertNotIn("Traceback", missing.stderr)
+
+        nonexec = self.home / "not_executable.sh"
+        nonexec.write_text("#!/bin/sh\necho hi\n", encoding="utf-8")
+        nonexec.chmod(0o600)
+        perm = subprocess.run(
+            [sys.executable, str(BOUNDED_EXEC), "--", str(nonexec)],
+            env=env, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(perm.returncode, 126)
+        self.assertIn("permission denied", perm.stderr)
+        self.assertNotIn("Traceback", perm.stderr)
+
+    def test_sync_bounds_handles_multiline_nested_toml_arrays_and_strings(self) -> None:
+        self._seed_profiles()
+        nested_toml = (
+            'model = "gpt-5"\n'
+            'notify = [\n'
+            '  ["echo", "hi"]\n'
+            ']\n'
+            'note = """\n'
+            '[not_a_section]\n'
+            'tool_output_token_limit = 999\n'
+            '"""\n'
+            '[features]\n'
+            'code_mode = true\n'
+        )
+        codex_cfg = self.home / ".codex" / "config.toml"
+        codex_cfg.write_text(nested_toml, encoding="utf-8")
+
+        subprocess.run(
+            [sys.executable, str(SYNC_SCRIPT), "--apply", "--home", str(self.home), "--policy", str(POLICY_PATH)],
+            capture_output=True, text=True, check=True,
+        )
+        applied_raw = codex_cfg.read_text(encoding="utf-8")
+        self.assertLess(applied_raw.index("tool_output_token_limit = 6000"), applied_raw.index("[features]"))
+        self.assertGreater(applied_raw.index("tool_output_token_limit = 6000"), applied_raw.index('  ["echo", "hi"]\n]'))
+        parsed = tomllib.loads(applied_raw)
+        self.assertEqual(parsed["tool_output_token_limit"], 6000)
+        self.assertEqual(parsed["notify"], [["echo", "hi"]])
+        self.assertTrue(parsed["features"]["code_mode"])
+
+        chk = subprocess.run(
+            [sys.executable, str(SYNC_SCRIPT), "--check", "--home", str(self.home), "--policy", str(POLICY_PATH)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(chk.returncode, 0, chk.stderr)
+
+        subprocess.run(
+            [sys.executable, str(SYNC_SCRIPT), "--revert", "--home", str(self.home), "--policy", str(POLICY_PATH)],
+            capture_output=True, text=True, check=True,
+        )
+        reverted = tomllib.loads(codex_cfg.read_text(encoding="utf-8"))
+        self.assertNotIn("tool_output_token_limit", reverted)
+        self.assertEqual(reverted["notify"], [["echo", "hi"]])
+        self.assertTrue(reverted["features"]["code_mode"])
+
 
 if __name__ == "__main__":
     unittest.main()

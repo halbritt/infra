@@ -15,7 +15,95 @@ import tomllib
 
 
 DEFAULT_POLICY = Path(__file__).resolve().with_name("policy.json")
-SECTION_RE = re.compile(r"^\s*\[")
+
+
+def scan_toml_top_level(lines: list[str], key: str) -> tuple[int, list[int]]:
+    """Return (first_section_line_idx, matching_top_level_key_line_indices).
+
+    Tracks TOML string/comment/bracket state so nested multi-line arrays and
+    inline tables or multi-line strings containing `[` are never mistaken for
+    top-level `[section]` headers or key assignments.
+    """
+    key_re = re.compile(rf"^\s*{re.escape(key)}\s*=")
+    in_ml_basic = False
+    in_ml_literal = False
+    depth = 0
+    found_indices: list[int] = []
+
+    for idx, line in enumerate(lines):
+        at_top_level = not in_ml_basic and not in_ml_literal and depth == 0
+        if at_top_level:
+            stripped = line.lstrip(" \t")
+            if stripped.startswith("["):
+                return idx, found_indices
+            if key_re.match(line):
+                found_indices.append(idx)
+
+        i = 0
+        n = len(line)
+        while i < n:
+            if in_ml_basic:
+                if line[i] == "\\":
+                    i += 2
+                    continue
+                if line.startswith('"""', i):
+                    j = i + 3
+                    while j < n and line[j] == '"' and (j - i) < 5:
+                        j += 1
+                    in_ml_basic = False
+                    i = j
+                    continue
+                i += 1
+                continue
+
+            if in_ml_literal:
+                if line.startswith("'''", i):
+                    j = i + 3
+                    while j < n and line[j] == "'" and (j - i) < 5:
+                        j += 1
+                    in_ml_literal = False
+                    i = j
+                    continue
+                i += 1
+                continue
+
+            ch = line[i]
+            if ch == "#":
+                break
+            if line.startswith('"""', i):
+                in_ml_basic = True
+                i += 3
+                continue
+            if line.startswith("'''", i):
+                in_ml_literal = True
+                i += 3
+                continue
+            if ch == '"':
+                i += 1
+                while i < n:
+                    if line[i] == "\\":
+                        i += 2
+                    elif line[i] == '"':
+                        i += 1
+                        break
+                    else:
+                        i += 1
+                continue
+            if ch == "'":
+                i += 1
+                while i < n:
+                    if line[i] == "'":
+                        i += 1
+                        break
+                    i += 1
+                continue
+            if ch in "[{":
+                depth += 1
+            elif ch in "]}":
+                depth = max(0, depth - 1)
+            i += 1
+
+    return len(lines), found_indices
 
 
 def atomic_write_0600(target: Path, content: str) -> None:
@@ -47,14 +135,13 @@ def backup_file(target: Path, state_dir: Path, home: Path) -> None:
 
 
 def update_toml_top_level(text: str, key: str, value: int, remove: bool = False) -> str:
+    if text.strip():
+        tomllib.loads(text)
     lines = text.splitlines(keepends=True)
-    first_section = next((i for i, line in enumerate(lines) if SECTION_RE.match(line)), len(lines))
-    key_re = re.compile(rf"^\s*{re.escape(key)}\s*=")
+    first_section, found_indices = scan_toml_top_level(lines, key)
 
     top_lines = lines[:first_section]
     rest_lines = lines[first_section:]
-
-    found_indices = [i for i, line in enumerate(top_lines) if key_re.match(line)]
     if remove:
         if not found_indices:
             return text

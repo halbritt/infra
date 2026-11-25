@@ -45,7 +45,7 @@ install -m 0755 hosts/proximal/config/agent-output-bounds/bounded-exec ~/.local/
 
 Opt-outs & rollback:
 
-- **Per-command wrapper opt-out:** `BOUNDED_EXEC_RAW=1 bounded-exec ...` (or `BOUNDED_EXEC_MAX_BYTES=0`).
+- **Per-command wrapper opt-out:** `BOUNDED_EXEC_RAW=1 bounded-exec ...` or `BOUNDED_EXEC_MAX_BYTES=0 bounded-exec ...` (passes stdout/stderr through unclipped without creating a spool log unless `BOUNDED_EXEC_MAX_LINES` is also explicitly set `> 0`; set `BOUNDED_EXEC_MAX_LINES=0` to disable only the line cap).
 - **Per-run Codex override:** `codex -c tool_output_token_limit=30000 ...`
 - **Per-run Claude override:** `BASH_MAX_OUTPUT_LENGTH=100000 MAX_MCP_OUTPUT_TOKENS=25000 claude ...`
 - **Cairn MCP / CLI / OpenCode opt-out:** `CAIRN_UNBOUNDED_TOOL_OUTPUT=1` (or `--output-max-bytes 0`).
