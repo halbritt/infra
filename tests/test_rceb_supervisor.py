@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -111,6 +112,20 @@ class RotationTests(unittest.TestCase):
                     self.assertEqual(supervisor.state['phase'], 'ready')
                     self.assertEqual(supervisor.state['handoff']['version'], version)
                 self.assertEqual(len(set(identities)), 2)
+
+    def test_cairn_group_parser_receives_operation_before_flags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            supervisor = self.supervisor(directory)
+            supervisor.home = Path(directory)
+            result = SimpleNamespace(returncode=0, stdout='{"ok":true,"data":{}}')
+            with patch.object(module.subprocess, 'run', return_value=result) as run:
+                supervisor.cairn(['agents', 'register', '--native-session', 'thread'], session=False)
+                command = run.call_args.args[0]
+                self.assertEqual(command[1:4], ['agents', 'register', '--token-file'])
+                supervisor.cairn(['agent', 'history'], '{}', session=False)
+                command = run.call_args.args[0]
+                self.assertEqual(command[1:3], ['agent', '--token-file'])
+                self.assertEqual(command[-1], 'history')
 
 
 if __name__ == '__main__':

@@ -80,13 +80,18 @@ class Supervisor:
         write_json(self.path, self.state)
 
     def cairn(self, args, body=None, session=True):
-        command = [str(self.home / '.local/bin/cairn'), *args[:1],
+        # The `agents` group parses its operation before connection flags;
+        # `agent` memory/event commands accept connection flags before it.
+        prefix = 2 if args[0] == 'agents' else 1
+        command = [str(self.home / '.local/bin/cairn'), *args[:prefix],
                    '--token-file', str(self.home / '.local/share/cairn/hosted-agent.token')]
         if session:
             identity = self.state['identity']
             command += ['--agent-id', identity['agent_id'], '--execution-id', identity['execution_id']]
-        command += args[1:]
-        result = subprocess.run(command, input=body, text=True, capture_output=True, timeout=30, check=True)
+        command += args[prefix:]
+        result = subprocess.run(command, input=body, text=True, capture_output=True, timeout=30)
+        if result.returncode:
+            raise RuntimeError(f'Cairn {args[0]} failed ({result.returncode}): {result.stdout} {result.stderr}')
         envelope = json.loads(result.stdout)
         if not envelope.get('ok', True):
             raise RuntimeError(f'Cairn refused {args[0]}: {envelope.get("status")}')
