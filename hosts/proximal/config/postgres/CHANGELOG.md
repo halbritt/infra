@@ -29,6 +29,9 @@ See `reports/` and `inventory/` for historical measurements.
   `19/main`. pgBackRest upgraded the stanza and
   verified PG19 WAL delivery to `19-4/`. Private local receipts are under
   `/var/lib/postgresql/pg19-upgrade-20261124/`.
+- The first PG19 full backup, `20261124-211747F`, completed online at
+  21:32 PST (178.8 GiB, 14,079 files). pgBackRest lists it on database
+  history 4 with no backup error.
 
 ## 2026-10-28 — remove old clusters and deprecated Striatum database
 
