@@ -10,7 +10,6 @@ import errno
 import os
 from pathlib import Path
 import re
-import signal
 import subprocess
 import sys
 import tempfile
@@ -140,6 +139,26 @@ def select_head_and_tail(
     return head, head_end, tail, tail_start
 
 
+def clamp_utf8_bytes(text: str, max_bytes: int) -> str:
+    if max_bytes <= 0:
+        return text
+    encoded = text.encode("utf-8", errors="replace")
+    if len(encoded) <= max_bytes:
+        return text
+    if max_bytes == 1:
+        return "\n"
+    prefix, _ = truncate_prefix_utf8(text, max_bytes - 1)
+    if not prefix.endswith("\n"):
+        prefix += "\n"
+    return prefix
+
+
+def compact_pointer_line(total_bytes: int, total_lines: int, log_path: Path, exit_code: int) -> str:
+    if exit_code != 0:
+        return f"[bounded-exec exit_code={exit_code}; full output ({total_bytes}B/{total_lines}L): {log_path}]\n"
+    return f"[... full output ({total_bytes} bytes, {total_lines} lines): {log_path} ...]\n"
+
+
 def build_bounded_excerpt(
     raw: bytes, max_bytes: int, max_lines: int, log_path: Path, exit_code: int
 ) -> str:
@@ -149,6 +168,9 @@ def build_bounded_excerpt(
     total_buf_bytes = len(raw_buf)
     spans = split_line_spans(raw_buf)
     total_lines = len(spans)
+
+    if max_lines == 1:
+        return clamp_utf8_bytes(compact_pointer_line(total_bytes, total_lines, log_path, exit_code), max_bytes)
 
     header = f"[bounded-exec] exit_code={exit_code}\n" if exit_code != 0 else ""
     diag_header = "[... diagnostic lines from omitted middle ...]\n"
@@ -163,7 +185,8 @@ def build_bounded_excerpt(
         + 4
     )
     if max_bytes > 0 and max_bytes <= reserve + 32:
-        return f"{header}[... full output ({total_bytes} bytes, {total_lines} lines): {log_path} ...]\n"
+        compact = f"{header}[... full output ({total_bytes} bytes, {total_lines} lines): {log_path} ...]\n"
+        return clamp_utf8_bytes(compact, max_bytes)
 
     if max_bytes > 0:
         budget = max_bytes - reserve
@@ -175,21 +198,31 @@ def build_bounded_excerpt(
         diag_budget = total_buf_bytes
         tail_budget = total_buf_bytes
 
-    cap_lines = max_lines > 0 and total_lines > max_lines
+    cap_lines = max_lines > 0
     if cap_lines:
-        line_budget = max(1, max_lines - 4) if max_lines > 5 else max(1, max_lines)
-        if line_budget == 1:
+        base_framing = (1 if header else 0) + 1
+        avail_lines = max_lines - base_framing
+        if avail_lines <= 0:
+            head_line_cap, diag_line_cap, tail_line_cap = 0, 0, 0
+        elif avail_lines == 1:
             head_line_cap, diag_line_cap, tail_line_cap = 1, 0, 0
+        elif avail_lines == 2:
+            head_line_cap, diag_line_cap, tail_line_cap = 1, 0, 1
         else:
-            head_line_cap = max(1, line_budget * 35 // 100)
-            diag_line_cap = line_budget * 30 // 100
-            tail_line_cap = line_budget - head_line_cap - diag_line_cap
-            if tail_line_cap == 0:
-                if diag_line_cap > 0:
-                    diag_line_cap -= 1
-                else:
-                    head_line_cap -= 1
-                tail_line_cap = 1
+            # Reserve 1 line for diag_header when diagnostics may be included.
+            line_budget = avail_lines - 1
+            if line_budget == 2:
+                head_line_cap, diag_line_cap, tail_line_cap = 1, 1, 0
+            else:
+                head_line_cap = max(1, line_budget * 35 // 100)
+                diag_line_cap = max(1, line_budget * 30 // 100)
+                tail_line_cap = line_budget - head_line_cap - diag_line_cap
+                if tail_line_cap < 1:
+                    if head_line_cap > 1:
+                        head_line_cap -= 1
+                    elif diag_line_cap > 1:
+                        diag_line_cap -= 1
+                    tail_line_cap = 1
     else:
         head_line_cap = total_lines
         diag_line_cap = total_lines
@@ -224,8 +257,13 @@ def build_bounded_excerpt(
     if not diags and (diag_budget > 0 or diag_line_cap > 0):
         extra_head_bytes = diag_budget // 2
         extra_tail_bytes = diag_budget - extra_head_bytes
-        extra_head_lines = diag_line_cap // 2 if cap_lines else 0
-        extra_tail_lines = (diag_line_cap - extra_head_lines) if cap_lines else 0
+        if cap_lines and diag_line_cap > 0:
+            reclaim_lines = diag_line_cap + 1
+            extra_head_lines = reclaim_lines // 2
+            extra_tail_lines = reclaim_lines - extra_head_lines
+        else:
+            extra_head_lines = 0
+            extra_tail_lines = 0
         head, head_end, tail, tail_start = select_head_and_tail(
             raw_buf,
             spans,
@@ -244,7 +282,7 @@ def build_bounded_excerpt(
     middle_lines = len(split_line_spans(middle_buf))
     omitted_lines = max(0, middle_lines - len(diags))
 
-    if omitted_bytes > 0 and omitted_lines > 0 and cap_lines:
+    if omitted_bytes > 0 and omitted_lines > 0 and cap_lines and total_lines > 1:
         omit_desc = f"omitted {omitted_bytes} of {total_bytes} bytes ({omitted_lines} of {total_lines} lines)"
     elif omitted_bytes > 0:
         omit_desc = f"omitted {omitted_bytes} of {total_bytes} bytes"
@@ -267,10 +305,16 @@ def build_bounded_excerpt(
     parts.append(f"[... {omit_desc}; full output: {log_path} ...]\n")
     if tail:
         parts.append(tail)
+        if not tail.endswith("\n"):
+            parts.append("\n")
     assembled = "".join(parts)
-    if max_bytes > 0 and len(assembled.encode("utf-8")) > max_bytes:
-        assembled, _ = truncate_prefix_utf8(assembled, max_bytes)
-    return assembled
+    if max_lines > 0 and len(assembled.splitlines()) > max_lines:
+        footer_line = f"[... full output ({total_bytes} bytes, {total_lines} lines): {log_path} ...]\n"
+        lines = assembled.splitlines(keepends=True)
+        assembled = "".join(lines[: max_lines - 1]) + footer_line
+        if len(assembled.splitlines()) > max_lines:
+            assembled = (header + footer_line) if (header and max_lines >= 2) else footer_line
+    return clamp_utf8_bytes(assembled, max_bytes)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -327,7 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     excerpt = build_bounded_excerpt(combined, max_bytes, max_lines, log_path, exit_code)
     dest = sys.stderr if (not proc.stdout and proc.stderr) else sys.stdout
     dest.write(excerpt)
-    if not excerpt.endswith("\n"):
+    if not excerpt.endswith("\n") and (max_bytes <= 0 or len(excerpt.encode("utf-8")) < max_bytes):
         dest.write("\n")
     dest.flush()
     return exit_code

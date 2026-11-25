@@ -298,6 +298,108 @@ class AgentOutputBoundsTests(unittest.TestCase):
         self.assertEqual(reverted["notify"], [["echo", "hi"]])
         self.assertTrue(reverted["features"]["code_mode"])
 
+    def test_bounded_exec_tiny_max_lines_and_tiny_max_bytes(self) -> None:
+        plain_50 = "python3 -c \"[print(f'plain {i:02d}') for i in range(50)]\""
+        diag_fail_50 = (
+            "python3 -c \"import sys; "
+            "[print('ERROR: mid failure' if i == 25 else f'line {i:02d}') for i in range(50)]; "
+            "sys.exit(7)\""
+        )
+
+        # 1. BOUNDED_EXEC_MAX_BYTES=0 with BOUNDED_EXEC_MAX_LINES in {1..5}:
+        #    total emitted lines (including framing lines) must never exceed max_lines,
+        #    and spool file must retain all 50 original lines.
+        for label, cmd, expected_rc in (
+            ("plain_rc0", plain_50, 0),
+            ("diag_rc7", diag_fail_50, 7),
+        ):
+            for max_lines in (1, 2, 3, 4, 5):
+                spool_dir = self.home / "cache" / f"tiny-lines-{label}-{max_lines}"
+                env = dict(
+                    os.environ,
+                    HOME=str(self.home),
+                    BOUNDED_EXEC_OUTPUT_DIR=str(spool_dir),
+                    BOUNDED_EXEC_MAX_BYTES="0",
+                    BOUNDED_EXEC_MAX_LINES=str(max_lines),
+                )
+                proc = subprocess.run(
+                    [sys.executable, str(BOUNDED_EXEC), "--", "/bin/sh", "-c", cmd],
+                    env=env, capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(proc.returncode, expected_rc, (label, max_lines))
+                out_lines = proc.stdout.splitlines()
+                self.assertLessEqual(
+                    len(out_lines),
+                    max_lines,
+                    f"{label} max_lines={max_lines} emitted {len(out_lines)} lines: {proc.stdout!r}",
+                )
+                self.assertGreaterEqual(len(out_lines), 1)
+                if expected_rc != 0:
+                    self.assertIn("exit_code=7", proc.stdout)
+                if expected_rc != 0 and max_lines == 5:
+                    self.assertIn("ERROR: mid failure", proc.stdout)
+                logs = list(spool_dir.glob("*.log"))
+                self.assertEqual(len(logs), 1)
+                self.assertEqual(stat.S_IMODE(logs[0].stat().st_mode), 0o600)
+                self.assertEqual(len(logs[0].read_text(encoding="utf-8").splitlines()), 50)
+
+        # 2. Tiny BOUNDED_EXEC_MAX_BYTES in {1, 20, 80} (<= reserve + 32):
+        #    output UTF-8 byte length must never exceed max_bytes, remain valid UTF-8,
+        #    preserve trailing newline, and retain full output in spool log.
+        utf8_100 = "python3 -c \"[print(f'€🚀 line {i:03d}') for i in range(100)]\""
+        utf8_fail_100 = (
+            "python3 -c \"import sys; "
+            "[print(f'€🚀 line {i:03d}') for i in range(100)]; sys.exit(5)\""
+        )
+        for label, cmd, expected_rc in (
+            ("utf8_rc0", utf8_100, 0),
+            ("utf8_rc5", utf8_fail_100, 5),
+        ):
+            for max_bytes in (1, 20, 80):
+                spool_dir = self.home / "cache" / f"tiny-bytes-{label}-{max_bytes}"
+                env = dict(
+                    os.environ,
+                    HOME=str(self.home),
+                    BOUNDED_EXEC_OUTPUT_DIR=str(spool_dir),
+                    BOUNDED_EXEC_MAX_BYTES=str(max_bytes),
+                )
+                env.pop("BOUNDED_EXEC_MAX_LINES", None)
+                proc = subprocess.run(
+                    [sys.executable, str(BOUNDED_EXEC), "--", "/bin/sh", "-c", cmd],
+                    env=env, capture_output=True, check=False,
+                )
+                self.assertEqual(proc.returncode, expected_rc)
+                self.assertLessEqual(
+                    len(proc.stdout),
+                    max_bytes,
+                    f"{label} max_bytes={max_bytes} emitted {len(proc.stdout)} bytes: {proc.stdout!r}",
+                )
+                decoded = proc.stdout.decode("utf-8")
+                self.assertNotIn("\ufffd", decoded)
+                self.assertTrue(decoded.endswith("\n"))
+                logs = list(spool_dir.glob("*.log"))
+                self.assertEqual(len(logs), 1)
+                self.assertEqual(len(logs[0].read_text(encoding="utf-8").splitlines()), 100)
+
+        # 3. Combined tiny caps: max_lines=1 + max_bytes=80 + non-zero exit code.
+        combo_spool = self.home / "cache" / "tiny-combo"
+        combo_env = dict(
+            os.environ,
+            HOME=str(self.home),
+            BOUNDED_EXEC_OUTPUT_DIR=str(combo_spool),
+            BOUNDED_EXEC_MAX_BYTES="80",
+            BOUNDED_EXEC_MAX_LINES="1",
+        )
+        combo = subprocess.run(
+            [sys.executable, str(BOUNDED_EXEC), "--", "/bin/sh", "-c", diag_fail_50],
+            env=combo_env, capture_output=True, check=False,
+        )
+        self.assertEqual(combo.returncode, 7)
+        self.assertLessEqual(len(combo.stdout), 80)
+        combo_text = combo.stdout.decode("utf-8")
+        self.assertLessEqual(len(combo_text.splitlines()), 1)
+        self.assertTrue(combo_text.endswith("\n"))
+
 
 if __name__ == "__main__":
     unittest.main()
