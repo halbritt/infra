@@ -1,0 +1,11 @@
+[Unit]
+Description=Continue the Talos driving agent and check its 48-hour replacement deadline
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=30s
+AccuracySec=10s
+Unit=striatum-rceb-supervisor.service
+
+[Install]
+WantedBy=timers.target

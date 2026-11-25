@@ -1,5 +1,19 @@
 # Host changelog
 
+## 2026-11-25 — RCEB driving-agent context replacement
+
+- Principal requested replacement now and every 48 hours, with a handoff before
+  a fresh context; corrected the requested model to `gpt-6.2-astra` on
+  `codex-harm`. The old codex-3 executor has been stopped since November 22 and
+  its terminal handoff is retained.
+- Added the canonical bounded-turn supervisor, continuation timer and role
+  prompt under `config/striatum/`. Retirement requires a saved, quiescent
+  handoff; successor bootstrap creates a new native conversation and Cairn
+  identity. Root verifies readiness before each activation. Unknown effects
+  and provider failures stop automatic continuation instead of being replayed.
+- No native compiler timer, graph gate, hold, attempt budget, checkout base,
+  credential or accepted decision is changed by conversational replacement.
+
 ## 2026-11-24 — Cairn removals: R-07 staging, old rollouts, Python presence stage (w25)
 
 - CAIRN-301 w25-removals (operator agent-2485). Manifest before the first delete: proximal `~/.local/share/agent-evidence/w25/manifest-talos.tsv`; each path rescanned by `refscan` immediately before deletion by exact path.

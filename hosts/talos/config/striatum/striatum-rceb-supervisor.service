@@ -1,0 +1,17 @@
+[Unit]
+Description=Talos RCEB driving agent with handoff before 48-hour replacement
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/git/striatum-next
+ExecStart=/usr/bin/python3 %h/.local/libexec/striatum-rceb-supervisor.py tick
+Environment=PYTHONUNBUFFERED=1
+Environment=CODEX_HOME=%h/.codex-harm
+Environment=TMPDIR=%h/.cache/striatum/runtime-tmp
+KillMode=control-group
+TimeoutStartSec=30min
+TimeoutStopSec=30s
+Restart=no
+
+[Install]
+WantedBy=default.target
