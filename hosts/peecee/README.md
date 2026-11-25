@@ -162,6 +162,8 @@ Do not install fleet database credentials or self-heartbeat code on peecee.
 
 ## Subsystems
 
+- [Streaming ASR and diarization](config/nemo-speech/README.md) — on-demand CUDA transcription with word timestamps and speaker labels in WSL2.
+
 - [`config/startup/`](config/startup/) — dated inventory of app launch points,
   boot/logon tasks, and automatic services.
 - [`config/stream-deck/`](config/stream-deck/) — Elgato Stream Deck app (winget),

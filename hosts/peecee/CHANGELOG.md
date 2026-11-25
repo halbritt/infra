@@ -1,5 +1,12 @@
 # Changelog — peecee
 
+## 2026-11-24 — install Nemotron 3.5 streaming ASR and Sortformer v2.1
+
+Installed the owner-requested ASR and diarization models under WSL2. A proximal
+launcher uses peecee's batch GPU lease for file transcription or a loopback
+streaming server. Verified both models on the RTX 3090 Ti with annotated AMI
+meeting audio. See [setup, commands and results](config/nemo-speech/README.md).
+
 ## 2026-11-22 — Windows SSH login to Talos
 
 Added the Talos username to the Windows OpenSSH client configuration after reproducing a public-key denial for the Windows username. Verified the short aliases `ssh talos` and `ssh archon` both connect as `halbritt` from Windows. See [SSH client configuration](config/ssh-client/README.md).
