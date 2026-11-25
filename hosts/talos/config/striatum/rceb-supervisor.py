@@ -38,6 +38,8 @@ def next_action(state, now):
         return phase
     if phase == 'new':
         return 'bootstrap'
+    if phase == 'registered':
+        return 'announce'
     if phase == 'active':
         if now >= state['rotate_at'] - HANDOFF_LEAD:
             return 'handoff'
@@ -225,14 +227,30 @@ class Supervisor:
         self.state['identity'] = identity
         self.state['born_at'] = time.time()
         self.state['rotate_at'] = self.state['born_at'] + PERIOD
-        self.state['phase'] = 'ready'
+        self.state['phase'] = 'registered'
         self.save()
         write_json(self.config_dir / 'identity.json', {'data': identity})
 
     def notify_root(self, message, name):
         self.cairn(['agent', 'send', '--journal', str(self.directory / self.state['generation'] / name),
                     '--repo', str(self.home / 'git/cairn'), '--kind', 'request', '--shareable',
+                    '--summary', 'Fresh Talos driving context awaits root readiness verification and activation.',
                     '--to', self.config['root_inbox'], '--stdin'], message)
+
+    def announce_ready(self):
+        self.notify_root(
+            f'New Talos RCEB driving context {self.state["identity"]["display_name"]}, '
+            f'inbox {self.state["identity"]["inbox"]}, generation {self.state["generation"]}. '
+            f'Model {self.config["model"]}, CODEX_HOME {self.config["codex_home"]}. '
+            'Bootstrap finished; no substantive work. Send a Cairn readiness nonce request, '
+            'verify the causal response and exact execution identity, then activate this exact '
+            'generation with striatum-rceb-supervisor.py activate --generation GENERATION on Talos. '
+            'This continues the Principal-authorized 48-hour handoff/replacement cycle. '
+            'No new approval is needed. Complete this request once the verified successor owns the work.',
+            'ready-notice.json')
+        self.state['phase'] = 'ready'
+        self.finish_turn()
+        print(json.dumps({'status': 'ready_for_handshake', 'identity': self.state['identity']}))
 
     def finish_turn(self):
         self.state.pop('pending_result', None)
@@ -248,18 +266,9 @@ class Supervisor:
         if action == 'bootstrap':
             self.run_turn('bootstrap')
             self.register()
-            self.notify_root(
-                f'New Talos RCEB driving context {self.state["identity"]["display_name"]}, '
-                f'inbox {self.state["identity"]["inbox"]}, generation {self.state["generation"]}. '
-                f'Model {self.config["model"]}, CODEX_HOME {self.config["codex_home"]}. '
-                'Bootstrap finished; no substantive work. Send a Cairn readiness nonce request, '
-                'verify the causal response and exact execution identity, then activate this exact '
-                'generation with striatum-rceb-supervisor.py activate --generation GENERATION on Talos. '
-                'This continues the Principal-authorized 48-hour handoff/replacement cycle. '
-                'No new approval is needed. Complete this request once the verified successor owns the work.',
-                'ready-notice.json')
-            self.finish_turn()
-            print(json.dumps({'status': 'ready_for_handshake', 'identity': self.state['identity']}))
+            self.announce_ready()
+        elif action == 'announce':
+            self.announce_ready()
         elif action in ('ready', 'work'):
             self.run_turn(action)
             self.finish_turn()

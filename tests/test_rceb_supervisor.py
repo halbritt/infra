@@ -127,6 +127,18 @@ class RotationTests(unittest.TestCase):
                 self.assertEqual(command[1:3], ['agent', '--token-file'])
                 self.assertEqual(command[-1], 'history')
 
+    def test_readiness_publish_has_required_long_message_summary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            supervisor = self.supervisor(directory)
+            supervisor.home = Path(directory)
+            supervisor.config['root_inbox'] = 'agent/root'
+            with patch.object(supervisor, 'cairn') as send:
+                supervisor.notify_root('A' * 500, 'ready-notice.json')
+                args = send.call_args.args[0]
+                self.assertIn('--summary', args)
+                self.assertLessEqual(len(args[args.index('--summary') + 1].encode()), 280)
+            self.assertEqual(module.next_action({'phase': 'registered'}, 0), 'announce')
+
 
 if __name__ == '__main__':
     unittest.main()
