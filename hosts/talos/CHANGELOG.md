@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-11-24 — Cairn removals: R-07 staging, old rollouts, Python presence stage (w25)
+
+- CAIRN-301 w25-removals (operator agent-2485). Manifest before the first delete: proximal `~/.local/share/agent-evidence/w25/manifest-talos.tsv`; each path rescanned by `refscan` immediately before deletion by exact path.
+- Deleted (1076.0 MB), 18:34:52–18:34:53 PST: `~/.local/share/cairn/r07-stage1-*` (the five directories by exact name, 723.6 MB), `go-rollout-f7bec707` (211.3 MB), `go-rollout-d809e8f3` (140.4 MB), `deployments/` (only `cairn-424-a6dfabb3`, Python presence, 0.7 MB). No session or process used them; the only outside references were inverse backups.
+- `go-rollout-ae498426/revert.sh` (the /1 inverse back to f7bec707) now exits with a RETIRED message; original kept as `revert.sh.pre-w25`. `revert-v2.sh` is unaffected.
+- Health after: a fresh `opencode run` on the ae498426 opencode-one launchers ran SessionStart recall, coordination registration and a request round trip (handled). No service restarted. Last talos change 18:35 PST.
+
 ## 2026-11-24 — Cairn MCP facade: none registered
 
 - CAIRN-301 w23 inventory: no client on Talos registers the `cairn mcp` facade (Claude homes have no Cairn MCP server; OpenCode uses its tool adapter on `~/.local/bin/cairn`). Nothing changed.

@@ -99,6 +99,7 @@ cleanup.
 
 Talos runs Cairn lifecycle hooks for OpenCode (`~/.config/opencode/cairn-lifecycle.json`
 and `cairn-coordination.json`, rollout root `~/.local/share/cairn/go-rollout-ae498426/`).
+It is the only rollout directory on Talos since w25 (2026-11-24); its `revert.sh` back to f7bec707 is retired.
 By owner decision it has no `cairn-presence` watcher. Idle wake and the watcher
 census do not apply on Talos; do not install a watcher. Compact inbox is not
 available for its OpenCode binding.

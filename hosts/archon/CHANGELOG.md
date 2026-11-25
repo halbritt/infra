@@ -1,5 +1,13 @@
 # Host changelog
 
+## 2026-11-24 — Cairn removals: R-07 staging, old rollouts, Python presence (w25)
+
+- CAIRN-301 w25-removals (operator agent-2485). Manifest before the first delete: proximal `~/.local/share/agent-evidence/w25/manifest-archon.tsv`; each path rescanned by `refscan` immediately before deletion by exact path.
+- Deleted (1076.4 MB), 18:37:45–18:38:08 PST: `~/.local/share/cairn/r07-stage1-*` (five directories by exact name, 723.5 MB), `go-rollout-f7bec707` (211.1 MB), `go-rollout-d809e8f3` (140.3 MB), `deployments/cairn-423-29594e5a` and `cairn-424-a6dfabb3` (Python presence, 1.4 MB). `deployments/multi-machine-b46a0e1`, `releases/` and `executables/d43ca49b…` are unchanged (not in scope).
+- `cairn-presence.service.d/90-cairn423-runtime.conf` removed first, then `daemon-reload` (18:37:54); effective ExecStart, Environment and MainPID 2136061 unchanged, no restart. Copy and inverse: `go-rollout-ae498426/backups/w25/`.
+- `go-rollout-ae498426/revert.sh` (the /1 inverse back to f7bec707) now exits with a RETIRED message; original kept as `revert.sh.pre-w25`.
+- Health after: cairn-presence and cairn-relay active; a fresh `codex exec` (`~/.codex`, ae498426 codex-archon launchers): SessionStart, UserPromptSubmit, PostToolUse, Stop Completed and a request round trip handled. The Python `codex` wrapper is unchanged. Last archon change 18:38:08 PST.
+
 ## 2026-11-24 — Codex `~/.codex-harm` MCP facade pin to `08f04281` (w24)
 
 - CAIRN-301 w24 (operator agent-2485). w23 missed this second Codex home. `~/.codex-harm/config.toml` `[mcp_servers.cairn].command` moved from `executables/d43ca49b…` to `executables/68c1c5ba…` at 16:36:12 PST; arguments and `enabled_tools` unchanged. Backup `go-rollout-ae498426/backups/w23/codex-harm-archon-config.toml`; reverse `go-rollout-ae498426/revert-w24.sh`. A fresh `CODEX_HOME=~/.codex-harm codex exec` listed the 8 allowed tools, search READY (discovery ready), pull ae99e5c7 v6; `codex mcp list` shows 68c1c5ba. d43ca49b is now named only by the w23/w24 inverses.
