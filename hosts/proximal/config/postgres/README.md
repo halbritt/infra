@@ -20,7 +20,7 @@ reverted. Start with [`AGENTS.md`](AGENTS.md).
   `/etc/pgbackrest/pgbackrest.conf`, owner `root:postgres`, mode `0640`, after
   migration. The [cluster changelog](CHANGELOG.md) records the stanza upgrade,
   WAL archive check and first backup.
-- `storage.fstab` contains the SSD2 bind mounts in `/etc/fstab`. Install
+- `storage.fstab` contains the active SSD2 bind mount in `/etc/fstab`. Install
   `storage.conf` in `/etc/systemd/system/postgresql@19-main.service.d/` so the
   service requires its data mount at startup.
 - [`skills/`](skills/) — vendored Postgres best-practices reference skill (see [`skills/README.md`](skills/README.md))

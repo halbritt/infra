@@ -3,6 +3,16 @@
 Notable changes to the PostgreSQL cluster on `proximal:5432`, newest first.
 See `reports/` and `inventory/` for historical measurements.
 
+## 2026-11-24 — retire PostgreSQL 18
+
+At the owner's request, removed the stopped 18/main cluster, its SSD2 bind
+mount and Btrfs subvolume 256, its systemd storage drop-in, and all eight
+PG18 server, client and extension packages. Before removal, pgBackRest
+reported a healthy PG19 full backup (`20261124-211747F`).
+PG19 kept the same postmaster start time throughout. After removal,
+`19/main` served port 5432, SSD2 subvolume 257 was mounted at its data path,
+and pgBackRest verified a new WAL segment in archive `19-4/`.
+
 ## 2026-11-24 — PostgreSQL 19.0 on SSD2
 
 - The owner requested a short outage. Installed PG19 builds of pgvector,

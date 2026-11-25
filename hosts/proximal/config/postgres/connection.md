@@ -35,11 +35,11 @@ peer authentication. Its private PostgreSQL service is retired. See
 
 ## Storage — 2026-11-10
 
-`/var/lib/postgresql/18/main` is a persistent bind mount of
+At the November 10 move, `/var/lib/postgresql/18/main` was a bind mount of
 `/srv/ssd2/postgresql` on dedicated Samsung SATA SSD S2L2NWAG700037N (960 GB,
 Btrfs UUID `1f2e26d5-78a7-4a1c-bfd0-9a48daa151cc`). PostgreSQL data and WAL both
-reside there; socket, port, data-directory setting, cluster identity and
-pgBackRest configuration are unchanged. The old NVMe copy was removed after
+resided there. The move preserved the socket, port, data-directory setting,
+cluster identity and pgBackRest configuration. The old NVMe copy was removed after
 verification. Mount and service dependencies are canonical in `storage.fstab`
 and `storage.conf`; installation and measurements are in the
 [SATA migration report](reports/SATA_MIGRATION_2026-11-10.md).
@@ -48,8 +48,8 @@ and `storage.conf`; installation and measurements are in the
 
 On 2026-11-24 the primary moved to `19/main`. Its data directory
 `/var/lib/postgresql/19/main` bind-mounts the Btrfs subvolume
-`/srv/ssd2/postgresql19`. PG18 remains stopped on 5433 with manual startup.
-Its files reflect the moment of cutover. PG19 holds subsequent writes.
+`/srv/ssd2/postgresql19`. After verifying the first PG19 full backup, the owner requested removal of
+the retired PG18 cluster. PG19 is the only installed server and client major.
 See the [cluster changelog](CHANGELOG.md).
 
 ## Databases (confirmed 2026-06-17, post-upgrade)

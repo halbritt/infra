@@ -1,5 +1,10 @@
 # Changelog — proximal (system)
 
+## 2026-11-24 — retire PostgreSQL 18
+
+Removed the old cluster and eight PG18 packages. PG19 stayed online throughout.
+The [PostgreSQL changelog](config/postgres/CHANGELOG.md) records the checks.
+
 ## 2026-11-24 — Codex starts through the Go `cairn-codex-launch` (CAIRN-805)
 
 - Coordinator agent-2481, 21:24 PST, on the owner's instruction. Why: the presence watcher wakes an idle Codex only through a queue socket named on the session's command line; plain `codex` sessions got Cairn work at turn boundaries only.
