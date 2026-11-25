@@ -68,7 +68,8 @@ class Supervisor:
         self.home = home
         self.config_dir = home / '.config/striatum/rceb-supervisor'
         self.directory = home / '.local/state/striatum/rceb-supervisor/rotation'
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.directory.chmod(0o700)
         self.path = self.directory / 'state.json'
         self.config = json.loads((self.config_dir / 'rotation.json').read_text())
         self.state = json.loads(self.path.read_text()) if self.path.exists() else self.fresh()
@@ -145,7 +146,9 @@ class Supervisor:
                 raise RuntimeError('Completed turn awaits a different phase transition')
             return (Path(pending['attempt']) / 'answer.txt').read_text()
         attempt = self.directory / self.state['generation'] / str(uuid.uuid4())
-        attempt.mkdir(parents=True)
+        attempt.parent.mkdir(exist_ok=True, mode=0o700)
+        attempt.parent.chmod(0o700)
+        attempt.mkdir(mode=0o700)
         self.state['in_flight'] = {'mode': mode, 'attempt': str(attempt), 'started_at': time.time()}
         self.save()  # A crash after this point must never silently replay an effect.
         command = [str(self.home / '.local/bin/codex'), 'exec']
@@ -232,6 +235,7 @@ class Supervisor:
         write_json(self.config_dir / 'identity.json', {'data': identity})
 
     def notify_root(self, message, name):
+        (self.directory / self.state['generation']).chmod(0o700)
         self.cairn(['agent', 'send', '--journal', str(self.directory / self.state['generation'] / name),
                     '--repo', str(self.home / 'git/cairn'), '--kind', 'request', '--shareable',
                     '--summary', 'Fresh Talos driving context awaits root readiness verification and activation.',
