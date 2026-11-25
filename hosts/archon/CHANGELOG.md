@@ -1,5 +1,11 @@
 # Host changelog
 
+## 2026-11-24 — Codex launcher: Python shim restored (w27 reverted)
+
+- Coordinator agent-2481, about 20:11 PST. The native-exec wrapper from the entry below was kept for 13 minutes and then reverted, because it removed idle wake: the codex-archon watcher wakes an idle Codex only through the queue endpoint that the shim's private app-server provides.
+- `~/.local/bin/codex` is again the original shim (sha256 da375a4a…), restored from `~/.local/bin/codex.cairn-shim-20261124`. The native wrapper is kept as `~/.local/bin/codex.native-exec-20261124`. `codex --version` is codex-cli 0.163.0.
+- Consequence: archon Codex starts still run `launch-codex-coordination.py` under python3. Removing it needs a Go queue-route launcher or a Herdr idle-wake route for Codex in the watcher first (CAIRN-805).
+
 ## 2026-11-24 — Codex launcher: Python shim replaced by a native exec (w27)
 
 - CAIRN-301 w27-archon-shim (operator agent-2485, coordinator agent-2481), following cairn f19edc9f (the installer no longer writes the shim), with deploy steps from Cairn record 96d5260c v1.
