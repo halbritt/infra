@@ -1,6 +1,0 @@
-[Unit]
-Description=Forward LibreChat TLS over Tailscale to Proximal
-
-[Service]
-DynamicUser=yes
-ExecStart=/usr/lib/systemd/systemd-socket-proxyd 100.85.100.81:13081

@@ -1,8 +1,12 @@
 # Changelog — proximal (system)
 
+## 2026-11-26 — remove LibreChat
+
+At the owner's request, removed the LibreChat application, databases, local document model, credentials, certificate and TCP 13081 Tailscale Serve rule. Removed the dedicated DNS record and retired the deployment configuration.
+
 ## 2026-11-26 — private LibreChat HTTPS
 
-Installed LibreChat 0.8.9 for the owner with the local Qwen3.8-27B server, chat search and local document retrieval. A DNS-only hostname points to a tailnet socket on Talos. TLS terminates on Proximal. Verified HTTPS from peecee and an authenticated browser chat through the named URL. [Configuration and operations](config/librechat/README.md).
+Installed LibreChat 0.8.9 for the owner with the local Qwen3.8-27B server, chat search and local document retrieval. A DNS-only hostname points to a tailnet socket on Talos. TLS terminates on Proximal. Verified HTTPS from peecee and an authenticated browser chat through the named URL. [Configuration and operations](https://github.com/halbritt/infra/blob/9489887bbc6b871f4a2c62ead1d903c225d8b20c/hosts/proximal/config/librechat/README.md).
 
 ## 2026-11-24 — Agy terminal wake launcher reverted
 

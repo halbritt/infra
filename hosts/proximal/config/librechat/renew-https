@@ -1,5 +1,0 @@
-#!/bin/sh
-set -eu
-if [ "$RENEWED_LINEAGE" = /etc/letsencrypt/live/librechat.harm.org ]; then
-    systemctl try-restart librechat-https.service
-fi

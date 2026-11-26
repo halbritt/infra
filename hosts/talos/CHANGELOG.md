@@ -1,8 +1,12 @@
 # Host changelog
 
+## 2026-11-26 — remove LibreChat
+
+At the owner's request, removed the LibreChat socket and TCP proxy on the tailnet address. The dedicated HTTPS listener is retired.
+
 ## 2026-11-26 — private LibreChat HTTPS
 
-Installed a Tailscale-interface-only TCP listener for LibreChat. It forwards HTTPS to Proximal, which already uses its own port 443. Verified access to the hostname from peecee. [Socket and upstream](config/librechat-ingress/README.md).
+Installed a Tailscale-interface-only TCP listener for LibreChat. It forwards HTTPS to Proximal, which already uses its own port 443. Verified access to the hostname from peecee. [Socket and upstream](https://github.com/halbritt/infra/blob/9489887bbc6b871f4a2c62ead1d903c225d8b20c/hosts/talos/config/librechat-ingress/README.md).
 
 ## 2026-11-25 — RCEB driving-agent context replacement
 
