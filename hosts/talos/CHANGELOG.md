@@ -1,5 +1,9 @@
 # Host changelog
 
+## 2026-11-26 — private LibreChat HTTPS
+
+Installed a Tailscale-interface-only TCP listener for LibreChat. It forwards HTTPS to Proximal, which already uses its own port 443. Verified access to the hostname from peecee. [Socket and upstream](config/librechat-ingress/README.md).
+
 ## 2026-11-25 — RCEB driving-agent context replacement
 
 - Principal requested replacement now and every 48 hours, with a handoff before

@@ -1,0 +1,108 @@
+name: librechat
+services:
+  api:
+    image: registry.librechat.ai/librechat-ai/librechat:v0.8.9@sha256:4a3967a47031c1fdba8302a6a341be7671101e40b617f7934ba25aac69fcea2b
+    restart: unless-stopped
+    env_file: /etc/librechat/api.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3080"
+      DOMAIN_CLIENT: https://librechat.harm.org
+      DOMAIN_SERVER: https://librechat.harm.org
+      MONGO_URI: mongodb://mongodb:27017/LibreChat
+      MEILI_HOST: http://meilisearch:7700
+      SEARCH: "true"
+      SCHEDULES_SINGLE_PROCESS: "true"
+      RAG_API_URL: http://rag:8000
+      ENDPOINTS: custom
+      ALLOW_REGISTRATION: "false"
+      ALLOW_EMAIL_LOGIN: "true"
+      LIBRECHAT_TEMP_CREDENTIALS_PATH: /app/data/.env.temp
+    ports:
+      - "127.0.0.1:3080:3080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mongodb:
+        condition: service_started
+      meilisearch:
+        condition: service_started
+      rag:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3080/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./librechat.yaml:/app/librechat.yaml:ro
+      - data:/app/data
+      - images:/app/client/public/images
+      - uploads:/app/uploads
+      - skills:/app/skill
+      - logs:/app/logs
+    networks: [default, storage]
+  mongodb:
+    image: mongo:8.0.20@sha256:098862b1339f031900ca66cf8fef799e616d6324fa41b9a263f2ec899552c1ef
+    restart: unless-stopped
+    networks: [storage]
+    volumes:
+      - mongo:/data/db
+  meilisearch:
+    image: getmeili/meilisearch:v1.35.1@sha256:8b57fc3c7f46535ddef3828df1538465ac19d892eb57c9a10da6df0880bd5856
+    restart: unless-stopped
+    networks: [storage]
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_ENV: production
+    env_file: /etc/librechat/search.env
+    volumes:
+      - search:/meili_data
+  vectordb:
+    image: pgvector/pgvector:0.8.0-pg15-trixie@sha256:8809cfffff0082cf260c9ac752f1dd1afc77f6f0a55c4e6411321e78efc3d9a5
+    restart: unless-stopped
+    networks: [storage]
+    env_file: /etc/librechat/vector.env
+    volumes:
+      - vectors:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "librechat", "-d", "librechat"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  rag:
+    image: registry.librechat.ai/librechat-ai/librechat-rag-api-dev@sha256:4665e5f1071fd050ea48683bfa12a6dbf4a63bdcc799afbc6cd9e5fb0d5dc7a7
+    restart: unless-stopped
+    networks: [storage]
+    env_file:
+      - /etc/librechat/vector.env
+      - /etc/librechat/rag.env
+    environment:
+      DB_HOST: vectordb
+      RAG_PORT: "8000"
+      EMBEDDINGS_PROVIDER: huggingface
+      EMBEDDINGS_MODEL: /models/all-MiniLM-L6-v2
+      HF_HUB_OFFLINE: "1"
+      SCARF_NO_ANALYTICS: "true"
+    volumes:
+      - /var/lib/librechat/models/all-MiniLM-L6-v2:/models/all-MiniLM-L6-v2:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json, urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4))['status'] == 'UP'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      vectordb:
+        condition: service_healthy
+networks:
+  storage:
+    internal: true
+volumes:
+  data:
+  images:
+  uploads:
+  skills:
+  logs:
+  mongo:
+  search:
+  vectors:

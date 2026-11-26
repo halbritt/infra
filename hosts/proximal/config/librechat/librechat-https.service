@@ -1,0 +1,15 @@
+[Unit]
+Description=Private HTTPS for librechat.harm.org
+After=network.target librechat.service
+
+[Service]
+DynamicUser=yes
+StateDirectory=librechat-https
+Environment=HOME=/var/lib/librechat-https
+LoadCredential=chain.pem:/etc/letsencrypt/live/librechat.harm.org/fullchain.pem
+LoadCredential=key.pem:/etc/letsencrypt/live/librechat.harm.org/privkey.pem
+ExecStart=/usr/bin/caddy run --config /etc/librechat/Caddyfile --adapter caddyfile
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

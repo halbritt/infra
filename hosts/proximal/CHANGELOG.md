@@ -1,5 +1,9 @@
 # Changelog — proximal (system)
 
+## 2026-11-26 — private LibreChat HTTPS
+
+Installed LibreChat 0.8.9 for the owner with the local Qwen3.8-27B server, chat search and local document retrieval. A DNS-only hostname points to a tailnet socket on Talos. TLS terminates on Proximal. Verified HTTPS from peecee and an authenticated browser chat through the named URL. [Configuration and operations](config/librechat/README.md).
+
 ## 2026-11-24 — Agy terminal wake launcher reverted
 
 - Coordinator agent-2481, 23:09 PST, on the owner's decision ("2 now, 3 later"). Both inverses of the entry below were applied.

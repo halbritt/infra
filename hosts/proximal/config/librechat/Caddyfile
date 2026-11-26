@@ -1,0 +1,12 @@
+{
+	admin off
+	auto_https off
+	servers {
+		protocols h1 h2
+	}
+}
+https://librechat.harm.org:13081 {
+	bind 127.0.0.1
+	tls {$CREDENTIALS_DIRECTORY}/chain.pem {$CREDENTIALS_DIRECTORY}/key.pem
+	reverse_proxy 127.0.0.1:3080
+}
