@@ -10,3 +10,7 @@ endpoints:
         fetch: false
       titleConvo: false
       modelDisplayLabel: Qwen3.8-27B
+fileConfig:
+  retainedFileCleanup: true
+  # All files in this fresh database were created by the ownership-aware release.
+  vectorOwnershipTrackingStart: "2026-11-26T09:39:00Z"

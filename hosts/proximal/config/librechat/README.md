@@ -35,3 +35,5 @@ curl --fail https://librechat.harm.org/health
 Apply Compose changes with `sudo docker compose -f /etc/librechat/compose.yaml up -d --wait`. Stop the application with `sudo systemctl stop librechat` to preserve its volumes. To retire the route, remove only the LibreChat DNS record, Talos socket, Proximal TCP 13081 Serve rule and the two LibreChat units.
 
 [Upstream Docker installation](https://www.librechat.ai/docs/local/docker) · [LibreChat 0.8.9 source](https://github.com/LibreChat-AI/LibreChat/tree/d4e85d2205c78413ee27d631d7e3b7313556f21d)
+
+File deletion is enabled for both the stored upload and its embeddings. The ownership tracking timestamp in `librechat.yaml` precedes the first upload in this fresh database. Preserve it on upgrade. The installation check uploaded a text file via HTTPS, retrieved its reference code by semantic search and checked that deletion removed its database record and vectors.
