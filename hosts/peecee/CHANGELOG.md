@@ -1,5 +1,15 @@
 # Changelog — peecee
 
+## 2026-11-26 — restore the Revopoint POP 4 USB connection
+
+Dell Display and Peripheral Manager had **Prioritize External Webcam** enabled
+for the WB726 under **Camera Control**. Its service disabled both POP 4 camera
+interfaces (Windows code 22) each time they were enabled. Turning the setting
+off in the Dell app restored the scanner. Windows reported the POP 4 depth and
+RGB cameras and the Dell WB726 healthy with the Dell service running.
+Revo Scan 6.4.5 displayed **POP 4 USB 2.0 Connected**. Verification covered
+device recognition. A physical scan and firmware update were outside this check.
+
 ## 2026-11-25 — English streaming ASR model for English speech
 
 Owner-directed after a comparison of five recognizers on far-field ReSpeaker audio
