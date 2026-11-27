@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-11-27 — install Dropbox sync
+
+At the owner's request, installed the official Linux x86-64 client 280.4.5053
+and Dropbox CLI under `halbritt`. Verified the archive's Dropbox signature
+and enabled the [Dropbox user service](../../roles/dropbox/README.md).
+The running client returned a device-link prompt on first start.
+
 ## 2026-11-26 — remove LibreChat
 
 At the owner's request, removed the LibreChat socket and TCP proxy on the tailnet address. The dedicated HTTPS listener is retired.

@@ -1,5 +1,12 @@
 # Host changelog
 
+## 2026-11-27 — install Dropbox sync
+
+At the owner's request, installed the official Linux x86-64 client 280.4.5053
+and Dropbox CLI under `halbritt`. Verified the archive's Dropbox signature
+and enabled the [Dropbox user service](../../roles/dropbox/README.md).
+The running client returned a device-link prompt on first start.
+
 ## 2026-11-24 — Codex launcher: Go `cairn-codex-launch` replaces the Python shim (CAIRN-805)
 
 - Coordinator agent-2481, 21:21 PST, on the owner's instruction to port the shim. Built from cairn c5b752d2 (`vcs.modified=false`), sha256 ef3ffdfa…, installed at `~/.local/share/cairn/executables/ef3ffdfaec9652b5dbdcbe9078bf46f0c492d75fc2caf8c1216c40a8b947f0a9/cairn-codex-launch` (mode 0500).

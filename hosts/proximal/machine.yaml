@@ -24,7 +24,8 @@
   "roles": [
     "developer",
     "linux",
-    "server"
+    "server",
+    "dropbox"
   ],
   "paths": {
     "config": "config",

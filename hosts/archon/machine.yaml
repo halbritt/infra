@@ -18,7 +18,8 @@
   },
   "roles": [
     "linux",
-    "developer"
+    "developer",
+    "dropbox"
   ],
   "paths": {
     "config": "config",

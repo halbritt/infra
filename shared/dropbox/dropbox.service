@@ -1,0 +1,12 @@
+[Unit]
+Description=Dropbox file synchronization
+
+[Service]
+ExecStart=%h/.dropbox-dist/dropboxd
+UnsetEnvironment=DISPLAY WAYLAND_DISPLAY
+Restart=on-failure
+RestartSec=15s
+UMask=0077
+
+[Install]
+WantedBy=default.target

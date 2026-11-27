@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "name": "dropbox",
+  "description": "Run Dropbox file synchronization under the owner's Linux user account.",
+  "shared": [
+    "shared/dropbox/dropbox.service"
+  ]
+}

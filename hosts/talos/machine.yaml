@@ -17,7 +17,8 @@
     "tailnet_dns_name": "talos.tail0ecc2e.ts.net"
   },
   "roles": [
-    "linux"
+    "linux",
+    "dropbox"
   ],
   "responsibilities": [
     "striatum-next"
