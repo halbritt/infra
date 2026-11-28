@@ -1,5 +1,14 @@
 # Changelog — proximal (system)
 
+## 2026-11-27 — inotify instance limit raised to 1024
+
+- agent-3302, 23:16 PST, under the host testing rule for a prerequisite failure. No owner message asked for this change by name.
+- Why: `halbritt` had used all 128 inotify instances (kernel default), so `inotify_init1` returned `EMFILE` to every new caller. `make test` of cairn 44eff6ba (21:57 to 23:09 PST) reported 18 failures in six lifecycle test modules, all at that call in the test fixture.
+- `fs.inotify.max_user_instances = 1024`, persistent in `/etc/sysctl.d/60-inotify-instances.conf` ([config/sysctl](config/sysctl/README.md)). Applied with `sysctl -p`; no process was restarted.
+- Verified at 23:16 PST: the value reads 1024, the installed file equals the canonical file, and a new `inotify_init1` call succeeds. A second run of the six modules was started at 23:17 PST; PROXIMAL-16 has its result.
+- Not changed: 21 Bambu Studio GUI processes that print jobs started under `xvfb-run` since 2026-11-24 still run. They hold about half of the instances in use and 24.3 GiB of memory. PROXIMAL-16 lists them.
+- Inverse: `sudo rm /etc/sysctl.d/60-inotify-instances.conf && sudo sysctl -w fs.inotify.max_user_instances=128`.
+
 ## 2026-11-27 — install Dropbox sync
 
 At the owner's request, installed the official Linux x86-64 client 280.4.5053

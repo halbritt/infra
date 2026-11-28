@@ -56,6 +56,7 @@ Each directory beside this file is one subsystem, self-contained with its own `R
 | [`systemd-user/`](systemd-user/) | systemd user manager config (`user@1000`) | env for every `--user` unit: PATH fix (`~/.local/bin` + `~/.npm-global/bin`, the stale-root-claude fix) + the striatum-next wake-unit `KillMode` drop-in (pattern superseded 2026-07-21, kept for record) |
 | [`vitae-elicitation/`](vitae-elicitation/) | Vitae RFC 0007 elicitation interview | tailnet-only web interview mining the Principal's episodic memory into the `vitae` graph; defined in `~/git/vitae`, enacted here as a user unit on loopback `:8909` + Tailscale Serve; loopback-only bind enforced |
 | [`zfs/`](zfs/) | ZFS ARC limit for the `nvr` pool (16 GiB; default was half of RAM) | `/etc/modprobe.d/zfs.conf` |
+| [`sysctl/`](sysctl/) | host-wide kernel settings | `fs.inotify.max_user_instances = 1024` (kernel default 128), installed as `/etc/sysctl.d/60-inotify-instances.conf` |
 
 Agents using either Plane instance should load
 [`../PLANE_AGENT_GUIDE.md`](../PLANE_AGENT_GUIDE.md) before reading or writing Plane data.
